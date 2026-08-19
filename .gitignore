@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.vs/
+publish/
+*.user
+*.suo
+
+build-logs/
+
+release-work/
+release-assets/

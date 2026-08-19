@@ -1,0 +1,173 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build/release, for example v0.2.5-beta.1
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, package, and release
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Resolve release tag
+        id: release_info
+        shell: pwsh
+        run: |
+          $tag = if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+              '${{ inputs.tag }}'
+          } else {
+              '${{ github.ref_name }}'
+          }
+
+          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$') {
+              throw "Release tag '$tag' is not supported. Use SemVer-style tags such as v0.2.5, v0.2.5-beta.1, or v1.0.0-rc.1."
+          }
+
+          $version = $Matches.version
+          $isPrerelease = $version.Contains('-').ToString().ToLowerInvariant()
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "is_prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Release tag: $tag"
+          Write-Host "Assembly/package version: $version"
+          Write-Host "GitHub prerelease: $isPrerelease"
+
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release_info.outputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tag points at checked-out commit
+        shell: pwsh
+        run: |
+          $expected = git rev-list -n 1 '${{ steps.release_info.outputs.tag }}'
+          $actual = git rev-parse HEAD
+          if ($expected -ne $actual) {
+              throw "Tag verification failed. Tag points to $expected but checkout is $actual."
+          }
+          Write-Host "Verified tag ${{ steps.release_info.outputs.tag }} at $actual"
+
+      - name: Set up .NET from global.json
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Build and run self-tests
+        shell: pwsh
+        run: .\scripts\build.ps1
+
+      - name: Publish self-contained win-x64 application
+        shell: pwsh
+        run: |
+          .\scripts\publish.ps1 `
+            -Output "$PWD\release-work\publish" `
+            -Version '${{ steps.release_info.outputs.version }}'
+
+      - name: Package release assets
+        id: package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.release_info.outputs.version }}'
+          $stageRoot = Join-Path $PWD 'release-work\stage'
+          $appDir = Join-Path $stageRoot 'PalworldServerManager'
+          $assetsDir = Join-Path $PWD 'release-assets'
+
+          Remove-Item $stageRoot -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item $assetsDir -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $appDir, $assetsDir | Out-Null
+
+          $exe = Join-Path $PWD 'release-work\publish\PalworldServerManager.exe'
+          if (-not (Test-Path $exe)) {
+              throw "Published executable was not found at '$exe'."
+          }
+
+          Copy-Item $exe $appDir
+          Copy-Item '.\README.md' $appDir
+          Copy-Item '.\LICENSE' $appDir
+          Copy-Item '.\CHANGELOG.md' $appDir
+
+          $zipName = "PalworldServerManager-v$version-win-x64.zip"
+          $zipPath = Join-Path $assetsDir $zipName
+          Compress-Archive -Path (Join-Path $appDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
+
+          $hash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $checksumName = 'SHA256SUMS.txt'
+          $checksumPath = Join-Path $assetsDir $checksumName
+          "$hash  $zipName" | Set-Content -Path $checksumPath -Encoding ascii
+
+          "zip_path=$zipPath" >> $env:GITHUB_OUTPUT
+          "checksum_path=$checksumPath" >> $env:GITHUB_OUTPUT
+          "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Created $zipPath"
+          Write-Host "SHA-256: $hash"
+
+      - name: Upload packaged assets to workflow run
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-assets-${{ steps.release_info.outputs.tag }}
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload build transcript
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-build-logs-${{ github.run_number }}-${{ github.run_attempt }}
+          path: build-logs/*.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Create or update GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = '${{ steps.release_info.outputs.tag }}'
+          $zip = '${{ steps.package.outputs.zip_path }}'
+          $checksum = '${{ steps.package.outputs.checksum_path }}'
+          $title = "Palworld Server Manager $tag"
+          $prerelease = '${{ steps.release_info.outputs.is_prerelease }}' -eq 'true'
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+              Write-Host "Release $tag already exists; replacing generated assets."
+              gh release upload $tag $zip $checksum --clobber --repo $env:GITHUB_REPOSITORY
+              if ($LASTEXITCODE -ne 0) { throw "gh release upload failed with exit code $LASTEXITCODE." }
+              exit 0
+          }
+
+          $args = @(
+              'release', 'create', $tag,
+              $zip, $checksum,
+              '--repo', $env:GITHUB_REPOSITORY,
+              '--title', $title,
+              '--generate-notes',
+              '--verify-tag'
+          )
+
+          if ($prerelease) {
+              $args += '--prerelease'
+          }
+
+          & gh @args
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE." }

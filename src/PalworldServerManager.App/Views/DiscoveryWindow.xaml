@@ -1,0 +1,30 @@
+<Window x:Class="PalworldServerManager.App.Views.DiscoveryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Find Existing Palworld Servers" Height="600" Width="980" WindowStartupLocation="CenterOwner">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock TextWrapping="Wrap" Margin="4,2,4,10"
+                   Text="This scan checks only expected Steam and SteamCMD library locations. It does not recursively search your drives. Use Select Folder Manually for a custom SteamCMD force_install_dir location."/>
+        <DataGrid Grid.Row="1" x:Name="ResultsGrid" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Server" Binding="{Binding DisplayName}" Width="180"/>
+                <DataGridTextColumn Header="Classification" Binding="{Binding Classification}" Width="150"/>
+                <DataGridCheckBoxColumn Header="Save" Binding="{Binding HasSaveData}" Width="55"/>
+                <DataGridCheckBoxColumn Header="Config" Binding="{Binding HasSettings}" Width="60"/>
+                <DataGridCheckBoxColumn Header="Mods" Binding="{Binding HasMods}" Width="55"/>
+                <DataGridCheckBoxColumn Header="Running" Binding="{Binding IsRunning}" Width="70"/>
+                <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <TextBlock Grid.Row="2" x:Name="ProgressText" Margin="4,10" Text="Ready." TextWrapping="Wrap"/>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Scan Again" Click="Scan_Click"/>
+            <Button Content="Select Folder Manually" Click="Manual_Click"/>
+            <Button Content="Import Selected" Click="Import_Click"/>
+            <Button Content="Close" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

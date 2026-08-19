@@ -1,0 +1,113 @@
+# License
+
+**Palworld Server Manager** is licensed under the **PolyForm Noncommercial License 1.0.0**.
+
+Official license terms:
+
+`https://polyformproject.org/licenses/noncommercial/1.0.0`
+
+Required Notice: Copyright 2026 YOUR NAME OR GITHUB USERNAME
+
+---
+
+## Summary
+
+Palworld Server Manager is **source-available software for noncommercial use**.
+
+Subject to the full terms of the PolyForm Noncommercial License 1.0.0, you may use the software for permitted noncommercial purposes, study the source code, modify it, create derivative works, and redistribute copies or modified versions.
+
+Commercial use is **not granted** under the public license.
+
+The official PolyForm Noncommercial License 1.0.0 terms linked above are the controlling license terms. This summary is provided only for convenience and does not replace, modify, or expand those terms.
+
+---
+
+## Redistribution
+
+If you redistribute Palworld Server Manager, whether modified or unmodified, you must comply with the PolyForm Noncommercial License 1.0.0.
+
+In particular, redistributed copies must continue to include either:
+
+* A copy of the PolyForm Noncommercial License 1.0.0 terms; or
+* The official license URL shown above.
+
+Redistributions must also preserve the following required notice:
+
+Required Notice: Copyright 2026 YOUR NAME OR GITHUB USERNAME
+
+---
+
+## Modified Versions
+
+You may create and redistribute modified versions of Palworld Server Manager for purposes permitted by the PolyForm Noncommercial License 1.0.0.
+
+Modified versions should clearly indicate that they have been changed from the original project so that users are not misled into believing modified builds are official releases of Palworld Server Manager.
+
+The original copyright notice and licensing information must be preserved as required by the license.
+
+---
+
+## Commercial Use
+
+The public license does **not** grant permission for commercial use.
+
+If you want to use Palworld Server Manager in a way that is not permitted by the PolyForm Noncommercial License 1.0.0, including commercial use, contact the copyright holder to request separate permission or a separate commercial license.
+
+Separate permission, if granted, must be provided by the copyright holder and is independent of the public PolyForm Noncommercial License.
+
+---
+
+## Donations
+
+The copyright holder may accept voluntary donations to support development and maintenance of Palworld Server Manager.
+
+Donations are optional and:
+
+* Are not required to download or use the software under the applicable license.
+* Do not constitute a purchase of the software.
+* Do not grant additional software functionality.
+* Do not grant additional licensing rights.
+* Do not grant commercial-use rights.
+* Do not modify the terms of the PolyForm Noncommercial License 1.0.0.
+
+---
+
+## Contributions
+
+Unless otherwise agreed in writing, contributions submitted to this project are intended to be incorporated into Palworld Server Manager and distributed under the project's current license.
+
+Contributors retain whatever rights they have in their contributions subject to applicable law and any contribution terms separately agreed upon.
+
+If this project later adopts a formal Contributor License Agreement or other contribution policy, that policy may establish additional terms for future contributions.
+
+---
+
+## No Affiliation
+
+Palworld Server Manager is an independent community project.
+
+It is not affiliated with, endorsed by, sponsored by, or officially supported by Pocketpair, Inc., Valve Corporation, or Steam.
+
+Palworld, Steam, SteamCMD, and other third-party names and trademarks remain the property of their respective owners.
+
+This license applies only to the Palworld Server Manager software and other material for which the project's copyright holder has the authority to grant rights. It does not grant rights to third-party software, trademarks, game assets, or other intellectual property.
+
+---
+
+## Warranty and Liability
+
+The warranty and liability provisions of the PolyForm Noncommercial License 1.0.0 apply.
+
+The software is provided without any additional warranty from the project owner.
+
+Always maintain independent backups of important Palworld server data before using server-management, migration, update, backup, restore, or configuration functionality.
+
+---
+
+## Controlling Terms
+
+If anything in this file conflicts with the **PolyForm Noncommercial License 1.0.0**, the official PolyForm Noncommercial License 1.0.0 terms control.
+
+Official terms:
+
+`https://polyformproject.org/licenses/noncommercial/1.0.0`
