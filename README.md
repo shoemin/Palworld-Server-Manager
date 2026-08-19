@@ -654,7 +654,7 @@ A donation:
 Donation links may be added here:
 
 ```text
-[Support the Project](YOUR-DONATION-LINK-HERE)
+TBD lol
 ```
 
 ---
