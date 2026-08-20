@@ -1,12 +1,30 @@
 using System.Windows;
 using System.Windows.Threading;
 using PalworldServerManager.Core.Models;
+using Velopack;
 
 namespace PalworldServerManager.App;
 
 public partial class App : System.Windows.Application
 {
     public static AppServices Services { get; private set; } = null!;
+
+    /// <summary>
+    /// Custom entry point (App.xaml is a Page, not the SDK-default ApplicationDefinition) so
+    /// VelopackApp.Build().Run() executes before any WPF/AppServices startup cost. During
+    /// install/update/uninstall, Velopack's fast-exit hooks run and the process exits from
+    /// inside Run() - so nothing below this line executes for those operations, and no
+    /// Palworld/SteamCMD/LAN/WPF subsystem is ever initialized just to apply an update.
+    /// </summary>
+    [STAThread]
+    public static void Main(string[] args)
+    {
+        VelopackApp.Build().Run();
+
+        var app = new App();
+        app.InitializeComponent();
+        app.Run();
+    }
 
     protected override void OnStartup(StartupEventArgs e)
     {

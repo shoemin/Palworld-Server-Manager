@@ -11,9 +11,11 @@
     3. Run `PalworldServerManager.exe`. No installer, no separate .NET runtime download — the build is self-contained.
     4. Windows SmartScreen may warn about an unrecognized publisher, since the build is not currently code-signed. This is a known, documented limitation, not a sign of tampering — see [Security & Safety Model](../reference/security-model.md).
 
-=== "Setup.exe installer (planned)"
+=== "Setup.exe installer (not yet released)"
 
-    A per-user `PalworldServerManager-Setup.exe` installer is planned for a future release, built with Velopack. It will install to its own program-files-style location, **separate from** the persistent data directory described below, and will support in-app updates. This page will be updated once it ships — it is not available yet.
+    A per-user Setup.exe installer, built with [Velopack](https://velopack.io), is implemented and has been verified with a real local install/uninstall cycle: it installs to its own `%LocalAppData%\ShoeMin.PalworldServerManager\` location, separate from the persistent data directory below, and uninstalling removes only that program-files-style directory, shortcuts, and its Add/Remove Programs entry — never your servers, backups, or logs.
+
+    It is **not yet part of the automated release pipeline** and is not attached to GitHub Releases. In-app update checking/downloading (Check for Updates) is also not implemented yet. This page will be updated once both ship.
 
 ## Where things live
 
