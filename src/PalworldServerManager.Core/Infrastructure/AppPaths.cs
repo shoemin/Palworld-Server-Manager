@@ -9,6 +9,10 @@ public sealed class AppPaths
         BackupsRoot = Path.Combine(Root, "backups");
         LogsRoot = Path.Combine(Root, "logs");
         SteamCmdRoot = Path.Combine(Root, "steamcmd");
+        LanRoot = Path.Combine(Root, "lan");
+        IncomingRoot = Path.Combine(Root, "incoming");
+        OutgoingRoot = Path.Combine(Root, "outgoing");
+        RuntimeRoot = Path.Combine(Root, "runtime");
         ProfilesFile = Path.Combine(Root, "servers.json");
     }
 
@@ -17,6 +21,10 @@ public sealed class AppPaths
     public string BackupsRoot { get; }
     public string LogsRoot { get; }
     public string SteamCmdRoot { get; }
+    public string LanRoot { get; }
+    public string IncomingRoot { get; }
+    public string OutgoingRoot { get; }
+    public string RuntimeRoot { get; }
     public string ProfilesFile { get; }
 
     public void EnsureCreated()
@@ -26,5 +34,9 @@ public sealed class AppPaths
         Directory.CreateDirectory(BackupsRoot);
         Directory.CreateDirectory(LogsRoot);
         Directory.CreateDirectory(SteamCmdRoot);
+        Directory.CreateDirectory(LanRoot);
+        Directory.CreateDirectory(IncomingRoot);
+        Directory.CreateDirectory(OutgoingRoot);
+        Directory.CreateDirectory(RuntimeRoot);
     }
 }

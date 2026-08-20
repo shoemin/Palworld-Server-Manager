@@ -1,5 +1,17 @@
 namespace PalworldServerManager.Core.Models;
 
+public enum ReconcileOutcome
+{
+    /// <summary>A lifetime for this profile was already being tracked; nothing to do.</summary>
+    AlreadyTracked,
+    /// <summary>No matching process for this profile was found running.</summary>
+    NotRunning,
+    /// <summary>A running process was found and the lifetime monitor is now attached to it.</summary>
+    Attached,
+    /// <summary>A runtime handoff expected this server to still be running, but it exited during the restart gap; no exit code could be recovered.</summary>
+    ExitedDuringGap
+}
+
 public sealed record OperationResult(bool Success, string Message)
 {
     public static OperationResult Ok(string message) => new(true, message);

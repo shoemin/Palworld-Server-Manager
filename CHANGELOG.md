@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.0 - Native REST dashboard and LAN server transfer
+
+- Adds a native WPF **Dashboard** tab with Overview, Players, Metrics, and read-only live Settings views.
+- Extends the Palworld REST client with typed reads for `/info`, `/metrics`, `/players`, and `/settings`.
+- Dashboard REST settings are strictly read-only and password/token/secret-like values are redacted before display or LAN transport.
+- Adds rolling in-memory charts for server FPS, player count, and frame time (up to 60 minutes at five-second sampling).
+- Adds a **LAN & Transfers** tab with LAN enable/disable controls, UDP peer discovery, one-use six-digit pairing codes, and mutually authenticated Manager pairing.
+- Adds a dedicated `PalworldServerManager.Lan` project hosting the paired Manager LAN API with ASP.NET Core/Kestrel.
+- Remote Dashboard access reuses the same WPF dashboard UI while keeping Palworld REST credentials on the host PC.
+- Adds **Send to PC** on managed servers; transfers reuse the existing `.palserver` export/import format rather than live-copying save directories.
+- Incoming transfers require explicit acceptance, write to `.partial`, verify length and SHA-256 before finalizing, and can then be imported through the existing package importer.
+- Adds disk-space preflight before accepting a transfer and removes incomplete partial files on transfer failure.
+- LAN functionality is disabled by default and is intended only for trusted private networks; Internet exposure is unsupported.
+- No existing `.palserver` manifest format or managed-server profile format was changed.
+- Fixed a bug where every LAN transfer receive failed to finalize (`.partial` -> `.palserver`) because the verification hash stream was still open when the file was renamed; the receiver now closes the stream before finalizing.
+- Bounded LAN dashboard/pairing/server-list HTTP calls to a 15-second timeout so an unreachable peer cannot hang the Dashboard indefinitely; large `.palserver` transfers intentionally remain unbounded.
+- Added self-tests covering Palworld REST model parsing/redaction, pairing code lifecycle, trusted-peer token storage, LAN discovery filtering, and an end-to-end loopback LAN API/transfer flow (auth, offer validation, hash verification, corrupted-transfer cleanup).
+
 ## 0.2.5 - Owned server lifetime / exit-code monitoring
 
 - PalServer launches are now retained and monitored for their full lifetime instead of being disposed immediately after `Process.Start`.

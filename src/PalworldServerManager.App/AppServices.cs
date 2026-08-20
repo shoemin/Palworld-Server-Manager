@@ -1,5 +1,6 @@
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Services;
+using PalworldServerManager.Lan;
 
 namespace PalworldServerManager.App;
 
@@ -22,6 +23,9 @@ public sealed class AppServices
         Backups = new BackupService(Paths, Processes, Logger);
         Packages = new PortablePackageService(Paths, Processes, SteamCmd, Registry, Logger);
         Diagnostics = new DiagnosticBundleService(Paths, Logger);
+        Dashboard = new DashboardService(Paths, Settings, Rest, Processes, Logger);
+        Lan = new LanCoordinator(Paths, Registry, Dashboard, Processes, Logger);
+        RuntimeHandoff = new RuntimeHandoffService(Paths, Logger);
     }
 
     public AppPaths Paths { get; }
@@ -38,4 +42,7 @@ public sealed class AppServices
     public BackupService Backups { get; }
     public PortablePackageService Packages { get; }
     public DiagnosticBundleService Diagnostics { get; }
+    public DashboardService Dashboard { get; }
+    public LanCoordinator Lan { get; }
+    public RuntimeHandoffService RuntimeHandoff { get; }
 }

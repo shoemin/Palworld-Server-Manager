@@ -69,12 +69,14 @@ public partial class MainWindow : Window
 
     private async Task RefreshProfilesAsync(Guid? selectId = null)
     {
+        var previous = Selected?.Id;
         _profiles = await _services.Registry.LoadAsync();
         ServerList.ItemsSource = null;
         ServerList.ItemsSource = _profiles;
-        if (selectId.HasValue)
-            ServerList.SelectedItem = _profiles.FirstOrDefault(x => x.Id == selectId.Value);
-        else if (ServerList.SelectedItem is null && _profiles.Count > 0)
+        var target = selectId ?? previous;
+        if (target.HasValue)
+            ServerList.SelectedItem = _profiles.FirstOrDefault(x => x.Id == target.Value);
+        if (ServerList.SelectedItem is null && _profiles.Count > 0)
             ServerList.SelectedIndex = 0;
         RefreshSelectedDetails();
     }
@@ -284,7 +286,7 @@ public partial class MainWindow : Window
         var picker = new OpenFileDialog
         {
             Filter = "Backup ZIP (*.zip)|*.zip|All files (*.*)|*.*",
-            InitialDirectory = System.IO.Path.Combine(_services.Paths.BackupsRoot, profile.Id.ToString("D"))
+            InitialDirectory = Path.Combine(_services.Paths.BackupsRoot, profile.Id.ToString("D"))
         };
         if (picker.ShowDialog(this) != true) return;
         if (MessageBox.Show(this, "Restoring will replace the current managed save/mod data. A pre-restore backup will be created automatically. Continue?", "Restore Backup", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
@@ -309,6 +311,13 @@ public partial class MainWindow : Window
             await _services.Packages.ExportAsync(profile, picker.FileName);
             OperationText.Text = "Export completed: " + picker.FileName;
         }, profile);
+    }
+
+    private async void SendToPc_Click(object sender, RoutedEventArgs e)
+    {
+        if (Selected is not { } profile) return;
+        new SendServerWindow(_services, profile) { Owner = this }.ShowDialog();
+        await RefreshProfilesAsync(profile.Id);
     }
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e)

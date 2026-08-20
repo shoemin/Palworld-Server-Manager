@@ -5,10 +5,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.2.5</Version>
-    <InformationalVersion>0.2.5</InformationalVersion>
+    <Version>0.3.0</Version>
+    <InformationalVersion>0.3.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
+    <ProjectReference Include="..\..\src\PalworldServerManager.Lan\PalworldServerManager.Lan.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>

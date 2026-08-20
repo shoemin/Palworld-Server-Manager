@@ -1,4 +1,4 @@
-# Palworld Server Manager
+﻿# Palworld Server Manager
 
 A Windows desktop application for managing **Palworld dedicated servers** through a simple graphical interface.
 
@@ -10,6 +10,30 @@ Palworld Server Manager is designed to make it easier to create, import, configu
 ---
 
 ## Features
+<!-- PSM-v0.3.0-LAN-DASHBOARD -->
+### Native REST Dashboard
+
+The application includes a native WPF **Dashboard** tab for both local managed servers and servers hosted by paired Palworld Server Manager instances on the same trusted LAN.
+
+The Dashboard provides:
+
+* Overview/status information.
+* Live player information.
+* Rolling server FPS, player-count, and frame-time history.
+* Live REST API settings in a **strictly read-only** view.
+* Redaction of password/token/secret-like setting values.
+
+Palworld REST credentials remain on the host Manager and are not sent to paired Manager instances.
+
+### LAN Manager Pairing and Server Transfer
+
+The **LAN & Transfers** tab can discover nearby Palworld Server Manager instances, pair them with a one-use expiring code, view their managed servers through the same Dashboard, and transfer a server using the existing .palserver format.
+
+Incoming transfers require explicit acceptance. Received data is written as a temporary .partial file and is finalized only after byte-length and SHA-256 verification. The normal .palserver importer then performs its existing per-file manifest/hash checks before installation.
+
+LAN functionality is disabled by default and is intended only for trusted private networks. Do not port-forward the Manager LAN API to the Internet.
+
+---
 
 ### Multiple Server Profiles
 
@@ -344,8 +368,8 @@ The build script performs:
 
 ```text
 Restore
-→ Release Build
-→ Self-tests
+â†’ Release Build
+â†’ Self-tests
 ```
 
 Build transcripts are stored under:
@@ -388,8 +412,8 @@ CI performs:
 
 ```text
 Restore
-→ Release Build
-→ Self-tests
+â†’ Release Build
+â†’ Self-tests
 ```
 
 Build transcripts are uploaded as GitHub Actions artifacts, including when a build fails.
@@ -431,11 +455,11 @@ The release pipeline performs:
 
 ```text
 Build
-→ Self-tests
-→ Publish
-→ Package
-→ SHA-256 generation
-→ GitHub Release
+â†’ Self-tests
+â†’ Publish
+â†’ Package
+â†’ SHA-256 generation
+â†’ GitHub Release
 ```
 
 Release assets include a Windows ZIP and SHA-256 checksum information.
@@ -570,18 +594,18 @@ Where practical:
 
 ```text
 Validate
-→ Backup
-→ Perform operation
-→ Verify
-→ Commit
+â†’ Backup
+â†’ Perform operation
+â†’ Verify
+â†’ Commit
 ```
 
 should be preferred over:
 
 ```text
 Delete
-→ Replace
-→ Hope
+â†’ Replace
+â†’ Hope
 ```
 
 ---
@@ -733,3 +757,4 @@ Most importantly:
 > **Your Palworld world is more important than the server manager.**
 
 The application should always be designed accordingly.
+

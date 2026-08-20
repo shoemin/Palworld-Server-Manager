@@ -1,19 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <Version>0.3.0</Version>
     <InformationalVersion>0.3.0</InformationalVersion>
-    <AssemblyName>PalworldServerManager</AssemblyName>
-    <RootNamespace>PalworldServerManager.App</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
-    <ProjectReference Include="..\PalworldServerManager.Lan\PalworldServerManager.Lan.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>

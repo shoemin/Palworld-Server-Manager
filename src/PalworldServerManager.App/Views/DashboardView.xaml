@@ -1,0 +1,163 @@
+<UserControl x:Class="PalworldServerManager.App.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="820" MinHeight="520">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel>
+            <TextBlock Text="Dashboard" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="Refresh Sources" Click="RefreshSources_Click"/>
+                <Button Content="Refresh Now" Click="RefreshNow_Click"/>
+            </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1" Margin="0,10,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Server:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            <ComboBox Grid.Column="1" x:Name="SourceCombo" Margin="8,0,0,0"
+                      SelectionChanged="SourceCombo_SelectionChanged"/>
+            <TextBlock Grid.Column="3" x:Name="ConnectionText" Text="Select a server." VerticalAlignment="Center"/>
+        </Grid>
+
+        <TabControl Grid.Row="2">
+            <TabItem Header="Overview">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Manager status:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="1" x:Name="ManagerStatusText"/>
+                        <TextBlock Grid.Column="3" Text="REST status:" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="4" x:Name="RestStatusText"/>
+
+                        <TextBlock Grid.Row="1" Text="Server name:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="LiveServerNameText" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="Version:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="1" Grid.Column="4" x:Name="ServerVersionText" Margin="0,8,0,0"/>
+
+                        <TextBlock Grid.Row="2" Text="World GUID:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" x:Name="WorldGuidText" Margin="0,8,0,0"/>
+
+                        <TextBlock Grid.Row="3" Text="Uptime:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="UptimeText" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="3" Grid.Column="3" Text="In-game day:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="3" Grid.Column="4" x:Name="DaysText" Margin="0,8,0,0"/>
+
+                        <TextBlock Grid.Row="4" Text="Players:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="PlayerCountText" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="4" Grid.Column="3" Text="Base camps:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="4" Grid.Column="4" x:Name="BaseCampText" Margin="0,8,0,0"/>
+
+                        <TextBlock Grid.Row="5" Text="Server FPS:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" x:Name="FpsText" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="5" Grid.Column="3" Text="Frame time:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="5" Grid.Column="4" x:Name="FrameTimeText" Margin="0,8,0,0"/>
+
+                        <TextBlock Grid.Row="6" Text="Game port:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" x:Name="GamePortText" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="6" Grid.Column="3" Text="REST port:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="6" Grid.Column="4" x:Name="RestPortText" Margin="0,8,0,0"/>
+
+                        <TextBlock Grid.Row="7" Text="Last Manager backup:" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                        <TextBlock Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="4" x:Name="LastBackupText" Margin="0,8,0,0"/>
+
+                        <TextBlock Grid.Row="8" Grid.ColumnSpan="5" x:Name="DashboardErrorText" Margin="0,16,0,0"
+                                   TextWrapping="Wrap"/>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Players">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <CheckBox x:Name="AdvancedPlayersCheck" Content="Show advanced account / network details"
+                              Checked="AdvancedPlayersCheck_Changed" Unchecked="AdvancedPlayersCheck_Changed"/>
+                    <DataGrid Grid.Row="1" x:Name="PlayersGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                              Margin="0,8,0,0" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Level" Binding="{Binding Level}" Width="70"/>
+                            <DataGridTextColumn Header="Ping (ms)" Binding="{Binding Ping, StringFormat=F1}" Width="85"/>
+                            <DataGridTextColumn Header="Buildings" Binding="{Binding BuildingCount}" Width="90"/>
+                            <DataGridTextColumn Header="X" Binding="{Binding LocationX, StringFormat=F1}" Width="80"/>
+                            <DataGridTextColumn Header="Y" Binding="{Binding LocationY, StringFormat=F1}" Width="80"/>
+                            <DataGridTextColumn x:Name="AccountColumn" Header="Account" Binding="{Binding AccountName}" Width="150" Visibility="Collapsed"/>
+                            <DataGridTextColumn x:Name="UserIdColumn" Header="User ID" Binding="{Binding UserId}" Width="180" Visibility="Collapsed"/>
+                            <DataGridTextColumn x:Name="PlayerIdColumn" Header="Player ID" Binding="{Binding PlayerId}" Width="220" Visibility="Collapsed"/>
+                            <DataGridTextColumn x:Name="IpColumn" Header="IP" Binding="{Binding IpAddress}" Width="130" Visibility="Collapsed"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Metrics">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Rolling history: up to 60 minutes, sampled every 5 seconds." Margin="0,0,0,10"/>
+                        <TextBlock Text="Server FPS" FontWeight="SemiBold"/>
+                        <Border BorderBrush="#B0B0B0" BorderThickness="1" Margin="0,4,0,14">
+                            <Canvas x:Name="FpsCanvas" Height="120" SizeChanged="MetricCanvas_SizeChanged"/>
+                        </Border>
+                        <TextBlock Text="Players" FontWeight="SemiBold"/>
+                        <Border BorderBrush="#B0B0B0" BorderThickness="1" Margin="0,4,0,14">
+                            <Canvas x:Name="PlayersCanvas" Height="120" SizeChanged="MetricCanvas_SizeChanged"/>
+                        </Border>
+                        <TextBlock Text="Server frame time (ms)" FontWeight="SemiBold"/>
+                        <Border BorderBrush="#B0B0B0" BorderThickness="1" Margin="0,4,0,14">
+                            <Canvas x:Name="FrameTimeCanvas" Height="120" SizeChanged="MetricCanvas_SizeChanged"/>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Settings">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Read-only live settings reported by the running Palworld REST API. Use the server Settings editor to change configuration."
+                               TextWrapping="Wrap"/>
+                    <DataGrid Grid.Row="1" x:Name="SettingsGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                              Margin="0,8,0,0" CanUserAddRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Setting" Binding="{Binding Key}" Width="2*"/>
+                            <DataGridTextColumn Header="Live Value" Binding="{Binding Value}" Width="3*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>
