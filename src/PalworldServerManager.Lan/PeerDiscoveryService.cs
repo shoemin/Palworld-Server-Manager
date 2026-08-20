@@ -90,12 +90,10 @@ public sealed class PeerDiscoveryService : IAsyncDisposable
             try
             {
                 var received = await _udp!.ReceiveAsync(cancellationToken);
-                var ad = JsonSerializer.Deserialize<LanAdvertisement>(received.Buffer);
-                if (ad is null
-                    || ad.Protocol != LanProtocol.ProtocolName
-                    || ad.ProtocolVersion != LanProtocol.ProtocolVersion
-                    || ad.InstanceId == _instanceId)
+                var candidate = JsonSerializer.Deserialize<LanAdvertisement>(received.Buffer);
+                if (!IsAcceptableAdvertisement(candidate, _instanceId))
                     continue;
+                var ad = candidate!;
 
                 _peers[ad.InstanceId] = new LanPeer
                 {
@@ -113,6 +111,12 @@ public sealed class PeerDiscoveryService : IAsyncDisposable
             catch (Exception ex) { _logger.Warning("LAN discovery receive failed: " + ex.Message); }
         }
     }
+
+    public static bool IsAcceptableAdvertisement(LanAdvertisement? ad, Guid selfInstanceId)
+        => ad is not null
+           && ad.Protocol == LanProtocol.ProtocolName
+           && ad.ProtocolVersion == LanProtocol.ProtocolVersion
+           && ad.InstanceId != selfInstanceId;
 
     public async ValueTask DisposeAsync()
     {

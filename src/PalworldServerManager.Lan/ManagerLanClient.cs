@@ -10,6 +10,8 @@ namespace PalworldServerManager.Lan;
 
 public sealed class ManagerLanClient
 {
+    private static readonly TimeSpan ShortCallTimeout = TimeSpan.FromSeconds(15);
+
     private readonly LanStateStore _state;
     private readonly IAppLogger _logger;
     private readonly HttpClient _http;
@@ -28,13 +30,15 @@ public sealed class ManagerLanClient
         var reciprocalToken = _state.AddInboundTrust(peer.InstanceId, peer.MachineName);
         try
         {
-            using var response = await _http.PostAsJsonAsync(peer.BaseUri + "/api/v1/pair", new PairRequest
-            {
-                InstanceId = _state.InstanceId,
-                MachineName = Environment.MachineName,
-                Code = code,
-                ReciprocalToken = reciprocalToken
-            }, cancellationToken);
+            using var response = await SendWithTimeoutAsync(
+                ct => _http.PostAsJsonAsync(peer.BaseUri + "/api/v1/pair", new PairRequest
+                {
+                    InstanceId = _state.InstanceId,
+                    MachineName = Environment.MachineName,
+                    Code = code,
+                    ReciprocalToken = reciprocalToken
+                }, ct),
+                cancellationToken);
 
             if (!response.IsSuccessStatusCode)
                 throw new InvalidOperationException($"Pairing failed: {(int)response.StatusCode} {response.ReasonPhrase}");
@@ -62,16 +66,18 @@ public sealed class ManagerLanClient
 
     public async Task<IReadOnlyList<RemoteServerSummary>> GetServersAsync(LanPeer peer, CancellationToken cancellationToken = default)
     {
-        using var request = CreateAuthorized(peer, HttpMethod.Get, "/api/v1/servers");
-        using var response = await _http.SendAsync(request, cancellationToken);
+        using var response = await SendWithTimeoutAsync(
+            ct => _http.SendAsync(CreateAuthorized(peer, HttpMethod.Get, "/api/v1/servers"), ct),
+            cancellationToken);
         await EnsureSuccessAsync(response, "Get remote server list", cancellationToken);
         return await response.Content.ReadFromJsonAsync<List<RemoteServerSummary>>(_json, cancellationToken) ?? [];
     }
 
     public async Task<DashboardSnapshot> GetDashboardAsync(LanPeer peer, Guid profileId, CancellationToken cancellationToken = default)
     {
-        using var request = CreateAuthorized(peer, HttpMethod.Get, $"/api/v1/dashboard/{profileId:D}");
-        using var response = await _http.SendAsync(request, cancellationToken);
+        using var response = await SendWithTimeoutAsync(
+            ct => _http.SendAsync(CreateAuthorized(peer, HttpMethod.Get, $"/api/v1/dashboard/{profileId:D}"), ct),
+            cancellationToken);
         await EnsureSuccessAsync(response, "Get remote dashboard", cancellationToken);
         return await response.Content.ReadFromJsonAsync<DashboardSnapshot>(_json, cancellationToken)
             ?? throw new InvalidDataException("Remote dashboard response was empty.");
@@ -144,8 +150,9 @@ public sealed class ManagerLanClient
 
     private async Task<TransferStatusResponse> GetTransferStatusAsync(LanPeer peer, Guid offerId, CancellationToken cancellationToken)
     {
-        using var request = CreateAuthorized(peer, HttpMethod.Get, $"/api/v1/transfers/{offerId:D}/status");
-        using var response = await _http.SendAsync(request, cancellationToken);
+        using var response = await SendWithTimeoutAsync(
+            ct => _http.SendAsync(CreateAuthorized(peer, HttpMethod.Get, $"/api/v1/transfers/{offerId:D}/status"), ct),
+            cancellationToken);
         await EnsureSuccessAsync(response, "Get transfer status", cancellationToken);
         return await response.Content.ReadFromJsonAsync<TransferStatusResponse>(_json, cancellationToken)
             ?? throw new InvalidDataException("Remote Manager returned an invalid transfer status.");
@@ -158,6 +165,23 @@ public sealed class ManagerLanClient
         var request = new HttpRequestMessage(method, peer.BaseUri + path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return request;
+    }
+
+    /// <summary>Bounds an ordinary (non-transfer) LAN API call so an unreachable peer cannot hang the caller forever; large transfers intentionally bypass this and rely on caller-supplied cancellation instead.</summary>
+    private static async Task<HttpResponseMessage> SendWithTimeoutAsync(
+        Func<CancellationToken, Task<HttpResponseMessage>> send,
+        CancellationToken cancellationToken)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(ShortCallTimeout);
+        try
+        {
+            return await send(cts.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"The remote Manager did not respond within {ShortCallTimeout.TotalSeconds:F0} seconds.");
+        }
     }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken cancellationToken)
@@ -186,7 +210,7 @@ public sealed class ManagerLanClient
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             => CopyToAsync(stream, cancellationToken);
 
-        private async Task CopyToAsync(Stream stream, CancellationToken cancellationToken)
+        private new async Task CopyToAsync(Stream stream, CancellationToken cancellationToken)
         {
             var buffer = new byte[1024 * 1024];
             long sent = 0;

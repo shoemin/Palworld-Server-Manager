@@ -109,7 +109,9 @@ public sealed class PalworldRestClient
     private static bool IsSensitiveSettingKey(string key)
         => key.Contains("password", StringComparison.OrdinalIgnoreCase)
            || key.Contains("token", StringComparison.OrdinalIgnoreCase)
-           || key.Contains("secret", StringComparison.OrdinalIgnoreCase);
+           || key.Contains("secret", StringComparison.OrdinalIgnoreCase)
+           || key.Contains("credential", StringComparison.OrdinalIgnoreCase)
+           || key.Replace(" ", "", StringComparison.Ordinal).Contains("apikey", StringComparison.OrdinalIgnoreCase);
 
     private static string FormatJsonValue(JsonElement value) => value.ValueKind switch
     {

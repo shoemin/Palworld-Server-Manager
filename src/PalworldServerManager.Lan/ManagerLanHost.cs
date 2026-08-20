@@ -213,8 +213,9 @@ public sealed class ManagerLanHost : IAsyncDisposable
                 if (info.Length != offer.SizeBytes)
                     throw new InvalidDataException($"Received {info.Length} bytes; expected {offer.SizeBytes}.");
 
-                await using var stream = File.OpenRead(partialPath);
-                var hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, context.RequestAborted));
+                string hash;
+                await using (var stream = File.OpenRead(partialPath))
+                    hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, context.RequestAborted));
                 if (!hash.Equals(offer.Sha256, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("Received package SHA-256 does not match the transfer offer.");
 

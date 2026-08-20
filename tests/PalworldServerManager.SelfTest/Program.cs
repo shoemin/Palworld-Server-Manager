@@ -2,6 +2,7 @@ using System.IO.Compression;
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
 using PalworldServerManager.Core.Services;
+using PalworldServerManager.SelfTest;
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
@@ -13,7 +14,24 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Structured logger records correlated operations", TestStructuredLogging),
     ("SteamCMD code 7 is classified for interactive recovery", TestSteamCmdRecoveryClassification),
     ("Server lifetime result prefers shipping-process exit code", TestServerLifetimeExitResult),
-    ("Diagnostic bundle redacts secrets and excludes saves", TestDiagnosticBundle)
+    ("Diagnostic bundle redacts secrets and excludes saves", TestDiagnosticBundle),
+    ("Palworld REST models parse representative JSON", RestTests.TestRestModelsParseRepresentativeJson),
+    ("Palworld REST models tolerate missing/partial JSON fields", RestTests.TestRestModelsToleratePartialJson),
+    ("Palworld REST settings redact secret-shaped keys", RestTests.TestRestSettingsRedaction),
+    ("Palworld REST client never logs the admin password", RestTests.TestRestSecretsNeverLogged),
+    ("Pairing code is six digits and one-use", LanTests.TestPairingCodeIsSixDigitsAndOneUse),
+    ("Pairing wrong code does not consume the real code", LanTests.TestPairingWrongCodeDoesNotConsumeTheRealCode),
+    ("Pairing failed attempts are bounded and lock out the code", LanTests.TestPairingFailedAttemptsAreBoundedAndLockOutTheCode),
+    ("LAN is disabled by default for a new Manager state", LanTests.TestLanDisabledByDefaultForANewState),
+    ("Trusted-peer token is hashed at rest and revocable", LanTests.TestTrustedPeerTokenIsHashedAtRestAndAuthorizesOnlyUntilRevoked),
+    ("Remote pairing credential persists across a Manager restart", LanTests.TestRemoteCredentialPersistsAcrossReload),
+    ("LAN discovery advertisement carries no secrets", LanTests.TestDiscoveryAdvertisementCarriesNoSecrets),
+    ("LAN discovery filters unknown protocol/version/self advertisements", LanTests.TestDiscoveryFiltersUnknownProtocolAndSelfAdvertisements),
+    ("LAN API rejects unauthenticated and wrong-token requests", LanTests.TestLanHostRejectsUnauthenticatedAndWrongTokenRequests),
+    ("LAN pairing grants authorized access and rejects a wrong code", LanTests.TestLanPairingGrantsAuthorizedAccessAndRejectsWrongCode),
+    ("LAN transfer offer rejects malformed metadata", LanTests.TestLanTransferOfferRejectsMalformedMetadata),
+    ("LAN transfer completes and verifies whole-file SHA-256", LanTests.TestLanTransferCompletesAndVerifiesWholeFileHash),
+    ("LAN transfer hash mismatch is rejected and leaves no partial file", LanTests.TestLanTransferHashMismatchIsRejectedAndLeavesNoPartialFile)
 };
 
 var failures = 0;

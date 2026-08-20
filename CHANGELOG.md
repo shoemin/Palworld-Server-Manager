@@ -14,6 +14,9 @@
 - Adds disk-space preflight before accepting a transfer and removes incomplete partial files on transfer failure.
 - LAN functionality is disabled by default and is intended only for trusted private networks; Internet exposure is unsupported.
 - No existing `.palserver` manifest format or managed-server profile format was changed.
+- Fixed a bug where every LAN transfer receive failed to finalize (`.partial` -> `.palserver`) because the verification hash stream was still open when the file was renamed; the receiver now closes the stream before finalizing.
+- Bounded LAN dashboard/pairing/server-list HTTP calls to a 15-second timeout so an unreachable peer cannot hang the Dashboard indefinitely; large `.palserver` transfers intentionally remain unbounded.
+- Added self-tests covering Palworld REST model parsing/redaction, pairing code lifecycle, trusted-peer token storage, LAN discovery filtering, and an end-to-end loopback LAN API/transfer flow (auth, offer validation, hash verification, corrupted-transfer cleanup).
 
 ## 0.2.5 - Owned server lifetime / exit-code monitoring
 
