@@ -56,7 +56,28 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Reconcile falls back to a path scan when a handoff hint does not verify", RuntimeReattachmentTests.TestReconcileFallsBackToPathScanWhenHandoffHintDoesNotVerify),
     ("Reconcile reports an honest gap-exit when a handoff expected a server that is gone", RuntimeReattachmentTests.TestReconcileReportsExitedDuringGapWhenHandoffExpectedButNothingIsRunning),
     ("Reconcile reports NotRunning when nothing matches", RuntimeReattachmentTests.TestReconcileReturnsNotRunningWhenNothingMatches),
-    ("Reconcile does not cross-attach different managed profiles", RuntimeReattachmentTests.TestReconcileDoesNotCrossAttachDifferentManagedProfiles)
+    ("Reconcile does not cross-attach different managed profiles", RuntimeReattachmentTests.TestReconcileDoesNotCrossAttachDifferentManagedProfiles),
+    ("Execution mode detector prefers Installed over everything", ApplicationUpdateServiceTests.TestExecutionModeDetectorPrefersInstalledOverEverything),
+    ("Execution mode detector recognizes Velopack portable", ApplicationUpdateServiceTests.TestExecutionModeDetectorRecognizesVelopackPortable),
+    ("Execution mode detector recognizes a development build by sibling .csproj", ApplicationUpdateServiceTests.TestExecutionModeDetectorRecognizesDevelopmentBuildBySiblingCsproj),
+    ("Execution mode detector defaults to Portable when ambiguous", ApplicationUpdateServiceTests.TestExecutionModeDetectorDefaultsToPortableWhenAmbiguous),
+    ("Update check is skipped when not installed", ApplicationUpdateServiceTests.TestCheckIsSkippedWhenNotInstalled),
+    ("Default update channel is Stable", ApplicationUpdateServiceTests.TestDefaultChannelIsStable),
+    ("Update channel persists across service instances", ApplicationUpdateServiceTests.TestChannelPersistsAcrossServiceInstances),
+    ("Changing update channel invalidates cached availability", ApplicationUpdateServiceTests.TestChangingChannelInvalidatesCachedAvailability),
+    ("Update check passes the currently selected channel to the backend", ApplicationUpdateServiceTests.TestCheckPassesTheCurrentlySelectedChannelToTheBackend),
+    ("Update state: Idle to Checking to Idle when no update is found", ApplicationUpdateServiceTests.TestIdleCheckingIdleWhenNoUpdateFound),
+    ("Update state: Idle to Checking to UpdateAvailable", ApplicationUpdateServiceTests.TestIdleCheckingUpdateAvailable),
+    ("Update state: UpdateAvailable to Downloading to ReadyToInstall", ApplicationUpdateServiceTests.TestUpdateAvailableDownloadingReadyToInstall),
+    ("Download with nothing staged is a no-op", ApplicationUpdateServiceTests.TestDownloadWithNothingStagedIsANoOp),
+    ("Update check failure transitions to Failed", ApplicationUpdateServiceTests.TestCheckFailureTransitionsToFailed),
+    ("Update download failure transitions to Failed", ApplicationUpdateServiceTests.TestDownloadFailureTransitionsToFailed),
+    ("Retry from Failed succeeds", ApplicationUpdateServiceTests.TestRetryFromFailedSucceeds),
+    ("Overlapping update check is rejected, not queued", ApplicationUpdateServiceTests.TestOverlappingCheckIsRejectedNotQueued),
+    ("Overlapping update download is rejected, not queued", ApplicationUpdateServiceTests.TestOverlappingDownloadIsRejectedNotQueued),
+    ("ApplicationUpdateService has no ServerProcessService dependency", ApplicationUpdateServiceTests.TestApplicationUpdateServiceHasNoServerProcessServiceDependency),
+    ("Checking and downloading never write a runtime handoff", ApplicationUpdateServiceTests.TestCheckingAndDownloadingNeverWriteARuntimeHandoff),
+    ("Update check failure is logged as an error", ApplicationUpdateServiceTests.TestCheckFailureIsLoggedAsAnError)
 };
 
 var failures = 0;

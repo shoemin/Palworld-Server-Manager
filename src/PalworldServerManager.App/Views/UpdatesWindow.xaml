@@ -1,0 +1,78 @@
+<Window x:Class="PalworldServerManager.App.Views.UpdatesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About / Updates" Height="560" Width="620"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Palworld Server Manager Updates" FontSize="20" FontWeight="SemiBold"/>
+
+        <TextBlock x:Name="ModeBannerText" Grid.Row="1" Margin="0,10,0,0" TextWrapping="Wrap" Foreground="#8A6D3B"/>
+
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Current version:" FontWeight="SemiBold"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="CurrentVersionText"/>
+
+            <TextBlock Grid.Row="1" Text="Execution mode:" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="ExecutionModeText" Margin="0,4,0,0"/>
+
+            <TextBlock Grid.Row="2" Text="Update channel:" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,4,0,0">
+                <RadioButton x:Name="StableChannelRadio" Content="Stable" GroupName="Channel" Checked="ChannelRadio_Checked" Margin="0,0,16,0"/>
+                <RadioButton x:Name="PrereleaseChannelRadio" Content="Prerelease" GroupName="Channel" Checked="ChannelRadio_Checked"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="3" Text="Last checked:" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="LastCheckedText" Margin="0,4,0,0"/>
+
+            <TextBlock Grid.Row="4" Text="Available version:" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="AvailableVersionText" Margin="0,4,0,0"/>
+
+            <TextBlock Grid.Row="5" Text="Download size:" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="DownloadSizeText" Margin="0,4,0,0"/>
+
+            <TextBlock Grid.Row="6" Text="State:" FontWeight="SemiBold" Margin="0,4,0,0"/>
+            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="StateText" Margin="0,4,0,0" FontWeight="SemiBold"/>
+        </Grid>
+
+        <ProgressBar Grid.Row="3" x:Name="DownloadProgress" Height="18" Minimum="0" Maximum="100" Margin="0,10,0,0" Visibility="Collapsed"/>
+
+        <GroupBox Grid.Row="4" Header="Release notes" Margin="0,12,0,0">
+            <TextBox x:Name="ReleaseNotesText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" BorderThickness="0" Background="Transparent"/>
+        </GroupBox>
+
+        <StackPanel Grid.Row="5" Margin="0,12,0,0">
+            <TextBlock x:Name="StatusMessageText" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="View Releases on GitHub" Click="OpenReleases_Click"/>
+                <Button x:Name="CheckButton" Content="Check for Updates" Click="Check_Click"/>
+                <Button x:Name="DownloadButton" Content="Download Update" Click="Download_Click"/>
+                <Button x:Name="CancelDownloadButton" Content="Cancel Download" Click="CancelDownload_Click" Visibility="Collapsed"/>
+                <Button Content="Close" IsCancel="True"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

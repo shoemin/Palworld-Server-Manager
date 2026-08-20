@@ -32,6 +32,14 @@
 
 **Status shows "exit code unavailable — Manager was restarting."** Palworld exited during the brief window the Manager itself was restarting, so no exit code could be recovered. This is reported honestly rather than as a fabricated clean stop — check `logs\` for what was happening around that time if you need more context.
 
+## Manager updates
+
+**Check for Updates is grayed out / says self-update is disabled.** Update checking only works from a genuine Setup.exe install. A developer build or the current portable ZIP will say so explicitly instead of pretending to check — see [Manager Updates](../manager-updates/index.md#execution-modes).
+
+**Check for Updates says it's up to date, but I expected a newer version.** There is no published Setup.exe release yet, and the Prerelease channel has no published builds either — see [Update channels](../manager-updates/update-channels.md). "Up to date" and "nothing found" currently look the same because nothing has been published.
+
+**A check fails with a network/GitHub error.** Update checks are anonymous public requests to GitHub; a failure here doesn't affect anything else in the Manager, and you can retry immediately with no cooldown.
+
 ## Diagnostics
 
 If something doesn't fit the cases above, use **Export Diagnostic Bundle** from the main window. It collects recent Manager/server logs, runtime metadata, and sanitized settings — it never includes `.sav` save files, and passwords/tokens are redacted before anything is written.

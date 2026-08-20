@@ -15,7 +15,7 @@
 
     A per-user Setup.exe installer, built with [Velopack](https://velopack.io), is implemented and has been verified with a real local install/uninstall cycle: it installs to its own `%LocalAppData%\ShoeMin.PalworldServerManager\` location, separate from the persistent data directory below, and uninstalling removes only that program-files-style directory, shortcuts, and its Add/Remove Programs entry — never your servers, backups, or logs.
 
-    It is **not yet part of the automated release pipeline** and is not attached to GitHub Releases. In-app update checking/downloading (Check for Updates) is also not implemented yet. This page will be updated once both ship.
+    It is **not yet part of the automated release pipeline** and is not attached to GitHub Releases, so there is no published version to install yet. In-app **Check for Updates** (Help menu) is implemented and works against a real install, but since nothing is published there is currently nothing for it to find — see [Manager Updates](../manager-updates/index.md). This page will be updated once a Setup.exe is actually published.
 
 ## Where things live
 

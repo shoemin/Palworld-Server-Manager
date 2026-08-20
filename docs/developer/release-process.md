@@ -30,7 +30,13 @@ dotnet vpk pack `
 
 This produces `ShoeMin.PalworldServerManager-win-Setup.exe`, a `-full.nupkg` update package, a Velopack-native portable zip, and `releases.win.json`/`assets.win.json` metadata. The pack ID is deliberately `ShoeMin.PalworldServerManager`, not `PalworldServerManager`, so the installer's default per-user install location — verified with a real install/uninstall cycle — is `%LocalAppData%\ShoeMin.PalworldServerManager\`, which can never collide with the persistent data root at `%LocalAppData%\PalworldServerManager\`.
 
-`vpk pack` is not yet invoked from `.github/workflows/release.yml`; that integration, along with attaching these assets to GitHub Releases and adding actual update-channel metadata, is future work.
+`vpk pack` is not yet invoked from `.github/workflows/release.yml`; that integration, along with attaching these assets to GitHub Releases and publishing an actual `win-beta` prerelease channel, is future work.
+
+## In-app update checking (Velopack)
+
+`ApplicationUpdateService` (in `PalworldServerManager.Core.Services.Update`) checks for and downloads updates through `VelopackUpdateBackend`, which wraps Velopack's `UpdateManager`/`GithubSource` against this repository's public GitHub Releases, anonymously. It is built behind `IApplicationUpdateBackend` specifically so the state machine, channel handling, and concurrency logic are unit-testable with a fake backend — self-tests never call GitHub or require a real Velopack install.
+
+This currently stops at a "ready to install" state; it does not apply an update or restart the Manager (that is a future phase, which will use the already-implemented `RuntimeHandoffService` to let the restarted Manager reattach to any Palworld server that kept running). Execution-mode detection (Installed / Portable / Development) uses Velopack's own `IsInstalled`/`IsPortable` locator properties, falling back to a narrow sibling-`.csproj` check (not just a loose path guess) to distinguish a developer build from the current non-Velopack portable ZIP when neither Velopack flag is set.
 
 ## Versioning
 

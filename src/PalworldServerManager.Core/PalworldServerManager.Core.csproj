@@ -7,4 +7,7 @@
     <Version>0.3.0</Version>
     <InformationalVersion>0.3.0</InformationalVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.0" />
+  </ItemGroup>
 </Project>
