@@ -358,6 +358,10 @@ public partial class MainWindow : Window
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshProfilesAsync(Selected?.Id);
     private void ServerList_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshSelectedDetails();
 
+    private void OpenDocumentation_Click(object sender, RoutedEventArgs e) => DocumentationLinks.Open(DocumentationLinks.Home, this);
+    private void OpenTroubleshooting_Click(object sender, RoutedEventArgs e) => DocumentationLinks.Open(DocumentationLinks.Troubleshooting, this);
+    private void OpenReportBug_Click(object sender, RoutedEventArgs e) => DocumentationLinks.Open(DocumentationLinks.ReportBug, this);
+
     private static string SanitizeFileName(string value)
     {
         foreach (var c in Path.GetInvalidFileNameChars()) value = value.Replace(c, '_');

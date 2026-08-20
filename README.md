@@ -7,6 +7,8 @@ Palworld Server Manager is designed to make it easier to create, import, configu
 > **Project status:** Early development / prerelease
 > The application is currently being actively tested. Back up important Palworld server data independently before using prerelease builds.
 
+**[Documentation](https://shoemin.github.io/Palworld-Server-Manager/)** · **[Download the latest release](https://github.com/shoemin/Palworld-Server-Manager/releases/latest)** · **[Report a bug](https://github.com/shoemin/Palworld-Server-Manager/issues)**
+
 ---
 
 ## Features

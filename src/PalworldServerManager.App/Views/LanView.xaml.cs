@@ -144,4 +144,5 @@ public partial class LanView : UserControl
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => RefreshUi();
+    private void OpenLanHelp_Click(object sender, RoutedEventArgs e) => DocumentationLinks.Open(DocumentationLinks.Lan, Window.GetWindow(this));
 }

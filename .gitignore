@@ -9,3 +9,8 @@ build-logs/
 
 release-work/
 release-assets/
+
+site/
+.venv-docs/
+
+publish-verify/
