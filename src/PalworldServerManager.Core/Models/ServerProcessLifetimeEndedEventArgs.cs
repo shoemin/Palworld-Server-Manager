@@ -8,6 +8,9 @@ public sealed class ServerProcessLifetimeEndedEventArgs : EventArgs
     public required IReadOnlyList<ServerProcessExitInfo> ProcessExits { get; init; }
     public required string Message { get; init; }
 
+    /// <summary>True when the server is known to have stopped (e.g. it exited while the Manager was restarting to apply its own update) but no process handle survived to capture an exit code.</summary>
+    public bool ExitCodeUnavailable { get; init; }
+
     public bool HasNonZeroExitCode => ProcessExits.Any(x => x.ExitCode != 0);
 
     public int? PrimaryExitCode

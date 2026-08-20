@@ -12,6 +12,7 @@ public sealed class AppPaths
         LanRoot = Path.Combine(Root, "lan");
         IncomingRoot = Path.Combine(Root, "incoming");
         OutgoingRoot = Path.Combine(Root, "outgoing");
+        RuntimeRoot = Path.Combine(Root, "runtime");
         ProfilesFile = Path.Combine(Root, "servers.json");
     }
 
@@ -23,6 +24,7 @@ public sealed class AppPaths
     public string LanRoot { get; }
     public string IncomingRoot { get; }
     public string OutgoingRoot { get; }
+    public string RuntimeRoot { get; }
     public string ProfilesFile { get; }
 
     public void EnsureCreated()
@@ -35,5 +37,6 @@ public sealed class AppPaths
         Directory.CreateDirectory(LanRoot);
         Directory.CreateDirectory(IncomingRoot);
         Directory.CreateDirectory(OutgoingRoot);
+        Directory.CreateDirectory(RuntimeRoot);
     }
 }

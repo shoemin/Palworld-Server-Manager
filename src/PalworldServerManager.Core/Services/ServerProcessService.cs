@@ -45,6 +45,7 @@ public sealed class ServerProcessService
         lock (_lifetimeSync)
         {
             if (!_lastLifetimeResults.TryGetValue(profile.Id, out var result)) return "Stopped";
+            if (result.ExitCodeUnavailable) return "Stopped (exit code unavailable — Manager was restarting)";
             if (result.ExpectedStop) return "Stopped";
             if (result.HasNonZeroExitCode)
                 return result.PrimaryExitCode is int code ? $"Stopped / Error (exit {code})" : "Stopped / Error";
@@ -233,6 +234,112 @@ public sealed class ServerProcessService
         }
     }
 
+    /// <summary>
+    /// Looks for a managed PalServer installation that is already running (typically because
+    /// the Manager just restarted, whether for a self-update or a normal relaunch) and, if
+    /// found, reattaches the lifetime monitor to it so future exits are still captured. This
+    /// is safe to call for every profile at startup: it never starts a new server process and
+    /// never attaches to an install that doesn't already have a matching process running.
+    /// </summary>
+    public Task<ReconcileOutcome> ReconcileAsync(ServerProfile profile, RuntimeHandoffServerRecord? hint, CancellationToken cancellationToken = default)
+    {
+        if (HasTrackedLifetime(profile.Id)) return Task.FromResult(ReconcileOutcome.AlreadyTracked);
+
+        var seed = TryMatchHandoffHint(profile, hint);
+
+        if (seed is null && hint is not null && hint.Processes.Count > 0 && !ProcessInspection.IsPalServerRunningFrom(profile.InstallPath))
+        {
+            // The handoff specifically expected this server to still be running, but nothing
+            // verifies and nothing matching is physically present. Represent that honestly
+            // instead of fabricating a successful exit code.
+            RecordGapExit(profile);
+            _logger.Warning($"Runtime handoff expected '{profile.Name}' to still be running after the Manager restarted, but no matching process was found. Recording exit-code-unavailable.");
+            return Task.FromResult(ReconcileOutcome.ExitedDuringGap);
+        }
+
+        if (seed is null)
+        {
+            var found = ProcessInspection.FindPalServerProcesses(profile.InstallPath);
+            if (found.Count == 0) return Task.FromResult(ReconcileOutcome.NotRunning);
+            seed = found[0];
+            for (var i = 1; i < found.Count; i++) found[i].Dispose();
+        }
+
+        BeginReattachedLifetime(profile, seed);
+        return Task.FromResult(ReconcileOutcome.Attached);
+    }
+
+    private Process? TryMatchHandoffHint(ServerProfile profile, RuntimeHandoffServerRecord? hint)
+    {
+        if (hint is null) return null;
+
+        foreach (var candidate in hint.Processes)
+        {
+            Process process;
+            try { process = Process.GetProcessById(candidate.ProcessId); }
+            catch { continue; }
+
+            var descriptor = ToDescriptor(process);
+            if (descriptor is { } d && ProcessIdentityMatcher.IsSafeIdentityMatch(d, profile.InstallPath, candidate))
+            {
+                _logger.Info($"Runtime handoff verified process identity for '{profile.Name}': PID={candidate.ProcessId} Name={candidate.ProcessName}.");
+                return process;
+            }
+
+            _logger.Warning($"Runtime handoff hint for '{profile.Name}' PID={candidate.ProcessId} did not verify (possible PID reuse or mismatch); ignoring this hint entry rather than trusting it.");
+            process.Dispose();
+        }
+
+        return null;
+    }
+
+    private void BeginReattachedLifetime(ServerProfile profile, Process seed)
+    {
+        var lifetime = new TrackedServerLifetime(profile, seed);
+        lock (_lifetimeSync)
+        {
+            if (_trackedLifetimes.ContainsKey(profile.Id))
+            {
+                seed.Dispose();
+                return;
+            }
+            _trackedLifetimes[profile.Id] = lifetime;
+            _lastLifetimeResults.Remove(profile.Id);
+            _expectedStops.Remove(profile.Id);
+        }
+
+        _logger.Info($"Reattached lifetime monitor to already-running server '{profile.Name}' seed PID={seed.Id}. Monitoring resumes as if the Manager had launched it.");
+        _ = MonitorLifetimeAsync(lifetime);
+    }
+
+    private void RecordGapExit(ServerProfile profile)
+    {
+        var result = new ServerProcessLifetimeEndedEventArgs
+        {
+            ServerId = profile.Id,
+            ServerName = profile.Name,
+            ExpectedStop = false,
+            ProcessExits = [],
+            ExitCodeUnavailable = true,
+            Message = $"Server '{profile.Name}' exited while Palworld Server Manager was restarting; exit code unavailable."
+        };
+        lock (_lifetimeSync) _lastLifetimeResults[profile.Id] = result;
+    }
+
+    private static ProcessDescriptor? ToDescriptor(Process process)
+    {
+        try
+        {
+            if (process.HasExited) return null;
+            string? path;
+            try { path = process.MainModule?.FileName; } catch { path = null; }
+            DateTime? startUtc;
+            try { startUtc = process.StartTime.ToUniversalTime(); } catch { startUtc = null; }
+            return new ProcessDescriptor(process.Id, SafeProcessName(process), path, startUtc);
+        }
+        catch { return null; }
+    }
+
     private async Task MonitorLifetimeAsync(TrackedServerLifetime lifetime)
     {
         var tracked = new Dictionary<int, TrackedProcess>();
@@ -405,6 +512,10 @@ public sealed class ServerProcessService
     private static void AddTrackedProcess(Dictionary<int, TrackedProcess> tracked, Process process)
     {
         if (tracked.ContainsKey(process.Id)) return;
+        // A Process obtained via GetProcessById/GetProcesses (as opposed to one returned by
+        // Process.Start on this object) throws InvalidOperationException from ExitCode after
+        // exit unless EnableRaisingEvents associates full exit-tracking state first.
+        try { process.EnableRaisingEvents = true; } catch { }
         tracked[process.Id] = new TrackedProcess(process, SafeProcessName(process));
     }
 

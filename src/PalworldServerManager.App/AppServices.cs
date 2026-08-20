@@ -25,6 +25,7 @@ public sealed class AppServices
         Diagnostics = new DiagnosticBundleService(Paths, Logger);
         Dashboard = new DashboardService(Paths, Settings, Rest, Processes, Logger);
         Lan = new LanCoordinator(Paths, Registry, Dashboard, Processes, Logger);
+        RuntimeHandoff = new RuntimeHandoffService(Paths, Logger);
     }
 
     public AppPaths Paths { get; }
@@ -43,4 +44,5 @@ public sealed class AppServices
     public DiagnosticBundleService Diagnostics { get; }
     public DashboardService Dashboard { get; }
     public LanCoordinator Lan { get; }
+    public RuntimeHandoffService RuntimeHandoff { get; }
 }
