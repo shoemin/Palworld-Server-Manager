@@ -1,0 +1,4 @@
+# Pinned documentation toolchain. Do not float these to "latest" in CI.
+# Update deliberately, and re-run `mkdocs build --strict` locally before bumping.
+mkdocs==1.6.1
+mkdocs-material==9.7.7

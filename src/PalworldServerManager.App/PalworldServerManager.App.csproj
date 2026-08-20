@@ -11,9 +11,20 @@
     <InformationalVersion>0.3.0</InformationalVersion>
     <AssemblyName>PalworldServerManager</AssemblyName>
     <RootNamespace>PalworldServerManager.App</RootNamespace>
+    <!-- Velopack must run as the very first thing in Main, before any WPF startup overhead,
+         so App.xaml is compiled as a Page (not the SDK's default ApplicationDefinition) and
+         App.xaml.cs supplies its own Main instead of the SDK-generated one. -->
+    <StartupObject>PalworldServerManager.App.App</StartupObject>
   </PropertyGroup>
+  <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
     <ProjectReference Include="..\PalworldServerManager.Lan\PalworldServerManager.Lan.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 </Project>

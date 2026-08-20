@@ -3,6 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:PalworldServerManager.App.Views"
         Title="Palworld Server Manager" Height="760" Width="1240" MinHeight="640" MinWidth="980">
+    <DockPanel>
+    <Menu DockPanel.Dock="Top">
+        <MenuItem Header="_Help">
+            <MenuItem Header="Documentation" Click="OpenDocumentation_Click"/>
+            <MenuItem Header="Troubleshooting" Click="OpenTroubleshooting_Click"/>
+            <Separator/>
+            <MenuItem Header="Report a Bug" Click="OpenReportBug_Click"/>
+        </MenuItem>
+    </Menu>
     <TabControl Margin="8">
         <TabItem Header="Servers">
             <Grid Margin="10">
@@ -101,4 +110,5 @@
             <views:LanView/>
         </TabItem>
     </TabControl>
+    </DockPanel>
 </Window>

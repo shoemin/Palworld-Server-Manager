@@ -13,6 +13,7 @@
         <DockPanel>
             <TextBlock Text="LAN &amp; Transfers" FontSize="24" FontWeight="SemiBold"/>
             <Button DockPanel.Dock="Right" Content="Refresh" Click="Refresh_Click"/>
+            <Button DockPanel.Dock="Right" Content="LAN Help" Click="OpenLanHelp_Click" Margin="0,0,8,0"/>
         </DockPanel>
         <Border Grid.Row="1" BorderBrush="#B0B0B0" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,10,0,10">
             <Grid>
