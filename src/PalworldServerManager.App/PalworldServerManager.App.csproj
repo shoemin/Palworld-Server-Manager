@@ -7,12 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.2.5</Version>
-    <InformationalVersion>0.2.5</InformationalVersion>
+    <Version>0.3.0</Version>
+    <InformationalVersion>0.3.0</InformationalVersion>
     <AssemblyName>PalworldServerManager</AssemblyName>
     <RootNamespace>PalworldServerManager.App</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
+    <ProjectReference Include="..\PalworldServerManager.Lan\PalworldServerManager.Lan.csproj" />
   </ItemGroup>
 </Project>
