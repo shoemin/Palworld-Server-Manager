@@ -68,6 +68,10 @@ nav:
       - guide/lan.md
       - guide/backups.md
       - guide/portable-packages.md
+  - Manager Updates:
+      - manager-updates/index.md
+      - manager-updates/checking-for-updates.md
+      - manager-updates/update-channels.md
   - Reference:
       - reference/file-locations.md
       - reference/ports.md

@@ -1,5 +1,6 @@
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Services;
+using PalworldServerManager.Core.Services.Update;
 using PalworldServerManager.Lan;
 
 namespace PalworldServerManager.App;
@@ -26,6 +27,7 @@ public sealed class AppServices
         Dashboard = new DashboardService(Paths, Settings, Rest, Processes, Logger);
         Lan = new LanCoordinator(Paths, Registry, Dashboard, Processes, Logger);
         RuntimeHandoff = new RuntimeHandoffService(Paths, Logger);
+        Updates = new ApplicationUpdateService(new VelopackUpdateBackend(Logger), Paths, Logger);
     }
 
     public AppPaths Paths { get; }
@@ -45,4 +47,5 @@ public sealed class AppServices
     public DashboardService Dashboard { get; }
     public LanCoordinator Lan { get; }
     public RuntimeHandoffService RuntimeHandoff { get; }
+    public ApplicationUpdateService Updates { get; }
 }

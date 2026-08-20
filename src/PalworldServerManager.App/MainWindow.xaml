@@ -6,6 +6,8 @@
     <DockPanel>
     <Menu DockPanel.Dock="Top">
         <MenuItem Header="_Help">
+            <MenuItem Header="Check for Updates..." Click="OpenUpdates_Click"/>
+            <Separator/>
             <MenuItem Header="Documentation" Click="OpenDocumentation_Click"/>
             <MenuItem Header="Troubleshooting" Click="OpenTroubleshooting_Click"/>
             <Separator/>
