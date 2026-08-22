@@ -1,7 +1,7 @@
 # Manager Updates
 
-!!! warning "Development status: check and download only"
-    As of this page, Palworld Server Manager can **check for** and **download** its own updates from a genuine Setup.exe install, using [Velopack](https://velopack.io). It cannot yet **install** a downloaded update or restart itself to apply one — that is still planned (a future "apply and restart" phase). There is also no published Setup.exe release yet; the installer itself is built and locally verified but not yet attached to GitHub Releases. Nothing below is available to current portable-ZIP users.
+!!! warning "Development status: implemented, not yet field-tested against a real release"
+    Palworld Server Manager can **check for**, **download**, and **install** its own updates from a genuine Setup.exe install, using [Velopack](https://velopack.io) — including restarting itself while a Palworld server keeps running. The code path is complete and covered by automated tests using a synthetic process, but there is **no published Setup.exe release yet** (that's a separate release-pipeline phase) and the real end-to-end "old Manager → new Manager, real Palworld server never interrupted" scenario has not yet been field-tested against an actual published update. Nothing on this page is available to current portable-ZIP users.
 
 ## What exists today
 
@@ -13,13 +13,13 @@ From **Help → Check for Updates...** in the Manager, a dedicated Updates windo
 - The available version, its size, and its release notes, once a check finds one
 - The current update state
 
-You can **Check for Updates** and **Download Update**. Downloading shows live progress and can be canceled mid-download. Once a download finishes, the window says *"Update downloaded and ready to install"* — installing and restarting the Manager to apply it is a future phase, so nothing further happens automatically or from a button here yet.
+You can **Check for Updates** and **Download Update**, with live download progress and cancellation. Once a download finishes, an **Install and Restart** button becomes available — see [Updating while your server is running](update-while-server-running.md) for exactly what that does and does not do.
 
 ## Execution modes
 
 Whether updating is possible at all depends on how this copy of the Manager is running:
 
-| Mode | Meaning | Can check/download? |
+| Mode | Meaning | Can check/download/install? |
 |---|---|---|
 | **Installed** | Installed via a genuine Velopack Setup.exe | Yes |
 | **Portable** | A Velopack-managed portable package (not yet published) | No — would overwrite its own running executable |
@@ -29,9 +29,10 @@ Portable and Development copies show a plain-language explanation in the Updates
 
 ## Safety
 
-Checking for or downloading a Manager update **never** touches a running Palworld server: no save, no shutdown, no force-stop, no SteamCMD update, no backup, and nothing is written to the runtime handoff state used for process reattachment. A Palworld server can be running the entire time you check and download. What happens to it when an update is actually *applied* is a future phase's concern — this page will be updated once that exists.
+Checking for or downloading a Manager update **never** touches a running Palworld server: no save, no shutdown, no force-stop, no SteamCMD update, no backup, and nothing is written to the runtime handoff state used for process reattachment. Installing an update is more involved — see [Updating while your server is running](update-while-server-running.md) for the full guarantee and what can block it.
 
 ## See also
 
 - [Checking for updates](checking-for-updates.md)
 - [Update channels](update-channels.md)
+- [Updating while your server is running](update-while-server-running.md)

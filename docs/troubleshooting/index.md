@@ -40,6 +40,10 @@
 
 **A check fails with a network/GitHub error.** Update checks are anonymous public requests to GitHub; a failure here doesn't affect anything else in the Manager, and you can retry immediately with no cooldown.
 
+**Install and Restart is disabled / explains it's blocked by something.** A running Palworld server never blocks this by itself. What does block it is an active Manager operation — starting/stopping a server, a SteamCMD install/update, a backup/restore, a legacy import, a `.palserver` export/import, a settings save, or an active LAN transfer. The message names exactly which one; finish or cancel it and try again. See [Updating while your server is running](../manager-updates/update-while-server-running.md).
+
+**Install and Restart failed.** The Manager stays on its current version and Palworld is unaffected either way — check the error message and `logs\` for the specific cause (a handoff write failure or an updater launch failure are the two points where this can fail), then retry.
+
 ## Diagnostics
 
 If something doesn't fit the cases above, use **Export Diagnostic Bundle** from the main window. It collects recent Manager/server logs, runtime metadata, and sanitized settings — it never includes `.sav` save files, and passwords/tokens are redacted before anything is written.

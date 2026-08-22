@@ -24,4 +24,4 @@ If you close **only** Palworld Server Manager while a managed server keeps runni
 Once reattached, the server shows as **Running (monitored)** again, Start stays disabled, Safe Stop/Force Stop work normally, and a future crash or manual close is still detected and logged. If Palworld happened to exit during the brief window the Manager was restarting, the status honestly reflects that the exit code could not be recovered, rather than showing a false clean stop.
 
 !!! info "This underlies Manager self-update too"
-    The same reattachment mechanism is what will let a future Manager self-update restart the Manager without disturbing a running Palworld server. A dedicated Manager Updates guide will be added once that feature ships.
+    The same reattachment mechanism is what lets [installing a Manager update](../manager-updates/update-while-server-running.md) restart the Manager without disturbing a running Palworld server.

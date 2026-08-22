@@ -72,6 +72,7 @@ nav:
       - manager-updates/index.md
       - manager-updates/checking-for-updates.md
       - manager-updates/update-channels.md
+      - manager-updates/update-while-server-running.md
   - Reference:
       - reference/file-locations.md
       - reference/ports.md
