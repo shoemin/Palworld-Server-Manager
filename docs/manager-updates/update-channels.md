@@ -2,15 +2,19 @@
 
 The Updates window lets you choose between two channels:
 
-- **Stable** (default) — only fully-released versions.
-- **Prerelease** — may include beta/RC builds, for testers who deliberately opt in.
+- **Stable** — only fully-released versions (tags like `v0.4.0`).
+- **Prerelease** — alpha/beta/RC builds (tags like `v0.4.0-alpha.1`, `v0.4.0-beta.1`, `v0.4.0-rc.1`), for testers who deliberately opt in.
 
 ## How this is enforced
 
-Each channel maps to a distinct Velopack release channel published alongside the build (`win` for Stable, `win-beta` for Prerelease), and Stable checks are additionally restricted to non-prerelease GitHub Releases. Selecting Prerelease does not retroactively make Stable installs see beta builds, and Stable never silently receives a prerelease build.
+Each channel maps to a distinct Velopack release channel packaged and published by the release pipeline (`win` for Stable, `win-beta` for Prerelease), and Stable checks are additionally restricted to non-prerelease GitHub Releases. Selecting Prerelease does not retroactively make Stable installs see beta builds, and Stable never silently receives a prerelease build. The release workflow derives the channel directly from the tag's SemVer prerelease suffix, so this mapping can't drift out of sync between what gets built and what the app expects.
 
-!!! note "Prerelease channel not yet published"
-    The release pipeline does not yet package or publish a `win-beta` channel (that is a future release-integration phase). Selecting Prerelease today will simply find no available update until that exists.
+## Default channel
+
+The very first time the Manager runs with no saved channel preference, it defaults to whichever channel **the installed package itself was actually built for** — installing a `v0.4.0-alpha.1` build (packaged for `win-beta`) starts you on Prerelease, not Stable, so you naturally keep receiving subsequent alpha/beta updates without having to find and flip a setting first. Once you ever explicitly choose a channel in the Updates window, that choice is remembered and always wins from then on, regardless of which package you originally installed.
+
+!!! note "No release published through this pipeline yet"
+    Packaging both channels is implemented and locally verified, but no release has actually been published yet — see [Manager Updates](index.md). Selecting either channel today will simply find no available update until a matching release exists.
 
 ## Switching channels
 

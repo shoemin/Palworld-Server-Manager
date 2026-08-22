@@ -22,7 +22,7 @@ graph TD
 sequenceDiagram
     participant RemoteManager as Remote Manager (paired peer)
     participant HostManager as Host Manager
-    participant PalworldREST as Palworld REST (127.0.0.1 only)
+    participant PalworldREST as Palworld REST (Manager connects via 127.0.0.1)
 
     RemoteManager->>HostManager: Authenticated LAN API request
     HostManager->>PalworldREST: Basic auth (AdminPassword stays local)

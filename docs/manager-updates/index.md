@@ -1,7 +1,7 @@
 # Manager Updates
 
 !!! warning "Development status: implemented, not yet field-tested against a real release"
-    Palworld Server Manager can **check for**, **download**, and **install** its own updates from a genuine Setup.exe install, using [Velopack](https://velopack.io) — including restarting itself while a Palworld server keeps running. The code path is complete and covered by automated tests using a synthetic process, but there is **no published Setup.exe release yet** (that's a separate release-pipeline phase) and the real end-to-end "old Manager → new Manager, real Palworld server never interrupted" scenario has not yet been field-tested against an actual published update. Nothing on this page is available to current portable-ZIP users.
+    Palworld Server Manager can **check for**, **download**, and **install** its own updates from a genuine Setup.exe install, using [Velopack](https://velopack.io) — including restarting itself while a Palworld server keeps running. The GitHub Actions release pipeline that packages and publishes both the `win` (Stable) and `win-beta` (Prerelease) channels is also implemented and locally verified end-to-end. What's still missing is an actual published release: **no Setup.exe has been published yet**, so the real "old Manager → new Manager, real Palworld server never interrupted" scenario has not been field-tested against a real update. Nothing on this page is available to current portable-ZIP users.
 
 ## What exists today
 

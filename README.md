@@ -329,19 +329,7 @@ Download the latest Windows release from the repository's **Releases** page.
 
 Prerelease versions are used while the application is still undergoing significant testing.
 
-The distributed Windows build is intended to be:
-
-* `win-x64`
-* Self-contained
-* Single-file
-
-A self-contained build does not require the user to separately install the .NET runtime.
-
-Extract the release ZIP and run:
-
-```text
-PalworldServerManager.exe
-```
+The self-contained `win-x64` build does not require the user to separately install the .NET runtime. Starting with v0.4.0, releases are packaged with [Velopack](https://velopack.io) and include both a `Setup.exe` per-user installer (installs to its own location, separate from your server data — see the [documentation](https://shoemin.github.io/Palworld-Server-Manager/reference/file-locations/)) and a portable zip you can extract and run `PalworldServerManager.exe` from directly, no install required. See [Manager Updates](https://shoemin.github.io/Palworld-Server-Manager/manager-updates/) for in-app update checking once installed.
 
 ---
 
@@ -458,15 +446,16 @@ The release pipeline performs:
 ```text
 Build
 â†’ Self-tests
+â†’ Documentation strict build
 â†’ Publish
-â†’ Package
+â†’ Velopack package (Setup.exe, update package, portable zip)
 â†’ SHA-256 generation
 â†’ GitHub Release
 ```
 
-Release assets include a Windows ZIP and SHA-256 checksum information.
+A prerelease tag (`-alpha.`, `-beta.`, `-rc.`, ...) packages to the `win-beta` update channel and is published as a GitHub prerelease; a stable tag packages to `win` and is published as a normal release — never mixed. See [Release process](https://shoemin.github.io/Palworld-Server-Manager/developer/release-process/) for the full pipeline detail.
 
-A build or self-test failure prevents the release from being published.
+A build, self-test, or documentation failure prevents the release from being published.
 
 ---
 

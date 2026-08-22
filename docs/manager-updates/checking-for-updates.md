@@ -28,6 +28,6 @@ There is no periodic/automatic background check yet. Every check is user-initiat
 - Your Palworld server is never saved, stopped, force-stopped, or restarted.
 - SteamCMD is never invoked.
 - No backup is taken.
-- No runtime handoff file is written (that mechanism exists for a future apply/restart phase and is currently unused).
+- No runtime handoff file is written — that only happens once you actually click **Install and Restart**, see [Updating while your server is running](update-while-server-running.md).
 
 This holds regardless of whether a managed Palworld server is running at the time.
