@@ -10,18 +10,21 @@ public sealed class ExistingServerImportService
     private readonly ProfileRegistry _registry;
     private readonly SteamCmdService _steamCmd;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
 
-    public ExistingServerImportService(AppPaths paths, ServerDiscoveryService discovery, ProfileRegistry registry, SteamCmdService steamCmd, IAppLogger logger)
+    public ExistingServerImportService(AppPaths paths, ServerDiscoveryService discovery, ProfileRegistry registry, SteamCmdService steamCmd, IAppLogger logger, ICriticalOperationTracker? operations = null)
     {
         _paths = paths;
         _discovery = discovery;
         _registry = registry;
         _steamCmd = steamCmd;
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
     }
 
     public async Task<ServerProfile> ImportAsync(string sourcePath, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.LegacyImport, sourcePath);
         _logger.Info($"Existing-server import analysis started for source '{sourcePath}'.");
         var profiles = await _registry.LoadAsync(cancellationToken);
         var candidate = _discovery.Analyze(sourcePath, profiles);

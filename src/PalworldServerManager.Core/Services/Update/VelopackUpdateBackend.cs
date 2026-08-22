@@ -74,6 +74,19 @@ public sealed class VelopackUpdateBackend : IApplicationUpdateBackend
         await manager.DownloadUpdatesAsync(info, percent => progress.Report(percent), cancellationToken);
     }
 
+    public void BeginApplyAndRestart(ReleaseInfo release)
+    {
+        if (release.BackendToken is not UpdateInfo info)
+            throw new InvalidOperationException("Release was not produced by a check against this backend.");
+
+        var manager = CreateManager(UpdateChannel.Stable); // channel is irrelevant to applying an already-resolved asset
+        _logger.Info($"Launching the external Velopack updater for version {release.Version}. Palworld Server Manager will exit shortly; Palworld is not affected by this call.");
+        // WaitExitThenApplyUpdates (rather than the one-shot ApplyUpdatesAndRestart) launches the
+        // external updater and returns immediately, leaving this process's own shutdown sequence
+        // (stopping LAN/Dashboard, then exiting) fully under our control instead of Velopack's.
+        manager.WaitExitThenApplyUpdates(info.TargetFullRelease, silent: false, restart: true, restartArgs: []);
+    }
+
     private UpdateManager CreateManager(UpdateChannel channel)
     {
         var source = new GithubSource(RepoUrl, accessToken: null, prerelease: channel == UpdateChannel.Prerelease);

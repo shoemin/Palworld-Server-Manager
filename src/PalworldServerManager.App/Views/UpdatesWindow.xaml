@@ -71,6 +71,7 @@
                 <Button x:Name="CheckButton" Content="Check for Updates" Click="Check_Click"/>
                 <Button x:Name="DownloadButton" Content="Download Update" Click="Download_Click"/>
                 <Button x:Name="CancelDownloadButton" Content="Cancel Download" Click="CancelDownload_Click" Visibility="Collapsed"/>
+                <Button x:Name="InstallButton" Content="Install and Restart" Click="Install_Click" Visibility="Collapsed" FontWeight="SemiBold"/>
                 <Button Content="Close" IsCancel="True"/>
             </StackPanel>
         </StackPanel>

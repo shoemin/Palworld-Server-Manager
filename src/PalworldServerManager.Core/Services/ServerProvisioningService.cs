@@ -11,18 +11,21 @@ public sealed class ServerProvisioningService
     private readonly PalworldSettingsService _settings;
     private readonly ProfileRegistry _registry;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
 
-    public ServerProvisioningService(AppPaths paths, SteamCmdService steamCmd, PalworldSettingsService settings, ProfileRegistry registry, IAppLogger logger)
+    public ServerProvisioningService(AppPaths paths, SteamCmdService steamCmd, PalworldSettingsService settings, ProfileRegistry registry, IAppLogger logger, ICriticalOperationTracker? operations = null)
     {
         _paths = paths;
         _steamCmd = steamCmd;
         _settings = settings;
         _registry = registry;
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
     }
 
     public async Task<ServerProfile> CreateAsync(string name, int gamePort, int restPort, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.SteamCmdProvision, name);
         _logger.Info($"New managed-server creation requested. Name='{name}' GamePort={gamePort} RestPort={restPort}.");
         var id = Guid.NewGuid();
         var installPath = Path.Combine(_paths.ServersRoot, id.ToString("D"), "PalServer");
@@ -55,6 +58,7 @@ public sealed class ServerProvisioningService
 
     public async Task UpdateAsync(ServerProfile profile, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.SteamCmdProvision, profile.Name);
         _logger.Info($"Server update/validation requested for '{profile.Name}'.");
         await _steamCmd.InstallOrUpdatePalworldAsync(profile.InstallPath, progress, cancellationToken);
         _logger.Info($"Server update/validation completed for '{profile.Name}'.");

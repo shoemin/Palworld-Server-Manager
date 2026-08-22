@@ -1,20 +1,26 @@
 using System.Text.Json;
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
+using PalworldServerManager.Core.Services;
 
 namespace PalworldServerManager.Core.Services.Update;
 
 /// <summary>
-/// Coordinates checking for and downloading a Manager update. Deliberately stops at
-/// ReadyToInstall - applying an update and restarting the Manager (runtime handoff, critical-
-/// operation gating, LAN shutdown, process reattachment) is 4E and is not implemented here.
-/// This service never references ServerProcessService or RuntimeHandoffService, so it is
-/// structurally incapable of touching Palworld's process lifetime or writing handoff state.
+/// Coordinates checking for, downloading, and applying a Manager update. Check/download never
+/// touch Palworld or write a runtime handoff. Applying does, but only via this service's own
+/// orchestration: it never calls ServerProcessService.StartAsync/StopAsync (only the read-only
+/// ServerProcessService.BuildHandoffRecord) and never talks to Palworld's REST API directly -
+/// this service has no PalworldRestClient dependency at all, structurally, so it cannot save,
+/// shut down, or otherwise interact with a running Palworld server no matter what apply does.
 /// </summary>
 public sealed class ApplicationUpdateService
 {
     private readonly IApplicationUpdateBackend _backend;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
+    private readonly ProfileRegistry _registry;
+    private readonly ServerProcessService _processes;
+    private readonly RuntimeHandoffService _handoff;
     private readonly string _preferencesFile;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _sync = new();
@@ -27,13 +33,35 @@ public sealed class ApplicationUpdateService
     private int _downloadPercent;
     private UpdateChannel _channel;
 
-    public ApplicationUpdateService(IApplicationUpdateBackend backend, AppPaths paths, IAppLogger logger)
+    public ApplicationUpdateService(
+        IApplicationUpdateBackend backend,
+        AppPaths paths,
+        IAppLogger logger,
+        ICriticalOperationTracker operations,
+        ProfileRegistry registry,
+        ServerProcessService processes,
+        RuntimeHandoffService handoff)
     {
         _backend = backend;
         _logger = logger;
+        _operations = operations;
+        _registry = registry;
+        _processes = processes;
+        _handoff = handoff;
         _preferencesFile = Path.Combine(paths.Root, "update-preferences.json");
         (_channel, _lastCheckedUtc) = LoadPreferences();
     }
+
+    /// <summary>
+    /// Invoked immediately before the process exits to apply an update, so the App layer can
+    /// stop Manager-only background services (the LAN Kestrel host and UDP discovery) that
+    /// cannot survive process exit cleanly. Must never touch Palworld. A failure here is logged
+    /// and otherwise ignored - it cannot corrupt state and must not block the update.
+    /// </summary>
+    public Func<CancellationToken, Task>? PreRestartShutdownAsync { get; set; }
+
+    /// <summary>Invoked if an apply attempt fails after PreRestartShutdownAsync already ran, so those services can be resumed rather than left down for a version that never actually updates.</summary>
+    public Func<CancellationToken, Task>? PostFailureRecoveryAsync { get; set; }
 
     public event EventHandler? StatusChanged;
 
@@ -181,6 +209,140 @@ public sealed class ApplicationUpdateService
         {
             _gate.Release();
         }
+    }
+
+    /// <summary>
+    /// Non-committing check for UI purposes (button enable state / an explanatory message).
+    /// Returns null when apply currently looks possible. This is advisory only - the real,
+    /// race-safe check happens atomically inside ApplyAndRestartAsync via
+    /// ICriticalOperationTracker.TryBeginShutdown, since a critical operation could start in the
+    /// gap between this call returning and the user clicking Install and Restart.
+    /// </summary>
+    public string? GetApplyBlockReason()
+    {
+        UpdateState state;
+        lock (_sync) state = _state;
+        if (state != UpdateState.ReadyToInstall)
+            return "No update is currently downloaded and ready to install.";
+        if (_operations.IsBusy)
+            return "Palworld Server Manager is busy: " + string.Join(", ", _operations.ActiveOperations) + ". Finish or cancel this before installing the Manager update.";
+        return null;
+    }
+
+    /// <summary>
+    /// Applies the downloaded update and restarts the Manager. A running Palworld server is
+    /// never affected: this writes a runtime handoff describing whatever managed servers are
+    /// currently running (so the restarted Manager can reattach), asks the App layer to stop
+    /// Manager-only background services, then hands off to the external Velopack updater and
+    /// returns - the caller is responsible for exiting the process immediately afterward on
+    /// success. Blocked by any active critical Manager operation (never by a running server
+    /// alone), and the block is enforced atomically so a new operation cannot slip in between
+    /// the check and the actual shutdown commitment.
+    /// </summary>
+    public async Task<OperationResult> ApplyAndRestartAsync(CancellationToken cancellationToken = default)
+    {
+        if (!await _gate.WaitAsync(0, cancellationToken))
+            return OperationResult.Fail("Another update operation is already in progress.");
+
+        var shutdownCommitted = false;
+        var preRestartShutdownRan = false;
+        try
+        {
+            ReleaseInfo? release;
+            UpdateState state;
+            lock (_sync) { release = _availableRelease; state = _state; }
+
+            if (release is null || state != UpdateState.ReadyToInstall)
+                return OperationResult.Fail("No update is currently downloaded and ready to install.");
+
+            if (!_operations.TryBeginShutdown(out var blockReason))
+            {
+                _logger.Warning($"Update apply blocked: {blockReason}");
+                return OperationResult.Fail(blockReason ?? "Palworld Server Manager is busy with another operation.");
+            }
+            shutdownCommitted = true;
+
+            SetState(UpdateState.Applying);
+            _logger.Info($"Beginning update apply for version {release.Version}.");
+
+            var profiles = await _registry.LoadAsync(cancellationToken);
+            var handoffDocument = BuildHandoff(profiles, release.Version);
+
+            try
+            {
+                await _handoff.WriteAsync(handoffDocument, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Could not write the runtime handoff; aborting the update apply. Palworld Server Manager remains on the current version and Palworld is unaffected.", ex);
+                return Abort(ex.Message);
+            }
+
+            if (PreRestartShutdownAsync is not null)
+            {
+                try
+                {
+                    await PreRestartShutdownAsync(cancellationToken);
+                    preRestartShutdownRan = true;
+                }
+                catch (Exception ex)
+                {
+                    // Non-fatal by design: a LAN host that doesn't stop cleanly cannot corrupt
+                    // state and cannot affect Palworld, and it will tear down with the process
+                    // moments later regardless. Blocking the update on this would be worse.
+                    _logger.Warning($"A Manager-only background service did not stop cleanly before restart; continuing anyway. {ex.Message}");
+                    preRestartShutdownRan = true;
+                }
+            }
+
+            try
+            {
+                _backend.BeginApplyAndRestart(release);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Could not hand off to the external updater; the update was not applied. Palworld Server Manager remains on the current version and Palworld is unaffected.", ex);
+                if (preRestartShutdownRan && PostFailureRecoveryAsync is not null)
+                {
+                    try { await PostFailureRecoveryAsync(CancellationToken.None); }
+                    catch (Exception recoveryEx) { _logger.Warning($"Could not resume Manager-only services after a failed update apply: {recoveryEx.Message}"); }
+                }
+                return Abort(ex.Message);
+            }
+
+            _logger.Info($"Handed off to the external updater for version {release.Version}. Palworld Server Manager will exit shortly to complete the update.");
+            _operations.CommitShutdown();
+            return OperationResult.Ok("Update handed off to the installer. Palworld Server Manager will now close and reopen.");
+
+            OperationResult Abort(string reason)
+            {
+                if (shutdownCommitted) _operations.CancelShutdown();
+                lock (_sync) _errorMessage = "Could not apply the update: " + reason;
+                SetState(UpdateState.ReadyToInstall);
+                return OperationResult.Fail("Could not apply the update: " + reason);
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private RuntimeHandoffDocument BuildHandoff(IReadOnlyList<ServerProfile> profiles, string targetVersion)
+    {
+        var servers = new List<RuntimeHandoffServerRecord>();
+        foreach (var profile in profiles)
+        {
+            var record = _processes.BuildHandoffRecord(profile);
+            if (record is not null) servers.Add(record);
+        }
+
+        return new RuntimeHandoffDocument
+        {
+            OldManagerVersion = _backend.CurrentVersion,
+            TargetManagerVersion = targetVersion,
+            Servers = servers
+        };
     }
 
     private void SetState(UpdateState state)

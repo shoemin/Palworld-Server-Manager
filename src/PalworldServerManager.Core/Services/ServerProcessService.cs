@@ -9,17 +9,19 @@ public sealed class ServerProcessService
     private readonly PalworldSettingsService _settings;
     private readonly PalworldRestClient _rest;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
     private readonly object _lifetimeSync = new();
     private readonly Dictionary<Guid, TrackedServerLifetime> _trackedLifetimes = [];
     private readonly Dictionary<Guid, ServerProcessLifetimeEndedEventArgs> _lastLifetimeResults = [];
     private readonly HashSet<Guid> _expectedStops = [];
     private readonly SemaphoreSlim _startGate = new(1, 1);
 
-    public ServerProcessService(PalworldSettingsService settings, PalworldRestClient rest, IAppLogger logger)
+    public ServerProcessService(PalworldSettingsService settings, PalworldRestClient rest, IAppLogger logger, ICriticalOperationTracker? operations = null)
     {
         _settings = settings;
         _rest = rest;
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
     }
 
     public event EventHandler<ServerProcessLifetimeEndedEventArgs>? ServerLifetimeEnded;
@@ -59,6 +61,7 @@ public sealed class ServerProcessService
         if (!OperatingSystem.IsWindows()) return OperationResult.Fail("Palworld server launching is supported on Windows only.");
         if (!File.Exists(profile.ExecutablePath)) return OperationResult.Fail("PalServer.exe was not found. Install/update this server first.");
 
+        using var operationLease = _operations.Begin(CriticalOperationKind.ServerStart, profile.Name);
         await _startGate.WaitAsync(cancellationToken);
         try
         {
@@ -149,6 +152,7 @@ public sealed class ServerProcessService
             return OperationResult.Ok("Server is already stopped.");
         }
 
+        using var operationLease = _operations.Begin(force ? CriticalOperationKind.ServerForceStop : CriticalOperationKind.ServerSafeStop, profile.Name);
         LogDetectedProcesses(profile, "before stop");
         var ownsLifetime = HasTrackedLifetime(profile.Id);
         if (ownsLifetime) MarkExpectedStop(profile.Id);
@@ -324,6 +328,42 @@ public sealed class ServerProcessService
             Message = $"Server '{profile.Name}' exited while Palworld Server Manager was restarting; exit code unavailable."
         };
         lock (_lifetimeSync) _lastLifetimeResults[profile.Id] = result;
+    }
+
+    /// <summary>
+    /// Builds a runtime-handoff record from whatever PalServer processes are physically running
+    /// for this profile right now (a live scan, not the in-memory tracked-lifetime set - correct
+    /// whether the server was launched by this Manager, reattached, or never tracked at all).
+    /// Returns null if nothing is running. Read-only: never starts, stops, or signals anything.
+    /// </summary>
+    public RuntimeHandoffServerRecord? BuildHandoffRecord(ServerProfile profile)
+    {
+        var processes = ProcessInspection.FindPalServerProcesses(profile.InstallPath);
+        try
+        {
+            var records = new List<RuntimeHandoffProcessRecord>();
+            foreach (var process in processes)
+            {
+                if (ToDescriptor(process) is not { } descriptor) continue;
+                records.Add(new RuntimeHandoffProcessRecord
+                {
+                    ProcessId = descriptor.ProcessId,
+                    ProcessName = descriptor.ProcessName,
+                    ExecutablePath = descriptor.ExecutablePath,
+                    StartTimeUtc = descriptor.StartTimeUtc
+                });
+            }
+
+            if (records.Count == 0) return null;
+            return new RuntimeHandoffServerRecord
+            {
+                ProfileId = profile.Id,
+                ProfileName = profile.Name,
+                InstallPath = profile.InstallPath,
+                Processes = records
+            };
+        }
+        finally { foreach (var process in processes) process.Dispose(); }
     }
 
     private static ProcessDescriptor? ToDescriptor(Process process)

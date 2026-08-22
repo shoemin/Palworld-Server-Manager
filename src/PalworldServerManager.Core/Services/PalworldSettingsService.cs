@@ -6,10 +6,12 @@ namespace PalworldServerManager.Core.Services;
 public sealed class PalworldSettingsService
 {
     private readonly IAppLogger? _logger;
+    private readonly ICriticalOperationTracker _operations;
 
-    public PalworldSettingsService(IAppLogger? logger = null)
+    public PalworldSettingsService(IAppLogger? logger = null, ICriticalOperationTracker? operations = null)
     {
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
     }
 
     public Task<List<SettingEditorItem>> LoadForEditingAsync(ServerProfile profile)
@@ -47,6 +49,7 @@ public sealed class PalworldSettingsService
 
     public Task SaveAsync(ServerProfile profile, IEnumerable<SettingEditorItem> items)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.SettingsWrite, profile.Name);
         EnsureActiveConfig(profile);
         var materialized = items.ToList();
         var doc = PalworldConfigParser.Load(profile.SettingsPath);

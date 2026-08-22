@@ -16,4 +16,12 @@ public interface IApplicationUpdateBackend
 
     /// <summary>Downloads/stages the given release. Must not apply it or restart the application.</summary>
     Task DownloadUpdatesAsync(ReleaseInfo release, IProgress<int> progress, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Launches the external updater, which will wait briefly for this process to exit on its
+    /// own before applying the staged release and restarting. Returns once the updater has been
+    /// launched - it does NOT itself exit this process. The caller must finish its own graceful
+    /// shutdown and then exit immediately afterward.
+    /// </summary>
+    void BeginApplyAndRestart(ReleaseInfo release);
 }
