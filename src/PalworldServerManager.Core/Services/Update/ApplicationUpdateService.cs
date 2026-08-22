@@ -382,9 +382,14 @@ public sealed class ApplicationUpdateService
     {
         try
         {
-            if (!File.Exists(_preferencesFile)) return (UpdateChannel.Stable, null);
+            // No preference has ever been explicitly saved: pick a sensible initial channel from
+            // the package actually installed (e.g. a v0.4.0-alpha.1 install built for win-beta
+            // should default to Prerelease, not silently start checking the wrong channel and
+            // never surface its own subsequent alpha/beta updates) rather than hardcoding Stable.
+            // Once a preference IS saved (below), it is always respected as-is from then on.
+            if (!File.Exists(_preferencesFile)) return (InitialChannel(), null);
             var doc = JsonSerializer.Deserialize<UpdatePreferencesDocument>(File.ReadAllText(_preferencesFile), _json);
-            if (doc is null) return (UpdateChannel.Stable, null);
+            if (doc is null) return (InitialChannel(), null);
             return (doc.Channel, doc.LastSuccessfulCheckUtc);
         }
         catch (Exception ex)
@@ -392,6 +397,13 @@ public sealed class ApplicationUpdateService
             _logger.Warning($"Could not read update preferences; defaulting to Stable. {ex.Message}");
             return (UpdateChannel.Stable, null);
         }
+    }
+
+    private UpdateChannel InitialChannel()
+    {
+        var channel = _backend.InstalledChannel ?? UpdateChannel.Stable;
+        _logger.Info($"No saved update-channel preference found; defaulting to {channel} based on the installed package.");
+        return channel;
     }
 
     private void SavePreferences()

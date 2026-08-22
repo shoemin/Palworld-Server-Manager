@@ -1,6 +1,7 @@
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
 using Velopack;
+using Velopack.Locators;
 using Velopack.Sources;
 
 namespace PalworldServerManager.Core.Services.Update;
@@ -29,11 +30,13 @@ public sealed class VelopackUpdateBackend : IApplicationUpdateBackend
         var probe = CreateManager(UpdateChannel.Stable);
         ExecutionMode = UpdateExecutionModeDetector.Detect(probe.IsInstalled, probe.IsPortable, AppContext.BaseDirectory);
         CurrentVersion = ReadCurrentVersion(probe);
-        _logger.Info($"Update backend initialized. ExecutionMode={ExecutionMode} CurrentVersion={CurrentVersion}.");
+        InstalledChannel = ReadInstalledChannel();
+        _logger.Info($"Update backend initialized. ExecutionMode={ExecutionMode} CurrentVersion={CurrentVersion} InstalledChannel={(InstalledChannel is { } c ? ChannelName(c) : "unknown")}.");
     }
 
     public UpdateExecutionMode ExecutionMode { get; }
     public string CurrentVersion { get; }
+    public UpdateChannel? InstalledChannel { get; }
 
     public async Task<UpdateCheckResult> CheckForUpdatesAsync(UpdateChannel channel, CancellationToken cancellationToken)
     {
@@ -99,6 +102,29 @@ public sealed class VelopackUpdateBackend : IApplicationUpdateBackend
     }
 
     private static string ChannelName(UpdateChannel channel) => channel == UpdateChannel.Prerelease ? PrereleaseChannel : StableChannel;
+
+    /// <summary>
+    /// Reads the channel this specific package was actually built for from Velopack's own
+    /// ambient locator (set process-wide by VelopackApp.Build().Run() at startup, before this
+    /// class is ever constructed) - not from anything this Manager decided. Returns null when
+    /// there's no locator to ask (Development mode) or its channel name isn't one of ours.
+    /// </summary>
+    private UpdateChannel? ReadInstalledChannel()
+    {
+        try
+        {
+            if (!VelopackLocator.IsCurrentSet) return null;
+            var channel = VelopackLocator.Current.Channel;
+            if (string.Equals(channel, PrereleaseChannel, StringComparison.OrdinalIgnoreCase)) return UpdateChannel.Prerelease;
+            if (string.Equals(channel, StableChannel, StringComparison.OrdinalIgnoreCase)) return UpdateChannel.Stable;
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning($"Could not read the installed package's Velopack channel: {ex.Message}");
+            return null;
+        }
+    }
 
     private string ReadCurrentVersion(UpdateManager manager)
     {

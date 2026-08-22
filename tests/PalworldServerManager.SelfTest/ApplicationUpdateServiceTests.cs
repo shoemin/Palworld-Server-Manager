@@ -88,6 +88,53 @@ internal static class ApplicationUpdateServiceTests
         });
     }
 
+    public static async Task TestFreshInstallDefaultsChannelFromTheInstalledPackage()
+    {
+        // A package that was itself built and installed from the win-beta channel (e.g. a
+        // v0.4.0-alpha.1 Setup.exe) must default to checking Prerelease, not silently start on
+        // Stable and never surface its own subsequent alpha/beta updates.
+        await WithTempPaths(paths =>
+        {
+            var logger = new FileLogger(paths);
+            var backend = new FakeUpdateBackend { ExecutionMode = UpdateExecutionMode.Installed, InstalledChannel = UpdateChannel.Prerelease };
+            var service = CreateService(backend, paths, logger);
+            Equal(UpdateChannel.Prerelease, service.Status.Channel);
+            return Task.CompletedTask;
+        });
+    }
+
+    public static async Task TestFreshInstallDefaultsToStableWhenInstalledChannelIsUnknown()
+    {
+        await WithTempPaths(paths =>
+        {
+            var logger = new FileLogger(paths);
+            var backend = new FakeUpdateBackend { ExecutionMode = UpdateExecutionMode.Installed, InstalledChannel = null };
+            var service = CreateService(backend, paths, logger);
+            Equal(UpdateChannel.Stable, service.Status.Channel);
+            return Task.CompletedTask;
+        });
+    }
+
+    public static async Task TestExplicitlySavedChannelPreferenceOverridesTheInstalledPackageOnReload()
+    {
+        // Once a user has ever explicitly chosen a channel, that choice must always win over
+        // re-deriving from the installed package - otherwise switching channels would be
+        // pointless if the installed package itself never changes.
+        await WithTempPaths(paths =>
+        {
+            var logger = new FileLogger(paths);
+            var backend = new FakeUpdateBackend { ExecutionMode = UpdateExecutionMode.Installed, InstalledChannel = UpdateChannel.Prerelease };
+            var service = CreateService(backend, paths, logger);
+            Equal(UpdateChannel.Prerelease, service.Status.Channel); // derived default
+
+            service.SetChannel(UpdateChannel.Stable); // user explicitly opts back into Stable
+
+            var reloaded = CreateService(backend, paths, logger); // e.g. after a Manager restart; same installed package (still win-beta)
+            Equal(UpdateChannel.Stable, reloaded.Status.Channel);
+            return Task.CompletedTask;
+        });
+    }
+
     public static async Task TestChangingChannelInvalidatesCachedAvailability()
     {
         await WithService(UpdateExecutionMode.Installed, async (service, backend) =>
@@ -758,6 +805,7 @@ internal static class ApplicationUpdateServiceTests
     {
         public UpdateExecutionMode ExecutionMode { get; set; } = UpdateExecutionMode.Installed;
         public string CurrentVersion { get; set; } = "0.3.0";
+        public UpdateChannel? InstalledChannel { get; set; }
         public Func<UpdateChannel, CancellationToken, Task<UpdateCheckResult>>? OnCheck { get; set; }
         public Func<ReleaseInfo, IProgress<int>, CancellationToken, Task>? OnDownload { get; set; }
         public Action<ReleaseInfo>? OnApply { get; set; }

@@ -7,12 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing tag to build/release, for example v0.2.5-beta.1
+        description: Existing tag to build/release, for example v0.4.0-alpha.1
         required: true
         type: string
 
 permissions:
   contents: write
+
+env:
+  PACK_ID: ShoeMin.PalworldServerManager
+  REPO_URL: https://github.com/${{ github.repository }}
 
 jobs:
   release:
@@ -21,7 +25,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Resolve release tag
+      - name: Resolve release tag, version, and channel
         id: release_info
         shell: pwsh
         run: |
@@ -31,20 +35,28 @@ jobs:
               '${{ github.ref_name }}'
           }
 
+          # SemVer-ish: v0.4.0, v0.4.0-alpha.1, v0.4.0-beta.1, v0.4.0-rc.1
           if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$') {
-              throw "Release tag '$tag' is not supported. Use SemVer-style tags such as v0.2.5, v0.2.5-beta.1, or v1.0.0-rc.1."
+              throw "Release tag '$tag' is not supported. Use SemVer-style tags such as v0.4.0, v0.4.0-alpha.1, or v0.4.0-rc.1."
           }
 
           $version = $Matches.version
-          $isPrerelease = $version.Contains('-').ToString().ToLowerInvariant()
+          $isPrerelease = $version.Contains('-')
+          # Stable tags pack to the 'win' channel; any prerelease suffix (-alpha., -beta., -rc., ...)
+          # packs to 'win-beta'. This must exactly match ApplicationUpdateService/VelopackUpdateBackend's
+          # channel names (see src/PalworldServerManager.Core/Services/Update/VelopackUpdateBackend.cs) -
+          # a stable build must never be packed to win-beta, and vice versa.
+          $channel = if ($isPrerelease) { 'win-beta' } else { 'win' }
 
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "version=$version" >> $env:GITHUB_OUTPUT
-          "is_prerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+          "is_prerelease=$($isPrerelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "channel=$channel" >> $env:GITHUB_OUTPUT
 
           Write-Host "Release tag: $tag"
-          Write-Host "Assembly/package version: $version"
+          Write-Host "Package version: $version"
           Write-Host "GitHub prerelease: $isPrerelease"
+          Write-Host "Velopack channel: $channel"
 
       - name: Check out tagged source
         uses: actions/checkout@v7
@@ -54,6 +66,7 @@ jobs:
           persist-credentials: false
 
       - name: Verify tag points at checked-out commit
+        id: verify_tag
         shell: pwsh
         run: |
           $expected = git rev-list -n 1 '${{ steps.release_info.outputs.tag }}'
@@ -61,6 +74,7 @@ jobs:
           if ($expected -ne $actual) {
               throw "Tag verification failed. Tag points to $expected but checkout is $actual."
           }
+          "commit_sha=$actual" >> $env:GITHUB_OUTPUT
           Write-Host "Verified tag ${{ steps.release_info.outputs.tag }} at $actual"
 
       - name: Set up .NET from global.json
@@ -68,62 +82,154 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Restore pinned dotnet tools (vpk)
+        shell: pwsh
+        run: dotnet tool restore
+
       - name: Build and run self-tests
         shell: pwsh
         run: .\scripts\build.ps1
 
-      - name: Publish self-contained win-x64 application
+      - name: Set up Python for documentation validation
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Validate documentation (strict) as a release gate
         shell: pwsh
         run: |
-          .\scripts\publish.ps1 `
-            -Output "$PWD\release-work\publish" `
-            -Version '${{ steps.release_info.outputs.version }}'
+          pip install -r docs\requirements.txt
+          mkdocs build --strict
 
-      - name: Package release assets
-        id: package
+      - name: Publish self-contained win-x64 application for packaging
+        shell: pwsh
+        run: |
+          # Not single-file: Velopack needs individual files to diff for delta packages and to
+          # apply its own bootstrap/shim correctly. This is a different publish shape than the
+          # plain single-file exe scripts\publish.ps1 produces (that script is unrelated to
+          # Velopack packaging and remains available for a manual non-installer build).
+          dotnet publish src\PalworldServerManager.App\PalworldServerManager.App.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:Version='${{ steps.release_info.outputs.version }}' `
+            -p:InformationalVersion='${{ steps.release_info.outputs.version }}' `
+            -o release-work\publish
+
+      - name: Write release notes
+        id: notes
+        shell: pwsh
+        run: |
+          $version = '${{ steps.release_info.outputs.version }}'
+          $isPrerelease = '${{ steps.release_info.outputs.is_prerelease }}' -eq 'true'
+          $notesPath = Join-Path $PWD 'release-work\release-notes.md'
+          New-Item -ItemType Directory -Force -Path (Split-Path $notesPath) | Out-Null
+
+          $lines = New-Object System.Collections.Generic.List[string]
+          if ($isPrerelease) {
+              $lines.Add('> **This is an experimental prerelease build for testing.** It is not recommended for production Palworld servers. Back up server data independently before using it.')
+              $lines.Add('')
+          }
+          $lines.Add("Palworld Server Manager $version")
+          $lines.Add('')
+          $lines.Add('- Setup.exe installer (per-user) and a portable Velopack package, alongside the existing native Dashboard.')
+          $lines.Add('- LAN discovery, pairing, remote Dashboard, and .palserver transfer between paired Manager instances.')
+          $lines.Add('- Manager process reattachment: closing/restarting the Manager does not lose track of a running Palworld server.')
+          $lines.Add('- In-app update checking, downloading, and Install and Restart, designed so a running Palworld server is never saved, stopped, or restarted by a Manager update.')
+          $lines.Add('')
+          $lines.Add('**Designed and automated-tested; real running-Palworld self-update field validation is still pending.** See the project documentation for the exact field-test plan before this is considered field-proven.')
+
+          $lines -join "`n" | Set-Content -Path $notesPath -Encoding utf8
+          "notes_path=$notesPath" >> $env:GITHUB_OUTPUT
+          Write-Host (Get-Content $notesPath -Raw)
+
+      - name: Download previous release of this channel (for delta packages)
+        id: download_previous
+        shell: pwsh
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path release-work\velopack | Out-Null
+          dotnet vpk download github `
+            --repoUrl $env:REPO_URL `
+            --channel '${{ steps.release_info.outputs.channel }}' `
+            --outputDir release-work\velopack `
+            --token $env:GH_TOKEN
+          if ($LASTEXITCODE -ne 0) { throw "vpk download exited with code $LASTEXITCODE" }
+
+      - name: Report delta package availability
+        shell: pwsh
+        run: |
+          if ('${{ steps.download_previous.outcome }}' -eq 'success') {
+              Write-Host "Previous '${{ steps.release_info.outputs.channel }}' release downloaded; vpk pack will generate a delta package."
+          } else {
+              Write-Host "No previous '${{ steps.release_info.outputs.channel }}' release found (or download failed) - this is expected for the first release on this channel. Packaging continues with a full package only; this is not a failure."
+          }
+
+      - name: Pack Velopack release
+        shell: pwsh
+        run: |
+          dotnet vpk pack `
+            --packId $env:PACK_ID `
+            --packVersion '${{ steps.release_info.outputs.version }}' `
+            --channel '${{ steps.release_info.outputs.channel }}' `
+            --packDir release-work\publish `
+            --packTitle "Palworld Server Manager" `
+            --packAuthors shoemin `
+            --mainExe PalworldServerManager.exe `
+            --runtime win-x64 `
+            --instLocation PerUser `
+            --releaseNotes '${{ steps.notes.outputs.notes_path }}' `
+            --outputDir release-work\velopack
+          if ($LASTEXITCODE -ne 0) { throw "vpk pack exited with code $LASTEXITCODE" }
+
+      - name: Verify required release assets were produced
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $version = '${{ steps.release_info.outputs.version }}'
-          $stageRoot = Join-Path $PWD 'release-work\stage'
-          $appDir = Join-Path $stageRoot 'PalworldServerManager'
-          $assetsDir = Join-Path $PWD 'release-assets'
-
-          Remove-Item $stageRoot -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item $assetsDir -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force -Path $appDir, $assetsDir | Out-Null
-
-          $exe = Join-Path $PWD 'release-work\publish\PalworldServerManager.exe'
-          if (-not (Test-Path $exe)) {
-              throw "Published executable was not found at '$exe'."
+          $channel = '${{ steps.release_info.outputs.channel }}'
+          $dir = 'release-work\velopack'
+          # Asset filenames are suffixed with the actual channel (e.g. "-win-beta-Setup.exe" for
+          # a prerelease, not "-win-Setup.exe") - verified locally with a real vpk pack run
+          # against the win-beta channel before trusting this in CI.
+          $required = @(
+              "$env:PACK_ID-$channel-Setup.exe",
+              "$env:PACK_ID-$channel-Portable.zip",
+              "releases.$channel.json"
+          )
+          $missing = $required | Where-Object { -not (Test-Path (Join-Path $dir $_)) }
+          if ($missing) {
+              throw "Release packaging did not produce required asset(s): $($missing -join ', ')"
           }
+          $fullNupkg = Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-full.nupkg"
+          if (-not $fullNupkg) {
+              throw "Release packaging did not produce a -full.nupkg asset."
+          }
+          Write-Host "All required release assets are present:"
+          Get-ChildItem $dir | ForEach-Object { Write-Host " - $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
 
-          Copy-Item $exe $appDir
-          Copy-Item '.\README.md' $appDir
-          Copy-Item '.\LICENSE' $appDir
-          Copy-Item '.\CHANGELOG.md' $appDir
-
-          $zipName = "PalworldServerManager-v$version-win-x64.zip"
-          $zipPath = Join-Path $assetsDir $zipName
-          Compress-Archive -Path (Join-Path $appDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
-
-          $hash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
-          $checksumName = 'SHA256SUMS.txt'
-          $checksumPath = Join-Path $assetsDir $checksumName
-          "$hash  $zipName" | Set-Content -Path $checksumPath -Encoding ascii
-
-          "zip_path=$zipPath" >> $env:GITHUB_OUTPUT
+      - name: Generate SHA-256 checksums
+        id: checksums
+        shell: pwsh
+        run: |
+          $dir = 'release-work\velopack'
+          $checksumPath = Join-Path $dir 'SHA256SUMS.txt'
+          $lines = Get-ChildItem -Path $dir -File |
+              Sort-Object Name |
+              ForEach-Object {
+                  $hash = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+                  "$hash  $($_.Name)"
+              }
+          $lines | Set-Content -Path $checksumPath -Encoding ascii
           "checksum_path=$checksumPath" >> $env:GITHUB_OUTPUT
-          "zip_name=$zipName" >> $env:GITHUB_OUTPUT
-
-          Write-Host "Created $zipPath"
-          Write-Host "SHA-256: $hash"
+          Write-Host (Get-Content $checksumPath -Raw)
 
       - name: Upload packaged assets to workflow run
         uses: actions/upload-artifact@v7
         with:
           name: release-assets-${{ steps.release_info.outputs.tag }}
-          path: release-assets/*
+          path: release-work/velopack/*
           if-no-files-found: error
           retention-days: 30
 
@@ -136,38 +242,42 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Create or update GitHub Release
+      # vpk upload github is the single authority that creates/updates the GitHub Release: it
+      # uploads the Setup.exe, full (and delta, if present) nupkg, portable zip, and the channel
+      # feed json, and --merge lets a re-run of an existing tag add to that same release instead
+      # of racing a separate `gh release create` for ownership of it. SHA256SUMS.txt is not a
+      # Velopack asset, so it's attached afterward with a plain `gh release upload` against the
+      # release vpk just created - one authority for creation, a simple follow-up for the one
+      # extra file, never two things trying to create the release.
+      - name: Publish release via Velopack (single release authority)
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $tag = '${{ steps.release_info.outputs.tag }}'
-          $zip = '${{ steps.package.outputs.zip_path }}'
-          $checksum = '${{ steps.package.outputs.checksum_path }}'
-          $title = "Palworld Server Manager $tag"
-          $prerelease = '${{ steps.release_info.outputs.is_prerelease }}' -eq 'true'
-
-          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
-          if ($LASTEXITCODE -eq 0) {
-              Write-Host "Release $tag already exists; replacing generated assets."
-              gh release upload $tag $zip $checksum --clobber --repo $env:GITHUB_REPOSITORY
-              if ($LASTEXITCODE -ne 0) { throw "gh release upload failed with exit code $LASTEXITCODE." }
-              exit 0
+          $prereleaseArgs = @()
+          if ('${{ steps.release_info.outputs.is_prerelease }}' -eq 'true') {
+              $prereleaseArgs += '--pre'
           }
 
-          $args = @(
-              'release', 'create', $tag,
-              $zip, $checksum,
-              '--repo', $env:GITHUB_REPOSITORY,
-              '--title', $title,
-              '--generate-notes',
-              '--verify-tag'
-          )
+          dotnet vpk upload github `
+            --repoUrl $env:REPO_URL `
+            --channel '${{ steps.release_info.outputs.channel }}' `
+            --outputDir release-work\velopack `
+            --token $env:GH_TOKEN `
+            --publish `
+            --merge `
+            --tag '${{ steps.release_info.outputs.tag }}' `
+            --releaseName "Palworld Server Manager ${{ steps.release_info.outputs.tag }}" `
+            --targetCommitish '${{ steps.verify_tag.outputs.commit_sha }}' `
+            @prereleaseArgs
+          if ($LASTEXITCODE -ne 0) { throw "vpk upload github exited with code $LASTEXITCODE" }
 
-          if ($prerelease) {
-              $args += '--prerelease'
-          }
-
-          & gh @args
-          if ($LASTEXITCODE -ne 0) { throw "gh release create failed with exit code $LASTEXITCODE." }
+      - name: Attach checksums to the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release upload '${{ steps.release_info.outputs.tag }}' '${{ steps.checksums.outputs.checksum_path }}' --clobber --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) { throw "gh release upload (checksums) exited with code $LASTEXITCODE" }
