@@ -24,6 +24,18 @@
 
 `vpk upload github` is the **only** thing that creates or updates the GitHub Release itself. It uploads the Setup.exe, nupkg(s), portable zip, and channel feed JSON, and is called with `--merge` so re-running an existing tag adds to that same release instead of a second tool racing to create a duplicate. `SHA256SUMS.txt` isn't a Velopack asset, so it's attached afterward with a plain `gh release upload --clobber` against the release `vpk` just published — one authority creates the release, a simple follow-up adds the one extra file. There is deliberately no separate `gh release create` call anywhere in this workflow.
 
+### Recovering from a failed release
+
+Release tags (`v*`) are immutable once pushed — a failed or partial publication is never a reason to move, delete, or recreate one. `vpk upload github` is the only step that actually creates or updates the GitHub Release; if the workflow fails before that step runs, no Release or assets exist yet, so there is nothing to roll back.
+
+If the failure can be corrected entirely within the Release workflow *definition* itself (`.github/workflows/release.yml`), fix it through a normal PR to `main`, exactly like any other change — do not touch the tag. Once merged, manually dispatch the corrected workflow against the existing tag:
+
+```powershell
+gh workflow run release.yml --ref main -f tag=v0.4.0-alpha.1
+```
+
+`--ref main` selects the corrected workflow *definition* from `main`, but the job itself still checks out and packages `refs/tags/v0.4.0-alpha.1` as the product source — so the released product remains exactly the commit the tag pointed to when it was created. Every other repository file the workflow references after that checkout (`scripts/build.ps1`, `docs/requirements.txt`, project files, and any other supporting script) is the version stored in the *tagged commit*, not `main` — this recovery procedure does not pick those up. A failure whose real fix lives outside `.github/workflows/release.yml` itself needs a different recovery decision, not this one.
+
 ### Installer packaging (Velopack)
 
 The `Velopack` NuGet package (pinned to `1.2.0` in `PalworldServerManager.App.csproj`) and the matching `vpk` CLI (pinned to `1.2.0` via the local tool manifest, `.config/dotnet-tools.json`) produce the per-user Windows installer described above.
