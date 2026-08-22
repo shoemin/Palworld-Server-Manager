@@ -187,12 +187,27 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vpk download exited with code $LASTEXITCODE" }
 
       - name: Report delta package availability
+        id: delta_status
         shell: pwsh
         run: |
-          if ('${{ steps.download_previous.outcome }}' -eq 'success') {
-              Write-Host "Previous '${{ steps.release_info.outputs.channel }}' release downloaded; vpk pack will generate a delta package."
+          # vpk download github can exit 0 even when it found no previous release at all
+          # (observed directly in release run 32553241615: "No releases found... Aborting"
+          # with exit code 0) - so the download step's success/failure alone cannot tell us
+          # whether a previous package is actually available for vpk pack to diff against.
+          # Determine this from the actual downloaded file state instead, and distinguish
+          # "genuinely nothing to download yet" from "the download step itself failed".
+          $dir = 'release-work\velopack'
+          $previousNupkg = if (Test-Path $dir) { Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-full.nupkg" -ErrorAction SilentlyContinue | Select-Object -First 1 } else { $null }
+          $previousFound = $null -ne $previousNupkg
+
+          "previous_found=$($previousFound.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+          if ($previousFound) {
+              Write-Host "Previous '${{ steps.release_info.outputs.channel }}' release found ($($previousNupkg.Name)); vpk pack will generate a delta package."
+          } elseif ('${{ steps.download_previous.outcome }}' -eq 'success') {
+              Write-Host "No previous '${{ steps.release_info.outputs.channel }}' release exists yet - this is expected for the first release on this channel. Packaging continues with a full package only; this is not a failure."
           } else {
-              Write-Host "No previous '${{ steps.release_info.outputs.channel }}' release found (or download failed) - this is expected for the first release on this channel. Packaging continues with a full package only; this is not a failure."
+              Write-Host "::warning::Could not retrieve a previous '${{ steps.release_info.outputs.channel }}' release (the download step failed) - continuing with a full package only, per the intended best-effort delta behavior."
           }
 
       - name: Pack Velopack release
@@ -275,32 +290,61 @@ jobs:
           # what ends up on disk for an installed user. Runs a real silent install to a scratch
           # directory on this ephemeral runner, verifies LICENSE landed there byte-identical to
           # the repository copy, then cleanly uninstalls (shortcuts, registry key) again.
+          #
+          # Release run 32553241615 showed that a bare `& $setupExe ...` native-command
+          # invocation is not reliable here: PowerShell returned control (with $LASTEXITCODE
+          # left blank/unset, not a real nonzero code) while Setup.exe's own log kept producing
+          # genuine install progress - file extraction, shortcut creation, the install hook,
+          # "Installation completed successfully!" - for roughly two more seconds. Start-Process
+          # -Wait -PassThru gives a real Process.ExitCode instead of relying on $LASTEXITCODE,
+          # and a second, independent layer - a bounded poll for the actual expected end state
+          # (the installed LICENSE file) - guards against that same handoff/timing behavior even
+          # if the parent Setup.exe process it waits on still returns before the real work is done.
           $ErrorActionPreference = 'Stop'
           $channel = '${{ steps.release_info.outputs.channel }}'
           $dir = 'release-work\velopack'
           $setupExe = Join-Path $dir "$env:PACK_ID-$channel-Setup.exe"
           $installDir = Join-Path $env:RUNNER_TEMP 'license-install-check'
+          $installLog = Join-Path $env:RUNNER_TEMP 'license-install-check.log'
 
-          & $setupExe --silent --installto $installDir --log (Join-Path $env:RUNNER_TEMP 'license-install-check.log')
-          if ($LASTEXITCODE -ne 0) { throw "Silent install for LICENSE verification exited with code $LASTEXITCODE" }
+          $installArgs = @('--silent', '--installto', $installDir, '--log', $installLog)
+          Write-Host "Starting silent install: $setupExe $($installArgs -join ' ')"
+          $installProcess = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -PassThru
+          Write-Host "Setup.exe process exited with code $($installProcess.ExitCode)."
 
-          $installedLicense = Join-Path $installDir 'current\LICENSE'
-          if (-not (Test-Path $installedLicense)) {
-              throw "Installed application directory is missing LICENSE at '$installedLicense'."
+          try {
+              $installedLicense = Join-Path $installDir 'current\LICENSE'
+              $deadline = (Get-Date).AddSeconds(60)
+              while (-not (Test-Path $installedLicense) -and (Get-Date) -lt $deadline) {
+                  Start-Sleep -Seconds 2
+              }
+
+              if (-not (Test-Path $installedLicense)) {
+                  $logTail = if (Test-Path $installLog) { (Get-Content $installLog -Tail 40) -join "`n" } else { '(no install log was written)' }
+                  throw "Installed application directory is missing LICENSE at '$installedLicense' after waiting up to 60s for installation to complete. Setup.exe process exit code was $($installProcess.ExitCode). Install log tail:`n$logTail"
+              }
+
+              if ($installProcess.ExitCode -ne 0) {
+                  Write-Host "::warning::Setup.exe's own process exited with a nonzero code ($($installProcess.ExitCode)), but the expected installed LICENSE file was found - Velopack's installer can hand off to a detached process after its own exit (see release run 32553241615), so this is treated as a successful install rather than failed."
+              }
+
+              $repoHash = (Get-FileHash -Path 'LICENSE' -Algorithm SHA256).Hash
+              $installedHash = (Get-FileHash -Path $installedLicense -Algorithm SHA256).Hash
+              if ($repoHash -ne $installedHash) {
+                  throw "Installed LICENSE at '$installedLicense' is not byte-identical to the repository LICENSE."
+              }
+              Write-Host "Confirmed: a real silent install placed a byte-identical LICENSE at '$installedLicense'."
           }
-
-          $repoHash = (Get-FileHash -Path 'LICENSE' -Algorithm SHA256).Hash
-          $installedHash = (Get-FileHash -Path $installedLicense -Algorithm SHA256).Hash
-          if ($repoHash -ne $installedHash) {
-              throw "Installed LICENSE at '$installedLicense' is not byte-identical to the repository LICENSE."
-          }
-          Write-Host "Confirmed: a real silent install placed a byte-identical LICENSE at '$installedLicense'."
-
-          $updateExe = Join-Path $installDir 'Update.exe'
-          if (Test-Path $updateExe) {
-              & $updateExe uninstall --silent
-              if ($LASTEXITCODE -ne 0) {
-                  Write-Host "::warning::Cleanup uninstall for the LICENSE verification install exited with code $LASTEXITCODE (non-fatal on this ephemeral runner)."
+          finally {
+              $updateExe = Join-Path $installDir 'Update.exe'
+              if (Test-Path $updateExe) {
+                  Write-Host "Cleaning up the LICENSE-verification install..."
+                  $uninstallProcess = Start-Process -FilePath $updateExe -ArgumentList @('uninstall', '--silent') -Wait -PassThru
+                  if ($uninstallProcess.ExitCode -ne 0) {
+                      Write-Host "::warning::Cleanup uninstall for the LICENSE verification install exited with code $($uninstallProcess.ExitCode) (non-fatal on this ephemeral runner)."
+                  } else {
+                      Write-Host "Cleanup uninstall completed (exit code 0)."
+                  }
               }
           }
 

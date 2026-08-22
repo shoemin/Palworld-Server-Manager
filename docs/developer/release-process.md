@@ -24,6 +24,18 @@
 
 `vpk upload github` is the **only** thing that creates or updates the GitHub Release itself. It uploads the Setup.exe, nupkg(s), portable zip, and channel feed JSON, and is called with `--merge` so re-running an existing tag adds to that same release instead of a second tool racing to create a duplicate. `SHA256SUMS.txt` isn't a Velopack asset, so it's attached afterward with a plain `gh release upload --clobber` against the release `vpk` just published — one authority creates the release, a simple follow-up adds the one extra file. There is deliberately no separate `gh release create` call anywhere in this workflow.
 
+### Recovering from a failed release
+
+Release tags (`v*`) are immutable once pushed — a failed or partial publication is never a reason to move, delete, or recreate one. `vpk upload github` is the only step that actually creates or updates the GitHub Release; if the workflow fails before that step runs, no Release or assets exist yet, so there is nothing to roll back.
+
+To recover: fix the release automation itself (`.github/workflows/release.yml` or its supporting scripts) through a normal PR to `main`, exactly like any other change — do not touch the tag. Once the fix is merged, manually dispatch the corrected workflow against the existing tag:
+
+```powershell
+gh workflow run release.yml --ref main -f tag=v0.4.0-alpha.1
+```
+
+The workflow *definition* comes from `main` (the `--ref`), but the job itself still checks out and packages `refs/tags/v0.4.0-alpha.1` as the product source — so the released product remains exactly the commit the tag pointed to when it was created. Only the release automation is newer; the tagged source is never rebuilt from a different commit.
+
 ### Installer packaging (Velopack)
 
 The `Velopack` NuGet package (pinned to `1.2.0` in `PalworldServerManager.App.csproj`) and the matching `vpk` CLI (pinned to `1.2.0` via the local tool manifest, `.config/dotnet-tools.json`) produce the per-user Windows installer described above.
