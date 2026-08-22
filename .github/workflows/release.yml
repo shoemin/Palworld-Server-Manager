@@ -295,24 +295,34 @@ jobs:
           # invocation is not reliable here: PowerShell returned control (with $LASTEXITCODE
           # left blank/unset, not a real nonzero code) while Setup.exe's own log kept producing
           # genuine install progress - file extraction, shortcut creation, the install hook,
-          # "Installation completed successfully!" - for roughly two more seconds. Start-Process
-          # -Wait -PassThru gives a real Process.ExitCode instead of relying on $LASTEXITCODE,
-          # and a second, independent layer - a bounded poll for the actual expected end state
-          # (the installed LICENSE file) - guards against that same handoff/timing behavior even
-          # if the parent Setup.exe process it waits on still returns before the real work is done.
+          # "Installation completed successfully!" - for roughly two more seconds. That run
+          # proved the OLD bare-invocation exit-code capture was unreliable; it did NOT prove
+          # Velopack Setup.exe can legitimately return a nonzero exit code for a successful
+          # install - a real Start-Process -Wait -PassThru run always returned 0 locally. So a
+          # genuine nonzero Process.ExitCode is now treated as a hard failure, never downgraded
+          # to a warning just because LICENSE happens to exist.
           $ErrorActionPreference = 'Stop'
           $channel = '${{ steps.release_info.outputs.channel }}'
           $dir = 'release-work\velopack'
           $setupExe = Join-Path $dir "$env:PACK_ID-$channel-Setup.exe"
           $installDir = Join-Path $env:RUNNER_TEMP 'license-install-check'
           $installLog = Join-Path $env:RUNNER_TEMP 'license-install-check.log'
-
           $installArgs = @('--silent', '--installto', $installDir, '--log', $installLog)
-          Write-Host "Starting silent install: $setupExe $($installArgs -join ' ')"
-          $installProcess = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -PassThru
-          Write-Host "Setup.exe process exited with code $($installProcess.ExitCode)."
 
           try {
+              Write-Host "Starting silent install: $setupExe $($installArgs -join ' ')"
+              $installProcess = Start-Process -FilePath $setupExe -ArgumentList $installArgs -Wait -PassThru
+              Write-Host "Setup.exe process exited with code $($installProcess.ExitCode)."
+
+              if ($installProcess.ExitCode -ne 0) {
+                  $logTail = if (Test-Path $installLog) { (Get-Content $installLog -Tail 40) -join "`n" } else { '(no install log was written)' }
+                  throw "Setup.exe exited with a nonzero code ($($installProcess.ExitCode)) during the LICENSE verification install - this is a genuine installer failure, not the earlier bare-invocation exit-code-capture bug. Install log tail:`n$logTail"
+              }
+
+              # Second, independent guard against the handoff/timing behavior seen in release run
+              # 32553241615: Start-Process -Wait -PassThru already gives a trustworthy exit code
+              # (checked above), but the actually-installed file is still the ultimate ground
+              # truth for "did the install really finish" - bounded, not an arbitrary sleep.
               $installedLicense = Join-Path $installDir 'current\LICENSE'
               $deadline = (Get-Date).AddSeconds(60)
               while (-not (Test-Path $installedLicense) -and (Get-Date) -lt $deadline) {
@@ -321,11 +331,7 @@ jobs:
 
               if (-not (Test-Path $installedLicense)) {
                   $logTail = if (Test-Path $installLog) { (Get-Content $installLog -Tail 40) -join "`n" } else { '(no install log was written)' }
-                  throw "Installed application directory is missing LICENSE at '$installedLicense' after waiting up to 60s for installation to complete. Setup.exe process exit code was $($installProcess.ExitCode). Install log tail:`n$logTail"
-              }
-
-              if ($installProcess.ExitCode -ne 0) {
-                  Write-Host "::warning::Setup.exe's own process exited with a nonzero code ($($installProcess.ExitCode)), but the expected installed LICENSE file was found - Velopack's installer can hand off to a detached process after its own exit (see release run 32553241615), so this is treated as a successful install rather than failed."
+                  throw "Installed application directory is missing LICENSE at '$installedLicense' after waiting up to 60s for installation to complete, even though Setup.exe's process exit code was 0. Install log tail:`n$logTail"
               }
 
               $repoHash = (Get-FileHash -Path 'LICENSE' -Algorithm SHA256).Hash
@@ -333,18 +339,38 @@ jobs:
               if ($repoHash -ne $installedHash) {
                   throw "Installed LICENSE at '$installedLicense' is not byte-identical to the repository LICENSE."
               }
-              Write-Host "Confirmed: a real silent install placed a byte-identical LICENSE at '$installedLicense'."
+              Write-Host "Confirmed: a real silent install (exit code 0) placed a byte-identical LICENSE at '$installedLicense'."
+
+              # Corroborating evidence only, never a hard gate: the two checks above (a real zero
+              # exit code, and a byte-identical installed LICENSE) are already sufficient on
+              # their own. This message is an internal Velopack log string that could plausibly
+              # differ by OS locale on a hosted runner, so its absence is a warning, not a failure.
+              if (Test-Path $installLog) {
+                  $logText = Get-Content $installLog -Raw
+                  if ($logText -notmatch 'Installation completed successfully!') {
+                      Write-Host "::warning::Setup.exe exited 0 and LICENSE verified, but its log did not contain the expected 'Installation completed successfully!' completion marker - worth a look, though not treated as a failure."
+                  }
+              }
           }
           finally {
-              $updateExe = Join-Path $installDir 'Update.exe'
-              if (Test-Path $updateExe) {
-                  Write-Host "Cleaning up the LICENSE-verification install..."
-                  $uninstallProcess = Start-Process -FilePath $updateExe -ArgumentList @('uninstall', '--silent') -Wait -PassThru
-                  if ($uninstallProcess.ExitCode -ne 0) {
-                      Write-Host "::warning::Cleanup uninstall for the LICENSE verification install exited with code $($uninstallProcess.ExitCode) (non-fatal on this ephemeral runner)."
-                  } else {
-                      Write-Host "Cleanup uninstall completed (exit code 0)."
+              # Cleanup is intentionally best-effort on this ephemeral runner and must never
+              # replace or hide whatever real failure (if any) is already propagating out of the
+              # try block above - so any exception raised while launching/waiting for the
+              # uninstall is caught here and only logged as a warning, never rethrown.
+              try {
+                  $updateExe = Join-Path $installDir 'Update.exe'
+                  if (Test-Path $updateExe) {
+                      Write-Host "Cleaning up the LICENSE-verification install..."
+                      $uninstallProcess = Start-Process -FilePath $updateExe -ArgumentList @('uninstall', '--silent') -Wait -PassThru
+                      if ($uninstallProcess.ExitCode -ne 0) {
+                          Write-Host "::warning::Cleanup uninstall for the LICENSE verification install exited with code $($uninstallProcess.ExitCode) (non-fatal on this ephemeral runner)."
+                      } else {
+                          Write-Host "Cleanup uninstall completed (exit code 0)."
+                      }
                   }
+              }
+              catch {
+                  Write-Host "::warning::Cleanup for the LICENSE verification install threw and was skipped (non-fatal on this ephemeral runner): $($_.Exception.Message)"
               }
           }
 
