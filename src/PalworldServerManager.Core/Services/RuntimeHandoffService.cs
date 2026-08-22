@@ -35,6 +35,30 @@ public sealed class RuntimeHandoffService
         _logger.Info($"Runtime handoff written. HandoffId={document.HandoffId:D} Servers={document.Servers.Count} From={document.OldManagerVersion} To={document.TargetManagerVersion}.");
     }
 
+    /// <summary>
+    /// Discards a handoff file without consuming it, for rolling back an update apply that wrote
+    /// the handoff but did not go on to successfully launch the external updater. Safe/idempotent
+    /// when no file exists; never touches server or profile data; never throws. Without this, a
+    /// failed apply attempt could leave a handoff behind that a later, unrelated normal Manager
+    /// restart might wrongly consume within the staleness window.
+    /// </summary>
+    public Task DeleteAsync()
+    {
+        try
+        {
+            if (File.Exists(_file))
+            {
+                File.Delete(_file);
+                _logger.Info("Runtime handoff discarded: the update apply that wrote it did not complete.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning($"Could not discard the runtime handoff after a failed update apply; it will still expire on its own in a few minutes. {ex.Message}");
+        }
+        return Task.CompletedTask;
+    }
+
     /// <summary>Reads and deletes the handoff file (one-shot). Returns null if missing, malformed, or stale.</summary>
     public async Task<RuntimeHandoffDocument?> ConsumeAsync(CancellationToken cancellationToken = default)
     {

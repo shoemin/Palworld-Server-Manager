@@ -50,7 +50,16 @@ public sealed class ApplicationUpdateService
         _handoff = handoff;
         _preferencesFile = Path.Combine(paths.Root, "update-preferences.json");
         (_channel, _lastCheckedUtc) = LoadPreferences();
+
+        // GetApplyBlockReason depends on ICriticalOperationTracker state that can change for
+        // reasons entirely outside this service (e.g. an unrelated LAN transfer finishing). This
+        // service and the tracker are both app-lifetime singletons constructed together, so this
+        // subscription lives exactly as long as both and is never a leak; UI listeners (e.g.
+        // UpdatesWindow) only ever subscribe to this service's own StatusChanged, unaffected.
+        _operations.Changed += OnOperationsChanged;
     }
+
+    private void OnOperationsChanged(object? sender, EventArgs e) => RaiseStatusChanged();
 
     /// <summary>
     /// Invoked immediately before the process exits to apply an update, so the App layer can
@@ -244,8 +253,19 @@ public sealed class ApplicationUpdateService
         if (!await _gate.WaitAsync(0, cancellationToken))
             return OperationResult.Fail("Another update operation is already in progress.");
 
-        var shutdownCommitted = false;
-        var preRestartShutdownRan = false;
+        // Single rollback boundary: every stage that mutates external state (the shutdown gate,
+        // the handoff file, Manager-only background services) sets its flag only once that stage
+        // has actually happened, so a failure anywhere below - cancellation, a profile-load
+        // error, a handoff-write error, an unexpected exception - is caught by the one catch
+        // block below and unwound in RollBackAsync using exactly what these flags say really
+        // happened. updaterLaunched=true is the commit point: once the external Velopack updater
+        // has been handed the release, nothing above is ever undone, and Palworld is never part
+        // of either the rollback or the commit path.
+        var shutdownGateAcquired = false;
+        var handoffWritten = false;
+        var managerServicesStopped = false;
+        var updaterLaunched = false;
+
         try
         {
             ReleaseInfo? release;
@@ -260,7 +280,7 @@ public sealed class ApplicationUpdateService
                 _logger.Warning($"Update apply blocked: {blockReason}");
                 return OperationResult.Fail(blockReason ?? "Palworld Server Manager is busy with another operation.");
             }
-            shutdownCommitted = true;
+            shutdownGateAcquired = true;
 
             SetState(UpdateState.Applying);
             _logger.Info($"Beginning update apply for version {release.Version}.");
@@ -268,63 +288,68 @@ public sealed class ApplicationUpdateService
             var profiles = await _registry.LoadAsync(cancellationToken);
             var handoffDocument = BuildHandoff(profiles, release.Version);
 
-            try
-            {
-                await _handoff.WriteAsync(handoffDocument, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Could not write the runtime handoff; aborting the update apply. Palworld Server Manager remains on the current version and Palworld is unaffected.", ex);
-                return Abort(ex.Message);
-            }
+            await _handoff.WriteAsync(handoffDocument, cancellationToken);
+            handoffWritten = true;
 
             if (PreRestartShutdownAsync is not null)
             {
                 try
                 {
                     await PreRestartShutdownAsync(cancellationToken);
-                    preRestartShutdownRan = true;
                 }
                 catch (Exception ex)
                 {
                     // Non-fatal by design: a LAN host that doesn't stop cleanly cannot corrupt
                     // state and cannot affect Palworld, and it will tear down with the process
-                    // moments later regardless. Blocking the update on this would be worse.
+                    // moments later regardless. Blocking the update on this would be worse. It was
+                    // still attempted, though, so rollback must still try to resume it below.
                     _logger.Warning($"A Manager-only background service did not stop cleanly before restart; continuing anyway. {ex.Message}");
-                    preRestartShutdownRan = true;
                 }
+                managerServicesStopped = true;
             }
 
-            try
-            {
-                _backend.BeginApplyAndRestart(release);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Could not hand off to the external updater; the update was not applied. Palworld Server Manager remains on the current version and Palworld is unaffected.", ex);
-                if (preRestartShutdownRan && PostFailureRecoveryAsync is not null)
-                {
-                    try { await PostFailureRecoveryAsync(CancellationToken.None); }
-                    catch (Exception recoveryEx) { _logger.Warning($"Could not resume Manager-only services after a failed update apply: {recoveryEx.Message}"); }
-                }
-                return Abort(ex.Message);
-            }
+            _backend.BeginApplyAndRestart(release);
+            updaterLaunched = true; // Commit point: the external updater now owns this restart.
 
             _logger.Info($"Handed off to the external updater for version {release.Version}. Palworld Server Manager will exit shortly to complete the update.");
             _operations.CommitShutdown();
             return OperationResult.Ok("Update handed off to the installer. Palworld Server Manager will now close and reopen.");
-
-            OperationResult Abort(string reason)
-            {
-                if (shutdownCommitted) _operations.CancelShutdown();
-                lock (_sync) _errorMessage = "Could not apply the update: " + reason;
-                SetState(UpdateState.ReadyToInstall);
-                return OperationResult.Fail("Could not apply the update: " + reason);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.Info("Update apply canceled; rolling back.");
+            await RollBackAsync("The update apply was canceled.");
+            return OperationResult.Fail("The update apply was canceled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("Update apply failed before the external updater was launched; rolling back. Palworld Server Manager remains on the current version and Palworld is unaffected.", ex);
+            await RollBackAsync(ex.Message);
+            return OperationResult.Fail("Could not apply the update: " + ex.Message);
         }
         finally
         {
             _gate.Release();
+        }
+
+        async Task RollBackAsync(string reason)
+        {
+            if (updaterLaunched) return; // Past the commit point - nothing here is ever undone.
+
+            if (managerServicesStopped && PostFailureRecoveryAsync is not null)
+            {
+                try { await PostFailureRecoveryAsync(CancellationToken.None); }
+                catch (Exception recoveryEx) { _logger.Warning($"Could not resume Manager-only services after a failed update apply: {recoveryEx.Message}"); }
+            }
+
+            if (handoffWritten)
+                await _handoff.DeleteAsync();
+
+            if (shutdownGateAcquired)
+                _operations.CancelShutdown();
+
+            lock (_sync) _errorMessage = "Could not apply the update: " + reason;
+            SetState(UpdateState.ReadyToInstall);
         }
     }
 

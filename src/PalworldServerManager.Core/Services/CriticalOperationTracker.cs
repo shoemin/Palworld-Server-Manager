@@ -44,6 +44,13 @@ public interface ICriticalOperationTracker
 
     /// <summary>Rolls back a shutdown gate that was acquired via <see cref="TryBeginShutdown"/> but not committed, so normal operations can resume.</summary>
     void CancelShutdown();
+
+    /// <summary>
+    /// Raised whenever apply-eligibility could have changed: an operation began or ended, or the
+    /// shutdown gate was acquired or canceled. Listeners (e.g. ApplicationUpdateService) use this
+    /// to re-check eligibility instead of only reacting to their own state changes.
+    /// </summary>
+    event EventHandler? Changed;
 }
 
 public sealed class CriticalOperationTracker : ICriticalOperationTracker
@@ -51,6 +58,8 @@ public sealed class CriticalOperationTracker : ICriticalOperationTracker
     private readonly object _sync = new();
     private readonly Dictionary<Guid, (CriticalOperationKind Kind, string? Detail)> _active = [];
     private bool _shuttingDown;
+
+    public event EventHandler? Changed;
 
     public bool IsBusy
     {
@@ -75,6 +84,7 @@ public sealed class CriticalOperationTracker : ICriticalOperationTracker
                 throw new InvalidOperationException("Palworld Server Manager is applying an update and restarting. Try this again once the Manager has restarted.");
             _active[id] = (kind, detail);
         }
+        RaiseChanged();
         return new Lease(this, id);
     }
 
@@ -94,8 +104,9 @@ public sealed class CriticalOperationTracker : ICriticalOperationTracker
             }
             _shuttingDown = true;
             blockReason = null;
-            return true;
         }
+        RaiseChanged();
+        return true;
     }
 
     public void CommitShutdown() { }
@@ -103,6 +114,7 @@ public sealed class CriticalOperationTracker : ICriticalOperationTracker
     public void CancelShutdown()
     {
         lock (_sync) _shuttingDown = false;
+        RaiseChanged();
     }
 
     private static string Describe((CriticalOperationKind Kind, string? Detail) op)
@@ -111,7 +123,10 @@ public sealed class CriticalOperationTracker : ICriticalOperationTracker
     private void End(Guid id)
     {
         lock (_sync) _active.Remove(id);
+        RaiseChanged();
     }
+
+    private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
 
     private sealed class Lease(CriticalOperationTracker owner, Guid id) : IDisposable
     {

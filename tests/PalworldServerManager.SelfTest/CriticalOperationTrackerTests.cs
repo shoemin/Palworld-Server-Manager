@@ -108,6 +108,43 @@ internal static class CriticalOperationTrackerTests
         return Task.CompletedTask;
     }
 
+    public static Task TestChangedFiresOnBeginEndShutdownAcquireAndCancel()
+    {
+        // Finding 2's fix depends on this event covering all four transitions that can change
+        // apply eligibility - not just leases, and not just the shutdown gate alone.
+        var tracker = new CriticalOperationTracker();
+        var changes = 0;
+        tracker.Changed += (_, _) => changes++;
+
+        var lease = tracker.Begin(CriticalOperationKind.Backup);
+        Equal(1, changes);
+
+        lease.Dispose();
+        Equal(2, changes);
+
+        True(tracker.TryBeginShutdown(out _), "shutdown gate should acquire cleanly on an idle tracker");
+        Equal(3, changes);
+
+        tracker.CancelShutdown();
+        Equal(4, changes);
+
+        return Task.CompletedTask;
+    }
+
+    public static Task TestChangedDoesNotFireOnARejectedShutdownAttempt()
+    {
+        var tracker = new CriticalOperationTracker();
+        using var lease = tracker.Begin(CriticalOperationKind.Backup); // nothing eligible has changed by the time we start counting below
+
+        var changes = 0;
+        tracker.Changed += (_, _) => changes++;
+
+        var began = tracker.TryBeginShutdown(out _);
+        True(!began, "shutdown must be rejected while a critical operation is active");
+        Equal(0, changes);
+        return Task.CompletedTask;
+    }
+
     private static void True(bool condition, string message)
     {
         if (!condition) throw new Exception(message);

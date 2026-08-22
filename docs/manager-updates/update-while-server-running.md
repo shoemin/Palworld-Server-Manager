@@ -52,4 +52,6 @@ If you have [LAN & Transfers](../guide/lan.md) enabled and a paired remote Manag
 
 ## If installing fails
 
-If writing the handoff fails, or the external updater can't be launched, the Manager stays on its current version, reports the actual error, and remains fully usable — nothing is left half-applied, and Palworld was never touched regardless. You can try again.
+If anything goes wrong before the external updater is actually launched — the server list can't be read, the runtime handoff can't be written, a background service doesn't stop cleanly, or the updater itself can't be started — the whole attempt is rolled back as one unit: any handoff file that was already written is discarded, the Manager's own background services (LAN, if they had been stopped) resume, and the Manager returns to its normal, fully usable state on its current version with the actual error shown. Nothing is left half-applied — not a stuck "Applying" state, not a leftover handoff file that a later restart could misread, and Palworld was never touched regardless. You can try again.
+
+The only point that isn't undone is once the external updater has actually been launched — from there the Manager is committed to restarting.
