@@ -13,11 +13,12 @@
 3. Restores the pinned `.config/dotnet-tools.json` tools (`vpk` 1.2.0), runs `scripts\build.ps1` (full build + all self-tests), and runs `mkdocs build --strict` as an additional release-qualifying gate — a release does not get built from a state where the docs site itself is broken.
 4. Publishes a self-contained win-x64 build (**not** single-file — Velopack needs individual files for delta diffing and its own bootstrap shim).
 5. Best-effort downloads the previous release for the same channel (`vpk download github`) into the same output directory, so `vpk pack`'s default delta mode can generate a delta package against it automatically. This is allowed to find nothing (a fresh channel, or the very first release) without failing the workflow.
-6. Packs the release (`vpk pack`) with generated release notes (an experimental-build banner is prepended for prereleases), producing the Setup.exe, full (and delta, if applicable) nupkg, portable zip, and channel feed JSON.
-7. Verifies every required asset actually exists on disk before going any further (fails closed rather than silently publishing a partial release).
-8. Generates `SHA256SUMS.txt` over every packaged file.
-9. Uploads everything as a workflow-run artifact and the build transcript as a separate artifact.
-10. Publishes the release.
+6. Copies the repository `LICENSE` into the publish output before packing (byte-for-byte, verified with a hash check) so every packaged distributable carries the PolyForm Noncommercial License terms and the required copyright notice, not just the source repository.
+7. Packs the release (`vpk pack`) with generated release notes (an experimental-build banner is prepended for prereleases), producing the Setup.exe, full (and delta, if applicable) nupkg, portable zip, and channel feed JSON.
+8. Verifies every required asset actually exists on disk, that `LICENSE` is actually present inside the portable zip and full nupkg contents, and that a real silent install of the freshly-built Setup.exe places a byte-identical `LICENSE` in the installed application directory (then cleanly uninstalls itself again) — fails closed rather than silently publishing a partial or license-missing release.
+9. Generates `SHA256SUMS.txt` over every packaged file.
+10. Uploads everything as a workflow-run artifact and the build transcript as a separate artifact.
+11. Publishes the release.
 
 ### Single release authority
 
@@ -47,6 +48,8 @@ dotnet vpk pack `
 ```
 
 This produces `ShoeMin.PalworldServerManager-<channel>-Setup.exe`, a `ShoeMin.PalworldServerManager-<version>-<channel>-full.nupkg`, `ShoeMin.PalworldServerManager-<channel>-Portable.zip`, and `releases.<channel>.json`/`assets.<channel>.json` metadata — note the asset filenames themselves are channel-suffixed (`-win-beta-Setup.exe` for a prerelease, not `-win-Setup.exe`), confirmed against a real local `vpk pack --channel win-beta` run before trusting it in CI. The pack ID is deliberately `ShoeMin.PalworldServerManager`, not `PalworldServerManager`, so the installer's default per-user install location — verified with a real install/uninstall cycle — is `%LocalAppData%\ShoeMin.PalworldServerManager\`, which can never collide with the persistent data root at `%LocalAppData%\PalworldServerManager\`.
+
+**License preservation:** `<publish-dir>` must contain `LICENSE` (copied from the repository root, verbatim) before `vpk pack` runs, or the packaged distributables would silently omit the PolyForm Noncommercial License terms and required copyright notice. It ends up at `current/LICENSE` in the portable zip and `lib/app/LICENSE` in the full nupkg; a real silent install (`Setup.exe --silent --installto <dir>`) places it at `<installdir>\current\LICENSE`, confirmed with a real install/uninstall cycle, not just by inspecting archive contents.
 
 **No release has actually been published through this pipeline yet** — it is implemented and locally verified (including a real, read-only `vpk download github` check against this repository confirming graceful "no previous release" handling), but publishing the first one is a separate, deliberate action.
 

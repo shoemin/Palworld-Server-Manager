@@ -115,6 +115,34 @@ jobs:
             -p:InformationalVersion='${{ steps.release_info.outputs.version }}' `
             -o release-work\publish
 
+      - name: Copy LICENSE into the packaged application payload
+        shell: pwsh
+        run: |
+          # The PolyForm Noncommercial License requires redistributed copies to preserve the
+          # license terms/URL and the "Required Notice" - so every packaged distributable
+          # (installer, portable zip, full nupkg) must actually contain LICENSE alongside the
+          # application, not just the source repository. Copies the canonical file verbatim
+          # (never rewrites its text) and fails closed if anything about the copy looks wrong,
+          # rather than silently shipping a release missing the license.
+          $ErrorActionPreference = 'Stop'
+          $repoLicense = Join-Path $PWD 'LICENSE'
+          if (-not (Test-Path $repoLicense)) {
+              throw "Repository LICENSE not found at '$repoLicense'."
+          }
+
+          $packLicense = Join-Path $PWD 'release-work\publish\LICENSE'
+          Copy-Item -Path $repoLicense -Destination $packLicense -Force
+          if (-not (Test-Path $packLicense)) {
+              throw "LICENSE was not copied into the pack directory at '$packLicense'."
+          }
+
+          $repoHash = (Get-FileHash -Path $repoLicense -Algorithm SHA256).Hash
+          $packHash = (Get-FileHash -Path $packLicense -Algorithm SHA256).Hash
+          if ($repoHash -ne $packHash) {
+              throw "Copied LICENSE in the pack directory is not byte-identical to the repository LICENSE."
+          }
+          Write-Host "LICENSE copied into the pack directory and verified byte-identical to the repository LICENSE."
+
       - name: Write release notes
         id: notes
         shell: pwsh
@@ -208,6 +236,73 @@ jobs:
           }
           Write-Host "All required release assets are present:"
           Get-ChildItem $dir | ForEach-Object { Write-Host " - $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
+
+      - name: Verify LICENSE is present inside the portable zip and full nupkg
+        shell: pwsh
+        run: |
+          # Confirms the LICENSE copied into the pack directory actually made it into the
+          # redistributable package *contents*, not just the pack directory on disk - the
+          # portable zip and full nupkg are both plain zip archives, so their entries can be
+          # listed directly without extracting the whole (large) archive.
+          $ErrorActionPreference = 'Stop'
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $channel = '${{ steps.release_info.outputs.channel }}'
+          $dir = 'release-work\velopack'
+
+          function Test-ZipContainsEntry([string]$ZipPath, [string]$EntryPath) {
+              $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+              try { return $null -ne ($zip.Entries | Where-Object { $_.FullName -eq $EntryPath }) }
+              finally { $zip.Dispose() }
+          }
+
+          $portableZip = Join-Path $dir "$env:PACK_ID-$channel-Portable.zip"
+          if (-not (Test-ZipContainsEntry -ZipPath $portableZip -EntryPath 'current/LICENSE')) {
+              throw "Portable package '$portableZip' does not contain LICENSE at 'current/LICENSE'."
+          }
+          Write-Host "Confirmed: portable zip contains current/LICENSE."
+
+          $fullNupkg = (Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-full.nupkg" | Select-Object -First 1).FullName
+          if (-not (Test-ZipContainsEntry -ZipPath $fullNupkg -EntryPath 'lib/app/LICENSE')) {
+              throw "Full package '$fullNupkg' does not contain LICENSE at 'lib/app/LICENSE'."
+          }
+          Write-Host "Confirmed: full nupkg contains lib/app/LICENSE."
+
+      - name: Verify a real silent install places LICENSE in the installed application
+        shell: pwsh
+        run: |
+          # The portable zip / nupkg checks above prove LICENSE is inside the package *content*,
+          # but Setup.exe installs via its own extraction path - only an actual install proves
+          # what ends up on disk for an installed user. Runs a real silent install to a scratch
+          # directory on this ephemeral runner, verifies LICENSE landed there byte-identical to
+          # the repository copy, then cleanly uninstalls (shortcuts, registry key) again.
+          $ErrorActionPreference = 'Stop'
+          $channel = '${{ steps.release_info.outputs.channel }}'
+          $dir = 'release-work\velopack'
+          $setupExe = Join-Path $dir "$env:PACK_ID-$channel-Setup.exe"
+          $installDir = Join-Path $env:RUNNER_TEMP 'license-install-check'
+
+          & $setupExe --silent --installto $installDir --log (Join-Path $env:RUNNER_TEMP 'license-install-check.log')
+          if ($LASTEXITCODE -ne 0) { throw "Silent install for LICENSE verification exited with code $LASTEXITCODE" }
+
+          $installedLicense = Join-Path $installDir 'current\LICENSE'
+          if (-not (Test-Path $installedLicense)) {
+              throw "Installed application directory is missing LICENSE at '$installedLicense'."
+          }
+
+          $repoHash = (Get-FileHash -Path 'LICENSE' -Algorithm SHA256).Hash
+          $installedHash = (Get-FileHash -Path $installedLicense -Algorithm SHA256).Hash
+          if ($repoHash -ne $installedHash) {
+              throw "Installed LICENSE at '$installedLicense' is not byte-identical to the repository LICENSE."
+          }
+          Write-Host "Confirmed: a real silent install placed a byte-identical LICENSE at '$installedLicense'."
+
+          $updateExe = Join-Path $installDir 'Update.exe'
+          if (Test-Path $updateExe) {
+              & $updateExe uninstall --silent
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Host "::warning::Cleanup uninstall for the LICENSE verification install exited with code $LASTEXITCODE (non-fatal on this ephemeral runner)."
+              }
+          }
 
       - name: Generate SHA-256 checksums
         id: checksums

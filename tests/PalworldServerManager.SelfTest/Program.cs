@@ -105,6 +105,8 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("A failed backend apply call deletes the handoff file it already wrote", ApplicationUpdateServiceTests.TestFailedBackendApplyCallDeletesTheHandoffFile),
     ("Apply eligibility notifies when a blocking operation begins and ends", ApplicationUpdateServiceTests.TestApplyEligibilityNotifiesWhenABlockingOperationBeginsAndEnds),
     ("Apply eligibility notifies when the shutdown gate is canceled", ApplicationUpdateServiceTests.TestApplyEligibilityNotifiesWhenTheShutdownGateIsCanceled),
+    ("Download uses the channel that produced the update, not a hardcoded default", VelopackUpdateBackendTests.TestDownloadUsesTheChannelThatProducedTheUpdateNotAHardcodedDefault),
+    ("Download rejects a release not produced by this backend", VelopackUpdateBackendTests.TestDownloadRejectsAReleaseNotProducedByThisBackend),
     ("Concurrent apply attempts are rejected, not queued", ApplicationUpdateServiceTests.TestConcurrentApplyAttemptsAreRejected),
     ("Apply requires a state of ReadyToInstall", ApplicationUpdateServiceTests.TestApplyRequiresReadyToInstallState),
     ("Critical operation tracker: lease lifecycle", CriticalOperationTrackerTests.TestBeginTracksAnOperationUntilDisposed),

@@ -62,7 +62,9 @@ public sealed class VelopackUpdateBackend : IApplicationUpdateBackend
             // Velopack's asset metadata does not carry a release-date field; left unavailable
             // rather than fabricated.
             ReleaseDate = null,
-            BackendToken = info
+            // Retains which channel actually produced this UpdateInfo, not just the UpdateInfo
+            // itself - see DownloadUpdatesAsync for why this matters.
+            BackendToken = new ResolvedUpdate(info, channel)
         };
         _logger.Info($"Update check against channel '{ChannelName(channel)}' found version {release.Version}.");
         return new UpdateCheckResult(true, release);
@@ -70,25 +72,52 @@ public sealed class VelopackUpdateBackend : IApplicationUpdateBackend
 
     public async Task DownloadUpdatesAsync(ReleaseInfo release, IProgress<int> progress, CancellationToken cancellationToken)
     {
-        if (release.BackendToken is not UpdateInfo info)
-            throw new InvalidOperationException("Release was not produced by a check against this backend.");
-
-        var manager = CreateManager(UpdateChannel.Stable); // channel is irrelevant to downloading an already-resolved UpdateInfo
-        await manager.DownloadUpdatesAsync(info, percent => progress.Report(percent), cancellationToken);
+        var resolved = RequireResolvedUpdate(release);
+        // Must use the SAME channel that produced this UpdateInfo, not whatever channel happens
+        // to be currently selected: a Prerelease check followed by a hardcoded-Stable download
+        // manager risks resolving/fetching against the wrong channel's release feed.
+        var manager = CreateManager(resolved.Channel);
+        await manager.DownloadUpdatesAsync(resolved.Info, percent => progress.Report(percent), cancellationToken);
     }
+
+    /// <summary>
+    /// The channel DownloadUpdatesAsync will actually use to build its Velopack UpdateManager for
+    /// this release - i.e. the channel that produced it via CheckForUpdatesAsync, not whatever
+    /// channel is currently selected. Static and instance-independent (it only inspects the
+    /// release's own token) so it can be verified directly in a self-test without constructing a
+    /// real VelopackUpdateBackend, which requires a live Velopack-initialized process and cannot
+    /// run standalone in the self-test harness.
+    /// </summary>
+    public static UpdateChannel ResolveDownloadChannel(ReleaseInfo release) => RequireResolvedUpdate(release).Channel;
 
     public void BeginApplyAndRestart(ReleaseInfo release)
     {
-        if (release.BackendToken is not UpdateInfo info)
-            throw new InvalidOperationException("Release was not produced by a check against this backend.");
-
-        var manager = CreateManager(UpdateChannel.Stable); // channel is irrelevant to applying an already-resolved asset
+        var resolved = RequireResolvedUpdate(release);
+        // Deliberately still Stable/win here, not resolved.Channel: confirmed against the pinned
+        // Velopack 1.2.0 source (src/lib-csharp/UpdateManager.cs) that WaitExitThenApplyUpdates ->
+        // UpdateExe.Apply(Locator, toApply, ...) never reads Source or Channel at all - only
+        // CheckForUpdatesInternal ever consults UpdateOptions.ExplicitChannel (to pick which
+        // release feed to check), and DownloadReleaseEntry resolves its asset URL from the
+        // already-known GitBaseAsset.Release captured at check time, not from this manager
+        // instance's own channel/source. Applying an already-downloaded, already-verified local
+        // package is therefore genuinely channel-independent, unlike downloading (above).
+        var manager = CreateManager(UpdateChannel.Stable);
         _logger.Info($"Launching the external Velopack updater for version {release.Version}. Palworld Server Manager will exit shortly; Palworld is not affected by this call.");
         // WaitExitThenApplyUpdates (rather than the one-shot ApplyUpdatesAndRestart) launches the
         // external updater and returns immediately, leaving this process's own shutdown sequence
         // (stopping LAN/Dashboard, then exiting) fully under our control instead of Velopack's.
-        manager.WaitExitThenApplyUpdates(info.TargetFullRelease, silent: false, restart: true, restartArgs: []);
+        manager.WaitExitThenApplyUpdates(resolved.Info.TargetFullRelease, silent: false, restart: true, restartArgs: []);
     }
+
+    private static ResolvedUpdate RequireResolvedUpdate(ReleaseInfo release)
+    {
+        if (release.BackendToken is not ResolvedUpdate resolved)
+            throw new InvalidOperationException("Release was not produced by a check against this backend.");
+        return resolved;
+    }
+
+    /// <summary>Pairs a Velopack UpdateInfo with the channel that actually produced it, so later stages (download, in particular) use that same channel rather than an unrelated default.</summary>
+    public sealed record ResolvedUpdate(UpdateInfo Info, UpdateChannel Channel);
 
     private UpdateManager CreateManager(UpdateChannel channel)
     {
