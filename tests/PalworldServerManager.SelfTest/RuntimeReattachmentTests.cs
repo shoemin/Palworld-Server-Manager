@@ -165,7 +165,7 @@ internal static class RuntimeReattachmentTests
         await WithSyntheticEnvironment(async (paths, logger, processes) =>
         {
             var profile = NewProfile(paths, "Reattach Exit Test");
-            using var fake = StartFakePalServer(profile.InstallPath, waitSeconds: 2, exitCode: 5);
+            using var fake = SyntheticPalServerHarness.Start(profile.InstallPath, waitSeconds: 2, exitCode: 5);
             try
             {
                 var ended = new TaskCompletionSource<ServerProcessLifetimeEndedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -181,7 +181,7 @@ internal static class RuntimeReattachmentTests
                 True(result.HasNonZeroExitCode, "exit code 5 must be classified as non-zero");
                 Equal(5, result.PrimaryExitCode);
             }
-            finally { TryKill(fake); }
+            finally { SyntheticPalServerHarness.TryKill(fake); }
         });
     }
 
@@ -190,7 +190,7 @@ internal static class RuntimeReattachmentTests
         await WithSyntheticEnvironment(async (paths, logger, processes) =>
         {
             var profile = NewProfile(paths, "Stale Hint Test");
-            using var fake = StartFakePalServer(profile.InstallPath, waitSeconds: 5, exitCode: 0);
+            using var fake = SyntheticPalServerHarness.Start(profile.InstallPath, waitSeconds: 5, exitCode: 0);
             try
             {
                 // A hint with the right PID but an implausible start time simulates PID reuse / a stale observation.
@@ -211,7 +211,7 @@ internal static class RuntimeReattachmentTests
                 var outcome = await processes.ReconcileAsync(profile, badHint);
                 True(outcome == ReconcileOutcome.Attached, "a real running managed process must still be found via the bounded path scan even when the handoff hint fails to verify");
             }
-            finally { TryKill(fake); }
+            finally { SyntheticPalServerHarness.TryKill(fake); }
         });
     }
 
@@ -258,8 +258,8 @@ internal static class RuntimeReattachmentTests
         {
             var profileA = NewProfile(paths, "Profile A");
             var profileB = NewProfile(paths, "Profile B");
-            using var fakeA = StartFakePalServer(profileA.InstallPath, waitSeconds: 2, exitCode: 11);
-            using var fakeB = StartFakePalServer(profileB.InstallPath, waitSeconds: 2, exitCode: 22);
+            using var fakeA = SyntheticPalServerHarness.Start(profileA.InstallPath, waitSeconds: 2, exitCode: 11);
+            using var fakeB = SyntheticPalServerHarness.Start(profileB.InstallPath, waitSeconds: 2, exitCode: 22);
             try
             {
                 var results = new Dictionary<Guid, ServerProcessLifetimeEndedEventArgs>();
@@ -280,7 +280,65 @@ internal static class RuntimeReattachmentTests
                 Equal(11, results[profileA.Id].PrimaryExitCode);
                 Equal(22, results[profileB.Id].PrimaryExitCode);
             }
-            finally { TryKill(fakeA); TryKill(fakeB); }
+            finally { SyntheticPalServerHarness.TryKill(fakeA); SyntheticPalServerHarness.TryKill(fakeB); }
+        });
+    }
+
+    // ---- Full restart handoff: old Manager's ServerProcessService instance -> new one --------
+
+    public static async Task TestFullRestartHandoffCycleReattachesAndCapturesExitCode()
+    {
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var registry = new ProfileRegistry(paths, logger);
+            var settings = new PalworldSettingsService(logger);
+            var rest = new PalworldRestClient(logger);
+            var handoffService = new RuntimeHandoffService(paths, logger);
+
+            var profile = new ServerProfile { Name = "Full Restart Handoff Test", InstallPath = Path.Combine(paths.ServersRoot, Guid.NewGuid().ToString("N"), "PalServer") };
+            await registry.AddAsync(profile);
+
+            using var fake = SyntheticPalServerHarness.Start(profile.InstallPath, waitSeconds: 3, exitCode: 42);
+            try
+            {
+                // Old Manager, about to exit for an update: build and persist the handoff exactly
+                // as ApplicationUpdateService.BuildHandoff/WriteAsync would, using its own
+                // ServerProcessService instance's read-only handoff builder.
+                var oldProcesses = new ServerProcessService(settings, rest, logger);
+                var record = oldProcesses.BuildHandoffRecord(profile);
+                True(record is not null, "the running synthetic process must produce a handoff record");
+                await handoffService.WriteAsync(new RuntimeHandoffDocument
+                {
+                    OldManagerVersion = "0.3.0",
+                    TargetManagerVersion = "0.3.1",
+                    Servers = [record!]
+                });
+                // The old Manager's ServerProcessService instance is now discarded/released, as
+                // it would be when the old Manager process exits.
+
+                // New Manager starts: a brand new ServerProcessService with no prior in-memory
+                // state, consuming the handoff exactly as App.OnStartup does.
+                var newProcesses = new ServerProcessService(settings, rest, logger);
+                var consumedHandoff = await handoffService.ConsumeAsync();
+                True(consumedHandoff is not null, "the handoff must be consumable by the new Manager");
+                var hint = consumedHandoff!.Servers.FirstOrDefault(s => s.ProfileId == profile.Id);
+                True(hint is not null, "the consumed handoff must contain this profile");
+
+                var outcome = await newProcesses.ReconcileAsync(profile, hint);
+                Equal(ReconcileOutcome.Attached, outcome);
+                Equal("Running (monitored)", newProcesses.GetStatusText(profile));
+                True(newProcesses.IsOwnedLifetimeActive(profile), "the new Manager must own a monitored lifetime for the reattached server");
+
+                var ended = new TaskCompletionSource<ServerProcessLifetimeEndedEventArgs>(TaskCreationOptions.RunContinuationsAsynchronously);
+                newProcesses.ServerLifetimeEnded += (_, e) => { if (e.ServerId == profile.Id) ended.TrySetResult(e); };
+                var result = await ended.Task.WaitAsync(TimeSpan.FromSeconds(20));
+
+                Equal(42, result.PrimaryExitCode);
+                True(result.HasNonZeroExitCode, "exit code 42 must be classified as non-zero");
+                Equal("Stopped / Error (exit 42)", newProcesses.GetStatusText(profile));
+            }
+            finally { SyntheticPalServerHarness.TryKill(fake); }
         });
     }
 
@@ -291,44 +349,6 @@ internal static class RuntimeReattachmentTests
         var installPath = Path.Combine(paths.ServersRoot, Guid.NewGuid().ToString("N"), "PalServer");
         Directory.CreateDirectory(installPath);
         return new ServerProfile { Name = name, InstallPath = installPath };
-    }
-
-    /// <summary>
-    /// Copies this already-built self-test apphost to "PalServer.exe" under the given install
-    /// path and launches it in --harness mode, which sleeps then exits with a controlled code.
-    /// The apphost's embedded managed-assembly reference is a relative path resolved next to
-    /// the exe, independent of the exe's own filename, so the companion .dll/.deps.json/
-    /// .runtimeconfig.json are copied unrenamed alongside it. This gives a genuine, real
-    /// Windows process with a real PID that ProcessInspection's name/path matching will
-    /// recognize as a managed PalServer install, without an actual Palworld binary.
-    /// </summary>
-    private static Process StartFakePalServer(string installPath, int waitSeconds, int exitCode)
-    {
-        Directory.CreateDirectory(installPath);
-        var sourceDir = AppContext.BaseDirectory;
-        const string sourceName = "PalworldServerManager.SelfTest";
-        foreach (var extension in new[] { ".dll", ".runtimeconfig.json", ".deps.json" })
-        {
-            var source = Path.Combine(sourceDir, sourceName + extension);
-            if (File.Exists(source)) File.Copy(source, Path.Combine(installPath, sourceName + extension), true);
-        }
-        File.Copy(Path.Combine(sourceDir, sourceName + ".exe"), Path.Combine(installPath, "PalServer.exe"), true);
-
-        var exePath = Path.Combine(installPath, "PalServer.exe");
-        var info = new ProcessStartInfo
-        {
-            FileName = exePath,
-            ArgumentList = { "--harness", waitSeconds.ToString(), exitCode.ToString() },
-            WorkingDirectory = installPath,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        return Process.Start(info) ?? throw new InvalidOperationException("Failed to start the synthetic PalServer.exe test process.");
-    }
-
-    private static void TryKill(Process process)
-    {
-        try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
     }
 
     private static async Task WithTempPaths(Func<AppPaths, Task> body)

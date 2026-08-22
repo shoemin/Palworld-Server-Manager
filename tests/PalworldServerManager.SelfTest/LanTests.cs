@@ -267,6 +267,35 @@ internal static class LanTests
         });
     }
 
+    public static async Task TestLanTransferReceiveRegistersAsLanTransferReceiveOperation()
+    {
+        var tracker = new CriticalOperationWiringTests.RecordingOperationTracker();
+        await WithHost(async (host, port, paths, state, pairing) =>
+        {
+            using var http = AuthorizedClient(port, state);
+            var payload = new byte[1024 * 10];
+            RandomNumberGenerator.Fill(payload);
+            var hash = Convert.ToHexString(SHA256.HashData(payload));
+
+            using var offerResponse = await http.PostAsJsonAsync("/api/v1/transfers/offers", new TransferOfferRequest
+            {
+                SourceInstanceId = Guid.NewGuid(),
+                SourceMachine = "SENDER-PC",
+                ServerName = "Wiring Test Server",
+                SizeBytes = payload.Length,
+                Sha256 = hash
+            });
+            var offer = await offerResponse.Content.ReadFromJsonAsync<TransferOfferResponse>();
+            True(host.AcceptOffer(offer!.OfferId), "offer must be acceptable before upload");
+
+            using var uploadContent = new ByteArrayContent(payload);
+            await http.PostAsync($"/api/v1/transfers/{offer.OfferId:D}/content", uploadContent);
+
+            Equal(1, tracker.Calls.Count(c => c.Kind == CriticalOperationKind.LanTransferReceive && c.Detail == "Wiring Test Server"));
+            True(!tracker.IsBusy, "the receive lease must be released once the transfer finalizes");
+        }, tracker);
+    }
+
     public static async Task TestLanTransferHashMismatchIsRejectedAndLeavesNoPartialFile()
     {
         await WithHost(async (host, port, paths, state, pairing) =>
@@ -330,7 +359,7 @@ internal static class LanTests
         finally { try { Directory.Delete(root, true); } catch { } }
     }
 
-    private static async Task WithHost(Func<ManagerLanHost, int, AppPaths, LanStateStore, PairingService, Task> body)
+    private static async Task WithHost(Func<ManagerLanHost, int, AppPaths, LanStateStore, PairingService, Task> body, ICriticalOperationTracker? operations = null)
     {
         await WithTempPaths(async paths =>
         {
@@ -343,7 +372,7 @@ internal static class LanTests
             var state = new LanStateStore(paths);
             var pairing = new PairingService();
 
-            await using var host = new ManagerLanHost(paths, registry, dashboard, processes, state, pairing, logger);
+            await using var host = new ManagerLanHost(paths, registry, dashboard, processes, state, pairing, logger, operations);
             var port = GetFreeTcpPort();
             await host.StartAsync(port);
             try

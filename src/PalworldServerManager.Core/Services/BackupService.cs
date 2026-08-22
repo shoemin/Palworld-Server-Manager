@@ -9,16 +9,19 @@ public sealed class BackupService
     private readonly AppPaths _paths;
     private readonly ServerProcessService _processes;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
 
-    public BackupService(AppPaths paths, ServerProcessService processes, IAppLogger logger)
+    public BackupService(AppPaths paths, ServerProcessService processes, IAppLogger logger, ICriticalOperationTracker? operations = null)
     {
         _paths = paths;
         _processes = processes;
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
     }
 
     public async Task<string> CreateBackupAsync(ServerProfile profile, string reason = "manual", CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.Backup, profile.Name);
         _logger.Info($"Backup requested for '{profile.Name}' reason='{reason}'.");
         if (_processes.IsRunning(profile))
             throw new InvalidOperationException("Stop the server before creating a filesystem backup. Use the server's built-in backup option for live snapshots.");
@@ -38,6 +41,7 @@ public sealed class BackupService
 
     public async Task RestoreBackupAsync(ServerProfile profile, string backupFile, CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.Restore, profile.Name);
         _logger.Info($"Backup restore requested for '{profile.Name}' from '{backupFile}'.");
         if (_processes.IsRunning(profile)) throw new InvalidOperationException("Stop the server before restoring a backup.");
         if (!File.Exists(backupFile)) throw new FileNotFoundException("Backup file not found.", backupFile);

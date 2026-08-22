@@ -13,14 +13,15 @@ public sealed class LanCoordinator : IAsyncDisposable
         ProfileRegistry registry,
         DashboardService dashboard,
         ServerProcessService processes,
-        IAppLogger logger)
+        IAppLogger logger,
+        ICriticalOperationTracker? operations = null)
     {
         _logger = logger;
         State = new LanStateStore(paths);
         Pairing = new PairingService();
         Discovery = new PeerDiscoveryService(State.InstanceId, State, logger);
-        Host = new ManagerLanHost(paths, registry, dashboard, processes, State, Pairing, logger);
-        Client = new ManagerLanClient(State, logger);
+        Host = new ManagerLanHost(paths, registry, dashboard, processes, State, Pairing, logger, operations);
+        Client = new ManagerLanClient(State, logger, operations);
     }
 
     public LanStateStore State { get; }

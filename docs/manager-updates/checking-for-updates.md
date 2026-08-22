@@ -1,7 +1,7 @@
 # Checking for updates
 
 !!! info
-    This page describes the currently-implemented check/download behavior. Applying an update is not implemented yet — see [Manager Updates](index.md).
+    This page covers checking and downloading. For what happens when you actually click Install and Restart, see [Updating while your server is running](update-while-server-running.md).
 
 ## Manual check
 
@@ -17,7 +17,7 @@ A failed check (no network, GitHub unreachable, no matching release published ye
 
 ## Downloading
 
-Once a check finds an update, **Download Update** becomes available. Downloading shows a live progress bar and can be canceled with **Cancel Download**; canceling returns you to the "update available" state so you can retry. A successful download ends in **"ready to install"** — nothing is installed or applied automatically, and there is currently no working "Install and Restart" action.
+Once a check finds an update, **Download Update** becomes available. Downloading shows a live progress bar and can be canceled with **Cancel Download**; canceling returns you to the "update available" state so you can retry. A successful download ends in **"ready to install"**, at which point an **Install and Restart** button appears — see [Updating while your server is running](update-while-server-running.md) for what that does. Nothing is installed or applied automatically merely by downloading.
 
 ## Automatic checking
 

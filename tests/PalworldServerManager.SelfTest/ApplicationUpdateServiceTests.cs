@@ -1,5 +1,6 @@
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
+using PalworldServerManager.Core.Services;
 using PalworldServerManager.Core.Services.Update;
 
 namespace PalworldServerManager.SelfTest;
@@ -78,10 +79,10 @@ internal static class ApplicationUpdateServiceTests
         {
             var logger = new FileLogger(paths);
             var backend = new FakeUpdateBackend { ExecutionMode = UpdateExecutionMode.Installed };
-            var service = new ApplicationUpdateService(backend, paths, logger);
+            var service = CreateService(backend, paths, logger);
             service.SetChannel(UpdateChannel.Prerelease);
 
-            var reloaded = new ApplicationUpdateService(backend, paths, logger);
+            var reloaded = CreateService(backend, paths, logger);
             Equal(UpdateChannel.Prerelease, reloaded.Status.Channel);
             return Task.CompletedTask;
         });
@@ -261,19 +262,271 @@ internal static class ApplicationUpdateServiceTests
 
     // ---- Safety: Palworld/server lifetime is never touched -----------------------------------
 
-    public static async Task TestApplicationUpdateServiceHasNoServerProcessServiceDependency()
+    public static async Task TestApplicationUpdateServiceHasNoPalworldRestClientDependency()
     {
-        // Structural guarantee, not just a runtime observation: this service cannot invoke
-        // ServerProcessService.Stop/Force-stop/etc. because it never holds a reference to one.
+        // 4E gives ApplicationUpdateService a ServerProcessService reference (needed for the
+        // read-only BuildHandoffRecord call used to write the runtime handoff), so that alone is
+        // no longer a useful safety boundary. What must remain structurally impossible is
+        // talking to Palworld's REST API directly (Save/Shutdown) - and that requires a
+        // PalworldRestClient, which this service must never hold, directly or transitively
+        // through its own fields.
         var ctor = typeof(ApplicationUpdateService).GetConstructors().Single();
         var parameterTypeNames = ctor.GetParameters().Select(p => p.ParameterType.FullName).ToList();
-        True(!parameterTypeNames.Any(n => n?.Contains("ServerProcessService") == true), "ApplicationUpdateService must not depend on ServerProcessService");
+        True(!parameterTypeNames.Any(n => n?.Contains("PalworldRestClient") == true), "ApplicationUpdateService must not depend on PalworldRestClient");
 
         var fieldTypeNames = typeof(ApplicationUpdateService)
             .GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
             .Select(f => f.FieldType.FullName);
-        True(!fieldTypeNames.Any(n => n?.Contains("ServerProcessService") == true), "ApplicationUpdateService must not hold a ServerProcessService field");
+        True(!fieldTypeNames.Any(n => n?.Contains("PalworldRestClient") == true), "ApplicationUpdateService must not hold a PalworldRestClient field");
         await Task.CompletedTask;
+    }
+
+    public static async Task TestApplyingDoesNotStopASyntheticRunningServer()
+    {
+        // Behavioral, not just structural: run a full ApplyAndRestartAsync against a real
+        // ServerProcessService with a real (synthetic, harmless) process running under a managed
+        // profile, and prove it is still alive and untouched afterward.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var registry = new ProfileRegistry(paths, logger);
+            var settings = new PalworldSettingsService(logger);
+            var rest = new PalworldRestClient(logger);
+            var processes = new ServerProcessService(settings, rest, logger);
+            var handoff = new RuntimeHandoffService(paths, logger);
+            var operations = new CriticalOperationTracker();
+
+            var installPath = Path.Combine(paths.ServersRoot, Guid.NewGuid().ToString("N"), "PalServer");
+            Directory.CreateDirectory(installPath);
+            var profile = new ServerProfile { Name = "Apply Safety Test", InstallPath = installPath };
+            await registry.AddAsync(profile);
+
+            using var fake = SyntheticPalServerHarness.Start(installPath, waitSeconds: 10, exitCode: 0);
+            try
+            {
+                var backend = new FakeUpdateBackend { ExecutionMode = UpdateExecutionMode.Installed };
+                var service = new ApplicationUpdateService(backend, paths, logger, operations, registry, processes, handoff)
+                {
+                    PreRestartShutdownAsync = _ => Task.CompletedTask
+                };
+
+                backend.OnCheck = (_, _) => Task.FromResult(new UpdateCheckResult(true, new ReleaseInfo { Version = "9.9.9" }));
+                await service.CheckForUpdatesAsync();
+                await service.DownloadUpdateAsync();
+                Equal(UpdateState.ReadyToInstall, service.Status.State);
+
+                var result = await service.ApplyAndRestartAsync();
+                True(result.Success, "apply should succeed against a real but idle ServerProcessService: " + result.Message);
+                Equal(1, backend.ApplyCallCount);
+
+                True(!fake.HasExited, "the synthetic running server must still be alive after ApplyAndRestartAsync");
+
+                var handoffPath = Path.Combine(paths.RuntimeRoot, "update-handoff.json");
+                var written = System.Text.Json.JsonSerializer.Deserialize<RuntimeHandoffDocument>(await File.ReadAllTextAsync(handoffPath));
+                True(written is not null && written.Servers.Any(s => s.ProfileId == profile.Id), "the handoff must capture the running managed server");
+            }
+            finally { SyntheticPalServerHarness.TryKill(fake); }
+        });
+    }
+
+    public static async Task TestApplyIsBlockedByEachCriticalOperationKindAndAllowedOnceIdle()
+    {
+        foreach (var kind in Enum.GetValues<CriticalOperationKind>())
+        {
+            await WithTempPaths(async paths =>
+            {
+                var logger = new FileLogger(paths);
+                var tracker = new CriticalOperationTracker();
+                var (service, backend) = await CreateReadyToInstallService(paths, logger, tracker);
+
+                using (tracker.Begin(kind, "blocking op"))
+                {
+                    var reason = service.GetApplyBlockReason();
+                    True(reason is not null && reason.Contains(kind.ToString()), $"GetApplyBlockReason should mention {kind}: {reason}");
+
+                    var blocked = await service.ApplyAndRestartAsync();
+                    True(!blocked.Success, $"apply must be blocked while a {kind} operation is active");
+                    Equal(UpdateState.ReadyToInstall, service.Status.State);
+                    Equal(0, backend.ApplyCallCount);
+                }
+
+                True(service.GetApplyBlockReason() is null, $"apply should be unblocked once the {kind} lease is released");
+                var ok = await service.ApplyAndRestartAsync();
+                True(ok.Success, $"apply should succeed once idle after a {kind} lease: {ok.Message}");
+                Equal(1, backend.ApplyCallCount);
+                Equal(UpdateState.Applying, service.Status.State);
+            });
+        }
+    }
+
+    public static async Task TestARunningServerAloneDoesNotBlockApply()
+    {
+        // Complements TestApplyingDoesNotStopASyntheticRunningServer: this asserts the block
+        // reason itself, not just that apply ultimately succeeds.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var registry = new ProfileRegistry(paths, logger);
+            var settings = new PalworldSettingsService(logger);
+            var rest = new PalworldRestClient(logger);
+            var processes = new ServerProcessService(settings, rest, logger, tracker);
+            var installPath = Path.Combine(paths.ServersRoot, Guid.NewGuid().ToString("N"), "PalServer");
+            var profile = new ServerProfile { Name = "Running Alone Test", InstallPath = installPath };
+            await registry.AddAsync(profile);
+
+            using var fake = SyntheticPalServerHarness.Start(installPath, waitSeconds: 10, exitCode: 0);
+            try
+            {
+                var handoff = new RuntimeHandoffService(paths, logger);
+                var backend = new FakeUpdateBackend
+                {
+                    ExecutionMode = UpdateExecutionMode.Installed,
+                    OnCheck = (_, _) => Task.FromResult(new UpdateCheckResult(true, new ReleaseInfo { Version = "2.0.0" }))
+                };
+                var service = new ApplicationUpdateService(backend, paths, logger, tracker, registry, processes, handoff)
+                {
+                    PreRestartShutdownAsync = _ => Task.CompletedTask
+                };
+                await service.CheckForUpdatesAsync();
+                await service.DownloadUpdateAsync();
+
+                True(processes.IsRunning(profile), "the synthetic process must be observed as running for this to be a meaningful test");
+                True(service.GetApplyBlockReason() is null, "a running Palworld server, with no active critical operation, must not block apply");
+            }
+            finally { SyntheticPalServerHarness.TryKill(fake); }
+        });
+    }
+
+    public static async Task TestFailedHandoffWriteLeavesStateReadyToInstall()
+    {
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var (service, _) = await CreateReadyToInstallService(paths, logger, tracker);
+
+            // Make the handoff file's directory unwritable-in-effect by occupying its exact path
+            // with a directory instead of allowing a file: forces RuntimeHandoffService.WriteAsync
+            // to fail deterministically without relying on real filesystem permission APIs.
+            var handoffPath = Path.Combine(paths.RuntimeRoot, "update-handoff.json");
+            Directory.CreateDirectory(handoffPath);
+
+            var result = await service.ApplyAndRestartAsync();
+            True(!result.Success, "apply must fail if the runtime handoff cannot be written");
+            Equal(UpdateState.ReadyToInstall, service.Status.State);
+            True(service.Status.ErrorMessage is not null, "a failed apply must leave an actionable error message");
+            True(!tracker.IsBusy, "the shutdown gate must be rolled back after a failed handoff write");
+
+            // And the service must still be usable afterward.
+            Directory.Delete(handoffPath);
+            var retry = await service.ApplyAndRestartAsync();
+            True(retry.Success, "apply must be retryable after the underlying problem is fixed: " + retry.Message);
+        });
+    }
+
+    public static async Task TestFailedBackendApplyCallTriggersRecovery()
+    {
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var registry = new ProfileRegistry(paths, logger);
+            var settings = new PalworldSettingsService(logger);
+            var rest = new PalworldRestClient(logger);
+            var processes = new ServerProcessService(settings, rest, logger);
+            var handoff = new RuntimeHandoffService(paths, logger);
+            var backend = new FakeUpdateBackend
+            {
+                ExecutionMode = UpdateExecutionMode.Installed,
+                OnCheck = (_, _) => Task.FromResult(new UpdateCheckResult(true, new ReleaseInfo { Version = "2.0.0" })),
+                OnApply = _ => throw new InvalidOperationException("synthetic updater launch failure")
+            };
+            var recoveryRan = false;
+            var service = new ApplicationUpdateService(backend, paths, logger, tracker, registry, processes, handoff)
+            {
+                PreRestartShutdownAsync = _ => Task.CompletedTask,
+                PostFailureRecoveryAsync = _ => { recoveryRan = true; return Task.CompletedTask; }
+            };
+            await service.CheckForUpdatesAsync();
+            await service.DownloadUpdateAsync();
+
+            var result = await service.ApplyAndRestartAsync();
+            True(!result.Success, "apply must report failure when the backend's apply call itself throws");
+            Equal(UpdateState.ReadyToInstall, service.Status.State);
+            True(recoveryRan, "PostFailureRecoveryAsync must run to resume Manager-only services since PreRestartShutdownAsync already ran before the backend call failed");
+            True(!tracker.IsBusy, "the shutdown gate must be rolled back after a failed backend apply call");
+        });
+    }
+
+    public static async Task TestConcurrentApplyAttemptsAreRejected()
+    {
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var registry = new ProfileRegistry(paths, logger);
+            var settings = new PalworldSettingsService(logger);
+            var rest = new PalworldRestClient(logger);
+            var processes = new ServerProcessService(settings, rest, logger);
+            var handoff = new RuntimeHandoffService(paths, logger);
+            var backend = new FakeUpdateBackend
+            {
+                ExecutionMode = UpdateExecutionMode.Installed,
+                OnCheck = (_, _) => Task.FromResult(new UpdateCheckResult(true, new ReleaseInfo { Version = "2.0.0" }))
+            };
+            var release = new TaskCompletionSource();
+            var service = new ApplicationUpdateService(backend, paths, logger, tracker, registry, processes, handoff)
+            {
+                // Stalls the first apply call mid-flight (gate already held, shutdown already
+                // committed) so a second concurrent call has something real to collide with.
+                PreRestartShutdownAsync = _ => release.Task
+            };
+            await service.CheckForUpdatesAsync();
+            await service.DownloadUpdateAsync();
+
+            var first = service.ApplyAndRestartAsync();
+            await Task.Delay(50); // let the first call actually enter Applying and take the gate
+            var second = await service.ApplyAndRestartAsync();
+
+            True(!second.Success, "a second concurrent apply attempt must be rejected, not queued");
+            release.SetResult();
+            var firstResult = await first;
+            True(firstResult.Success, "the first apply attempt should still succeed: " + firstResult.Message);
+            Equal(1, backend.ApplyCallCount);
+        });
+    }
+
+    public static async Task TestApplyRequiresReadyToInstallState()
+    {
+        await WithService(UpdateExecutionMode.Installed, async (service, backend) =>
+        {
+            // Idle: nothing downloaded yet.
+            var result = await service.ApplyAndRestartAsync();
+            True(!result.Success, "apply must fail with no update staged");
+            Equal(0, backend.ApplyCallCount);
+        });
+    }
+
+    private static async Task<(ApplicationUpdateService Service, FakeUpdateBackend Backend)> CreateReadyToInstallService(AppPaths paths, IAppLogger logger, ICriticalOperationTracker tracker)
+    {
+        var registry = new ProfileRegistry(paths, logger);
+        var settings = new PalworldSettingsService(logger);
+        var rest = new PalworldRestClient(logger);
+        var processes = new ServerProcessService(settings, rest, logger);
+        var handoff = new RuntimeHandoffService(paths, logger);
+        var backend = new FakeUpdateBackend
+        {
+            ExecutionMode = UpdateExecutionMode.Installed,
+            OnCheck = (_, _) => Task.FromResult(new UpdateCheckResult(true, new ReleaseInfo { Version = "2.0.0" }))
+        };
+        var service = new ApplicationUpdateService(backend, paths, logger, tracker, registry, processes, handoff)
+        {
+            PreRestartShutdownAsync = _ => Task.CompletedTask
+        };
+        await service.CheckForUpdatesAsync();
+        await service.DownloadUpdateAsync();
+        return (service, backend);
     }
 
     public static async Task TestCheckingAndDownloadingNeverWriteARuntimeHandoff()
@@ -286,7 +539,7 @@ internal static class ApplicationUpdateServiceTests
                 ExecutionMode = UpdateExecutionMode.Installed,
                 OnCheck = (_, _) => Task.FromResult(new UpdateCheckResult(true, new ReleaseInfo { Version = "2.0.0" }))
             };
-            var service = new ApplicationUpdateService(backend, paths, logger);
+            var service = CreateService(backend, paths, logger);
 
             await service.CheckForUpdatesAsync();
             await service.DownloadUpdateAsync();
@@ -309,7 +562,7 @@ internal static class ApplicationUpdateServiceTests
                 ExecutionMode = UpdateExecutionMode.Installed,
                 OnCheck = (_, _) => throw new InvalidOperationException("synthetic failure for log verification")
             };
-            var service = new ApplicationUpdateService(backend, paths, logger);
+            var service = CreateService(backend, paths, logger);
             await service.CheckForUpdatesAsync();
 
             var text = await File.ReadAllTextAsync(logger.CurrentLogFile);
@@ -337,9 +590,19 @@ internal static class ApplicationUpdateServiceTests
         await WithTempPaths(async paths =>
         {
             var logger = new FileLogger(paths);
-            var service = new ApplicationUpdateService(backend, paths, logger);
+            var service = CreateService(backend, paths, logger);
             await body(service, backend);
         });
+    }
+
+    private static ApplicationUpdateService CreateService(FakeUpdateBackend backend, AppPaths paths, IAppLogger logger)
+    {
+        var registry = new ProfileRegistry(paths, logger);
+        var settings = new PalworldSettingsService(logger);
+        var rest = new PalworldRestClient(logger);
+        var processes = new ServerProcessService(settings, rest, logger);
+        var handoff = new RuntimeHandoffService(paths, logger);
+        return new ApplicationUpdateService(backend, paths, logger, new CriticalOperationTracker(), registry, processes, handoff);
     }
 
     private static void True(bool condition, string message)
@@ -359,9 +622,11 @@ internal static class ApplicationUpdateServiceTests
         public string CurrentVersion { get; set; } = "0.3.0";
         public Func<UpdateChannel, CancellationToken, Task<UpdateCheckResult>>? OnCheck { get; set; }
         public Func<ReleaseInfo, IProgress<int>, CancellationToken, Task>? OnDownload { get; set; }
+        public Action<ReleaseInfo>? OnApply { get; set; }
         public UpdateChannel? LastCheckedChannel { get; private set; }
         public int CheckCallCount { get; private set; }
         public int DownloadCallCount { get; private set; }
+        public int ApplyCallCount { get; private set; }
 
         public async Task<UpdateCheckResult> CheckForUpdatesAsync(UpdateChannel channel, CancellationToken cancellationToken)
         {
@@ -376,6 +641,12 @@ internal static class ApplicationUpdateServiceTests
             DownloadCallCount++;
             if (OnDownload is not null) { await OnDownload(release, progress, cancellationToken); return; }
             progress.Report(100);
+        }
+
+        public void BeginApplyAndRestart(ReleaseInfo release)
+        {
+            ApplyCallCount++;
+            OnApply?.Invoke(release);
         }
     }
 }

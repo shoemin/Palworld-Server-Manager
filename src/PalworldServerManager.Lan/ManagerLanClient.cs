@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
+using PalworldServerManager.Core.Services;
 
 namespace PalworldServerManager.Lan;
 
@@ -14,13 +15,15 @@ public sealed class ManagerLanClient
 
     private readonly LanStateStore _state;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
 
-    public ManagerLanClient(LanStateStore state, IAppLogger logger, HttpClient? httpClient = null)
+    public ManagerLanClient(LanStateStore state, IAppLogger logger, ICriticalOperationTracker? operations = null, HttpClient? httpClient = null)
     {
         _state = state;
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
         _http = httpClient ?? new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
     }
 
@@ -91,6 +94,7 @@ public sealed class ManagerLanClient
         IProgress<double>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.LanTransferSend, serverName);
         var info = new FileInfo(packagePath);
         if (!info.Exists) throw new FileNotFoundException("Portable package not found.", packagePath);
 

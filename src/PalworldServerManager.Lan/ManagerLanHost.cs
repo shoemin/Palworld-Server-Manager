@@ -17,6 +17,7 @@ public sealed class ManagerLanHost : IAsyncDisposable
     private readonly LanStateStore _state;
     private readonly PairingService _pairing;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
     private readonly ConcurrentDictionary<Guid, LanTransferOffer> _offers = new();
     private WebApplication? _app;
 
@@ -27,7 +28,8 @@ public sealed class ManagerLanHost : IAsyncDisposable
         ServerProcessService processes,
         LanStateStore state,
         PairingService pairing,
-        IAppLogger logger)
+        IAppLogger logger,
+        ICriticalOperationTracker? operations = null)
     {
         _paths = paths;
         _registry = registry;
@@ -36,6 +38,7 @@ public sealed class ManagerLanHost : IAsyncDisposable
         _state = state;
         _pairing = pairing;
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
     }
 
     public event EventHandler? OffersChanged;
@@ -196,9 +199,6 @@ public sealed class ManagerLanHost : IAsyncDisposable
             if (context.Request.ContentLength is long length && length != offer.SizeBytes)
                 return Results.BadRequest("Content-Length does not match transfer offer.");
 
-            offer.Status = LanTransferStatus.Receiving;
-            OffersChanged?.Invoke(this, EventArgs.Empty);
-
             Directory.CreateDirectory(_paths.IncomingRoot);
             var safeName = SanitizeFileName(offer.ServerName);
             var finalPath = Path.Combine(_paths.IncomingRoot, $"{safeName}_{DateTime.Now:yyyyMMdd-HHmmss}_{offerId.ToString("N")[..8]}.palserver");
@@ -206,6 +206,10 @@ public sealed class ManagerLanHost : IAsyncDisposable
 
             try
             {
+                using var operationLease = _operations.Begin(CriticalOperationKind.LanTransferReceive, offer.ServerName);
+                offer.Status = LanTransferStatus.Receiving;
+                OffersChanged?.Invoke(this, EventArgs.Empty);
+
                 await using (var output = new FileStream(partialPath, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 1024, true))
                     await context.Request.Body.CopyToAsync(output, 1024 * 1024, context.RequestAborted);
 

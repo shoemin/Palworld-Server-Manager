@@ -15,6 +15,7 @@ Your Palworld world is worth more than anything the Manager does to manage it. D
 - The [Dashboard's Settings view](../guide/dashboard.md) redacts any setting whose key looks like a password, token, secret, credential, or API key before it's displayed or transmitted anywhere — this redaction happens at the data layer, not just hidden in the UI.
 - Diagnostic bundles exclude `.sav` save files entirely and redact AdminPassword/ServerPassword before anything is written to the bundle.
 - Manager logs never contain AdminPassword, ServerPassword, or LAN pairing/bearer tokens.
+- The runtime-handoff file written before [installing a Manager update](../manager-updates/update-while-server-running.md) (`runtime\update-handoff.json`) records only process identity (profile ID/name, install path, PID, executable path, start time) — never a password, token, or any other secret. It's one-shot (deleted after being read once) and rejected outright if it's stale (older than 5 minutes) or malformed, rather than partially trusted.
 
 ## LAN trust model
 

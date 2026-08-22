@@ -55,7 +55,7 @@ public partial class UpdatesWindow : Window
             _ => string.Empty
         };
 
-        var busy = status.State is UpdateState.Checking or UpdateState.Downloading;
+        var busy = status.State is UpdateState.Checking or UpdateState.Downloading or UpdateState.Applying;
         CheckButton.IsEnabled = installed && !busy;
         StableChannelRadio.IsEnabled = installed && !busy;
         PrereleaseChannelRadio.IsEnabled = installed && !busy;
@@ -65,6 +65,10 @@ public partial class UpdatesWindow : Window
         DownloadProgress.Visibility = status.State == UpdateState.Downloading ? Visibility.Visible : Visibility.Collapsed;
         DownloadProgress.Value = status.DownloadPercent;
 
+        var applyBlockReason = installed ? _services.Updates.GetApplyBlockReason() : "Not installed.";
+        InstallButton.Visibility = status.State is UpdateState.ReadyToInstall or UpdateState.Applying ? Visibility.Visible : Visibility.Collapsed;
+        InstallButton.IsEnabled = installed && status.State == UpdateState.ReadyToInstall && applyBlockReason is null;
+
         StatusMessageText.Text = status.State switch
         {
             UpdateState.Idle when status.LastCheckedUtc is not null => "You're up to date.",
@@ -72,7 +76,9 @@ public partial class UpdatesWindow : Window
             UpdateState.Checking => "Checking for updates...",
             UpdateState.UpdateAvailable => $"Version {status.AvailableRelease?.Version} is available.",
             UpdateState.Downloading => $"Downloading... {status.DownloadPercent}%",
-            UpdateState.ReadyToInstall => "Update downloaded and ready to install. Installing and restarting the Manager will be available in a future update phase.",
+            UpdateState.ReadyToInstall when applyBlockReason is not null => applyBlockReason,
+            UpdateState.ReadyToInstall => "Update downloaded and ready to install. Palworld servers you have running will not be affected.",
+            UpdateState.Applying => "Applying the update and restarting Palworld Server Manager. Any running Palworld server is not affected and will keep running.",
             UpdateState.Failed => status.ErrorMessage ?? "The update operation failed.",
             _ => string.Empty
         };
@@ -88,6 +94,38 @@ public partial class UpdatesWindow : Window
     }
 
     private void CancelDownload_Click(object sender, RoutedEventArgs e) => _downloadCts?.Cancel();
+
+    private async void Install_Click(object sender, RoutedEventArgs e)
+    {
+        var blockReason = _services.Updates.GetApplyBlockReason();
+        if (blockReason is not null)
+        {
+            MessageBox.Show(this, blockReason, "Install and Restart", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var confirmed = MessageBox.Show(this,
+            "Palworld Server Manager will close and reopen to finish installing this update.\n\n" +
+            "Any Palworld server you have running will keep running the entire time. This does not save, stop, or restart your Palworld server, and connected players should not be disconnected by it.\n\n" +
+            "The Manager's Dashboard and LAN pairing will be briefly unavailable while it restarts.\n\n" +
+            "Continue?",
+            "Install and Restart",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question) == MessageBoxResult.Yes;
+        if (!confirmed) return;
+
+        var result = await _services.Updates.ApplyAndRestartAsync();
+        if (!result.Success)
+        {
+            MessageBox.Show(this, result.Message, "Install and Restart", MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        // The external updater is now waiting for this process to exit; Velopack applies the
+        // staged update and relaunches the Manager once we're gone. Palworld itself was never
+        // touched by any of this.
+        Application.Current.Shutdown();
+    }
 
     private void ChannelRadio_Checked(object sender, RoutedEventArgs e)
     {

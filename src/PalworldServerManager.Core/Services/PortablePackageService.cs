@@ -14,19 +14,22 @@ public sealed class PortablePackageService
     private readonly SteamCmdService _steamCmd;
     private readonly ProfileRegistry _registry;
     private readonly IAppLogger _logger;
+    private readonly ICriticalOperationTracker _operations;
     private readonly JsonSerializerOptions _json = new() { WriteIndented = true };
 
-    public PortablePackageService(AppPaths paths, ServerProcessService processes, SteamCmdService steamCmd, ProfileRegistry registry, IAppLogger logger)
+    public PortablePackageService(AppPaths paths, ServerProcessService processes, SteamCmdService steamCmd, ProfileRegistry registry, IAppLogger logger, ICriticalOperationTracker? operations = null)
     {
         _paths = paths;
         _processes = processes;
         _steamCmd = steamCmd;
         _registry = registry;
         _logger = logger;
+        _operations = operations ?? new CriticalOperationTracker();
     }
 
     public async Task ExportAsync(ServerProfile profile, string outputFile, CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.PackageExport, profile.Name);
         _logger.Info($"Portable export requested for '{profile.Name}' to '{outputFile}'.");
         if (_processes.IsRunning(profile))
         {
@@ -72,6 +75,7 @@ public sealed class PortablePackageService
 
     public async Task<ServerProfile> ImportAsync(string packageFile, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
+        using var operationLease = _operations.Begin(CriticalOperationKind.PackageImport, packageFile);
         _logger.Info($"Portable package import requested from '{packageFile}'.");
         if (!File.Exists(packageFile)) throw new FileNotFoundException("Export package not found.", packageFile);
         var temp = Path.Combine(Path.GetTempPath(), "PalworldServerManager", "package-" + Guid.NewGuid().ToString("N"));

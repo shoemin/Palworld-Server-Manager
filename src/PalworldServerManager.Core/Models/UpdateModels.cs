@@ -25,7 +25,7 @@ public enum UpdateState
     Downloading,
     ReadyToInstall,
     Failed,
-    /// <summary>Reserved for 4E. Nothing in this milestone transitions into this state.</summary>
+    /// <summary>Committed to restarting: the runtime handoff has been written and the external updater is being launched. This is a terminal in-process state - a successful apply ends with the process exiting, not with a further transition.</summary>
     Applying
 }
 

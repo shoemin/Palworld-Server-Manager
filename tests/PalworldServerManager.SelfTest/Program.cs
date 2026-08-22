@@ -8,12 +8,22 @@ using PalworldServerManager.SelfTest;
 // sleeps for a controlled duration and exits with a controlled code, for synthetic process
 // reattachment tests. This avoids relying on renamed OS utilities (renaming cmd.exe breaks its
 // own argument handling) while still exercising a real, running, real-PID Windows process.
-if (args.Length == 3 && args[0] == "--harness")
+if (args.Length > 0)
 {
-    var seconds = int.Parse(args[1]);
-    var exitCode = int.Parse(args[2]);
-    Thread.Sleep(TimeSpan.FromSeconds(seconds));
-    return exitCode;
+    if (args.Length == 3 && args[0] == "--harness")
+    {
+        var seconds = int.Parse(args[1]);
+        var exitCode = int.Parse(args[2]);
+        Thread.Sleep(TimeSpan.FromSeconds(seconds));
+        return exitCode;
+    }
+
+    // Some tests also copy this apphost in as a stand-in "PalServer.exe" and let real production
+    // code (ServerProcessService.StartAsync) launch it with its own real arguments (e.g.
+    // "-port=8211") to prove operation-tracker wiring. Any non-harness arguments mean that case:
+    // exit immediately rather than accidentally running the full self-test suite as an unwanted
+    // recursive child process.
+    return 0;
 }
 
 var tests = new List<(string Name, Func<Task> Run)>
@@ -44,6 +54,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("LAN transfer offer rejects malformed metadata", LanTests.TestLanTransferOfferRejectsMalformedMetadata),
     ("LAN transfer completes and verifies whole-file SHA-256", LanTests.TestLanTransferCompletesAndVerifiesWholeFileHash),
     ("LAN transfer hash mismatch is rejected and leaves no partial file", LanTests.TestLanTransferHashMismatchIsRejectedAndLeavesNoPartialFile),
+    ("LAN transfer receive registers as a LanTransferReceive critical operation", LanTests.TestLanTransferReceiveRegistersAsLanTransferReceiveOperation),
     ("Identity matcher rejects PID reuse via start-time mismatch", RuntimeReattachmentTests.TestIdentityMatcherRejectsPidReuseAcrossStartTimeMismatch),
     ("Identity matcher rejects executable-path mismatch", RuntimeReattachmentTests.TestIdentityMatcherRejectsExecutablePathMismatch),
     ("Identity matcher rejects unrecognized process names", RuntimeReattachmentTests.TestIdentityMatcherRejectsUnrecognizedProcessName),
@@ -57,6 +68,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Reconcile reports an honest gap-exit when a handoff expected a server that is gone", RuntimeReattachmentTests.TestReconcileReportsExitedDuringGapWhenHandoffExpectedButNothingIsRunning),
     ("Reconcile reports NotRunning when nothing matches", RuntimeReattachmentTests.TestReconcileReturnsNotRunningWhenNothingMatches),
     ("Reconcile does not cross-attach different managed profiles", RuntimeReattachmentTests.TestReconcileDoesNotCrossAttachDifferentManagedProfiles),
+    ("Full restart handoff cycle reattaches and captures the exact exit code", RuntimeReattachmentTests.TestFullRestartHandoffCycleReattachesAndCapturesExitCode),
     ("Execution mode detector prefers Installed over everything", ApplicationUpdateServiceTests.TestExecutionModeDetectorPrefersInstalledOverEverything),
     ("Execution mode detector recognizes Velopack portable", ApplicationUpdateServiceTests.TestExecutionModeDetectorRecognizesVelopackPortable),
     ("Execution mode detector recognizes a development build by sibling .csproj", ApplicationUpdateServiceTests.TestExecutionModeDetectorRecognizesDevelopmentBuildBySiblingCsproj),
@@ -75,9 +87,32 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Retry from Failed succeeds", ApplicationUpdateServiceTests.TestRetryFromFailedSucceeds),
     ("Overlapping update check is rejected, not queued", ApplicationUpdateServiceTests.TestOverlappingCheckIsRejectedNotQueued),
     ("Overlapping update download is rejected, not queued", ApplicationUpdateServiceTests.TestOverlappingDownloadIsRejectedNotQueued),
-    ("ApplicationUpdateService has no ServerProcessService dependency", ApplicationUpdateServiceTests.TestApplicationUpdateServiceHasNoServerProcessServiceDependency),
+    ("ApplicationUpdateService has no PalworldRestClient dependency", ApplicationUpdateServiceTests.TestApplicationUpdateServiceHasNoPalworldRestClientDependency),
     ("Checking and downloading never write a runtime handoff", ApplicationUpdateServiceTests.TestCheckingAndDownloadingNeverWriteARuntimeHandoff),
-    ("Update check failure is logged as an error", ApplicationUpdateServiceTests.TestCheckFailureIsLoggedAsAnError)
+    ("Update check failure is logged as an error", ApplicationUpdateServiceTests.TestCheckFailureIsLoggedAsAnError),
+    ("Applying an update does not stop a synthetic running server", ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer),
+    ("Apply is blocked by each critical operation kind and allowed once idle", ApplicationUpdateServiceTests.TestApplyIsBlockedByEachCriticalOperationKindAndAllowedOnceIdle),
+    ("A running server alone does not block apply", ApplicationUpdateServiceTests.TestARunningServerAloneDoesNotBlockApply),
+    ("A failed apply attempt leaves the update ReadyToInstall, not Failed", ApplicationUpdateServiceTests.TestFailedHandoffWriteLeavesStateReadyToInstall),
+    ("A failed backend apply call resumes Manager-only services", ApplicationUpdateServiceTests.TestFailedBackendApplyCallTriggersRecovery),
+    ("Concurrent apply attempts are rejected, not queued", ApplicationUpdateServiceTests.TestConcurrentApplyAttemptsAreRejected),
+    ("Apply requires a state of ReadyToInstall", ApplicationUpdateServiceTests.TestApplyRequiresReadyToInstallState),
+    ("Critical operation tracker: lease lifecycle", CriticalOperationTrackerTests.TestBeginTracksAnOperationUntilDisposed),
+    ("Critical operation tracker: multiple concurrent leases", CriticalOperationTrackerTests.TestMultipleConcurrentLeasesAreAllTracked),
+    ("Critical operation tracker: double-dispose is safe", CriticalOperationTrackerTests.TestDisposingALeaseTwiceIsSafe),
+    ("Critical operation tracker: lease releases on exception", CriticalOperationTrackerTests.TestLeaseReleasesEvenWhenTheOperationThrows),
+    ("Critical operation tracker: shutdown blocked while busy", CriticalOperationTrackerTests.TestTryBeginShutdownFailsWhileAnOperationIsActive),
+    ("Critical operation tracker: shutdown succeeds when idle", CriticalOperationTrackerTests.TestTryBeginShutdownSucceedsWhenIdle),
+    ("Critical operation tracker: no new operation after shutdown committed", CriticalOperationTrackerTests.TestNoNewCriticalOperationCanStartOnceShutdownIsCommitted),
+    ("Critical operation tracker: cancel shutdown resumes operations", CriticalOperationTrackerTests.TestCancelShutdownAllowsOperationsToResume),
+    ("Critical operation tracker: second shutdown attempt rejected", CriticalOperationTrackerTests.TestSecondShutdownAttemptIsRejectedAsAlreadyInProgress),
+    ("Server start registers as ServerStart", CriticalOperationWiringTests.TestServerStartRegistersAsServerStart),
+    ("Server force-stop registers as ServerForceStop", CriticalOperationWiringTests.TestServerForceStopRegistersAsServerForceStop),
+    ("Stopping an already-stopped server registers nothing", CriticalOperationWiringTests.TestServerStopOnAnAlreadyStoppedServerRegistersNothing),
+    ("Backup registers as Backup", CriticalOperationWiringTests.TestBackupRegistersAsBackup),
+    ("Restore registers as Restore and releases its lease on failure", CriticalOperationWiringTests.TestRestoreRegistersAsRestoreAndReleasesLeaseOnFailure),
+    ("Settings save registers as SettingsWrite", CriticalOperationWiringTests.TestSettingsWriteRegistersAsSettingsWrite),
+    ("Package export registers as PackageExport", CriticalOperationWiringTests.TestPackageExportRegistersAsPackageExport)
 };
 
 var failures = 0;

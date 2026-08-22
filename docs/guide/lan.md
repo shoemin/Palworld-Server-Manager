@@ -43,3 +43,7 @@ From **Servers → select a server → Send to PC**, choose a paired destination
 5. From **LAN & Transfers** on the receiving side, choose **Import** to hand the verified package to the same importer used for any other `.palserver` file, which performs its own internal per-file hash verification and installs a fresh runtime.
 
 Transfer progress (bytes/percentage/state) is shown live and can be cancelled.
+
+## LAN during a Manager update
+
+Installing a [Manager update](../manager-updates/update-while-server-running.md) on a host briefly stops its LAN service before restarting. A paired remote Manager sees this as a normal, temporary disconnect — the remote Dashboard reconnects on its own once the host Manager is back up, and your paired trust is never cleared by an update. An active `.palserver` transfer, sending or receiving, blocks the host from installing an update until it finishes or is cancelled.
