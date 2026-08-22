@@ -190,5 +190,6 @@ internal static class CriticalOperationWiringTests
         public bool TryBeginShutdown(out string? blockReason) => _inner.TryBeginShutdown(out blockReason);
         public void CommitShutdown() => _inner.CommitShutdown();
         public void CancelShutdown() => _inner.CancelShutdown();
+        public event EventHandler? Changed { add => _inner.Changed += value; remove => _inner.Changed -= value; }
     }
 }

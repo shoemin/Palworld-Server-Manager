@@ -144,6 +144,44 @@ internal static class RuntimeReattachmentTests
         });
     }
 
+    public static async Task TestRuntimeHandoffDeleteAsyncIsSafeAndIdempotentWhenNoFileExists()
+    {
+        // Finding 3's rollback cleanup calls DeleteAsync unconditionally whenever a handoff was
+        // written, including on a retry after an earlier rollback already deleted it - it must
+        // never throw for the ordinary "nothing to delete" case.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var service = new RuntimeHandoffService(paths, logger);
+            var handoffPath = Path.Combine(paths.RuntimeRoot, "update-handoff.json");
+            True(!File.Exists(handoffPath), "no handoff should exist yet in a fresh temp environment");
+
+            await service.DeleteAsync();
+            await service.DeleteAsync();
+            True(!File.Exists(handoffPath), "DeleteAsync must remain a no-op when there is nothing to delete");
+        });
+    }
+
+    public static async Task TestRuntimeHandoffDeleteAsyncRemovesOnlyTheHandoffFile()
+    {
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var service = new RuntimeHandoffService(paths, logger);
+            await service.WriteAsync(new RuntimeHandoffDocument { Servers = [] });
+            var handoffPath = Path.Combine(paths.RuntimeRoot, "update-handoff.json");
+            True(File.Exists(handoffPath), "the handoff should exist after WriteAsync for this test to be meaningful");
+
+            var unrelatedMarker = Path.Combine(paths.RuntimeRoot, "unrelated.txt");
+            await File.WriteAllTextAsync(unrelatedMarker, "must survive");
+
+            await service.DeleteAsync();
+
+            True(!File.Exists(handoffPath), "DeleteAsync must remove the handoff file");
+            True(File.Exists(unrelatedMarker), "DeleteAsync must never touch anything other than the handoff file itself");
+        });
+    }
+
     public static async Task TestRuntimeHandoffRejectsUnsupportedFormatVersion()
     {
         await WithTempPaths(async paths =>

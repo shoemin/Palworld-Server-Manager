@@ -459,6 +459,144 @@ internal static class ApplicationUpdateServiceTests
         });
     }
 
+    public static async Task TestProfileLoadFailureRollsBackAfterShutdownGateAcquired()
+    {
+        // Finding 1: before this fix, only the handoff-write and backend-apply steps were
+        // explicitly wrapped in rollback logic. A real, deterministic failure earlier in the
+        // pipeline - a corrupt server registry file - must roll back exactly the same way: gate
+        // released, state ReadyToInstall, no stale handoff, retryable.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var (service, backend) = await CreateReadyToInstallService(paths, logger, tracker);
+
+            await File.WriteAllTextAsync(paths.ProfilesFile, "{ not valid json ]");
+
+            var result = await service.ApplyAndRestartAsync();
+            True(!result.Success, "apply must fail when the server registry cannot be loaded");
+            Equal(UpdateState.ReadyToInstall, service.Status.State);
+            Equal(0, backend.ApplyCallCount);
+            True(!tracker.IsBusy, "the shutdown gate must be rolled back after a profile-load failure");
+
+            var handoffPath = Path.Combine(paths.RuntimeRoot, "update-handoff.json");
+            True(!File.Exists(handoffPath), "no handoff should exist - the failure happened before one was ever written");
+
+            await File.WriteAllTextAsync(paths.ProfilesFile, "[]");
+            var retry = await service.ApplyAndRestartAsync();
+            True(retry.Success, "apply must be retryable once the registry is readable again: " + retry.Message);
+        });
+    }
+
+    public static async Task TestCancellationAfterShutdownGateRollsBackTheSameWayAsAnyOtherFailure()
+    {
+        // OperationCanceledException gets its own catch clause, distinct from the general
+        // Exception clause, so it must be proven separately that it drives the identical
+        // rollback - gate canceled, handoff deleted, state ReadyToInstall - rather than escaping
+        // uncaught the way it could before Finding 1's fix.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var registry = new ProfileRegistry(paths, logger);
+            var settings = new PalworldSettingsService(logger);
+            var rest = new PalworldRestClient(logger);
+            var processes = new ServerProcessService(settings, rest, logger);
+            var handoff = new RuntimeHandoffService(paths, logger);
+            var backend = new FakeUpdateBackend
+            {
+                ExecutionMode = UpdateExecutionMode.Installed,
+                OnCheck = (_, _) => Task.FromResult(new UpdateCheckResult(true, new ReleaseInfo { Version = "2.0.0" })),
+                OnApply = _ => throw new OperationCanceledException("synthetic cancellation after the shutdown gate and handoff were already committed")
+            };
+            var service = new ApplicationUpdateService(backend, paths, logger, tracker, registry, processes, handoff)
+            {
+                PreRestartShutdownAsync = _ => Task.CompletedTask
+            };
+            await service.CheckForUpdatesAsync();
+            await service.DownloadUpdateAsync();
+
+            var result = await service.ApplyAndRestartAsync();
+            True(!result.Success, "a cancellation after the shutdown gate was acquired must still be reported as a failure, not silently swallowed");
+            Equal(UpdateState.ReadyToInstall, service.Status.State);
+            True(!tracker.IsBusy, "the shutdown gate must be rolled back after a cancellation");
+
+            var handoffPath = Path.Combine(paths.RuntimeRoot, "update-handoff.json");
+            True(!File.Exists(handoffPath), "the handoff that was written before the cancellation must be discarded, not left behind");
+        });
+    }
+
+    public static async Task TestFailedBackendApplyCallDeletesTheHandoffFile()
+    {
+        // Finding 3: the handoff must exist only for a restart that actually committed to a
+        // launched updater. If BeginApplyAndRestart throws after the handoff was already
+        // written, the file must not survive the failed attempt - otherwise a later, unrelated
+        // normal Manager restart within the 5-minute staleness window could wrongly consume it.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var (service, backend) = await CreateReadyToInstallService(paths, logger, tracker);
+            backend.OnApply = _ => throw new InvalidOperationException("synthetic updater launch failure");
+
+            var handoffPath = Path.Combine(paths.RuntimeRoot, "update-handoff.json");
+            var result = await service.ApplyAndRestartAsync();
+
+            True(!result.Success, "apply must fail when the backend's apply call throws");
+            True(!File.Exists(handoffPath), "a handoff written for a failed apply attempt must be deleted, not left for the staleness window to eventually expire");
+        });
+    }
+
+    public static async Task TestApplyEligibilityNotifiesWhenABlockingOperationBeginsAndEnds()
+    {
+        // Finding 2: a listener relying solely on StatusChanged (e.g. UpdatesWindow) needs
+        // ApplicationUpdateService to re-raise it whenever ICriticalOperationTracker.Changed
+        // fires - not just when the service's own state changes - so the UI reflects another
+        // operation's lease releasing without being closed and reopened.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var (service, _) = await CreateReadyToInstallService(paths, logger, tracker);
+
+            var notified = false;
+            service.StatusChanged += (_, _) => notified = true;
+
+            True(service.GetApplyBlockReason() is null, "nothing should block apply yet");
+
+            var lease = tracker.Begin(CriticalOperationKind.Backup, "unrelated backup");
+            True(notified, "a critical operation beginning elsewhere must notify listeners that apply eligibility may have changed");
+            True(service.GetApplyBlockReason() is not null && service.GetApplyBlockReason()!.Contains("Backup"), "the blocker should now name the active operation");
+
+            notified = false;
+            lease.Dispose();
+            True(notified, "the operation ending must also notify listeners so a stale blocker message does not linger");
+            True(service.GetApplyBlockReason() is null, "apply should be unblocked again now that the operation lease was released - without reopening anything");
+        });
+    }
+
+    public static async Task TestApplyEligibilityNotifiesWhenTheShutdownGateIsCanceled()
+    {
+        // The shutdown gate (TryBeginShutdown/CancelShutdown) is a second, independent source of
+        // eligibility changes distinct from ordinary operation leases - a failed/canceled apply
+        // attempt cancels the gate as part of rollback, and listeners must be told apply may be
+        // available again.
+        await WithTempPaths(async paths =>
+        {
+            var logger = new FileLogger(paths);
+            var tracker = new CriticalOperationTracker();
+            var (service, _) = await CreateReadyToInstallService(paths, logger, tracker);
+
+            True(tracker.TryBeginShutdown(out _), "the gate should acquire cleanly on an idle tracker");
+
+            var notified = false;
+            service.StatusChanged += (_, _) => notified = true;
+
+            tracker.CancelShutdown();
+            True(notified, "canceling the shutdown gate must notify ApplicationUpdateService so the UI can recover without being reopened");
+        });
+    }
+
     public static async Task TestConcurrentApplyAttemptsAreRejected()
     {
         await WithTempPaths(async paths =>
