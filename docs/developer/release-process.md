@@ -28,13 +28,13 @@
 
 Release tags (`v*`) are immutable once pushed — a failed or partial publication is never a reason to move, delete, or recreate one. `vpk upload github` is the only step that actually creates or updates the GitHub Release; if the workflow fails before that step runs, no Release or assets exist yet, so there is nothing to roll back.
 
-To recover: fix the release automation itself (`.github/workflows/release.yml` or its supporting scripts) through a normal PR to `main`, exactly like any other change — do not touch the tag. Once the fix is merged, manually dispatch the corrected workflow against the existing tag:
+If the failure can be corrected entirely within the Release workflow *definition* itself (`.github/workflows/release.yml`), fix it through a normal PR to `main`, exactly like any other change — do not touch the tag. Once merged, manually dispatch the corrected workflow against the existing tag:
 
 ```powershell
 gh workflow run release.yml --ref main -f tag=v0.4.0-alpha.1
 ```
 
-The workflow *definition* comes from `main` (the `--ref`), but the job itself still checks out and packages `refs/tags/v0.4.0-alpha.1` as the product source — so the released product remains exactly the commit the tag pointed to when it was created. Only the release automation is newer; the tagged source is never rebuilt from a different commit.
+`--ref main` selects the corrected workflow *definition* from `main`, but the job itself still checks out and packages `refs/tags/v0.4.0-alpha.1` as the product source — so the released product remains exactly the commit the tag pointed to when it was created. Every other repository file the workflow references after that checkout (`scripts/build.ps1`, `docs/requirements.txt`, project files, and any other supporting script) is the version stored in the *tagged commit*, not `main` — this recovery procedure does not pick those up. A failure whose real fix lives outside `.github/workflows/release.yml` itself needs a different recovery decision, not this one.
 
 ### Installer packaging (Velopack)
 
