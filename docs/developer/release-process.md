@@ -75,7 +75,7 @@ Local packaging (what the release workflow itself runs, minus the actual upload)
 
 ```powershell
 dotnet publish src\PalworldServerManager.App\PalworldServerManager.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:Version=<version> -o <publish-dir>
-dotnet vpk download github --repoUrl https://github.com/shoemin/Palworld-Server-Manager --channel <win|win-beta> --outputDir <releases-dir> --token <token>   # best-effort, for deltas
+dotnet vpk download github --repoUrl https://github.com/shoemin/Palworld-Server-Manager --channel <win|win-beta> --outputDir <releases-dir> --token <token> [--pre if channel is win-beta]   # best-effort, for deltas; --pre defaults false in pinned vpk 1.2.0, so it must be passed for win-beta or no previous prerelease will ever be found
 dotnet vpk pack `
   --packId ShoeMin.PalworldServerManager `
   --packVersion <version> `
