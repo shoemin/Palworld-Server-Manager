@@ -422,26 +422,37 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $tag = '${{ steps.release_info.outputs.tag }}'
           $expectedCommit = '${{ steps.verify_tag.outputs.commit_sha }}'
+          $exactRef = "refs/tags/$tag"
+          $peeledRef = "refs/tags/$tag^{}"
 
-          # An exact-name query (`git ls-remote --tags origin $tag`) only matches the tag ref
-          # itself and omits the peeled "^{}" companion ref entirely - a "$tag*" pattern matches
-          # both, which is required to reliably find the peeled commit below.
+          # git ls-remote's <refs> argument is a glob pattern, not an exact match
+          # (https://git-scm.com/docs/git-ls-remote) - "$tag*" is queried broadly enough to also
+          # catch the optional peeled ref, but a prefix-sharing tag (e.g. v0.4.0-alpha.10) would
+          # also match this pattern if the exact requested tag no longer existed. Every returned
+          # line is therefore parsed into its own (Sha, Ref) pair and only a line whose Ref field
+          # is an EXACT, full match to $exactRef/$peeledRef is ever trusted - never "the first
+          # result" or a prefix match.
           $remoteTagLines = git ls-remote --tags origin "$tag*"
-          if ([string]::IsNullOrWhiteSpace($remoteTagLines)) {
-              throw "Release tag '$tag' no longer exists on origin - refusing to publish. This tag is immutable and must not be recreated by this workflow."
+          $parsed = $remoteTagLines -split "`n" | Where-Object { $_ -ne '' } | ForEach-Object {
+              $parts = $_ -split '\s+', 2
+              [pscustomobject]@{ Sha = $parts[0]; Ref = $parts[1] }
           }
 
-          $peeledLine = $remoteTagLines -split "`n" | Where-Object { $_ -match [regex]::Escape("refs/tags/$tag^{}") }
-          $actualCommit = if ($peeledLine) {
-              ($peeledLine -split '\s+')[0]
-          } else {
-              (($remoteTagLines -split "`n" | Select-Object -First 1) -split '\s+')[0]
+          $exactLine = $parsed | Where-Object { $_.Ref -eq $exactRef }
+          if (-not $exactLine) {
+              throw "Release tag '$tag' no longer exists on origin (no exact '$exactRef' ref found) - refusing to publish. This tag is immutable and must not be recreated by this workflow."
           }
+
+          # Annotated tags report an additional exact "^{}" peeled line pointing at the commit the
+          # tag targets; lightweight tags have no such line and the tag ref's own SHA already is
+          # the commit.
+          $peeledLine = $parsed | Where-Object { $_.Ref -eq $peeledRef }
+          $actualCommit = if ($peeledLine) { $peeledLine.Sha } else { $exactLine.Sha }
 
           if ($actualCommit -ne $expectedCommit) {
               throw "Release tag '$tag' now resolves to '$actualCommit' on origin, not the expected product commit '$expectedCommit' - refusing to publish. The tag is immutable and must not have moved."
           }
-          Write-Host "Confirmed: tag '$tag' still exists on origin and resolves to the expected product commit '$expectedCommit'."
+          Write-Host "Confirmed: exact tag ref '$exactRef' exists on origin and resolves to the expected product commit '$expectedCommit'."
 
       # vpk upload github is the single authority that creates/updates the GitHub Release: it
       # uploads the Setup.exe, full (and delta, if present) nupkg, portable zip, and the channel
