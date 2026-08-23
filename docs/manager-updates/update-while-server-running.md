@@ -1,7 +1,7 @@
 # Updating while your server is running
 
-!!! warning "Implemented, not yet field-tested against a real release"
-    This describes the actual, current code behavior, verified with automated tests against a harmless synthetic process standing in for Palworld. It has **not** yet been field-tested against a real Palworld dedicated server and a real published Manager update, because no Setup.exe release exists yet to update *to*. Treat this page as accurate about what the code does, not as a field-proven guarantee.
+!!! success "Field-tested against a real Palworld server and a real published update"
+    This describes the actual, current code behavior. Beyond the automated tests against a synthetic stand-in process, it has now been field-tested for real: a real installed `v0.4.0-alpha.1` updated in place to the published `v0.4.0-alpha.2` while a real Palworld dedicated server stayed running throughout, with the exact same Palworld process ID and start time before and after — proof Palworld itself was never touched by the update. See [Manager Updates](index.md) for the full field-test summary. One related scenario — a genuinely in-flight Manager-owned operation actively blocking Install and Restart — has automated coverage but is still awaiting its own field pass; see the same summary for why.
 
 ## The guarantee
 
