@@ -36,8 +36,16 @@ jobs:
           }
 
           # SemVer-ish: v0.4.0, v0.4.0-alpha.1, v0.4.0-beta.1, v0.4.0-rc.1
-          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$') {
-              throw "Release tag '$tag' is not supported. Use SemVer-style tags such as v0.4.0, v0.4.0-alpha.1, or v0.4.0-rc.1."
+          # Major/minor/patch use the official SemVer numeric-identifier grammar (no leading
+          # zeros, e.g. "01") rather than a loose \d+: Velopack's SemanticVersion.Parse int-parses
+          # and re-stringifies these three components (so "v01.2.3" packs as "1.2.3", not
+          # "01.2.3"), and downstream steps construct exact package filenames directly from this
+          # $version output - a leading-zero tag would pass this check but then never match the
+          # actual packaged filename, causing the release to fail closed later instead of here at
+          # the source. Rejecting it up front is simpler and clearer than re-normalizing the
+          # version everywhere it's used to build a filename.
+          if ($tag -notmatch '^v(?<version>(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?)$') {
+              throw "Release tag '$tag' is not supported. Use SemVer-style tags such as v0.4.0, v0.4.0-alpha.1, or v0.4.0-rc.1 (major/minor/patch must not have leading zeros)."
           }
 
           $version = $Matches.version
