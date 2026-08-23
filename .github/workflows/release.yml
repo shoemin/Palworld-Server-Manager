@@ -215,11 +215,26 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path release-work\velopack | Out-Null
-          dotnet vpk download github `
-            --repoUrl $env:REPO_URL `
-            --channel '${{ steps.release_info.outputs.channel }}' `
-            --outputDir release-work\velopack `
-            --token $env:GH_TOKEN
+
+          # Pinned vpk 1.2.0's --pre flag defaults to false ("Get latest pre-release instead
+          # of stable"). This project's real public releases are GitHub prereleases whenever
+          # the channel is win-beta (Prerelease) - so without --pre, this download would never
+          # find the previous win-beta release (verified directly against this repository: a
+          # real read-only `vpk download github` without --pre reported no releases for
+          # win-beta even with v0.4.0-alpha.1 already published, while the same command with
+          # --pre found it immediately). For the win (Stable) channel, --pre must NOT be
+          # passed, since Stable intentionally only ever looks at non-prerelease releases.
+          $downloadArgs = @(
+              '--repoUrl', $env:REPO_URL,
+              '--channel', '${{ steps.release_info.outputs.channel }}',
+              '--outputDir', 'release-work\velopack',
+              '--token', $env:GH_TOKEN
+          )
+          if ('${{ steps.release_info.outputs.is_prerelease }}' -eq 'true') {
+              $downloadArgs += '--pre'
+          }
+
+          dotnet vpk download github @downloadArgs
           if ($LASTEXITCODE -ne 0) { throw "vpk download exited with code $LASTEXITCODE" }
 
       - name: Report delta package availability
