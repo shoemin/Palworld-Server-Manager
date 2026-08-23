@@ -304,12 +304,22 @@ jobs:
 
           # GitHubRepository.UploadMissingAssetsAsync uploads a legacy file named EXACTLY
           # "RELEASES" (no channel suffix) if and only if the channel is the default Windows
-          # channel ("win"). vpk pack separately writes a "RELEASES-<channel>" file locally for
-          # every channel for its own bookkeeping (CoreUtil.GetReleasesFileName /
-          # ReleaseEntryHelper.UpdateReleaseFilesAsync), and likewise always writes a local
-          # "assets.<channel>.json" (BuildAssets.Write) - neither of those channel-suffixed /
-          # bookkeeping files is ever uploaded for any channel, so both are deliberately
-          # excluded here rather than included by directory-globbing.
+          # channel ("win"). CoreUtil.GetReleasesFileName (called locally by vpk pack via
+          # ReleaseEntryHelper.UpdateReleaseFilesAsync) special-cases "win" the same way: for
+          # channel "win" the LOCAL file it writes is also the unsuffixed "RELEASES" - the
+          # "RELEASES-<channel>" suffixed form only exists for every OTHER (non-default)
+          # channel, e.g. "RELEASES-win-beta". So for "win" specifically, the local and
+          # uploaded filenames are identical; for every other channel, a "RELEASES-<channel>"
+          # file is written locally for vpk's own bookkeeping but never uploaded at all. vpk
+          # pack also always writes a local "assets.<channel>.json" (BuildAssets.Write), which
+          # likewise is never uploaded for any channel - both categories of local-only file are
+          # deliberately excluded here rather than included by directory-globbing.
+          # (Corrected per @chatgpt-codex-connector[bot] review on PR #9: an earlier version of
+          # this comment incorrectly described "RELEASES-<channel>" as vpk pack's local
+          # filename for every channel including "win", which would have implied this step's
+          # $publicAssets.Add('RELEASES') / Test-Path check was wrong - the code was always
+          # correct per CoreUtil.GetReleasesFileName's "win" special-case; only this comment,
+          # and the mirroring prose in docs/developer/release-process.md, needed fixing.)
           if ($channel -eq 'win') {
               $publicAssets.Add('RELEASES')
           }
