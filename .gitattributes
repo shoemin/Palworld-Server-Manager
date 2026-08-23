@@ -1,0 +1,7 @@
+# The release workflow proves the published LICENSE is byte-identical to the
+# canonical Git blob committed in the release tag (see .github/workflows/release.yml
+# and docs/developer/release-process.md). That proof only holds if checkout is
+# deterministic across runners - without this rule, a Windows runner's default
+# core.autocrlf behavior normalizes LICENSE from the committed LF to CRLF on
+# checkout, which alpha.1's real installed-mode field test exposed.
+LICENSE text eol=lf

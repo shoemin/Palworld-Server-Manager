@@ -15,8 +15,8 @@
 5. Best-effort downloads the previous release for the same channel (`vpk download github`) into the same output directory, so `vpk pack`'s default delta mode can generate a delta package against it automatically. This is allowed to find nothing (a fresh channel, or the very first release) without failing the workflow.
 6. Copies the repository `LICENSE` into the publish output before packing (byte-for-byte, verified with a hash check) so every packaged distributable carries the PolyForm Noncommercial License terms and the required copyright notice, not just the source repository.
 7. Packs the release (`vpk pack`) with generated release notes (an experimental-build banner is prepended for prereleases), producing the Setup.exe, full (and delta, if applicable) nupkg, portable zip, and channel feed JSON.
-8. Verifies every required asset actually exists on disk, that `LICENSE` is actually present inside the portable zip and full nupkg contents, and that a real silent install of the freshly-built Setup.exe places a byte-identical `LICENSE` in the installed application directory (then cleanly uninstalls itself again) — fails closed rather than silently publishing a partial or license-missing release.
-9. Generates `SHA256SUMS.txt` over every packaged file.
+8. Verifies every required asset actually exists on disk, that the checked-out `LICENSE` is byte-identical to the canonical Git blob committed in the release tag, that the same bytes are actually present inside the portable zip and full nupkg contents (compared by SHA-256 of the archive entry, not just entry presence), and that a real silent install of the freshly-built Setup.exe places those same byte-identical bytes in the installed application directory (then cleanly uninstalls itself again) — fails closed rather than silently publishing a partial, license-missing, or line-ending-corrupted release. See [Canonical LICENSE bytes](#canonical-license-bytes) below.
+9. Generates `SHA256SUMS.txt` over exactly the files that will actually become public GitHub Release assets — see [Public checksum manifest scope](#public-checksum-manifest-scope) below.
 10. Uploads everything as a workflow-run artifact and the build transcript as a separate artifact.
 11. Publishes the release.
 
@@ -43,6 +43,29 @@ gh workflow run release.yml --ref main -f tag=v0.4.0-alpha.1
 ```
 
 `--ref main` selects the corrected workflow *definition* from `main`, but the job itself still checks out and packages `refs/tags/v0.4.0-alpha.1` as the product source — so the released product remains exactly the commit the tag pointed to when it was created. Every other repository file the workflow references after that checkout (`scripts/build.ps1`, `docs/requirements.txt`, project files, and any other supporting script) is the version stored in the *tagged commit*, not `main` — this recovery procedure does not pick those up. A failure whose real fix lives outside `.github/workflows/release.yml` itself needs a different recovery decision, not this one.
+
+### Public checksum manifest scope
+
+`SHA256SUMS.txt` is generated from an explicit, allow-listed set of filenames — never from a blind listing of everything `vpk pack` happened to write to its output directory. That set is derived by mirroring pinned Velopack 1.2.0's actual GitHub upload behavior (audited directly from its source at tag `1.2.0`: `src/vpk/Velopack.Deployment/GitHubRepository.cs`, `src/vpk/Velopack.Core/DefaultName.cs`, `src/lib-csharp/Util/CoreUtil.cs`), so the manifest can only ever describe a file a consumer can actually download from the release:
+
+- `<PackId>-<channel>-Setup.exe` and `<PackId>-<channel>-Portable.zip` — always channel-suffixed, even for the default `win` channel.
+- The full nupkg (and delta nupkg, if one was generated) — the exact filename is constructed from the release version and channel (`<PackId>-<version>-full.nupkg` for `win`, `<PackId>-<version>-<channel>-full.nupkg` for every other channel, per `DefaultName.GetSuggestedReleaseName`'s Windows-default-channel suffix rule), not discovered by globbing the output directory. A glob is unsafe here: "Download previous release of this channel" deliberately leaves the *previous* same-channel release's full nupkg in this same directory for delta diffing, so on every release after a channel's first, a glob would match two files.
+- `releases.<channel>.json` — always.
+- A legacy file named exactly `RELEASES` (no channel suffix) — **only** when publishing to the default `win` channel. `CoreUtil.GetReleasesFileName` special-cases `win` the same way on the local side: for `win`, the file `vpk pack` writes locally is *also* the unsuffixed `RELEASES` (identical to what gets uploaded); for every other channel, `vpk pack` writes a channel-suffixed `RELEASES-<channel>` file locally for its own bookkeeping, but that suffixed file is never uploaded for any channel.
+
+`assets.<channel>.json` is local-only build bookkeeping (`BuildAssets.Write`) and is never uploaded for any channel, so it's deliberately excluded rather than filtered after the fact. The workflow fails closed if an intended public asset is missing before generating the manifest, and the manifest itself is deduplicated and sorted for deterministic output.
+
+v0.4.0-alpha.1's published `SHA256SUMS.txt` was generated by the older blind-directory-listing approach and lists `assets.win-beta.json` and `RELEASES-win-beta` as if they were downloadable — they were never actually uploaded (expected Velopack behavior, not a defect in what got published), but the checksum manifest describing them was misleading. alpha.1 is immutable and was not corrected retroactively; this is fixed starting with alpha.2.
+
+### Canonical LICENSE bytes
+
+The release workflow proves — not just asserts — that every `LICENSE` copy it ships is byte-identical to the `LICENSE` blob actually committed in the release tag:
+
+1. Repository-root `.gitattributes` declares `LICENSE text eol=lf`, so checkout is deterministic regardless of a runner's `core.autocrlf` setting.
+2. Before `LICENSE` is copied into the publish directory, the workflow independently verifies this rather than trusting the attribute alone: it resolves the committed blob with `git rev-parse HEAD:LICENSE`, computes the blob ID of the **raw** working-tree bytes with `git hash-object --no-filters LICENSE` (plain `git hash-object` without `--no-filters` would run Git's own clean/EOL filter first and could hide a real divergence), and fails the release if the two IDs don't match exactly.
+3. From there, every subsequent copy is checked by SHA-256 against that canonical source: the packaging-directory copy, the portable zip's `current/LICENSE` entry, the full nupkg's `lib/app/LICENSE` entry (both compared by extracting and hashing the actual archive entry bytes, not just checking the entry exists), and the real installed copy from a genuine silent install/uninstall cycle.
+
+v0.4.0-alpha.1 exposed the gap this closes: `actions/checkout` on `windows-latest` normalized the committed LF `LICENSE` to CRLF, and the release workflow's old checks only ever compared the working copy to its own copy elsewhere in the same pipeline — always self-consistent, never actually checked against the canonical Git object. The file contents (including the "Required Notice: Copyright 2026 shoemin") were never in question, only the line-ending encoding — but the workflow couldn't have caught a genuine content divergence either, since it never had a canonical reference point. alpha.1 is immutable and was not corrected retroactively; this is fixed starting with alpha.2.
 
 ### Installer packaging (Velopack)
 
@@ -71,7 +94,7 @@ This produces `ShoeMin.PalworldServerManager-<channel>-Setup.exe`, a `ShoeMin.Pa
 
 **License preservation:** `<publish-dir>` must contain `LICENSE` (copied from the repository root, verbatim) before `vpk pack` runs, or the packaged distributables would silently omit the PolyForm Noncommercial License terms and required copyright notice. It ends up at `current/LICENSE` in the portable zip and `lib/app/LICENSE` in the full nupkg; a real silent install (`Setup.exe --silent --installto <dir>`) places it at `<installdir>\current\LICENSE`, confirmed with a real install/uninstall cycle, not just by inspecting archive contents.
 
-**No release has actually been published through this pipeline yet** — it is implemented and locally verified (including a real, read-only `vpk download github` check against this repository confirming graceful "no previous release" handling), but publishing the first one is a separate, deliberate action.
+**v0.4.0-alpha.1 was the first release published through this pipeline** (`win-beta` channel). Its checksum manifest and `LICENSE` line-ending encoding predate the fixes described in [Public checksum manifest scope](#public-checksum-manifest-scope) and [Canonical LICENSE bytes](#canonical-license-bytes) above; alpha.1 itself is immutable and was not corrected retroactively.
 
 ## In-app update checking and installing (Velopack)
 

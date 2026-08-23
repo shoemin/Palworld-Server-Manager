@@ -36,8 +36,16 @@ jobs:
           }
 
           # SemVer-ish: v0.4.0, v0.4.0-alpha.1, v0.4.0-beta.1, v0.4.0-rc.1
-          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$') {
-              throw "Release tag '$tag' is not supported. Use SemVer-style tags such as v0.4.0, v0.4.0-alpha.1, or v0.4.0-rc.1."
+          # Major/minor/patch use the official SemVer numeric-identifier grammar (no leading
+          # zeros, e.g. "01") rather than a loose \d+: Velopack's SemanticVersion.Parse int-parses
+          # and re-stringifies these three components (so "v01.2.3" packs as "1.2.3", not
+          # "01.2.3"), and downstream steps construct exact package filenames directly from this
+          # $version output - a leading-zero tag would pass this check but then never match the
+          # actual packaged filename, causing the release to fail closed later instead of here at
+          # the source. Rejecting it up front is simpler and clearer than re-normalizing the
+          # version everywhere it's used to build a filename.
+          if ($tag -notmatch '^v(?<version>(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?)$') {
+              throw "Release tag '$tag' is not supported. Use SemVer-style tags such as v0.4.0, v0.4.0-alpha.1, or v0.4.0-rc.1 (major/minor/patch must not have leading zeros)."
           }
 
           $version = $Matches.version
@@ -115,6 +123,31 @@ jobs:
             -p:InformationalVersion='${{ steps.release_info.outputs.version }}' `
             -o release-work\publish
 
+      - name: Verify checked-out LICENSE bytes match the canonical Git blob
+        shell: pwsh
+        run: |
+          # alpha.1's real installed-mode field test found that the OLD LICENSE check here only
+          # proved the checked-out working copy was consistent with itself (repo copy vs. its own
+          # copy in the pack dir) - never that either one actually matched the LICENSE blob
+          # committed in the release tag. A windows-latest runner's default core.autocrlf
+          # behavior normalized the committed LF LICENSE to CRLF on checkout, and the old check
+          # couldn't see that because it never compared against the canonical Git object at all.
+          # .gitattributes (LICENSE text eol=lf) now makes checkout deterministic, but this step
+          # verifies it directly rather than trusting the attribute alone. Plain `git hash-object`
+          # (without --no-filters) is deliberately NOT used, because Git would run its own
+          # clean/EOL filter first and could hide a real working-tree divergence; --no-filters
+          # forces Git to compute the blob ID of the RAW bytes actually sitting on disk.
+          $ErrorActionPreference = 'Stop'
+          $committedBlobId = git rev-parse HEAD:LICENSE
+          $rawWorktreeBlobId = git hash-object --no-filters LICENSE
+          if ($committedBlobId -ne $rawWorktreeBlobId) {
+              throw "Checked-out LICENSE bytes do not match the canonical Git blob committed in this release tag. " +
+                    "Committed blob: $committedBlobId; raw working-tree blob: $rawWorktreeBlobId. " +
+                    "This usually means checkout normalized line endings - refusing to package a release whose LICENSE " +
+                    "cannot be proven byte-identical to what was actually tagged."
+          }
+          Write-Host "Confirmed: raw working-tree LICENSE bytes match the canonical Git blob committed in this tag (object $committedBlobId)."
+
       - name: Copy LICENSE into the packaged application payload
         shell: pwsh
         run: |
@@ -123,7 +156,10 @@ jobs:
           # (installer, portable zip, full nupkg) must actually contain LICENSE alongside the
           # application, not just the source repository. Copies the canonical file verbatim
           # (never rewrites its text) and fails closed if anything about the copy looks wrong,
-          # rather than silently shipping a release missing the license.
+          # rather than silently shipping a release missing the license. The previous step
+          # already proved the source LICENSE about to be copied here matches the canonical Git
+          # blob, so byte-identity all the way through the packaging pipeline transitively
+          # proves byte-identity with the canonical tagged LICENSE too.
           $ErrorActionPreference = 'Stop'
           $repoLicense = Join-Path $PWD 'LICENSE'
           if (-not (Test-Path $repoLicense)) {
@@ -227,60 +263,165 @@ jobs:
             --outputDir release-work\velopack
           if ($LASTEXITCODE -ne 0) { throw "vpk pack exited with code $LASTEXITCODE" }
 
-      - name: Verify required release assets were produced
+      - name: Determine and verify the intended public release asset set
+        id: verify_assets
         shell: pwsh
         run: |
+          # Determines exactly which locally-produced files will actually become public
+          # GitHub Release assets, mirroring pinned Velopack 1.2.0's real upload behavior
+          # (audited directly from source: src/vpk/Velopack.Deployment/GitHubRepository.cs,
+          # src/vpk/Velopack.Core/DefaultName.cs, src/lib-csharp/Util/CoreUtil.cs @ tag 1.2.0)
+          # rather than assuming every local file in the output directory is public. This
+          # list also drives SHA256SUMS.txt below, so the public checksum manifest can never
+          # list a file a consumer cannot actually download.
           $ErrorActionPreference = 'Stop'
           $channel = '${{ steps.release_info.outputs.channel }}'
           $dir = 'release-work\velopack'
-          # Asset filenames are suffixed with the actual channel (e.g. "-win-beta-Setup.exe" for
-          # a prerelease, not "-win-Setup.exe") - verified locally with a real vpk pack run
-          # against the win-beta channel before trusting this in CI.
-          $required = @(
-              "$env:PACK_ID-$channel-Setup.exe",
-              "$env:PACK_ID-$channel-Portable.zip",
-              "releases.$channel.json"
-          )
-          $missing = $required | Where-Object { -not (Test-Path (Join-Path $dir $_)) }
+
+          # Setup.exe and Portable.zip are always channel-suffixed, even for the default "win"
+          # channel (DefaultName.GetSuggestedSetupName/GetSuggestedPortableName always apply
+          # "-<channel>") - verified locally with a real vpk pack run against win-beta before
+          # trusting this in CI.
+          $setupName = "$env:PACK_ID-$channel-Setup.exe"
+          $portableName = "$env:PACK_ID-$channel-Portable.zip"
+          $releasesIndexName = "releases.$channel.json"
+
+          $publicAssets = [System.Collections.Generic.List[string]]::new()
+          $publicAssets.Add($setupName)
+          $publicAssets.Add($portableName)
+          $publicAssets.Add($releasesIndexName)
+
+          # The full/delta nupkg filename drops the channel suffix entirely when channel is
+          # "win" (DefaultName.GetSuggestedReleaseName's Windows-default-channel special case).
+          # This is constructed explicitly from $version/$channel rather than discovered by a
+          # "$env:PACK_ID-*-full.nupkg" glob: "Download previous release of this channel" above
+          # deliberately downloads the PREVIOUS same-channel release's full nupkg into this same
+          # output directory (so vpk pack's delta mode can diff against it), and vpk pack does
+          # not remove that input file afterward - so on every release after a channel's first,
+          # this directory legitimately contains two "*-full.nupkg" matches (the old downloaded
+          # one and the newly packed one), and a glob+count-based check would either grab the
+          # wrong one or fail closed on every subsequent release. Constructing the current
+          # version's exact filename sidesteps that ambiguity entirely. SemanticVersion's
+          # ToNormalizedString (verified against pinned Velopack 1.2.0 source) is exactly
+          # "{major}.{minor}.{patch}[-{prerelease}]" for any version with no 4th (Revision)
+          # component and no build metadata - which is guaranteed here, since this workflow's own
+          # tag regex above never allows a 4-component version or "+metadata" in the first place -
+          # so $version is already in that exact normalized form.
+          $version = '${{ steps.release_info.outputs.version }}'
+          if ($channel -eq 'win') {
+              $fullNupkgName = "$env:PACK_ID-$version-full.nupkg"
+              $deltaNupkgName = "$env:PACK_ID-$version-delta.nupkg"
+          } else {
+              $fullNupkgName = "$env:PACK_ID-$version-$channel-full.nupkg"
+              $deltaNupkgName = "$env:PACK_ID-$version-$channel-delta.nupkg"
+          }
+          $publicAssets.Add($fullNupkgName)
+          "full_nupkg_name=$fullNupkgName" >> $env:GITHUB_OUTPUT
+
+          if (Test-Path (Join-Path $dir $deltaNupkgName)) {
+              Write-Host "Delta package present, including in the public asset set: $deltaNupkgName"
+              $publicAssets.Add($deltaNupkgName)
+          } else {
+              Write-Host "No delta package produced for this version (expected for the first release on a channel) - not fabricating a delta entry."
+          }
+
+          # GitHubRepository.UploadMissingAssetsAsync uploads a legacy file named EXACTLY
+          # "RELEASES" (no channel suffix) if and only if the channel is the default Windows
+          # channel ("win"). CoreUtil.GetReleasesFileName (called locally by vpk pack via
+          # ReleaseEntryHelper.UpdateReleaseFilesAsync) special-cases "win" the same way: for
+          # channel "win" the LOCAL file it writes is also the unsuffixed "RELEASES" - the
+          # "RELEASES-<channel>" suffixed form only exists for every OTHER (non-default)
+          # channel, e.g. "RELEASES-win-beta". So for "win" specifically, the local and
+          # uploaded filenames are identical; for every other channel, a "RELEASES-<channel>"
+          # file is written locally for vpk's own bookkeeping but never uploaded at all. vpk
+          # pack also always writes a local "assets.<channel>.json" (BuildAssets.Write), which
+          # likewise is never uploaded for any channel - both categories of local-only file are
+          # deliberately excluded here rather than included by directory-globbing.
+          # (Corrected per @chatgpt-codex-connector[bot] review on PR #9: an earlier version of
+          # this comment incorrectly described "RELEASES-<channel>" as vpk pack's local
+          # filename for every channel including "win", which would have implied this step's
+          # $publicAssets.Add('RELEASES') / Test-Path check was wrong - the code was always
+          # correct per CoreUtil.GetReleasesFileName's "win" special-case; only this comment,
+          # and the mirroring prose in docs/developer/release-process.md, needed fixing.)
+          if ($channel -eq 'win') {
+              $publicAssets.Add('RELEASES')
+          }
+
+          $missing = $publicAssets | Where-Object { -not (Test-Path (Join-Path $dir $_)) }
           if ($missing) {
-              throw "Release packaging did not produce required asset(s): $($missing -join ', ')"
+              throw "Release packaging did not produce required public asset(s): $($missing -join ', ')"
           }
-          $fullNupkg = Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-full.nupkg"
-          if (-not $fullNupkg) {
-              throw "Release packaging did not produce a -full.nupkg asset."
-          }
-          Write-Host "All required release assets are present:"
+
+          Write-Host "Intended public release asset set (channel '$channel'):"
+          $publicAssets | Sort-Object | ForEach-Object { Write-Host " - $_" }
+
+          # -AsArray guards against ConvertTo-Json's single-element pipeline collapse (piping a
+          # one-item collection would otherwise serialize as a bare JSON string, not an array) -
+          # always at least 4 entries in practice here, but this keeps downstream ConvertFrom-Json
+          # parsing correct unconditionally rather than relying on that.
+          $publicAssetsJson = $publicAssets | ConvertTo-Json -Compress -AsArray
+          "public_assets_json=$publicAssetsJson" >> $env:GITHUB_OUTPUT
+
+          Write-Host ""
+          Write-Host "All files present in '$dir' (including local-only packaging metadata, not all of which is public):"
           Get-ChildItem $dir | ForEach-Object { Write-Host " - $($_.Name) ($([math]::Round($_.Length / 1MB, 1)) MB)" }
 
-      - name: Verify LICENSE is present inside the portable zip and full nupkg
+      - name: Verify LICENSE bytes inside the portable zip and full nupkg
         shell: pwsh
         run: |
-          # Confirms the LICENSE copied into the pack directory actually made it into the
-          # redistributable package *contents*, not just the pack directory on disk - the
-          # portable zip and full nupkg are both plain zip archives, so their entries can be
-          # listed directly without extracting the whole (large) archive.
+          # Confirms the LICENSE copied into the pack directory doesn't just have an entry
+          # present inside the redistributable package contents, but that entry's actual bytes
+          # are byte-identical to the canonical (Git-blob-verified) source LICENSE - a normalized
+          # text comparison would not have caught alpha.1's real LF/CRLF divergence, so this
+          # extracts each archive entry and SHA-256-compares raw bytes, not text. The portable
+          # zip and full nupkg are both plain zip archives, so entries can be read directly
+          # without extracting the whole (large) archive.
           $ErrorActionPreference = 'Stop'
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $channel = '${{ steps.release_info.outputs.channel }}'
           $dir = 'release-work\velopack'
+          $canonicalHash = (Get-FileHash -Path 'LICENSE' -Algorithm SHA256).Hash
 
-          function Test-ZipContainsEntry([string]$ZipPath, [string]$EntryPath) {
+          function Get-ZipEntrySha256([string]$ZipPath, [string]$EntryPath) {
               $zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
-              try { return $null -ne ($zip.Entries | Where-Object { $_.FullName -eq $EntryPath }) }
+              try {
+                  $entry = $zip.Entries | Where-Object { $_.FullName -eq $EntryPath }
+                  if (-not $entry) { return $null }
+                  $sha256 = [System.Security.Cryptography.SHA256]::Create()
+                  try {
+                      $stream = $entry.Open()
+                      try { return [System.BitConverter]::ToString($sha256.ComputeHash($stream)).Replace('-', '') }
+                      finally { $stream.Dispose() }
+                  }
+                  finally { $sha256.Dispose() }
+              }
               finally { $zip.Dispose() }
           }
 
           $portableZip = Join-Path $dir "$env:PACK_ID-$channel-Portable.zip"
-          if (-not (Test-ZipContainsEntry -ZipPath $portableZip -EntryPath 'current/LICENSE')) {
+          $portableHash = Get-ZipEntrySha256 -ZipPath $portableZip -EntryPath 'current/LICENSE'
+          if (-not $portableHash) {
               throw "Portable package '$portableZip' does not contain LICENSE at 'current/LICENSE'."
           }
-          Write-Host "Confirmed: portable zip contains current/LICENSE."
+          if ($portableHash -ne $canonicalHash) {
+              throw "Portable package '$portableZip' entry 'current/LICENSE' (SHA-256 $portableHash) is not byte-identical to the canonical LICENSE (SHA-256 $canonicalHash)."
+          }
+          Write-Host "Confirmed: portable zip 'current/LICENSE' is byte-identical to the canonical LICENSE (SHA-256 $portableHash)."
 
-          $fullNupkg = (Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-full.nupkg" | Select-Object -First 1).FullName
-          if (-not (Test-ZipContainsEntry -ZipPath $fullNupkg -EntryPath 'lib/app/LICENSE')) {
+          # Uses the exact filename computed in "Determine and verify the intended public
+          # release asset set", not a "$env:PACK_ID-*-full.nupkg" glob - on every release after a
+          # channel's first, this directory also contains the previous release's downloaded full
+          # nupkg (left there deliberately for delta diffing), so a glob could silently pick the
+          # WRONG (old) package's LICENSE entry instead of the one this run actually built.
+          $fullNupkg = Join-Path $dir '${{ steps.verify_assets.outputs.full_nupkg_name }}'
+          $nupkgHash = Get-ZipEntrySha256 -ZipPath $fullNupkg -EntryPath 'lib/app/LICENSE'
+          if (-not $nupkgHash) {
               throw "Full package '$fullNupkg' does not contain LICENSE at 'lib/app/LICENSE'."
           }
-          Write-Host "Confirmed: full nupkg contains lib/app/LICENSE."
+          if ($nupkgHash -ne $canonicalHash) {
+              throw "Full package '$fullNupkg' entry 'lib/app/LICENSE' (SHA-256 $nupkgHash) is not byte-identical to the canonical LICENSE (SHA-256 $canonicalHash)."
+          }
+          Write-Host "Confirmed: full nupkg 'lib/app/LICENSE' is byte-identical to the canonical LICENSE (SHA-256 $nupkgHash)."
 
       - name: Verify a real silent install places LICENSE in the installed application
         shell: pwsh
@@ -374,20 +515,38 @@ jobs:
               }
           }
 
-      - name: Generate SHA-256 checksums
+      - name: Generate and validate public SHA-256 checksums
         id: checksums
         shell: pwsh
         run: |
+          # Builds SHA256SUMS.txt from exactly the intended-public-asset list determined above
+          # (never from a blind directory listing), so it can only ever describe files a
+          # consumer can actually download from the GitHub Release - re-validated here
+          # independently (existence, no duplicates) rather than trusting the prior step's
+          # in-memory state, since this step is what actually decides the published manifest.
+          $ErrorActionPreference = 'Stop'
           $dir = 'release-work\velopack'
           $checksumPath = Join-Path $dir 'SHA256SUMS.txt'
-          $lines = Get-ChildItem -Path $dir -File |
-              Sort-Object Name |
-              ForEach-Object {
-                  $hash = (Get-FileHash -Path $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-                  "$hash  $($_.Name)"
-              }
+          $publicAssets = @('${{ steps.verify_assets.outputs.public_assets_json }}' | ConvertFrom-Json)
+
+          $distinctAssets = @($publicAssets | Select-Object -Unique)
+          if ($distinctAssets.Count -ne $publicAssets.Count) {
+              throw "Intended public asset list contains duplicate entries: $($publicAssets -join ', ')"
+          }
+
+          $missing = $distinctAssets | Where-Object { -not (Test-Path (Join-Path $dir $_)) }
+          if ($missing) {
+              throw "Cannot generate SHA256SUMS.txt: expected public asset(s) missing from '$dir': $($missing -join ', ')"
+          }
+
+          $lines = $distinctAssets | Sort-Object | ForEach-Object {
+              $hash = (Get-FileHash -Path (Join-Path $dir $_) -Algorithm SHA256).Hash.ToLowerInvariant()
+              "$hash  $_"
+          }
           $lines | Set-Content -Path $checksumPath -Encoding ascii
           "checksum_path=$checksumPath" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Public SHA256SUMS.txt (only files that will actually be public GitHub Release assets):"
           Write-Host (Get-Content $checksumPath -Raw)
 
       - name: Upload packaged assets to workflow run
