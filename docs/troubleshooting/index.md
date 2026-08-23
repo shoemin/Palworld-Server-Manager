@@ -34,9 +34,9 @@
 
 ## Manager updates
 
-**Check for Updates is grayed out / says self-update is disabled.** Update checking only works from a genuine Setup.exe install. A developer build or the current portable ZIP will say so explicitly instead of pretending to check — see [Manager Updates](../manager-updates/index.md#execution-modes).
+**Check for Updates is grayed out / says self-update is disabled.** Update checking only works from a genuine Setup.exe install. A developer build or a Portable-mode copy will say so explicitly instead of pretending to check — see [Manager Updates](../manager-updates/index.md#execution-modes).
 
-**Check for Updates says it's up to date, but I expected a newer version.** There is no published Setup.exe release yet, and the Prerelease channel has no published builds either — see [Update channels](../manager-updates/update-channels.md). "Up to date" and "nothing found" currently look the same because nothing has been published.
+**Check for Updates says it's up to date, but I expected a newer version.** A few things to check: confirm the [execution mode](../manager-updates/index.md#execution-modes) is actually **Installed**, not Portable or Development (those can't check at all). Confirm which [channel](../manager-updates/update-channels.md) is selected — **Prerelease** maps to the `win-beta` Velopack channel, **Stable** maps to `win`. Prerelease releases exist today; Stable currently has no published release yet, so Stable will correctly report nothing available until one exists — that's expected, not a bug. The Manager also never offers the version you're currently running as an "update," and it never automatically offers to downgrade to an older version on either channel — see [No automatic downgrade](../manager-updates/update-channels.md#no-automatic-downgrade).
 
 **A check fails with a network/GitHub error.** Update checks are anonymous public requests to GitHub; a failure here doesn't affect anything else in the Manager, and you can retry immediately with no cooldown.
 

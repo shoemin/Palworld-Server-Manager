@@ -13,8 +13,8 @@ Each channel maps to a distinct Velopack release channel packaged and published 
 
 The very first time the Manager runs with no saved channel preference, it defaults to whichever channel **the installed package itself was actually built for** — installing a `v0.4.0-alpha.1` build (packaged for `win-beta`) starts you on Prerelease, not Stable, so you naturally keep receiving subsequent alpha/beta updates without having to find and flip a setting first. Once you ever explicitly choose a channel in the Updates window, that choice is remembered and always wins from then on, regardless of which package you originally installed.
 
-!!! note "No release published through this pipeline yet"
-    Packaging both channels is implemented and locally verified, but no release has actually been published yet — see [Manager Updates](index.md). Selecting either channel today will simply find no available update until a matching release exists.
+!!! note "Current release state"
+    `v0.4.0-alpha.1` was the first published release through this pipeline — a Prerelease on the `win-beta` channel. There is no Stable/`win` release published yet. If you're running `v0.4.0-alpha.1` (or any prerelease) and switch to the Stable channel, **Check for Updates** will correctly report nothing available — that's expected given the current release state, not a network or app error. See [Manager Updates](index.md) for what's field-tested so far.
 
 ## Switching channels
 

@@ -1,7 +1,7 @@
 # Manager Updates
 
-!!! warning "Development status: implemented, not yet field-tested against a real release"
-    Palworld Server Manager can **check for**, **download**, and **install** its own updates from a genuine Setup.exe install, using [Velopack](https://velopack.io) — including restarting itself while a Palworld server keeps running. The GitHub Actions release pipeline that packages and publishes both the `win` (Stable) and `win-beta` (Prerelease) channels is also implemented and locally verified end-to-end. What's still missing is an actual published release: **no Setup.exe has been published yet**, so the real "old Manager → new Manager, real Palworld server never interrupted" scenario has not been field-tested against a real update. Nothing on this page is available to current portable-ZIP users.
+!!! warning "Field status: installed-mode baseline verified; live self-update still pending"
+    Palworld Server Manager can **check for**, **download**, and **install** its own updates from a genuine Setup.exe install, using [Velopack](https://velopack.io) — including restarting itself while a Palworld server keeps running. `v0.4.0-alpha.1` is a real published Prerelease (`win-beta` channel) with a working Setup.exe, and a real installed-mode field test against that public build has verified: installation, Installed execution mode, persistent profile/data preservation across install, correct Prerelease/`win-beta` channel selection, update checks against the live public feed, real Palworld start/monitoring, Manager restart while Palworld keeps running with correct process reattachment, graceful REST save/shutdown, and detection of an externally terminated/crashed Palworld process. **What's still pending** is the actual release-to-release scenario — checking, downloading, and installing a real update from a running `v0.4.0-alpha.1` to a newer published release while a real Palworld server stays running throughout — which requires a second published release and hasn't happened yet. Nothing on this page is available to Portable-mode users; see [Installation](../getting-started/installation.md).
 
 ## What exists today
 
@@ -22,8 +22,8 @@ Whether updating is possible at all depends on how this copy of the Manager is r
 | Mode | Meaning | Can check/download/install? |
 |---|---|---|
 | **Installed** | Installed via a genuine Velopack Setup.exe | Yes |
-| **Portable** | A Velopack-managed portable package (not yet published) | No — would overwrite its own running executable |
-| **Development** | A developer build (`bin\Debug`, `bin\Release`) or the current plain portable ZIP release | No |
+| **Portable** | The published portable package, run directly from an extracted folder | No — would overwrite its own running executable; download a newer portable package manually instead |
+| **Development** | A developer build (`bin\Debug`, `bin\Release`) | No |
 
 Portable and Development copies show a plain-language explanation in the Updates window instead of a working Check button, and point to the GitHub Releases page for a manual download.
 
