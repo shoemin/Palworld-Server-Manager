@@ -284,22 +284,37 @@ jobs:
           $publicAssets.Add($releasesIndexName)
 
           # The full/delta nupkg filename drops the channel suffix entirely when channel is
-          # "win" (DefaultName.GetSuggestedReleaseName's Windows-default-channel special case),
-          # so its exact name is discovered from disk rather than re-derived by hand here.
-          $fullNupkg = @(Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-full.nupkg")
-          if ($fullNupkg.Count -ne 1) {
-              throw "Expected exactly one '*-full.nupkg' asset in '$dir', found $($fullNupkg.Count)."
-          }
-          $publicAssets.Add($fullNupkg[0].Name)
-
-          $deltaNupkg = @(Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-delta.nupkg" -ErrorAction SilentlyContinue)
-          if ($deltaNupkg.Count -gt 1) {
-              throw "Expected at most one '*-delta.nupkg' asset in '$dir', found $($deltaNupkg.Count)."
-          } elseif ($deltaNupkg.Count -eq 1) {
-              Write-Host "Delta package present, including in the public asset set: $($deltaNupkg[0].Name)"
-              $publicAssets.Add($deltaNupkg[0].Name)
+          # "win" (DefaultName.GetSuggestedReleaseName's Windows-default-channel special case).
+          # This is constructed explicitly from $version/$channel rather than discovered by a
+          # "$env:PACK_ID-*-full.nupkg" glob: "Download previous release of this channel" above
+          # deliberately downloads the PREVIOUS same-channel release's full nupkg into this same
+          # output directory (so vpk pack's delta mode can diff against it), and vpk pack does
+          # not remove that input file afterward - so on every release after a channel's first,
+          # this directory legitimately contains two "*-full.nupkg" matches (the old downloaded
+          # one and the newly packed one), and a glob+count-based check would either grab the
+          # wrong one or fail closed on every subsequent release. Constructing the current
+          # version's exact filename sidesteps that ambiguity entirely. SemanticVersion's
+          # ToNormalizedString (verified against pinned Velopack 1.2.0 source) is exactly
+          # "{major}.{minor}.{patch}[-{prerelease}]" for any version with no 4th (Revision)
+          # component and no build metadata - which is guaranteed here, since this workflow's own
+          # tag regex above never allows a 4-component version or "+metadata" in the first place -
+          # so $version is already in that exact normalized form.
+          $version = '${{ steps.release_info.outputs.version }}'
+          if ($channel -eq 'win') {
+              $fullNupkgName = "$env:PACK_ID-$version-full.nupkg"
+              $deltaNupkgName = "$env:PACK_ID-$version-delta.nupkg"
           } else {
-              Write-Host "No delta package produced (expected for the first release on a channel) - not fabricating a delta entry."
+              $fullNupkgName = "$env:PACK_ID-$version-$channel-full.nupkg"
+              $deltaNupkgName = "$env:PACK_ID-$version-$channel-delta.nupkg"
+          }
+          $publicAssets.Add($fullNupkgName)
+          "full_nupkg_name=$fullNupkgName" >> $env:GITHUB_OUTPUT
+
+          if (Test-Path (Join-Path $dir $deltaNupkgName)) {
+              Write-Host "Delta package present, including in the public asset set: $deltaNupkgName"
+              $publicAssets.Add($deltaNupkgName)
+          } else {
+              Write-Host "No delta package produced for this version (expected for the first release on a channel) - not fabricating a delta entry."
           }
 
           # GitHubRepository.UploadMissingAssetsAsync uploads a legacy file named EXACTLY
@@ -385,7 +400,12 @@ jobs:
           }
           Write-Host "Confirmed: portable zip 'current/LICENSE' is byte-identical to the canonical LICENSE (SHA-256 $portableHash)."
 
-          $fullNupkg = (Get-ChildItem -Path $dir -Filter "$env:PACK_ID-*-full.nupkg" | Select-Object -First 1).FullName
+          # Uses the exact filename computed in "Determine and verify the intended public
+          # release asset set", not a "$env:PACK_ID-*-full.nupkg" glob - on every release after a
+          # channel's first, this directory also contains the previous release's downloaded full
+          # nupkg (left there deliberately for delta diffing), so a glob could silently pick the
+          # WRONG (old) package's LICENSE entry instead of the one this run actually built.
+          $fullNupkg = Join-Path $dir '${{ steps.verify_assets.outputs.full_nupkg_name }}'
           $nupkgHash = Get-ZipEntrySha256 -ZipPath $fullNupkg -EntryPath 'lib/app/LICENSE'
           if (-not $nupkgHash) {
               throw "Full package '$fullNupkg' does not contain LICENSE at 'lib/app/LICENSE'."
