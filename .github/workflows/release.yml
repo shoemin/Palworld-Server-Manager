@@ -407,6 +407,53 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      - name: Verify the release tag still exists on origin before publishing
+        shell: pwsh
+        run: |
+          # Publication below deliberately omits --targetCommitish and relies entirely on the
+          # tag named by --tag already existing (GitHub's Create Release API documents
+          # target_commitish as "Unused if the Git tag already exists"). This tag is immutable
+          # by policy and must never be created or moved by this workflow - so fail closed here
+          # if it has somehow stopped existing on the remote, or now resolves to a different
+          # commit than the product source this job actually built, between checkout and this
+          # point. Re-queries origin directly (not just the local clone) and correctly
+          # dereferences an annotated tag's peeled commit (the "^{}" line) rather than comparing
+          # the annotated tag object's own SHA, which would never match a commit SHA.
+          $ErrorActionPreference = 'Stop'
+          $tag = '${{ steps.release_info.outputs.tag }}'
+          $expectedCommit = '${{ steps.verify_tag.outputs.commit_sha }}'
+          $exactRef = "refs/tags/$tag"
+          $peeledRef = "refs/tags/$tag^{}"
+
+          # git ls-remote's <refs> argument is a glob pattern, not an exact match
+          # (https://git-scm.com/docs/git-ls-remote) - "$tag*" is queried broadly enough to also
+          # catch the optional peeled ref, but a prefix-sharing tag (e.g. v0.4.0-alpha.10) would
+          # also match this pattern if the exact requested tag no longer existed. Every returned
+          # line is therefore parsed into its own (Sha, Ref) pair and only a line whose Ref field
+          # is an EXACT, full match to $exactRef/$peeledRef is ever trusted - never "the first
+          # result" or a prefix match.
+          $remoteTagLines = git ls-remote --tags origin "$tag*"
+          $parsed = $remoteTagLines -split "`n" | Where-Object { $_ -ne '' } | ForEach-Object {
+              $parts = $_ -split '\s+', 2
+              [pscustomobject]@{ Sha = $parts[0]; Ref = $parts[1] }
+          }
+
+          $exactLine = $parsed | Where-Object { $_.Ref -eq $exactRef }
+          if (-not $exactLine) {
+              throw "Release tag '$tag' no longer exists on origin (no exact '$exactRef' ref found) - refusing to publish. This tag is immutable and must not be recreated by this workflow."
+          }
+
+          # Annotated tags report an additional exact "^{}" peeled line pointing at the commit the
+          # tag targets; lightweight tags have no such line and the tag ref's own SHA already is
+          # the commit.
+          $peeledLine = $parsed | Where-Object { $_.Ref -eq $peeledRef }
+          $actualCommit = if ($peeledLine) { $peeledLine.Sha } else { $exactLine.Sha }
+
+          if ($actualCommit -ne $expectedCommit) {
+              throw "Release tag '$tag' now resolves to '$actualCommit' on origin, not the expected product commit '$expectedCommit' - refusing to publish. The tag is immutable and must not have moved."
+          }
+          Write-Host "Confirmed: exact tag ref '$exactRef' exists on origin and resolves to the expected product commit '$expectedCommit'."
+
       # vpk upload github is the single authority that creates/updates the GitHub Release: it
       # uploads the Setup.exe, full (and delta, if present) nupkg, portable zip, and the channel
       # feed json, and --merge lets a re-run of an existing tag add to that same release instead
@@ -414,6 +461,18 @@ jobs:
       # Velopack asset, so it's attached afterward with a plain `gh release upload` against the
       # release vpk just created - one authority for creation, a simple follow-up for the one
       # extra file, never two things trying to create the release.
+      #
+      # --targetCommitish is deliberately NOT passed. GitHub's Create Release API documents
+      # target_commitish as "Unused if the Git tag already exists" - and separately, when a
+      # target_commitish IS given and identifies a commit whose .github/workflows content
+      # differs from the repository's default branch, GitHub requires the authenticating token
+      # to be authorized to modify workflows, which the built-in GITHUB_TOKEN can never be
+      # granted (this returns 403 "Resource not accessible by integration", not a permissions
+      # misconfiguration - the job's own GITHUB_TOKEN Permissions block already shows
+      # Contents: write). Since v0.4.0-alpha.1 was tagged before this workflow file was later
+      # corrected on main, passing its old commit as --targetCommitish triggers exactly that
+      # guard. Omitting the flag makes GitHub use the tag it already has (verified immutable
+      # above) instead of evaluating that guard against an unrelated older commit.
       - name: Publish release via Velopack (single release authority)
         shell: pwsh
         env:
@@ -434,7 +493,6 @@ jobs:
             --merge `
             --tag '${{ steps.release_info.outputs.tag }}' `
             --releaseName "Palworld Server Manager ${{ steps.release_info.outputs.tag }}" `
-            --targetCommitish '${{ steps.verify_tag.outputs.commit_sha }}' `
             @prereleaseArgs
           if ($LASTEXITCODE -ne 0) { throw "vpk upload github exited with code $LASTEXITCODE" }
 

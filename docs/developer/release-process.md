@@ -24,6 +24,14 @@
 
 `vpk upload github` is the **only** thing that creates or updates the GitHub Release itself. It uploads the Setup.exe, nupkg(s), portable zip, and channel feed JSON, and is called with `--merge` so re-running an existing tag adds to that same release instead of a second tool racing to create a duplicate. `SHA256SUMS.txt` isn't a Velopack asset, so it's attached afterward with a plain `gh release upload --clobber` against the release `vpk` just published — one authority creates the release, a simple follow-up adds the one extra file. There is deliberately no separate `gh release create` call anywhere in this workflow.
 
+### Permissions stay least-privilege
+
+The Release workflow declares only `permissions: contents: write` at the top level — it does not need, and should never be given, broader access. The repository's own default Actions token permission can (and should) stay at its restricted default; nothing about this workflow requires raising it.
+
+This matters because a real publication attempt once failed with `403 Resource not accessible by integration` from GitHub's Create Release API, and it was tempting to misdiagnose that as "the repository default token is read-only." It wasn't: the failing job's own `GITHUB_TOKEN Permissions` log block showed `Contents: write` was actually granted. The real cause was GitHub's Create Release endpoint requiring **workflow-modification authorization** — which the built-in `GITHUB_TOKEN` can never be granted, by design — whenever the `target_commitish` passed to it identifies a commit whose `.github/workflows/` content differs from the repository's default branch. Passing `v0.4.0-alpha.1`'s original tagged commit as `target_commitish` after `main`'s own copy of `release.yml` had since been corrected triggered exactly that guard. Broadening the repository's default workflow permissions would not have fixed this either, since the guard isn't about `contents` scope at all, and `GITHUB_TOKEN` structurally cannot receive `workflows` write access no matter how it's configured.
+
+The fix was narrower: GitHub's Create Release API documents `target_commitish` as "Unused if the Git tag already exists," so once a tag already exists, omitting `target_commitish` avoids the guard entirely rather than needing to work around it.
+
 ### Recovering from a failed release
 
 Release tags (`v*`) are immutable once pushed — a failed or partial publication is never a reason to move, delete, or recreate one. `vpk upload github` is the only step that actually creates or updates the GitHub Release; if the workflow fails before that step runs, no Release or assets exist yet, so there is nothing to roll back.
