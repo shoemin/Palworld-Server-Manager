@@ -79,7 +79,7 @@ When it completes, the GitHub Release should contain (for a prerelease, channel 
 ShoeMin.PalworldServerManager-win-beta-Setup.exe
 ShoeMin.PalworldServerManager-win-beta-Portable.zip
 ShoeMin.PalworldServerManager-<version>-win-beta-full.nupkg
-ShoeMin.PalworldServerManager-<version>-win-beta-delta.nupkg   (if a previous release existed on this channel)
+ShoeMin.PalworldServerManager-<version>-win-beta-delta.nupkg   (if the previous release on this channel was successfully retrieved — that download is best-effort, so a valid release can still complete as full-only even when a previous release exists)
 releases.win-beta.json
 SHA256SUMS.txt
 ```
