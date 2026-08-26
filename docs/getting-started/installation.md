@@ -3,7 +3,7 @@
 ## Current distribution
 
 !!! note "Prerelease only"
-    The current public release, `v0.4.0-alpha.1`, is a **Prerelease** (Velopack channel `win-beta`) — an experimental build for testing, not a Stable/`win` release. There is no Stable release published yet. Both options below come from that same prerelease.
+    The latest published release is a **Prerelease** (Velopack channel `win-beta`) — an experimental build for testing, not a Stable/`win` release. There is no Stable release published yet. Both options below come from that same latest prerelease; check the [Releases page](https://github.com/shoemin/Palworld-Server-Manager/releases) for its exact version.
 
 === "Setup.exe installer (recommended)"
 

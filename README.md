@@ -449,11 +449,11 @@ Build
 â†’ Documentation strict build
 â†’ Publish
 â†’ Velopack package (Setup.exe, update package, portable zip)
-â†’ SHA-256 generation
-â†’ GitHub Release
+â†’ GitHub Release (Velopack)
+â†’ SHA-256 checksum generation, from the actual published Release bytes
 ```
 
-A prerelease tag (`-alpha.`, `-beta.`, `-rc.`, ...) packages to the `win-beta` update channel and is published as a GitHub prerelease; a stable tag packages to `win` and is published as a normal release — never mixed. See [Release process](https://shoemin.github.io/Palworld-Server-Manager/developer/release-process/) for the full pipeline detail.
+A prerelease tag (`-alpha.`, `-beta.`, `-rc.`, ...) packages to the `win-beta` update channel and is published as a GitHub prerelease; a stable tag packages to `win` and is published as a normal release — never mixed. Checksums are generated only after the Release is published, by downloading the actual published assets back and hashing those — not the local packaging output — so the manifest always describes exactly what a consumer downloads. See [Release process](https://shoemin.github.io/Palworld-Server-Manager/developer/release-process/) for the full pipeline detail.
 
 A build, self-test, or documentation failure prevents the release from being published.
 
