@@ -4,8 +4,8 @@ A Windows desktop application for managing **Palworld dedicated servers** throug
 
 Palworld Server Manager is designed to make it easier to create, import, configure, back up, export, update, start, stop, and switch between isolated Palworld dedicated server installations without manually managing SteamCMD, configuration files, save directories, and server processes.
 
-> **Project status:** Early development / prerelease
-> The application is currently being actively tested. Back up important Palworld server data independently before using prerelease builds.
+> **Project status:** Actively developed
+> The application is currently being actively tested. Back up important Palworld server data independently before installing any release, on either channel.
 
 **[Documentation](https://shoemin.github.io/Palworld-Server-Manager/)** · **[Download the latest release](https://github.com/shoemin/Palworld-Server-Manager/releases/latest)** · **[Report a bug](https://github.com/shoemin/Palworld-Server-Manager/issues)**
 
@@ -477,7 +477,7 @@ Current development priorities include:
 * Diagnostic quality.
 * Crash detection.
 
-Until a stable release is published, prerelease builds should be considered test software.
+Prerelease builds (alpha/beta/RC, Velopack channel `win-beta`) should always be considered test software, distinct from Stable (`win`) releases — see [Update channels](https://shoemin.github.io/Palworld-Server-Manager/manager-updates/update-channels/).
 
 ---
 

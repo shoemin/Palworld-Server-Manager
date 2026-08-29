@@ -2,8 +2,8 @@
 
 Palworld Server Manager is a Windows desktop application for creating, importing, configuring, backing up, and running **Palworld dedicated servers**, without hand-editing SteamCMD commands, configuration files, or save directories.
 
-!!! warning "Project status: prerelease"
-    Palworld Server Manager is under active development. Back up important Palworld server data independently before using prerelease builds. Some features described in this site are still **planned** rather than shipped — each page says clearly which is which.
+!!! warning "Back up your data independently"
+    Palworld Server Manager is under active development. Back up important Palworld server data independently before installing any release, on either channel. Some features described in this site are still **planned** rather than shipped — each page says clearly which is which.
 
 ## What it does
 

@@ -2,15 +2,15 @@
 
 ## Current distribution
 
-!!! note "Prerelease only"
-    The latest published release is a **Prerelease** (Velopack channel `win-beta`) — an experimental build for testing, not a Stable/`win` release. There is no Stable release published yet. Both options below come from that same latest prerelease; check the [Releases page](https://github.com/shoemin/Palworld-Server-Manager/releases) for its exact version.
+!!! note "Stable vs. Prerelease builds"
+    Most users should download the **Latest release** on the [Releases page](https://github.com/shoemin/Palworld-Server-Manager/releases) — that's the current Stable (`win`) build once one exists. Testers who deliberately want to opt into alpha/beta/RC builds should instead pick a release explicitly marked **Pre-release** (Velopack channel `win-beta`); see [Update channels](../manager-updates/update-channels.md) for how the Manager keeps the two apart. Both installation options below work the same way regardless of which one you pick — just use that release's own asset names in place of the `<channel>` placeholder shown here.
 
 === "Setup.exe installer (recommended)"
 
     A per-user Setup.exe installer, built with [Velopack](https://velopack.io). Recommended if you want the Manager to check for, download, and install its own updates in place — see [Manager Updates](../manager-updates/index.md).
 
-    1. Go to the [Releases page](https://github.com/shoemin/Palworld-Server-Manager/releases) and open the latest release marked **Pre-release**.
-    2. Download the `ShoeMin.PalworldServerManager-win-beta-Setup.exe` asset.
+    1. Go to the [Releases page](https://github.com/shoemin/Palworld-Server-Manager/releases) and open the release you want (Latest for Stable, or one marked Pre-release for Prerelease).
+    2. Download its `ShoeMin.PalworldServerManager-<channel>-Setup.exe` asset (`<channel>` is `win` for Stable or `win-beta` for Prerelease).
     3. Run it. It installs to its own per-user location (see the table below), separate from your persistent server data — no admin rights needed.
     4. Windows SmartScreen may warn about an unrecognized publisher, since the build is not currently code-signed. This is a known, documented limitation, not a sign of tampering — see [Security & Safety Model](../reference/security-model.md).
 
@@ -20,8 +20,8 @@
 
     A self-contained, portable win-x64 build with no installer and no separate .NET runtime download. Use this if you'd rather run the Manager from a folder of your choice without installing anything — but note that Portable mode **cannot self-update**; you'll need to manually download each new version.
 
-    1. Go to the [Releases page](https://github.com/shoemin/Palworld-Server-Manager/releases) and open the latest release marked **Pre-release**.
-    2. Download the `ShoeMin.PalworldServerManager-win-beta-Portable.zip` asset.
+    1. Go to the [Releases page](https://github.com/shoemin/Palworld-Server-Manager/releases) and open the release you want (Latest for Stable, or one marked Pre-release for Prerelease).
+    2. Download its `ShoeMin.PalworldServerManager-<channel>-Portable.zip` asset (`<channel>` is `win` for Stable or `win-beta` for Prerelease).
     3. Extract it anywhere you like (it does not need to be `Program Files`).
     4. Run `PalworldServerManager.exe` from the extracted folder.
     5. Windows SmartScreen may warn about an unrecognized publisher, since the build is not currently code-signed. This is a known, documented limitation, not a sign of tampering — see [Security & Safety Model](../reference/security-model.md).
