@@ -1,6 +1,6 @@
 # v0.4.0 Validation Notes
 
-Status: prereleases `v0.4.0-alpha.1`, `v0.4.0-alpha.2`, `v0.4.0-beta.1`, and `v0.4.0-rc.1` have all been published and field-tested. Every required Stable gate below is now **PASS** (four Stable/`win`-specific gates are PASS by non-publishing rehearsal or structural review, since `win` has never actually been published — see [First Stable/`win` packaging path](#first-stable-win-packaging-path-non-publishing-rehearsal)). This document is the detailed evidence base; the formal Stable-readiness classification (blockers vs. non-blocking limitations) is in this PR's description.
+Status: prereleases `v0.4.0-alpha.1`, `v0.4.0-alpha.2`, `v0.4.0-beta.1`, and `v0.4.0-rc.1` have all been published and field-tested. Every required Stable gate below is now accepted for Stable readiness: all but one are **PASS** with full independent evidence, and the one exception (`alpha.2 -> beta.1`, **FIELD-OBSERVED**) is superseded as risk-closing evidence by the stronger, fully-instrumented `beta.1 -> rc.1` test rather than being rewritten — see the [gate matrix](#v040-stable-gate-matrix) below for the complete, honest breakdown. Four Stable/`win`-specific gates are PASS by non-publishing rehearsal or structural review, since `win` has never actually been published — see [First Stable/`win` packaging path](#first-stable-win-packaging-path-non-publishing-rehearsal). This document is the detailed evidence base; the formal Stable-readiness classification (blockers vs. non-blocking limitations) is in this PR's description.
 
 Each item below is marked:
 
