@@ -29,16 +29,11 @@ gh issue view <ISSUE> `
 Read the Project state:
 
 ```powershell
-gh project item-list 1 `
-  --owner shoemin `
-  --field "Workflow State" `
-  --field "Priority" `
-  --field "Work Type" `
-  --field "Area" `
-  --field "Target Release" `
-  --field "Effort" `
-  --field "Validation"
+gh project item-list 1 --owner shoemin --format json --limit 50 `
+  --jq '.items[] | [.content.number, .["workflow State"], .priority, .["work Type"], .area, .["target Release"], .effort, .validation] | @tsv'
 ```
+
+(Note the field-name casing in the JSON output: `"workflow State"`, `"work Type"`, `"target Release"` — GitHub's API, not a typo. Using `--format json --jq` rather than `item-list`'s `--field` flag keeps this working across `gh` CLI versions, since `--field` support on `item-list` is comparatively recent.)
 
 ## B. Begin work
 
@@ -47,7 +42,14 @@ Claude may begin only when:
 - `Workflow State = Ready`, OR
 - it is continuing its already-authorized `In Progress` issue.
 
-Before implementation, set:
+First look up the actual field ID and option ID — `gh project field-list`'s bare/table output does not show single-select option IDs, only `--format json` does:
+
+```powershell
+gh project field-list 1 --owner shoemin --format json `
+  --jq '.fields[] | select(.name=="Workflow State") | {id, options}'
+```
+
+Then set it:
 
 ```powershell
 gh project item-edit --project-id <PROJECT_NODE_ID> `
@@ -56,7 +58,7 @@ gh project item-edit --project-id <PROJECT_NODE_ID> `
   --single-select-option-id <IN_PROGRESS_OPTION_ID>
 ```
 
-(Field/option IDs for this project are recorded in `docs/developer/agent-workflow.md`; look them up live with `gh project field-list 1 --owner shoemin` if they may have changed.)
+(A snapshot of this project's field/option IDs as of setup is recorded in `docs/developer/agent-workflow.md` for reference, but always re-fetch live before using one — treat any cached copy as potentially stale.)
 
 Never start work sitting in `Backlog`, `Product Decision`, `Review Required`, `Changes Required`, or `Field Test` without the corresponding authorization/action first.
 

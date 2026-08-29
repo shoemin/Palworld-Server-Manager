@@ -129,21 +129,17 @@ gh issue view <ISSUE> `
 Read Project state:
 
 ```powershell
-gh project item-list 1 `
-  --owner shoemin `
-  --field "Workflow State" `
-  --field "Priority" `
-  --field "Work Type" `
-  --field "Area" `
-  --field "Target Release" `
-  --field "Effort" `
-  --field "Validation"
+gh project item-list 1 --owner shoemin --format json --limit 50 `
+  --jq '.items[] | [.content.number, .["workflow State"], .priority, .["work Type"], .area, .["target Release"], .effort, .validation] | @tsv'
 ```
 
-Look up current field/option IDs (these can be re-fetched at any time; treat any cached copy as potentially stale):
+Note the field-name casing in the JSON output — `"workflow State"`, `"work Type"`, `"target Release"` — that's GitHub's own API, not a typo. This uses `--format json --jq` rather than `item-list`'s `--field` flag, since `--field` support on `item-list` is comparatively recent and not guaranteed present in every `gh` CLI install.
+
+Look up current field IDs **and** their single-select option IDs — the bare/table form of `field-list` shows field IDs only, not option IDs, so use `--format json`:
 
 ```powershell
-gh project field-list 1 --owner shoemin
+gh project field-list 1 --owner shoemin --format json `
+  --jq '.fields[] | select(.name=="Workflow State") | {id, options}'
 ```
 
 Set a Project item's field:
@@ -154,6 +150,17 @@ gh project item-edit --project-id <PROJECT_NODE_ID> `
   --field-id <FIELD_ID> `
   --single-select-option-id <OPTION_ID>
 ```
+
+### Field/option ID snapshot (as of setup — always re-fetch live, treat this as reference only)
+
+- Project node ID: `PVT_kwHOCv-qWc4Bh2Pa`
+- `Workflow State` (`PVTSSF_lAHOCv-qWc4Bh2PazhgwcR0`): Backlog `6559bd32`, Ready `720f08ac`, In Progress `a4e60bc2`, Review Required `794f7919`, Changes Required `0e5aef97`, Product Decision `632423f4`, Field Test `667da291`, Done `5acb1b72`
+- `Priority` (`PVTSSF_lAHOCv-qWc4Bh2PazhgwcU4`): P0 `def694bf`, P1 `bcae608b`, P2 `6210cd00`, P3 `97f56ade`
+- `Work Type` (`PVTSSF_lAHOCv-qWc4Bh2PazhgwcV4`): Epic `38ee3a95`, Feature `edc9d240`, Task `f18485ca`, Bug `584e0a3e`, Investigation `3fe08bf3`, Hardening `77a6bffb`, Documentation `4cafa008`
+- `Area` (`PVTSSF_lAHOCv-qWc4Bh2PazhgwcWA`): Planning `d9f60980`, UI/UX `6506c375`, Platform `2bdce103`, Core `61e10b34`, Linux `6d7dddd1`, Windows `d2ed7d51`, Server Lifecycle `650aaf1a`, LAN `a0312636`, Dashboard `d575f497`, Updates/Packaging `d27511b9`, Docs/QA `b9168779`
+- `Target Release` (`PVTSSF_lAHOCv-qWc4Bh2PazhgwcX4`): v0.5.0 `f974a2b6`, v0.4.x `9b9550a3`, Later / Unscheduled `dbc9c46f`
+- `Effort` (`PVTSSF_lAHOCv-qWc4Bh2PazhgwcYQ`): XS `313d3cf9`, S `dcf9164c`, M `c6918d81`, L `d0faf4aa`, XL `892bb751`, Unknown `45b41a85`
+- `Validation` (`PVTSSF_lAHOCv-qWc4Bh2PazhgwcYU`): Not Required `3053092a`, Automated Pending `8122a204`, Automated Passed `5cb4d236`, Field Pending `37a2206b`, Field Passed `a3212d90`
 
 ## Known API limitation: view group-by configuration
 
