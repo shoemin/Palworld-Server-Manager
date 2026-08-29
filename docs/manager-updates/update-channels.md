@@ -13,12 +13,14 @@ Each channel maps to a distinct Velopack release channel packaged and published 
 
 The very first time the Manager runs with no saved channel preference, it defaults to whichever channel **the installed package itself was actually built for** — installing a `v0.4.0-alpha.1` build (packaged for `win-beta`) starts you on Prerelease, not Stable, so you naturally keep receiving subsequent alpha/beta updates without having to find and flip a setting first. Once you ever explicitly choose a channel in the Updates window, that choice is remembered and always wins from then on, regardless of which package you originally installed.
 
-!!! note "Current release state"
-    `v0.4.0-alpha.1` was the first published release through this pipeline — a Prerelease on the `win-beta` channel. There is no Stable/`win` release published yet. If you're running `v0.4.0-alpha.1` (or any prerelease) and switch to the Stable channel, **Check for Updates** currently reports an error rather than a clean "up to date" result — with zero releases published on a channel, there's no release feed at all for the Manager to query, and that's surfaced the same way a network/GitHub failure would be (see [Checking for updates](checking-for-updates.md)). That error is expected given the current release state (no Stable release exists yet), not a sign anything is actually broken. See [Manager Updates](index.md) for what's field-tested so far.
+!!! note "If a channel has no published releases yet"
+    `v0.4.0-alpha.1` was the first release ever published through this pipeline, on the Prerelease/`win-beta` channel. If you ever switch to a channel that currently has zero releases published on it — for example, Stable/`win` before its own first release exists — **Check for Updates** reports an error rather than a clean "up to date" result: with no release feed to query at all, that's surfaced the same way a network/GitHub failure would be (see [Checking for updates](checking-for-updates.md)). That's expected behavior for an empty channel, not a sign anything is broken. See [Manager Updates](index.md) for what's field-tested.
 
 ## Switching channels
 
 Changing the channel takes effect immediately and is remembered for next time (stored locally, alongside the rest of the Manager's application data — this is not a secret setting). Switching channels clears any previously-found "update available" result, since it no longer necessarily applies: you'll need to **Check for Updates** again after switching.
+
+Moving from a prerelease build to the matching Stable release (for example, from a `0.4.0-rc.1` prerelease install to the `0.4.0` Stable release once it's published) is a normal, one-time channel switch: select **Stable** in the Updates window, then **Check for Updates** — it is never offered automatically while Prerelease stays selected. This is treated as a genuine upgrade, not a downgrade: a release without a prerelease suffix always outranks its own prerelease builds under SemVer ordering (`0.4.0` > `0.4.0-rc.1`), regardless of which one you happen to be running when you switch.
 
 ## No automatic downgrade
 

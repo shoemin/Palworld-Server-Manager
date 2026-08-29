@@ -1,7 +1,7 @@
 # Updating while your server is running
 
 !!! success "Field-tested against a real Palworld server and a real published update"
-    This describes the actual, current code behavior. Beyond the automated tests against a synthetic stand-in process, it has now been field-tested for real: a real installed `v0.4.0-alpha.1` updated in place to the published `v0.4.0-alpha.2` while a real Palworld dedicated server stayed running throughout, with the exact same Palworld process ID and start time before and after — proof Palworld itself was never touched by the update. See [Manager Updates](index.md) for the full field-test summary. One related scenario — a genuinely in-flight Manager-owned operation actively blocking Install and Restart — has automated coverage but is still awaiting its own field pass; see the same summary for why.
+    This describes the actual, current code behavior. Beyond the automated tests against a synthetic stand-in process, it has been field-tested for real across two update cycles: a real installed `v0.4.0-alpha.1 -> alpha.2` and `v0.4.0-beta.1 -> rc.1`, each with a real Palworld dedicated server staying running throughout and the exact same Palworld process ID and start time before and after — proof Palworld itself was never touched by the update. The second pass also confirmed continuous, uninterrupted Shipping presence via an independent external process watcher across the whole transition. A genuinely in-flight Manager-owned operation actively blocking Install and Restart has also been field-tested, using a real active LAN transfer: the block was directly observed, and Install and Restart automatically re-enabled once the transfer completed. See [Manager Updates](index.md) for the full field-test summary.
 
 ## The guarantee
 
