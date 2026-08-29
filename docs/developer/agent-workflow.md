@@ -126,23 +126,29 @@ gh issue view <ISSUE> `
   --json number,title,body,state,parent,subIssues,subIssuesSummary,labels,milestone,url
 ```
 
-Read Project state:
+Read Project state (raise `--limit` well past the current item count — `item-list` silently truncates rather than erroring if the cap is too low, which would otherwise hide items past the cutoff, including possibly the current issue or higher-priority `Ready` work):
 
 ```powershell
-gh project item-list 1 --owner shoemin --format json --limit 50 `
-  --jq '.items[] | [.content.number, .["workflow State"], .priority, .["work Type"], .area, .["target Release"], .effort, .validation] | @tsv'
+gh project item-list 1 --owner shoemin --format json --limit 500 `
+  --jq '.items[] | [.id, .content.number, .["workflow State"], .priority, .["work Type"], .area, .["target Release"], .effort, .validation] | @tsv'
 ```
 
-Note the field-name casing in the JSON output — `"workflow State"`, `"work Type"`, `"target Release"` — that's GitHub's own API, not a typo. This uses `--format json --jq` rather than `item-list`'s `--field` flag, since `--field` support on `item-list` is comparatively recent and not guaranteed present in every `gh` CLI install.
+Note the field-name casing in the JSON output — `"workflow State"`, `"work Type"`, `"target Release"` — that's GitHub's own API, not a typo. This uses `--format json --jq` rather than `item-list`'s `--field` flag, since `--field` support on `item-list` is comparatively recent and not guaranteed present in every `gh` CLI install. The first column, `.id`, is the item's node ID.
 
-Look up current field IDs **and** their single-select option IDs — the bare/table form of `field-list` shows field IDs only, not option IDs, so use `--format json`:
+Set a Project item's field — the simplest reliable form uses the issue URL and field name directly, with no node IDs needed at all:
+
+```powershell
+gh project item-edit 1 --owner shoemin `
+  --url https://github.com/shoemin/Palworld-Server-Manager/issues/<ISSUE> `
+  --field "Workflow State" --value "In Progress"
+```
+
+For scripted/machine use, the node-ID form also works. Field IDs and their single-select option IDs come from `field-list`'s `--format json` output — the bare/table form only shows field IDs, not option IDs:
 
 ```powershell
 gh project field-list 1 --owner shoemin --format json `
   --jq '.fields[] | select(.name=="Workflow State") | {id, options}'
 ```
-
-Set a Project item's field:
 
 ```powershell
 gh project item-edit --project-id <PROJECT_NODE_ID> `
