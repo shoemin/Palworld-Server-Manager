@@ -1,0 +1,82 @@
+name: Planned work
+description: Scoped, planned implementation work tracked through the Project workflow.
+title: "[Planned] "
+labels: []
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What is this work trying to accomplish, in one or two sentences?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this needed now? What prior decision or issue does it follow from?
+    validations:
+      required: false
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is explicitly included in this issue?
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of Scope
+      description: What is explicitly NOT included, to prevent scope creep?
+    validations:
+      required: false
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Which other issues must be resolved first?
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be true for this issue to be considered done?
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: How will this be verified (tests, manual checks, etc.)?
+    validations:
+      required: false
+  - type: textarea
+    id: documentation-impact
+    attributes:
+      label: Documentation Impact
+      description: Does this require doc changes? Which pages?
+    validations:
+      required: false
+  - type: textarea
+    id: field-validation
+    attributes:
+      label: Field Validation
+      description: Does this need real-world (non-CI) validation? What kind?
+    validations:
+      required: false
+  - type: textarea
+    id: review-gate
+    attributes:
+      label: Review Gate
+      description: What checkpoint(s) require ChatGPT/product-owner review before proceeding?
+    validations:
+      required: false
+  - type: textarea
+    id: after-pass
+    attributes:
+      label: After PASS
+      description: What is the exact next action once this issue's review checkpoint passes?
+    validations:
+      required: false

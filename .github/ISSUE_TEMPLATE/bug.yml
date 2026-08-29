@@ -1,0 +1,75 @@
+name: Bug report
+description: Something isn't working the way it should.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed Behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Exact steps to reproduce, if known. If not reliably reproducible, say so explicitly.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who/what is affected, and how severely?
+    validations:
+      required: true
+  - type: textarea
+    id: safety-risk
+    attributes:
+      label: Safety/Data Risk
+      description: Could this cause data loss, a save-corruption risk, or a security issue? If unsure, say so — do not assume "no".
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, screenshots, exact versions/commit, diagnostic bundle excerpts, etc.
+    validations:
+      required: false
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in scope for the fix? What is explicitly out of scope?
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What must be true for this to be considered fixed?
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: How will the fix be verified?
+    validations:
+      required: false
+  - type: textarea
+    id: review-gate
+    attributes:
+      label: Review Gate
+      description: What checkpoint(s) require ChatGPT/product-owner review before proceeding?
+    validations:
+      required: false
