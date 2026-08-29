@@ -82,3 +82,4 @@ nav:
       - developer/architecture.md
       - developer/building-and-testing.md
       - developer/release-process.md
+      - developer/agent-workflow.md
