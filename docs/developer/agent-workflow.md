@@ -135,15 +135,7 @@ gh project item-list 1 --owner shoemin --format json --limit 500 `
 
 Note the field-name casing in the JSON output — `"workflow State"`, `"work Type"`, `"target Release"` — that's GitHub's own API, not a typo. This uses `--format json --jq` rather than `item-list`'s `--field` flag, since `--field` support on `item-list` is comparatively recent and not guaranteed present in every `gh` CLI install. The first column, `.id`, is the item's node ID.
 
-Set a Project item's field — the simplest reliable form uses the issue URL and field name directly, with no node IDs needed at all:
-
-```powershell
-gh project item-edit 1 --owner shoemin `
-  --url https://github.com/shoemin/Palworld-Server-Manager/issues/<ISSUE> `
-  --field "Workflow State" --value "In Progress"
-```
-
-For scripted/machine use, the node-ID form also works. Field IDs and their single-select option IDs come from `field-list`'s `--format json` output — the bare/table form only shows field IDs, not option IDs:
+Set a Project item's field with the node-ID form — this repository does not pin a minimum `gh` version, and the node-ID form works on any reasonably recent install, so treat it as the required path. Field IDs and their single-select option IDs come from `field-list`'s `--format json` output (the bare/table form only shows field IDs, not option IDs); the item ID is the `.id` column from the project-state query above:
 
 ```powershell
 gh project field-list 1 --owner shoemin --format json `
@@ -155,6 +147,14 @@ gh project item-edit --project-id <PROJECT_NODE_ID> `
   --id <ITEM_ID> `
   --field-id <FIELD_ID> `
   --single-select-option-id <OPTION_ID>
+```
+
+If the installed `gh` CLI is new enough (check `gh project item-edit --help` for `--url` and `--field` among its flags), the same change can be made more concisely, with no node IDs at all:
+
+```powershell
+gh project item-edit 1 --owner shoemin `
+  --url https://github.com/shoemin/Palworld-Server-Manager/issues/<ISSUE> `
+  --field "Workflow State" --value "In Progress"
 ```
 
 ### Field/option ID snapshot (as of setup — always re-fetch live, treat this as reference only)

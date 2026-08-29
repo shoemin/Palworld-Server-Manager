@@ -42,15 +42,7 @@ Claude may begin only when:
 - `Workflow State = Ready`, OR
 - it is continuing its already-authorized `In Progress` issue.
 
-Set it by issue URL and field name — this is the simplest reliable form and needs no node IDs at all:
-
-```powershell
-gh project item-edit 1 --owner shoemin `
-  --url https://github.com/shoemin/Palworld-Server-Manager/issues/<ISSUE> `
-  --field "Workflow State" --value "In Progress"
-```
-
-For scripted/machine use, the node-ID form also works (project ID, item ID from the `.id` column above, field ID and option ID from `gh project field-list 1 --owner shoemin --format json`):
+Use the node-ID form — it works on any reasonably recent `gh` CLI. This repository does not pin a minimum `gh` version, and the newer `--url`/`--field`/`--value` shortcut (shown further below) is not guaranteed present on every install, so treat this form as the required path:
 
 ```powershell
 gh project item-edit --project-id <PROJECT_NODE_ID> `
@@ -59,7 +51,22 @@ gh project item-edit --project-id <PROJECT_NODE_ID> `
   --single-select-option-id <IN_PROGRESS_OPTION_ID>
 ```
 
+Project ID is fixed (see the top of this file); the item ID comes from the `.id` column in the "Read the Project state" query above; field ID and option ID come from:
+
+```powershell
+gh project field-list 1 --owner shoemin --format json `
+  --jq '.fields[] | select(.name=="Workflow State") | {id, options}'
+```
+
 (A snapshot of this project's field/option IDs as of setup is recorded in `docs/developer/agent-workflow.md` for reference, but always re-fetch live before using one — treat any cached copy as potentially stale.)
+
+If the installed `gh` CLI is new enough to support it (verify with `gh project item-edit --help` — look for `--url` and `--field` among the flags), the same change can be made more concisely:
+
+```powershell
+gh project item-edit 1 --owner shoemin `
+  --url https://github.com/shoemin/Palworld-Server-Manager/issues/<ISSUE> `
+  --field "Workflow State" --value "In Progress"
+```
 
 Never start work sitting in `Backlog`, `Product Decision`, `Review Required`, `Changes Required`, or `Field Test` without the corresponding authorization/action first.
 
