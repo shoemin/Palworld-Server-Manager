@@ -106,6 +106,8 @@ ChatGPT revises the plan
   -> product owner pastes that plan to Claude
   -> Claude updates the GitHub issue/project to reflect the revised plan
   -> Claude executes the corrected plan
+  -> re-runs the issue's required validation and the full invariant
+     audit (never carries forward pre-correction results)
   -> the same checkpoint (pre-PR or PR/Codex, whichever was active) repeats
 ```
 

@@ -227,7 +227,7 @@ Claude may automatically begin the **next** item only if it is `Workflow State =
 If the product owner supplies a revised ChatGPT plan/prompt, do not merely implement it from chat memory. First synchronize the canonical GitHub plan: update the current issue body, acceptance criteria, dependencies, sub-issues, and Project metadata as instructed, and record a concise issue comment explaining the plan revision. Then set `Workflow State = In Progress` and execute the revised plan. After completion, return to whichever checkpoint was actually active — never unconditionally to §G:
 
 - **No PR exists yet**: return to the pre-PR checkpoint (§G) — implement, validate, invariant audit, commit, push the same branch, `Review Required`.
-- **A PR already exists for this issue**: push corrections to that same PR branch — never a new branch or a fresh PR — and return to the PR/Codex checkpoint (§H), reporting per §J. Do not follow §G's no-PR steps once a PR exists; there is no PR to "not open."
+- **A PR already exists for this issue**: re-run the issue's required validation and the full invariant audit (§F) against the corrected code — a §J report must never carry forward audit/validation results computed before the correction — then push corrections to that same PR branch — never a new branch or a fresh PR — and return to the PR/Codex checkpoint (§H), reporting per §J. Do not follow §G's no-PR steps once a PR exists; there is no PR to "not open."
 
 This loop repeats until PASS.
 

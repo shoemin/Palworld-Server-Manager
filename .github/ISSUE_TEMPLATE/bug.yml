@@ -3,6 +3,18 @@ description: Something isn't working the way it should.
 title: "[Bug] "
 labels: ["bug"]
 body:
+  - type: input
+    id: parent-epic
+    attributes:
+      label: Parent Epic
+      description: >-
+        Which Epic issue is this a bounded child of (e.g. "#16")? A parent Epic is never itself
+        an executable Ready unit — every execution issue needs one. Filling this in here does not
+        create the actual GitHub sub-issue link; that still has to be set explicitly (e.g. via
+        `gh issue edit --add-parent` or the equivalent GraphQL mutation) once the issue exists.
+      placeholder: "#16"
+    validations:
+      required: true
   - type: textarea
     id: observed
     attributes:
@@ -51,7 +63,23 @@ body:
       label: Scope
       description: What is in scope for the fix? What is explicitly out of scope?
     validations:
-      required: false
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Which other issues must be resolved first? If none, say "None" explicitly.
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Applicable Invariants
+      description: >-
+        For v0.5 work, cite the applicable invariant IDs from docs/developer/v0.5-invariants.md
+        (e.g. HOST-001, AUTH-003) — not a paraphrase. Not v0.5 work? Say "N/A".
+    validations:
+      required: true
   - type: textarea
     id: acceptance-criteria
     attributes:
@@ -63,13 +91,37 @@ body:
     id: verification
     attributes:
       label: Verification
-      description: How will the fix be verified?
+      description: Required tests/validation commands — how will the fix be verified?
     validations:
-      required: false
+      required: true
+  - type: textarea
+    id: allowed-decisions
+    attributes:
+      label: Allowed Implementation Decisions
+      description: Which implementation/architecture decisions is Claude authorized to make while executing this issue, without escalating?
+    validations:
+      required: true
+  - type: textarea
+    id: stop-conditions
+    attributes:
+      label: Product Decision / Stop Conditions
+      description: What findings or ambiguities require stopping and setting Workflow State = Product Decision, rather than deciding unilaterally?
+    validations:
+      required: true
   - type: textarea
     id: review-gate
     attributes:
       label: Review Gate
       description: What checkpoint(s) require ChatGPT/product-owner review before proceeding?
     validations:
-      required: false
+      required: true
+  - type: textarea
+    id: after-pass
+    attributes:
+      label: After PASS
+      description: >-
+        What is the exact next action once this issue passes its SECOND (PR/Codex-stage) review
+        checkpoint — e.g. "merge" or "hand off to #NN"? The first checkpoint's action is always
+        fixed by the workflow itself (open the PR); this field is never "open the PR".
+    validations:
+      required: true
