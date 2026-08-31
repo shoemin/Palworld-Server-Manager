@@ -14,7 +14,7 @@ The canonical Project is **Palworld Server Manager Development** (project number
 
 Detailed design documents (`docs/developer/v0.5-architecture.md`, future implementation docs) explain and elaborate these invariants — they never override them silently. A design document that contradicts a registry entry is the thing that's wrong, not the other way around.
 
-Every v0.5 issue's "applicable invariants" list cites IDs from this registry, not a paraphrase. Every §F audit (below) checks the resulting whole against those IDs, not just the section that was deliberately edited.
+Every v0.5 issue's "applicable invariants" list cites IDs from this registry, not a paraphrase. Every "Mandatory full invariant audit before Review Required" pass (below; `CLAUDE.md` §F) checks the resulting whole against those IDs, not just the section that was deliberately edited.
 
 ## Roles
 
@@ -75,6 +75,8 @@ Implementing the requested delta correctly is necessary but not sufficient to re
 |---|---|---|---|
 
 Pair this with a stale/contradictory-reference search scoped to the change — grepping for every place a changed term, mechanism, or claim appears, not only the places deliberately touched. A failed applicable invariant keeps the issue at `In Progress`/`Changes Required`; it does not reach `Review Required`.
+
+When the change touches both this document and `CLAUDE.md`, explicitly diff every duplicated executable command and compatibility claim between the two for semantic equivalence, not just prose intent. A #33 review round caught exactly this gap: `CLAUDE.md` had drifted to presenting the version-dependent `gh project item-edit --url/--field` form as primary while this document correctly required the portable node-ID form as canonical — each file had been edited correctly in isolation, but the two had gone out of sync with each other.
 
 ## The control loop
 
@@ -164,7 +166,7 @@ Never merge on the assumption that "one endpoint came back empty, so it must be 
 
 **Review finds an issue at the pre-PR checkpoint.** Same as above, but ChatGPT's review of the pushed branch finds a gap. Product owner pastes ChatGPT's revised plan. Claude updates the Issue body/acceptance criteria to match, leaves a comment explaining the revision, sets `In Progress`, and executes the correction on the same branch — then returns to the pre-PR checkpoint. No PR existed yet, so there is nothing to reopen or redirect.
 
-**Review finds an issue after the PR is open.** ChatGPT (or Codex) finds a problem once CI/Codex review is underway. Claude pushes the fix to the *same* PR branch rather than starting a new one, which also resets the robust Codex review protocol's attempt count per §H. Once clean, Claude returns to `Review Required` and reports the PR/Codex review report again — this is still the second-stage checkpoint, not a new first stage.
+**Review finds an issue after the PR is open.** ChatGPT (or Codex) finds a problem once CI/Codex review is underway. Claude pushes the fix to the *same* PR branch rather than starting a new one, which also resets the robust Codex review protocol's attempt count (see "The robust Codex review protocol" below; `CLAUDE.md` §H). Once clean, Claude returns to `Review Required` and reports the PR/Codex review report again — this is still the second-stage checkpoint, not a new first stage.
 
 **Invariant audit catches a stale reference.** Before setting `Review Required`, Claude runs the mandatory full invariant audit and finds that a change made earlier in the same pass makes an existing sentence elsewhere in the document contradict an applicable invariant ID — the same class of problem as the `## 3. Local client transport` heading accidentally dropped during a #19 correction round, or the "asymmetric completion is safe" claim that survived one correction round after the fact it depended on had changed. The audit matrix records this row as FAIL, Claude fixes it in the same pass, and only sets `Review Required` once every applicable row reads PASS.
 

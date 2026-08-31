@@ -62,15 +62,7 @@ Claude may begin only when:
 - `Workflow State = Ready` **and** the issue satisfies the twelve points above, OR
 - it is continuing its already-authorized `In Progress` issue.
 
-Set it by issue URL and field name — this is the simplest reliable form and needs no node IDs at all:
-
-```powershell
-gh project item-edit 1 --owner shoemin `
-  --url https://github.com/shoemin/Palworld-Server-Manager/issues/<ISSUE> `
-  --field "Workflow State" --value "In Progress"
-```
-
-For scripted/machine use, the node-ID form also works (project ID, item ID from the `.id` column above, field ID and option ID from `gh project field-list 1 --owner shoemin --format json`):
+The node-ID form is the **required, canonical** path — the repository does not pin a minimum `gh` CLI version, and this form works on any reasonably recent install. Field IDs and their single-select option IDs come from `gh project field-list 1 --owner shoemin --format json`; the item ID is the `.id` column from the Project-state query in §A:
 
 ```powershell
 gh project item-edit --project-id <PROJECT_NODE_ID> `
@@ -80,6 +72,16 @@ gh project item-edit --project-id <PROJECT_NODE_ID> `
 ```
 
 (A snapshot of this project's field/option IDs as of setup is recorded in `docs/developer/agent-workflow.md` for reference, but always re-fetch live before using one — treat any cached copy as potentially stale.)
+
+Only after directly verifying that `gh project item-edit --help` exposes `--url` and `--field` on the installed `gh` CLI may the shorter URL/field-name form be used instead, as an optional convenience — never assume it's available:
+
+```powershell
+gh project item-edit 1 --owner shoemin `
+  --url https://github.com/shoemin/Palworld-Server-Manager/issues/<ISSUE> `
+  --field "Workflow State" --value "In Progress"
+```
+
+Do not present this form as universally reliable — PR #32's Codex review found these convenience flags are version-dependent.
 
 Never start work sitting in `Backlog`, `Product Decision`, `Review Required`, `Changes Required`, or `Field Test` without the corresponding authorization/action first.
 
@@ -140,6 +142,8 @@ Before the checkpoint (§G), audit the resulting **whole** — not just the chan
 |---|---|---|---|
 
 Also perform a stale/contradictory-reference search appropriate to the change (grep for terms/patterns the change should have touched everywhere, not just where it was deliberately edited — this is exactly the kind of check that would have caught the `#3. Local client transport` heading accidentally dropped during a #19 correction round, and the "asymmetric completion is safe" claim that survived one correction round after the fact it depended on had changed).
+
+When a change touches both `CLAUDE.md` and `docs/developer/agent-workflow.md`, explicitly diff every duplicated executable command and compatibility claim between the two for **semantic** equivalence, not just prose intent — a #33 review round caught `CLAUDE.md` presenting the version-dependent `gh project item-edit --url/--field` form as primary while `agent-workflow.md` correctly required the portable node-ID form, which individually-correct edits to each file had let drift apart.
 
 **Any failed applicable invariant means the issue remains `In Progress`/`Changes Required` — it does not move to `Review Required`.**
 
