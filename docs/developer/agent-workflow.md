@@ -158,7 +158,7 @@ State machine:
 - Request review (`@codex review`).
 - Poll all four surfaces.
 - **Valid clean result**: body contains both "Codex Review" language and a "Reviewed commit" SHA that resolves via `git rev-parse <short-sha>` to the exact current 40-character PR head. Proceed.
-- **Valid findings**: fix each one, credit `@chatgpt-codex-connector[bot]` (only for what Codex actually found), reply in the exact thread, resolve the thread once the fix is pushed, then **restart the whole protocol** against the new head.
+- **Valid findings**: fix each one, **re-run the issue's required validation (including any manual/non-CI commands) against the corrected code** — CI re-running on push doesn't by itself cover this, and the next PR/Codex report must never present pre-fix results as evidence for the fix — credit `@chatgpt-codex-connector[bot]` (only for what Codex actually found), reply in the exact thread, resolve the thread once the fix is pushed, then **restart the whole protocol** against the new head.
 - **Non-review response, or nothing valid yet**: request `@codex review` one more time. Maximum 2 attempts per unchanged head.
 - Any pushed fix changes the head and resets the attempt counter.
 

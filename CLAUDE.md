@@ -178,7 +178,8 @@ Reached only after the first pre-PR PASS (§G, step 8). Every PR must:
 - run required CI (and docs CI when applicable);
 - use the robust Codex review protocol below;
 - incorporate valid Codex findings;
-- credit `@chatgpt-codex-connector[bot]` only for actual findings Codex made.
+- credit `@chatgpt-codex-connector[bot]` only for actual findings Codex made;
+- **re-run the issue's required validation (including any manual/non-CI commands) against the corrected code before the next §J report** — CI re-running on push does not by itself cover this; a §J report must never present results computed against a pre-fix head as evidence for the fix.
 
 **Robust Codex review protocol** — check ALL four surfaces, every time:
 

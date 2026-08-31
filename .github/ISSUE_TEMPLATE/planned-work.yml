@@ -18,7 +18,7 @@ body:
         Which Epic issue is this a bounded child of (e.g. "#16")? A parent Epic is never itself
         an executable Ready unit — every execution issue needs one. Filling this in here does not
         create the actual GitHub sub-issue link; that still has to be set explicitly (e.g. via
-        `gh issue edit --add-parent` or the equivalent GraphQL mutation) once the issue exists.
+        `gh issue edit <issue> --parent <epic>` or the equivalent GraphQL mutation) once the issue exists.
       placeholder: "#16"
     validations:
       required: true
