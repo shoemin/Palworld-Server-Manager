@@ -90,6 +90,8 @@ Plan
   -> Review Required, STOP
   -> ChatGPT reviews the pushed branch directly
   -> first PASS ("continue") authorizes opening the PR + CI/Codex review only
+  -> In Progress (so the Project doesn't misreport ChatGPT as the
+     blocker while Claude is actively opening the PR and running CI/Codex)
   -> PR CI + robust Codex review clean
   -> Review Required again, STOP
   -> ChatGPT reviews the PR/CI/Codex evidence

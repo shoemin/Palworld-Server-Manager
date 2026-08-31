@@ -158,8 +158,8 @@ This is the standard checkpoint sequence for every issue, replacing a direct imp
 5. **push the issue's branch to origin** — no PR yet;
 6. set `Workflow State = Review Required` and **STOP**;
 7. ChatGPT reviews the exact pushed branch (not a PR — none exists yet);
-8. a PASS/`continue` at this stage authorizes **only** opening the PR and entering CI + the robust Codex review protocol (§H);
-9. once PR CI and a valid Codex review are clean, return to `Review Required` **again** for a second, final ChatGPT review;
+8. a PASS/`continue` at this stage authorizes **only** opening the PR and entering CI + the robust Codex review protocol (§H) — set `Workflow State = In Progress` for the duration of this PR/CI/Codex processing, so the Project doesn't misreport ChatGPT as the blocker while Claude is actively working;
+9. once PR CI and a valid Codex review are clean, set `Workflow State = Review Required` **again** for a second, final ChatGPT review;
 10. a second PASS/`continue` may authorize merge **only if** the issue's own `After PASS` section explicitly says so.
 
 Once a PR exists, every further authorized correction is committed and pushed to that same PR branch — never a new branch, never a fresh PR for the same issue.
