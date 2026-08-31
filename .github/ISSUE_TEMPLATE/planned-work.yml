@@ -28,14 +28,23 @@ body:
     id: out-of-scope
     attributes:
       label: Out of Scope
-      description: What is explicitly NOT included, to prevent scope creep?
+      description: What is explicitly NOT included, to prevent scope creep? If nothing, say so explicitly rather than leaving this blank.
     validations:
-      required: false
+      required: true
   - type: textarea
     id: dependencies
     attributes:
       label: Dependencies
-      description: Which other issues must be resolved first?
+      description: Which other issues must be resolved first? If none, say "None" explicitly.
+    validations:
+      required: true
+  - type: textarea
+    id: invariants
+    attributes:
+      label: Applicable Invariants
+      description: >-
+        For v0.5 work, cite the applicable invariant IDs from docs/developer/v0.5-invariants.md
+        (e.g. HOST-001, AUTH-003) — not a paraphrase. Not v0.5 work? Say "N/A".
     validations:
       required: false
   - type: textarea
@@ -49,9 +58,23 @@ body:
     id: verification
     attributes:
       label: Verification
-      description: How will this be verified (tests, manual checks, etc.)?
+      description: Required tests/validation commands — how will this be verified (tests, manual checks, etc.)?
     validations:
-      required: false
+      required: true
+  - type: textarea
+    id: allowed-decisions
+    attributes:
+      label: Allowed Implementation Decisions
+      description: Which implementation/architecture decisions is Claude authorized to make while executing this issue, without escalating?
+    validations:
+      required: true
+  - type: textarea
+    id: stop-conditions
+    attributes:
+      label: Product Decision / Stop Conditions
+      description: What findings or ambiguities require stopping and setting Workflow State = Product Decision, rather than deciding unilaterally?
+    validations:
+      required: true
   - type: textarea
     id: documentation-impact
     attributes:
@@ -72,11 +95,11 @@ body:
       label: Review Gate
       description: What checkpoint(s) require ChatGPT/product-owner review before proceeding?
     validations:
-      required: false
+      required: true
   - type: textarea
     id: after-pass
     attributes:
       label: After PASS
       description: What is the exact next action once this issue's review checkpoint passes?
     validations:
-      required: false
+      required: true
