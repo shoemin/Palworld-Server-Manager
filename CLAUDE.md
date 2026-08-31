@@ -199,7 +199,7 @@ Must include: exact 40-character pushed HEAD; confirmation the origin branch mat
 
 ## J. Required PR/Codex review report (§H checkpoint)
 
-In addition to everything in §I, restated against the actual PR: Issue (number/title/parent/milestone), Project (Workflow State/Priority/Target Release), Git (base/branch/exact 40-char HEAD/working tree), PR (number/URL/changed files/CI/docs), the robust Codex protocol evidence (attempts, all four surfaces checked, final reviewed SHA resolved and matched, unresolved thread count), Implementation (what changed/tests/docs impact/field validation/unexpected discoveries/known limitations), and Next (the issue's exact `After PASS` action).
+Inherits §I's evidence items (exact 40-character HEAD; origin-branch match; exact changed files; acceptance-criteria mapping; the full invariant-audit matrix (§F); validation results; unexpected findings; clean/dirty working tree) — but **not** §I's next-action clause, which is pre-PR-only and does not apply once a PR exists. Restated against the actual PR, this report must also include: Issue (number/title/parent/milestone), Project (Workflow State/Priority/Target Release), Git (base/branch/exact 40-char HEAD/working tree), PR (number/URL/changed files/CI/docs), the robust Codex protocol evidence (attempts, all four surfaces checked, final reviewed SHA resolved and matched, unresolved thread count), Implementation (what changed/tests/docs impact/field validation/unexpected discoveries/known limitations), and Next (the issue's exact `After PASS` action — at this stage that may legitimately be merge, superseding §I's "always open the PR, never merge" language).
 
 ## K. Meaning of "continue"
 
