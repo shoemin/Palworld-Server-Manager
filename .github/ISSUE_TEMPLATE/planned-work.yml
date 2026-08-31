@@ -46,7 +46,7 @@ body:
         For v0.5 work, cite the applicable invariant IDs from docs/developer/v0.5-invariants.md
         (e.g. HOST-001, AUTH-003) — not a paraphrase. Not v0.5 work? Say "N/A".
     validations:
-      required: false
+      required: true
   - type: textarea
     id: acceptance-criteria
     attributes:
