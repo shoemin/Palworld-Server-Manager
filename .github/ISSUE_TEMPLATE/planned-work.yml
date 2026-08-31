@@ -15,10 +15,8 @@ body:
     attributes:
       label: Parent Epic
       description: >-
-        Which Epic issue is this a bounded child of (e.g. "#16")? A parent Epic is never itself
-        an executable Ready unit — every execution issue needs one. Filling this in here does not
-        create the actual GitHub sub-issue link; that still has to be set explicitly (e.g. via
-        `gh issue edit <issue> --parent <epic>` or the equivalent GraphQL mutation) once the issue exists.
+        Which Epic is this a bounded child of (e.g. "#16")? Filling this in does not create the
+        real GitHub link — run `gh issue edit <issue> --parent <epic>` separately once the issue exists.
       placeholder: "#16"
     validations:
       required: true
@@ -113,8 +111,8 @@ body:
     attributes:
       label: After PASS
       description: >-
-        What is the exact next action once this issue passes its SECOND (PR/Codex-stage) review
-        checkpoint — e.g. "merge" or "hand off to #NN"? The first checkpoint's action is always
-        fixed by the workflow itself (open the PR); this field is never "open the PR".
+        Exact next action after this issue passes its SECOND (PR/Codex-stage) review checkpoint —
+        e.g. "merge". The first checkpoint's action is always fixed (open the PR); never answer
+        "open the PR" here.
     validations:
       required: true
