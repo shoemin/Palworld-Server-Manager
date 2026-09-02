@@ -1,0 +1,7 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="PalworldServerManager.Client.Avalonia.MainWindow"
+        Title="Palworld Server Manager"
+        Width="800" Height="500">
+  <TextBlock Margin="20" Text="Scaffold only (#39) - shell content lands in #52." />
+</Window>

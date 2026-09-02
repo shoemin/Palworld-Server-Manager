@@ -10,6 +10,26 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.App",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.SelfTest", "tests\PalworldServerManager.SelfTest\PalworldServerManager.SelfTest.csproj", "{E3313856-5CC3-4617-B69F-CE1AA349E55C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Contracts", "src\PalworldServerManager.Contracts\PalworldServerManager.Contracts.csproj", "{16E8FA90-80DE-471F-B28C-F8DC98C2D087}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Platform.Contracts", "src\PalworldServerManager.Platform.Contracts\PalworldServerManager.Platform.Contracts.csproj", "{82A238CF-B8B3-4979-AF59-4EA07F476591}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Platform.Windows", "src\PalworldServerManager.Platform.Windows\PalworldServerManager.Platform.Windows.csproj", "{B1FC115F-00A1-4A05-8A33-74CA589070BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Client.Platform.Contracts", "src\PalworldServerManager.Client.Platform.Contracts\PalworldServerManager.Client.Platform.Contracts.csproj", "{557A6B86-379A-42A2-98A2-47AD83F78AB9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Client.Platform.Windows", "src\PalworldServerManager.Client.Platform.Windows\PalworldServerManager.Client.Platform.Windows.csproj", "{DAFFC365-8B70-4A13-A283-A67F3FE95022}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Host.Persistence", "src\PalworldServerManager.Host.Persistence\PalworldServerManager.Host.Persistence.csproj", "{CD840D6D-8CBB-4F3A-A100-83D2C9272C32}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Host", "src\PalworldServerManager.Host\PalworldServerManager.Host.csproj", "{80394FCA-25B8-45FD-8849-316E1E5649FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Host.Cli", "src\PalworldServerManager.Host.Cli\PalworldServerManager.Host.Cli.csproj", "{A51CCE94-4698-4E08-82D3-C429974B8427}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Client.Cli", "src\PalworldServerManager.Client.Cli\PalworldServerManager.Client.Cli.csproj", "{E3667516-735C-42B8-92CC-C4AA56BAC2EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Client.Avalonia", "src\PalworldServerManager.Client.Avalonia\PalworldServerManager.Client.Avalonia.csproj", "{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,5 +52,45 @@ Global
 		{E3313856-5CC3-4617-B69F-CE1AA349E55C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3313856-5CC3-4617-B69F-CE1AA349E55C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3313856-5CC3-4617-B69F-CE1AA349E55C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16E8FA90-80DE-471F-B28C-F8DC98C2D087}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16E8FA90-80DE-471F-B28C-F8DC98C2D087}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16E8FA90-80DE-471F-B28C-F8DC98C2D087}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16E8FA90-80DE-471F-B28C-F8DC98C2D087}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82A238CF-B8B3-4979-AF59-4EA07F476591}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82A238CF-B8B3-4979-AF59-4EA07F476591}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82A238CF-B8B3-4979-AF59-4EA07F476591}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82A238CF-B8B3-4979-AF59-4EA07F476591}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1FC115F-00A1-4A05-8A33-74CA589070BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1FC115F-00A1-4A05-8A33-74CA589070BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1FC115F-00A1-4A05-8A33-74CA589070BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1FC115F-00A1-4A05-8A33-74CA589070BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{557A6B86-379A-42A2-98A2-47AD83F78AB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{557A6B86-379A-42A2-98A2-47AD83F78AB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{557A6B86-379A-42A2-98A2-47AD83F78AB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{557A6B86-379A-42A2-98A2-47AD83F78AB9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAFFC365-8B70-4A13-A283-A67F3FE95022}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAFFC365-8B70-4A13-A283-A67F3FE95022}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAFFC365-8B70-4A13-A283-A67F3FE95022}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAFFC365-8B70-4A13-A283-A67F3FE95022}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD840D6D-8CBB-4F3A-A100-83D2C9272C32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD840D6D-8CBB-4F3A-A100-83D2C9272C32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD840D6D-8CBB-4F3A-A100-83D2C9272C32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD840D6D-8CBB-4F3A-A100-83D2C9272C32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80394FCA-25B8-45FD-8849-316E1E5649FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80394FCA-25B8-45FD-8849-316E1E5649FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80394FCA-25B8-45FD-8849-316E1E5649FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80394FCA-25B8-45FD-8849-316E1E5649FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A51CCE94-4698-4E08-82D3-C429974B8427}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A51CCE94-4698-4E08-82D3-C429974B8427}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A51CCE94-4698-4E08-82D3-C429974B8427}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A51CCE94-4698-4E08-82D3-C429974B8427}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3667516-735C-42B8-92CC-C4AA56BAC2EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3667516-735C-42B8-92CC-C4AA56BAC2EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3667516-735C-42B8-92CC-C4AA56BAC2EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3667516-735C-42B8-92CC-C4AA56BAC2EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
