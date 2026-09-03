@@ -375,7 +375,13 @@ public static class ArchitectureGuardTests
                 var expectedPath = TryResolveCsprojPath(canonicalName);
                 var normalizedActual = Path.GetFullPath(fullPath);
                 var normalizedExpected = expectedPath is not null ? Path.GetFullPath(expectedPath) : null;
-                if (normalizedExpected is null || !string.Equals(normalizedActual, normalizedExpected, StringComparison.OrdinalIgnoreCase))
+
+                // Round-6 review: OrdinalIgnoreCase is correct on Windows (this repo's actual
+                // target/CI filesystem, NTFS) but would wrongly treat distinct paths as equal on
+                // a case-sensitive filesystem - match the comparison to the filesystem this is
+                // actually running on rather than hardcoding one assumption.
+                var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                if (normalizedExpected is null || !string.Equals(normalizedActual, normalizedExpected, pathComparison))
                 {
                     throw new Exception($"{project} ({configuration}) references a project file at '{normalizedActual}' whose filename matches '{canonicalName}', but that is not this repository's canonical location for {canonicalName} ({normalizedExpected ?? "no known location"}) - refusing to treat it as the same project.");
                 }
