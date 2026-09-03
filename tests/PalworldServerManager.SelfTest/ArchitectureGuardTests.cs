@@ -212,18 +212,20 @@ public static class ArchitectureGuardTests
         return Task.CompletedTask;
     }
 
-    public static Task TestCoreHasNoDependencyOnAnyNewV05Project()
+    public static Task TestCoreHasNoProjectReferences()
     {
-        // Core's accepted dependency set is BCL-only plus one explicit legacy Velopack
-        // carve-out (ARCH-001) - it must never acquire a ProjectReference to anything this
-        // issue scaffolds. Core itself is not modified by #39; this only asserts that fact.
+        // Round-10 review: intersecting against AllNewV05Project (the 10 names this issue
+        // scaffolds) passes vacuously if Core ever acquires a reference to some other, not-yet-
+        // named project - Core is also absent from AllowedDirectReferences, so nothing else
+        // would catch it either. Core's accepted dependency set is BCL-only plus one explicit
+        // legacy Velopack PackageReference carve-out (ARCH-001, not a ProjectReference) - assert
+        // its evaluated ProjectReference set is empty, not merely disjoint from today's scaffold.
         foreach (var configuration in Configurations)
         {
-            var actual = DirectReferences(Core, configuration).ToHashSet();
-            var offenders = actual.Intersect(AllNewV05Projects).ToList();
-            if (offenders.Count > 0)
+            var actual = DirectReferences(Core, configuration);
+            if (actual.Count > 0)
             {
-                throw new Exception($"Core ({configuration}) has acquired a forbidden dependency on new v0.5 project(s): {string.Join(", ", offenders)}.");
+                throw new Exception($"Core ({configuration}) has acquired forbidden direct ProjectReference(s): {string.Join(", ", actual)}. Core's accepted dependency set is BCL-only plus the Velopack PackageReference carve-out (ARCH-001) - it must have zero ProjectReferences.");
             }
         }
 
