@@ -165,6 +165,12 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             AuthoritativeHostId TEXT NOT NULL,
             DisplayName         TEXT NOT NULL,
             InstallPath         TEXT     NULL,
+            -- SS6 lists "ports" among this table's contents, and the v0.4 ServerProfile this
+            -- table is the evolution of already fixes exactly which two, with these defaults -
+            -- so a profile with non-default ports round-trips instead of silently reverting to
+            -- 8211/8212 and launching or polling the wrong endpoint.
+            GamePort            INTEGER NOT NULL DEFAULT 8211,
+            RestApiPort         INTEGER NOT NULL DEFAULT 8212,
             ImportProvenance    TEXT     NULL,
             CreatedUtc          TEXT NOT NULL,
             PRIMARY KEY (AuthoritativeHostId, ServerProfileId)

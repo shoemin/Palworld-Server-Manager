@@ -204,6 +204,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Verifier and public-key persistence is allowed", HostPersistenceTests.TestVerifierAndPublicKeyPersistenceIsAllowed),
     ("Transaction rollback discards all writes", HostPersistenceTests.TestTransactionRollbackDiscardsAllWrites),
     ("ServerInventory identity is Host-qualified", HostPersistenceTests.TestServerInventoryIsHostQualified),
+    ("ServerInventory round-trips both ports", HostPersistenceTests.TestServerInventoryRoundTripsBothPorts),
     ("HostCapabilityGrant requires exactly one TargetHostId", HostPersistenceTests.TestHostCapabilityGrantRequiresExactlyOneTargetHostId),
     ("Host and server grant types are structurally distinct", HostPersistenceTests.TestGrantTypesAreStructurallyDistinct),
     ("Grant delegation provenance is single-parent", HostPersistenceTests.TestGrantDelegationProvenanceIsSingleParent),

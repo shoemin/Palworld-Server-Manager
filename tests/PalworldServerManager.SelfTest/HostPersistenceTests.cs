@@ -813,6 +813,30 @@ public static class HostPersistenceTests
         return Task.CompletedTask;
     }
 
+    // SS6 lists "ports" among ServerInventory's contents, and v0.4's ServerProfile - which this
+    // table is the evolution of - already fixes exactly which two, with these defaults.
+    public static Task TestServerInventoryRoundTripsBothPorts()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+
+        // Defaults match the accepted ServerProfile model, so an unspecified profile is faithful.
+        Execute(connection, "INSERT INTO ServerInventory (ServerProfileId, AuthoritativeHostId, DisplayName, CreatedUtc) VALUES ('s-default', 'host-A', 'Default Ports', '2026-01-01T00:00:00Z');");
+        Equal(8211L, HostDatabase.QueryScalarLong(connection, "SELECT GamePort FROM ServerInventory WHERE ServerProfileId='s-default';"), "default GamePort matches ServerProfile");
+        Equal(8212L, HostDatabase.QueryScalarLong(connection, "SELECT RestApiPort FROM ServerInventory WHERE ServerProfileId='s-default';"), "default RestApiPort matches ServerProfile");
+
+        // The case that actually matters: NON-default ports must survive a round-trip rather
+        // than silently reverting and pointing the launcher/REST client at the wrong endpoint.
+        Execute(connection, "INSERT INTO ServerInventory (ServerProfileId, AuthoritativeHostId, DisplayName, GamePort, RestApiPort, CreatedUtc) VALUES ('s-custom', 'host-A', 'Custom Ports', 27015, 27016, '2026-01-01T00:00:00Z');");
+        Equal(27015L, HostDatabase.QueryScalarLong(connection, "SELECT GamePort FROM ServerInventory WHERE ServerProfileId='s-custom';"), "non-default GamePort round-trips");
+        Equal(27016L, HostDatabase.QueryScalarLong(connection, "SELECT RestApiPort FROM ServerInventory WHERE ServerProfileId='s-custom';"), "non-default RestApiPort round-trips");
+
+        // Ports are per-ServerRef, not shared across Hosts.
+        Execute(connection, "INSERT INTO ServerInventory (ServerProfileId, AuthoritativeHostId, DisplayName, GamePort, RestApiPort, CreatedUtc) VALUES ('s-custom', 'host-B', 'Peer Copy', 30000, 30001, '2026-01-01T00:00:00Z');");
+        Equal(27015L, HostDatabase.QueryScalarLong(connection, "SELECT GamePort FROM ServerInventory WHERE ServerProfileId='s-custom' AND AuthoritativeHostId='host-A';"), "each Host-qualified row keeps its own ports");
+        return Task.CompletedTask;
+    }
+
     public static Task TestHostCapabilityGrantRequiresExactlyOneTargetHostId()
     {
         using var temp = new TempRoot();
