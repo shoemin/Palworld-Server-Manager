@@ -230,7 +230,23 @@ public static class ArchitectureGuardTests
     {
         var csprojPath = ResolveCsprojPath(project);
         var doc = XDocument.Load(csprojPath);
-        return doc.Descendants("ProjectReference")
+        var referenceElements = doc.Descendants("ProjectReference").ToList();
+
+        // This reads raw .csproj XML, not MSBuild-evaluated items - it has no way to know
+        // whether an element's Condition (on the reference itself or an enclosing ItemGroup)
+        // would evaluate true or false. The accepted #19 SS1 topology has zero conditional
+        // ProjectReferences today, so any conditioned reference is rejected outright rather
+        // than silently counted as unconditionally active or inactive. If OS-conditional
+        // selection (e.g. #21's Platform.Linux) later needs a real conditioned reference, this
+        // guard must be upgraded to MSBuild-evaluated items (e.g. Microsoft.Build.Evaluation)
+        // before that reference is introduced.
+        var conditioned = referenceElements.FirstOrDefault(e => e.AncestorsAndSelf().Any(a => a.Attribute("Condition") is not null));
+        if (conditioned is not null)
+        {
+            throw new Exception($"{project}.csproj has a conditioned ProjectReference ({conditioned.Attribute("Include")?.Value}) - this static XML guard cannot verify a conditioned reference's actual build-time state and does not accept one.");
+        }
+
+        return referenceElements
             .Select(element => element.Attribute("Include")?.Value)
             .Where(include => !string.IsNullOrEmpty(include))
             .Select(include => Path.GetFileNameWithoutExtension(include!.Replace('\\', Path.DirectorySeparatorChar)))
