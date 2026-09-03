@@ -12,6 +12,8 @@ namespace PalworldServerManager.SelfTest;
 // a Target-scoped item, the way a raw-XML text scan could (PR #58 review rounds 1-4).
 public static class ArchitectureGuardTests
 {
+    private const string SolutionFileName = "PalworldServerManager.sln";
+
     private const string Core = "PalworldServerManager.Core";
     private const string Lan = "PalworldServerManager.Lan";
     private const string App = "PalworldServerManager.App";
@@ -329,6 +331,21 @@ public static class ArchitectureGuardTests
         startInfo.ArgumentList.Add("-getItem:ProjectReference");
         startInfo.ArgumentList.Add($"-p:Configuration={configuration}");
 
+        // Round-8 review: a standalone `dotnet msbuild <csproj>` evaluates in a different
+        // context than `dotnet build PalworldServerManager.sln` does - confirmed empirically
+        // that BuildingSolutionFile and the Solution* properties are unset here but set by a
+        // real solution build. A reference conditioned on any of them (e.g.
+        // Condition="'$(BuildingSolutionFile)'=='true'") would be invisible without this. These
+        // match exactly what the solution build sets for every project (verified via a
+        // temporary diagnostic target), not a guess.
+        var solutionPath = Path.Combine(RepositoryRoot(), SolutionFileName);
+        startInfo.ArgumentList.Add("-p:BuildingSolutionFile=true");
+        startInfo.ArgumentList.Add($"-p:SolutionDir={RepositoryRoot()}{Path.DirectorySeparatorChar}");
+        startInfo.ArgumentList.Add($"-p:SolutionExt={Path.GetExtension(SolutionFileName)}");
+        startInfo.ArgumentList.Add($"-p:SolutionFileName={SolutionFileName}");
+        startInfo.ArgumentList.Add($"-p:SolutionName={Path.GetFileNameWithoutExtension(SolutionFileName)}");
+        startInfo.ArgumentList.Add($"-p:SolutionPath={solutionPath}");
+
         using var process = Process.Start(startInfo)
             ?? throw new Exception($"Failed to start 'dotnet msbuild' to evaluate {project}'s ProjectReference items ({configuration}).");
         var stdout = process.StandardOutput.ReadToEnd();
@@ -452,7 +469,7 @@ public static class ArchitectureGuardTests
         }
 
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "PalworldServerManager.sln")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, SolutionFileName)))
         {
             directory = directory.Parent;
         }
