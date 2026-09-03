@@ -365,6 +365,29 @@ public static class ArchitectureGuardTests
                     throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference -p:Configuration={configuration}' returned a ProjectReference item for {project} with no resolvable FullPath.");
                 }
 
+                // Round-7 review: ReferenceOutputAssembly="false" means MSBuild still evaluates
+                // this as a ProjectReference item (so it would otherwise satisfy a required
+                // edge) but does NOT supply the referenced project's output to the compiler -
+                // the actual compiled dependency this guard exists to verify wouldn't exist.
+                if (reference.TryGetProperty("ReferenceOutputAssembly", out var roaElement) && string.Equals(roaElement.GetString(), "false", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new Exception($"{project} ({configuration}) has a ProjectReference to '{fullPath}' with ReferenceOutputAssembly=\"false\" - it does not supply the referenced project's compiled output, so this guard does not accept it as satisfying a dependency.");
+                }
+
+                // Round-7 review: AdditionalProperties/Properties/GlobalPropertiesToRemove/
+                // UndefineProperties change what property set the referenced project is actually
+                // evaluated with in a real build. This traversal always re-evaluates a child with
+                // only Configuration set (see TransitiveReferences below), so a reference using
+                // any of these could make the real build's graph diverge from what this guard
+                // sees - the accepted #19 topology uses none of these today.
+                foreach (var propertyMetadata in new[] { "AdditionalProperties", "Properties", "GlobalPropertiesToRemove", "UndefineProperties" })
+                {
+                    if (reference.TryGetProperty(propertyMetadata, out var metadataElement) && metadataElement.GetString() is { Length: > 0 })
+                    {
+                        throw new Exception($"{project} ({configuration}) has a ProjectReference to '{fullPath}' with {propertyMetadata}=\"{metadataElement.GetString()}\" - this guard's traversal cannot account for a referenced project being evaluated with a different property context, so it does not accept one.");
+                    }
+                }
+
                 var canonicalName = Path.GetFileNameWithoutExtension(fullPath);
 
                 // Round-5 review: comparing only by filename would let a reference to some other
