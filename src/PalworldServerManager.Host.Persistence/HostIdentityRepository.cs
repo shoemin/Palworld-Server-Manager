@@ -26,9 +26,9 @@ public sealed class HostIdentityRepository
     // Generates HostId exactly once. Calling this again on an already-initialized database
     // returns the existing identity unchanged - HostId never changes for this physical PC's
     // life (IDENT-001).
-    public HostIdentityRecord EnsureHostIdentity(SqliteConnection connection, Func<string>? hostIdFactory = null)
+    public HostIdentityRecord EnsureHostIdentity(SqliteConnection connection, SqliteTransaction? transaction = null, Func<string>? hostIdFactory = null)
     {
-        var existing = TryReadHostIdentity(connection);
+        var existing = TryReadHostIdentity(connection, transaction);
         if (existing is not null)
         {
             return existing;
@@ -38,6 +38,11 @@ public sealed class HostIdentityRepository
         var setupUtc = DateTimeOffset.UtcNow.ToString("O");
 
         using var command = connection.CreateCommand();
+        if (transaction is not null)
+        {
+            command.Transaction = transaction;
+        }
+
         command.CommandText = """
             INSERT INTO HostIdentity (Id, HostId, HostBootstrapState, CurrentCredentialRef, SetupUtc)
             VALUES (1, $hostId, 'Uninitialized', NULL, $setupUtc);
@@ -49,9 +54,14 @@ public sealed class HostIdentityRepository
         return new HostIdentityRecord(hostId, HostBootstrapState.Uninitialized, null, setupUtc);
     }
 
-    public HostIdentityRecord? TryReadHostIdentity(SqliteConnection connection)
+    public HostIdentityRecord? TryReadHostIdentity(SqliteConnection connection, SqliteTransaction? transaction = null)
     {
         using var command = connection.CreateCommand();
+        if (transaction is not null)
+        {
+            command.Transaction = transaction;
+        }
+
         command.CommandText = "SELECT HostId, HostBootstrapState, CurrentCredentialRef, SetupUtc FROM HostIdentity WHERE Id = 1;";
         using var reader = command.ExecuteReader();
         if (!reader.Read())
@@ -81,22 +91,30 @@ public sealed class HostIdentityRepository
     // LOCAL-001 / OWNER-001, the persistence half.
     //
     // The partial unique index proves AT MOST one active Owner. This method supplies the other
-    // half transactionally: the Uninitialized -> Initialized transition commits ONLY together
-    // with exactly one active Owner existing. There is therefore no observable committed state
-    // with Initialized + zero active Owners, or Initialized + multiple.
+    // half: the Uninitialized -> Initialized transition can only be committed together with
+    // exactly one active Owner, so no committed state with Initialized + zero (or multiple)
+    // active Owners is ever observable.
     //
-    // This is deliberately NOT the SS2c bootstrap ceremony (no OwnerBootstrapSecret, no
-    // verifier check, no privileged offline gate, no client keypair exchange) - only the
-    // persistence transaction shape that ceremony will later rely on (#42).
+    // TRANSACTION-COMPOSABLE BY DESIGN: this primitive never begins or commits a transaction.
+    // The caller supplies one and owns the surrounding atomic unit, because SS2c's real bootstrap
+    // must commit this together with PendingOwnerEnrollment verification/consumption,
+    // ResultLocalPrincipalId persistence, and an AuditEvents append - all in ONE transaction.
+    // Committing here would make that impossible without a second, competing mechanism.
+    //
+    // This is deliberately NOT the SS2c bootstrap ceremony (no OwnerBootstrapSecret, no verifier
+    // check, no privileged offline gate, no client keypair exchange) - only the persistence
+    // transaction shape that ceremony will later compose with (#42).
     public void InitializeWithOwner(
         SqliteConnection connection,
+        SqliteTransaction transaction,
         string ownerLocalPrincipalId,
         string ownerOsPrincipalRef,
         string ownerPublicVerificationKey)
     {
-        using var transaction = connection.BeginTransaction();
+        ArgumentNullException.ThrowIfNull(connection);
+        ArgumentNullException.ThrowIfNull(transaction);
 
-        var identity = TryReadHostIdentity(connection)
+        var identity = TryReadHostIdentity(connection, transaction)
             ?? throw new InvalidOperationException("HostIdentity must exist before initialization.");
 
         if (identity.BootstrapState == HostBootstrapState.Initialized)
@@ -126,14 +144,12 @@ public sealed class HostIdentityRepository
             update.ExecuteNonQuery();
         }
 
-        // Enforced inside the same transaction as the transition itself, so a violation can
-        // never be observed as committed state.
+        // Checked inside the caller's transaction, before it commits, so a violation can never
+        // become observable committed state regardless of what else the caller composes in.
         var activeOwners = CountActiveOwners(connection, transaction);
         if (activeOwners != 1)
         {
             throw new InvalidOperationException($"Refusing to commit Initialized with {activeOwners} active Owner(s); exactly one is required (LOCAL-001).");
         }
-
-        transaction.Commit();
     }
 }

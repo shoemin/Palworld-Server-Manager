@@ -99,8 +99,8 @@ public static class HostPersistenceTests
         Throws<SqliteException>(
             () => Execute(connection, """
                 INSERT INTO PendingCredentialReplacements
-                    (ReplacementId, PeerHostId, ProposedKeyFingerprint, ExpiresUtc, CreatedUtc)
-                VALUES ('r1', 'no-such-peer', 'fp', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+                    (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpiresUtc, CreatedUtc)
+                VALUES ('r1', 'no-such-peer', 'fp', '2026-01-01T00:00:00Z', 'Active', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
                 """),
             "FK violation must be rejected");
         return Task.CompletedTask;
@@ -124,18 +124,52 @@ public static class HostPersistenceTests
         return Task.CompletedTask;
     }
 
-    public static Task TestPriorVersionFixtureMigratesToLatest()
+    // A TEST-ONLY migration chain. Deliberately not a production Migration002 - inventing a
+    // fake production migration merely to satisfy a test would be worse than the weak test it
+    // replaces.
+    private sealed class SyntheticMigration : IHostSchemaMigration
+    {
+        private readonly string _sql;
+
+        public SyntheticMigration(int version, string sql)
+        {
+            Version = version;
+            _sql = sql;
+        }
+
+        public int Version { get; }
+
+        public void Apply(SqliteConnection connection, SqliteTransaction transaction)
+            => HostDatabase.Execute(connection, _sql, transaction);
+    }
+
+    public static Task TestPriorVersionFixtureAppliesOnlyTheMissingMigration()
     {
         using var temp = new TempRoot();
         using var connection = temp.Database.OpenConnection();
-        var runner = HostSchemaMigrationRunner.Default();
 
-        // A "prior version" fixture: a database deliberately left at version 0 with the
-        // migration chain not yet applied, which is exactly what an older install looks like.
-        Equal(0, HostSchemaMigrationRunner.ReadSchemaVersion(connection), "fixture starts at 0");
-        var applied = runner.Migrate(connection);
-        Equal(runner.LatestVersion, HostSchemaMigrationRunner.ReadSchemaVersion(connection), "fixture reaches latest");
-        Equal(runner.LatestVersion, applied, "applied count equals the gap that existed");
+        var v1 = new SyntheticMigration(1, "CREATE TABLE V1State (Id INTEGER PRIMARY KEY, Marker TEXT NOT NULL);");
+        var v2 = new SyntheticMigration(2, "CREATE TABLE V2State (Id INTEGER PRIMARY KEY);");
+
+        // Establish a genuine PRIOR-VERSION database: version 1 is durably applied and carries
+        // real data, and user_version is 1 - materially different from the fresh (0) path.
+        var priorVersionRunner = new HostSchemaMigrationRunner([v1]);
+        Equal(1, priorVersionRunner.Migrate(connection), "only v1 applied to establish the fixture");
+        Execute(connection, "INSERT INTO V1State (Id, Marker) VALUES (1, 'created-by-v1');");
+        Equal(1, HostSchemaMigrationRunner.ReadSchemaVersion(connection), "fixture sits at user_version 1");
+
+        // Now a build that knows BOTH versions opens the same database.
+        var upgradedRunner = new HostSchemaMigrationRunner([v1, v2]);
+        Equal(2, upgradedRunner.LatestVersion, "runner knows versions 1 and 2");
+
+        var applied = upgradedRunner.Migrate(connection);
+
+        Equal(1, applied, "ONLY version 2 is applied - version 1 is not re-run");
+        Equal(2, HostSchemaMigrationRunner.ReadSchemaVersion(connection), "user_version becomes 2");
+        Equal(1L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='V2State';"), "version-2 state appears");
+        // Version-1 state survives untouched - a re-run of v1 would have thrown on CREATE TABLE,
+        // and its row proves the existing data was preserved rather than rebuilt.
+        Equal("created-by-v1", HostDatabase.QueryScalarText(connection, "SELECT Marker FROM V1State WHERE Id = 1;"), "version-1 state remains intact");
         return Task.CompletedTask;
     }
 
@@ -317,7 +351,11 @@ public static class HostPersistenceTests
         var repo = new HostIdentityRepository(temp.Database);
         repo.EnsureHostIdentity(connection);
 
-        repo.InitializeWithOwner(connection, "owner-1", "S-1-5-21-OWNER", "owner-public-key");
+        using (var transaction = connection.BeginTransaction())
+        {
+            repo.InitializeWithOwner(connection, transaction, "owner-1", "S-1-5-21-OWNER", "owner-public-key");
+            transaction.Commit();
+        }
 
         var identity = repo.TryReadHostIdentity(connection)!;
         Equal(HostBootstrapState.Initialized, identity.BootstrapState, "Host became Initialized");
@@ -325,7 +363,12 @@ public static class HostPersistenceTests
 
         // Never re-initialized, never reverts (SS2c).
         Throws<InvalidOperationException>(
-            () => repo.InitializeWithOwner(connection, "owner-2", "S-1-5-21-OTHER", "other-key"),
+            () =>
+            {
+                using var retry = connection.BeginTransaction();
+                repo.InitializeWithOwner(connection, retry, "owner-2", "S-1-5-21-OTHER", "other-key");
+                retry.Commit();
+            },
             "an Initialized Host is never re-initialized");
         Equal(1, HostIdentityRepository.CountActiveOwners(connection), "still exactly one active Owner after the rejected attempt");
         return Task.CompletedTask;
@@ -343,12 +386,212 @@ public static class HostPersistenceTests
         Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc) VALUES ('pre', 'S-1-5-21-PRE', 'k', 1, 'Active', '2026-01-01T00:00:00Z');");
 
         Throws<SqliteException>(
-            () => repo.InitializeWithOwner(connection, "owner-x", "S-1-5-21-X", "kx"),
+            () =>
+            {
+                using var conflicting = connection.BeginTransaction();
+                repo.InitializeWithOwner(connection, conflicting, "owner-x", "S-1-5-21-X", "kx");
+                conflicting.Commit();
+            },
             "a conflicting active Owner aborts the transition");
 
         // The Host must still be Uninitialized - no committed Initialized-without-exactly-one-Owner
         // state was ever observable.
         Equal(HostBootstrapState.Uninitialized, repo.TryReadHostIdentity(connection)!.BootstrapState, "transition rolled back");
+        return Task.CompletedTask;
+    }
+
+    // Correction 6: the caller owns the atomic unit, so rolling back must discard BOTH the Owner
+    // row and the bootstrap-state transition - proving the primitive never commits on its own.
+    public static Task TestOwnerInitializationIsTransactionComposableAndRollsBack()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+        var repo = new HostIdentityRepository(temp.Database);
+        repo.EnsureHostIdentity(connection);
+
+        using (var transaction = connection.BeginTransaction())
+        {
+            repo.InitializeWithOwner(connection, transaction, "owner-rb", "S-1-5-21-RB", "key-rb");
+
+            // Visible inside the caller's own transaction before it decides to commit.
+            Equal(1, HostIdentityRepository.CountActiveOwners(connection, transaction), "Owner visible inside the open transaction");
+            transaction.Rollback();
+        }
+
+        // Both effects are gone - the primitive committed nothing by itself.
+        Equal(HostBootstrapState.Uninitialized, repo.TryReadHostIdentity(connection)!.BootstrapState, "bootstrap transition rolled back");
+        Equal(0, HostIdentityRepository.CountActiveOwners(connection), "Owner creation rolled back");
+        Equal(0L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM LocalPrincipals;"), "no Owner row survives the caller's rollback");
+
+        // And the caller can compose additional work into one atomic unit, exactly as SS2c's real
+        // bootstrap ceremony will need to (#42).
+        using (var transaction = connection.BeginTransaction())
+        {
+            repo.InitializeWithOwner(connection, transaction, "owner-ok", "S-1-5-21-OK", "key-ok");
+            using (var audit = connection.CreateCommand())
+            {
+                audit.Transaction = transaction;
+                audit.CommandText = "INSERT INTO AuditEvents (AuditEventId, OccurredUtc, EventKind, ActorKind, IsOfflineRecovery) VALUES ('a-boot', '2026-01-01T00:00:00Z', 'OwnerBootstrapCompleted', 'OfflineRecovery', 1);";
+                audit.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+
+        Equal(HostBootstrapState.Initialized, repo.TryReadHostIdentity(connection)!.BootstrapState, "composed commit succeeded");
+        Equal(1, HostIdentityRepository.CountActiveOwners(connection), "exactly one active Owner");
+        Equal(1L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM AuditEvents WHERE AuditEventId='a-boot';"), "caller-composed audit committed in the same unit");
+        return Task.CompletedTask;
+    }
+
+    // Correction 4: BOTH invalid key/state combinations must be rejected.
+    public static Task TestActivePrincipalMustHaveAVerificationKey()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc) VALUES ('p1', 'S-1-5-21-A', NULL, 0, 'Active', '2026-01-01T00:00:00Z');"),
+            "an Active principal with no key must be rejected");
+        return Task.CompletedTask;
+    }
+
+    // Correction 1: the Owner principal that created an enrollment is persisted, with FK integrity.
+    public static Task TestEnrollmentPersistsItsCreatingOwnerPrincipal()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+        Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc) VALUES ('owner1', 'S-1-5-21-OWNER', 'k', 1, 'Active', '2026-01-01T00:00:00Z');");
+
+        Execute(connection, "INSERT INTO PendingLocalPrincipalEnrollments (EnrollmentId, OsPrincipalRef, EnrollmentCodeVerifier, CreatedByOwnerLocalPrincipalId, ExpiresUtc, CreatedUtc) VALUES ('e1', 'S-1-5-21-NEW', 'verifier', 'owner1', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');");
+        Equal("owner1", HostDatabase.QueryScalarText(connection, "SELECT CreatedByOwnerLocalPrincipalId FROM PendingLocalPrincipalEnrollments WHERE EnrollmentId='e1';"), "creating Owner persisted");
+
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO PendingLocalPrincipalEnrollments (EnrollmentId, OsPrincipalRef, EnrollmentCodeVerifier, CreatedByOwnerLocalPrincipalId, ExpiresUtc, CreatedUtc) VALUES ('e2', 'S-1-5-21-NEW2', 'verifier', 'no-such-owner', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "a dangling creator principal must be rejected");
+
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO PendingLocalPrincipalEnrollments (EnrollmentId, OsPrincipalRef, EnrollmentCodeVerifier, ExpiresUtc, CreatedUtc) VALUES ('e3', 'S-1-5-21-NEW3', 'verifier', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "an enrollment with no recorded creator must be rejected");
+        return Task.CompletedTask;
+    }
+
+    // Correction 3: at most one LIVE initial-Owner ticket, while history is retained.
+    public static Task TestOnlyOneLiveInitialOwnerEnrollmentMayExist()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+
+        Execute(connection, "INSERT INTO PendingOwnerEnrollments (PendingOwnerEnrollmentId, OsPrincipalRef, SecretVerifier, ExpiresUtc, CreatedUtc) VALUES ('b1', 'S-1-5-21-A', 'v1', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');");
+
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO PendingOwnerEnrollments (PendingOwnerEnrollmentId, OsPrincipalRef, SecretVerifier, ExpiresUtc, CreatedUtc) VALUES ('b2', 'S-1-5-21-B', 'v2', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "a second simultaneously-live bootstrap ticket must be rejected");
+
+        // Consumed history does not block a later live ticket, and is retained (SS2c's
+        // idempotent-retry rule depends on that retention).
+        Execute(connection, "UPDATE PendingOwnerEnrollments SET ConsumedUtc='2026-01-02T00:00:00Z' WHERE PendingOwnerEnrollmentId='b1';");
+        Execute(connection, "INSERT INTO PendingOwnerEnrollments (PendingOwnerEnrollmentId, OsPrincipalRef, SecretVerifier, ExpiresUtc, CreatedUtc) VALUES ('b2', 'S-1-5-21-B', 'v2', '2030-01-01T00:00:00Z', '2026-01-02T00:00:00Z');");
+
+        // Explicitly invalidated history likewise does not block.
+        Execute(connection, "UPDATE PendingOwnerEnrollments SET InvalidatedUtc='2026-01-03T00:00:00Z' WHERE PendingOwnerEnrollmentId='b2';");
+        Execute(connection, "INSERT INTO PendingOwnerEnrollments (PendingOwnerEnrollmentId, OsPrincipalRef, SecretVerifier, ExpiresUtc, CreatedUtc) VALUES ('b3', 'S-1-5-21-C', 'v3', '2030-01-01T00:00:00Z', '2026-01-03T00:00:00Z');");
+
+        Equal(3L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM PendingOwnerEnrollments;"), "history rows retained, never deleted");
+        return Task.CompletedTask;
+    }
+
+    // Correction 2: the full accepted PendingCredentialReplacement shape.
+    public static Task TestPendingCredentialReplacementCapturesExpectedTrustSnapshot()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+        Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc) VALUES ('owner1', 'S-1-5-21-OWNER', 'k', 1, 'Active', '2026-01-01T00:00:00Z');");
+        Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, CreatedUtc) VALUES ('peer-A', 'Active', 'fp-1', '2026-01-01T00:00:00Z');");
+
+        Execute(connection, "INSERT INTO PendingCredentialReplacements (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpectedCurrentTrustedPublicKeyFingerprint, ExpiresUtc, CreatedUtc) VALUES ('r1', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'Active', 'fp-1', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');");
+        Equal("Active", HostDatabase.QueryScalarText(connection, "SELECT ExpectedTrustState FROM PendingCredentialReplacements WHERE ReplacementId='r1';"), "expected trust state round-trips");
+        Equal("fp-1", HostDatabase.QueryScalarText(connection, "SELECT ExpectedCurrentTrustedPublicKeyFingerprint FROM PendingCredentialReplacements WHERE ReplacementId='r1';"), "expected fingerprint round-trips");
+
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO PendingCredentialReplacements (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpiresUtc, CreatedUtc) VALUES ('r2', 'peer-A', 'fp-3', '2026-01-01T00:00:00Z', 'NotARealState', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "an invalid ExpectedTrustState must be rejected");
+
+        // Approval metadata is a single fact: both halves or neither.
+        Throws<SqliteException>(
+            () => Execute(connection, "UPDATE PendingCredentialReplacements SET ApprovedUtc='2026-01-02T00:00:00Z' WHERE ReplacementId='r1';"),
+            "approval time without an approving Owner must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "UPDATE PendingCredentialReplacements SET ApprovedByOwnerLocalPrincipalId='owner1' WHERE ReplacementId='r1';"),
+            "approving Owner without an approval time must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "UPDATE PendingCredentialReplacements SET ApprovedUtc='2026-01-02T00:00:00Z', ApprovedByOwnerLocalPrincipalId='no-such-owner' WHERE ReplacementId='r1';"),
+            "a dangling approving Owner must be rejected");
+
+        Execute(connection, "UPDATE PendingCredentialReplacements SET ApprovedUtc='2026-01-02T00:00:00Z', ApprovedByOwnerLocalPrincipalId='owner1' WHERE ReplacementId='r1';");
+        Equal("owner1", HostDatabase.QueryScalarText(connection, "SELECT ApprovedByOwnerLocalPrincipalId FROM PendingCredentialReplacements WHERE ReplacementId='r1';"), "complete approval metadata accepted");
+
+        // SS4b-i decided PendingRotationId is NOT captured as an expected snapshot value.
+        Equal(0L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM pragma_table_info('PendingCredentialReplacements') WHERE name='ExpectedPendingRotationId';"), "PendingRotationId is deliberately not captured");
+        return Task.CompletedTask;
+    }
+
+    // Correction 5: the complete tombstone constraint, all six cleared fields.
+    public static Task TestTrustedManagerStateAndCredentialCombinationsAreConstrained()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+
+        // A pinned relationship must actually carry a pin.
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CreatedUtc) VALUES ('p1', 'Active', '2026-01-01T00:00:00Z');"),
+            "Active without a current fingerprint must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CreatedUtc) VALUES ('p2', 'PeerBound', '2026-01-01T00:00:00Z');"),
+            "PeerBound without a current fingerprint must be rejected");
+
+        // Every field a revocation must clear.
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, CreatedUtc) VALUES ('r1', 'Revoked', 'fp', '2026-01-01T00:00:00Z');"),
+            "Revoked with a current fingerprint must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, PendingTrustedPublicKeyFingerprint, CreatedUtc) VALUES ('r2', 'Revoked', 'fp-pending', '2026-01-01T00:00:00Z');"),
+            "Revoked with a pending fingerprint must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, PendingRotationId, CreatedUtc) VALUES ('r3', 'Revoked', 'rot-1', '2026-01-01T00:00:00Z');"),
+            "Revoked with a pending rotation id must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, PendingRotationExpiresUtc, CreatedUtc) VALUES ('r4', 'Revoked', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "Revoked with a pending rotation expiry must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, PendingReconfirmationRequired, CreatedUtc) VALUES ('r5', 'Revoked', 1, '2026-01-01T00:00:00Z');"),
+            "Revoked with PendingReconfirmationRequired must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, PeerRecoveryRequired, CreatedUtc) VALUES ('r6', 'Revoked', 1, '2026-01-01T00:00:00Z');"),
+            "Revoked with PeerRecoveryRequired must be rejected");
+
+        // A clean tombstone is accepted and retained.
+        Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, RevokedUtc, CreatedUtc) VALUES ('clean', 'Revoked', '2026-01-02T00:00:00Z', '2026-01-01T00:00:00Z');");
+        Equal(1L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM TrustedManagers WHERE PeerHostId='clean';"), "a clean Revoked tombstone is accepted");
+
+        // SS4a-i: PendingRotationId alone legitimately survives promotion on a live row.
+        Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, PendingRotationId, CreatedUtc) VALUES ('promoted', 'Active', 'fp-new', 'rot-9', '2026-01-01T00:00:00Z');");
+        Equal("rot-9", HostDatabase.QueryScalarText(connection, "SELECT PendingRotationId FROM TrustedManagers WHERE PeerHostId='promoted';"), "a promoted peer may retain PendingRotationId alone");
+        return Task.CompletedTask;
+    }
+
+    // SS8 reconciliation: 'Prepared' is a real nonterminal rotation state.
+    public static Task TestHostCredentialRotationSupportsPreparedState()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+
+        Execute(connection, "INSERT INTO HostCredentialRotations (RotationId, State, StartedUtc) VALUES ('rot-1', 'Prepared', '2026-01-01T00:00:00Z');");
+        Equal("Prepared", HostDatabase.QueryScalarText(connection, "SELECT State FROM HostCredentialRotations WHERE RotationId='rot-1';"), "Prepared is representable");
+
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO HostCredentialRotations (RotationId, State, StartedUtc) VALUES ('rot-2', 'NotARealState', '2026-01-01T00:00:00Z');"),
+            "an unknown rotation state must be rejected");
         return Task.CompletedTask;
     }
 
@@ -549,7 +792,7 @@ public static class HostPersistenceTests
         using var temp = new TempRoot();
         using var connection = temp.OpenMigrated();
         Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, CreatedUtc) VALUES ('peer-A', 'Active', 'fp-1', '2026-01-01T00:00:00Z');");
-        Execute(connection, "INSERT INTO PendingCredentialReplacements (ReplacementId, PeerHostId, ProposedKeyFingerprint, ExpiresUtc, CreatedUtc) VALUES ('r1', 'peer-A', 'fp-2', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');");
+        Execute(connection, "INSERT INTO PendingCredentialReplacements (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpectedCurrentTrustedPublicKeyFingerprint, ExpiresUtc, CreatedUtc) VALUES ('r1', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'Active', 'fp-1', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');");
 
         // PAIR-004: this is a zero-authority concept. Assert the table has no grant linkage at
         // all, so nothing here can silently restore or manufacture authority.

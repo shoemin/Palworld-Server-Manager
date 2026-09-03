@@ -43,10 +43,15 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             PublicVerificationKey TEXT     NULL,
             IsOwner               INTEGER NOT NULL CHECK (IsOwner IN (0,1)),
             State                 TEXT NOT NULL CHECK (State IN ('Active','Revoked')),
+            DisplayName           TEXT     NULL,
             CreatedUtc            TEXT NOT NULL,
             RevokedUtc            TEXT     NULL,
-            -- A revoked principal must not retain a usable verification key (LOCAL-003).
-            CHECK (State = 'Active' OR PublicVerificationKey IS NULL)
+            -- SS3a's accepted key/state pairing, both directions: an Active principal HAS a
+            -- current PublicVerificationKey, and a Revoked one has it cleared (LOCAL-002,
+            -- LOCAL-003). Neither half alone is sufficient - an Active row with no key could
+            -- never authenticate, and a Revoked row with a key would still be usable.
+            CHECK ((State = 'Active'  AND PublicVerificationKey IS NOT NULL)
+                OR (State = 'Revoked' AND PublicVerificationKey IS NULL))
         );
 
         -- LOCAL-001, OWNER-001: at most one ACTIVE Owner, enforced by the database rather than
@@ -63,7 +68,13 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             EnrollmentId           TEXT PRIMARY KEY,
             OsPrincipalRef         TEXT NOT NULL,
             EnrollmentCodeVerifier TEXT NOT NULL,
+            -- SS3a's ExistingLocalPrincipalId: set when this reactivates a Revoked principal
+            -- rather than creating a new one.
             TargetLocalPrincipalId TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            -- SS3a, LOCAL-003: enrollment/reactivation is Owner-CREATED. Persisting which Owner
+            -- principal authorized it is part of the accepted shape - OS transport/group
+            -- eligibility never authorizes enrollment, so the authorizing actor is recorded.
+            CreatedByOwnerLocalPrincipalId TEXT NOT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
             ExpiresUtc             TEXT NOT NULL,
             ConsumedUtc            TEXT     NULL,
             ResultLocalPrincipalId TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
@@ -84,6 +95,15 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             InvalidatedUtc           TEXT     NULL,
             CreatedUtc               TEXT NOT NULL
         );
+
+        -- SS2c: at most one UNCONSUMED initial-Owner bootstrap ticket may exist at a time.
+        -- The predicate indexes an expression that is identically true for every live row, so a
+        -- second live row collides; consumed or explicitly invalidated rows drop out of the
+        -- index entirely and are retained as history without blocking a later live ticket
+        -- (retention is required for SS2c's idempotent-retry rule).
+        CREATE UNIQUE INDEX UX_PendingOwnerEnrollments_SingleLive
+            ON PendingOwnerEnrollments ((ConsumedUtc IS NULL AND InvalidatedUtc IS NULL))
+            WHERE ConsumedUtc IS NULL AND InvalidatedUtc IS NULL;
 
         -- SS2b "Rotate the Owner's credential". ExpectedCurrentPublicVerificationKey is the
         -- stale-ticket snapshot check; SS8's proactive invalidation (InvalidatedUtc) is what
@@ -145,11 +165,24 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             PendingRotationExpiresUtc          TEXT     NULL,
             PendingReconfirmationRequired      INTEGER NOT NULL DEFAULT 0 CHECK (PendingReconfirmationRequired IN (0,1)),
             PeerRecoveryRequired               INTEGER NOT NULL DEFAULT 0 CHECK (PeerRecoveryRequired IN (0,1)),
+            DisplayName                        TEXT     NULL,
+            MachineName                        TEXT     NULL,
             PairedUtc                          TEXT     NULL,
             RevokedUtc                         TEXT     NULL,
             CreatedUtc                         TEXT NOT NULL,
-            -- SS8: a tombstone never retains a usable pinned credential.
-            CHECK (State <> 'Revoked' OR CurrentTrustedPublicKeyFingerprint IS NULL)
+            -- SS4b/SS4a: a PeerBound or Active row represents an actually pinned peer
+            -- credential, so it must have one.
+            CHECK (State = 'Revoked' OR CurrentTrustedPublicKeyFingerprint IS NOT NULL),
+            -- SS8: a Revoked tombstone retains the FACT that this HostId was once trusted, but
+            -- never a dangling credential, staged rotation, or moot recovery flag - revocation
+            -- clears all of them in the same transaction, so no other combination is valid.
+            CHECK (State <> 'Revoked' OR (
+                    CurrentTrustedPublicKeyFingerprint IS NULL
+                AND PendingTrustedPublicKeyFingerprint IS NULL
+                AND PendingRotationId                  IS NULL
+                AND PendingRotationExpiresUtc          IS NULL
+                AND PendingReconfirmationRequired      = 0
+                AND PeerRecoveryRequired               = 0))
         );
 
         -- SS4b-i, PAIR-004. Bounded, ZERO-AUTHORITY candidates awaiting explicit Owner approval
@@ -158,11 +191,23 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
         CREATE TABLE PendingCredentialReplacements (
             ReplacementId          TEXT PRIMARY KEY,
             PeerHostId             TEXT NOT NULL REFERENCES TrustedManagers(PeerHostId),
+            -- SS4b-i's CandidatePublicKeyFingerprint.
             ProposedKeyFingerprint TEXT NOT NULL,
-            ExpiresUtc             TEXT NOT NULL,
+            VerifiedUtc            TEXT NOT NULL,
+            ApprovedByOwnerLocalPrincipalId TEXT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
             ApprovedUtc            TEXT     NULL,
+            ExpiresUtc             TEXT NOT NULL,
+            -- SS4b-i: the target TrustedManagers row's State and CurrentTrustedPublicKeyFingerprint
+            -- exactly as they stood at candidate-creation time. PendingRotationId is deliberately
+            -- NOT captured as a third expected value - SS4b-i decided against it explicitly.
+            ExpectedTrustState     TEXT NOT NULL CHECK (ExpectedTrustState IN ('PeerBound','Active','Revoked')),
+            ExpectedCurrentTrustedPublicKeyFingerprint TEXT NULL,
             InvalidatedUtc         TEXT     NULL,
-            CreatedUtc             TEXT NOT NULL
+            CreatedUtc             TEXT NOT NULL,
+            -- Approval is a single fact: who approved and when are recorded together, so the row
+            -- can never claim half an approval.
+            CHECK ((ApprovedUtc IS NULL     AND ApprovedByOwnerLocalPrincipalId IS NULL)
+                OR (ApprovedUtc IS NOT NULL AND ApprovedByOwnerLocalPrincipalId IS NOT NULL))
         );
 
         -- SS4a-i, IDENT-003. In-progress routine rotation state, with per-peer staging tracked
@@ -171,7 +216,11 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             RotationId       TEXT PRIMARY KEY,
             OldCredentialRef TEXT     NULL,
             NewCredentialRef TEXT     NULL,
-            State            TEXT NOT NULL CHECK (State IN ('Staging','ReadyForCutover','CutOver','Completed','Aborted')),
+            -- SS4a-i's states, including 'Prepared': step 1 prepares a rotation (securing
+            -- NewCredentialRef) before any peer staging begins, and that nonterminal state must
+            -- be representable for step 1's "idempotent and serialized against any other
+            -- nonterminal rotation" rule to be enforceable at all.
+            State            TEXT NOT NULL CHECK (State IN ('Prepared','Staging','ReadyForCutover','CutOver','Completed','Aborted')),
             StartedUtc       TEXT NOT NULL,
             CutOverUtc       TEXT     NULL,
             CompletedUtc     TEXT     NULL
