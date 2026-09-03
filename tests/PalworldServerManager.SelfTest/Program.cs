@@ -126,7 +126,20 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Backup registers as Backup", CriticalOperationWiringTests.TestBackupRegistersAsBackup),
     ("Restore registers as Restore and releases its lease on failure", CriticalOperationWiringTests.TestRestoreRegistersAsRestoreAndReleasesLeaseOnFailure),
     ("Settings save registers as SettingsWrite", CriticalOperationWiringTests.TestSettingsWriteRegistersAsSettingsWrite),
-    ("Package export registers as PackageExport", CriticalOperationWiringTests.TestPackageExportRegistersAsPackageExport)
+    ("Package export registers as PackageExport", CriticalOperationWiringTests.TestPackageExportRegistersAsPackageExport),
+    ("Direct ProjectReference graph matches the accepted #19 topology for supported build contexts", ArchitectureGuardTests.TestDirectReferenceGraphMatchesAcceptedTopologyForSupportedContexts),
+    ("Core has zero ProjectReferences", ArchitectureGuardTests.TestCoreHasNoProjectReferences),
+    ("Contracts is Core-independent", ArchitectureGuardTests.TestContractsIsCoreIndependent),
+    ("Contracts has no legacy Lan dependency", ArchitectureGuardTests.TestContractsHasNoLanDependency),
+    ("No new v0.5 project references legacy Lan", ArchitectureGuardTests.TestNoNewV05ProjectReferencesLegacyLan),
+    ("Client.Avalonia has no dependency path to Core/Host/Host.Persistence/Host-side Platform", ArchitectureGuardTests.TestClientAvaloniaHasNoHostSideDependencyPath),
+    ("Client.Cli has no dependency path to Core/Host/Host.Persistence/Host-side Platform", ArchitectureGuardTests.TestClientCliHasNoHostSideDependencyPath),
+    ("Host.Cli has no Contracts reference", ArchitectureGuardTests.TestHostCliHasNoContractsReference),
+    ("Client.Avalonia and Client.Cli share Client.Platform.Contracts", ArchitectureGuardTests.TestOrdinaryClientsShareClientPlatformContracts),
+    ("Windows and Linux implementations do not reference each other", ArchitectureGuardTests.TestWindowsAndLinuxImplementationsDoNotReferenceEachOther),
+    ("Frozen WPF App still references legacy Lan unchanged", ArchitectureGuardTests.TestFrozenWpfAppStillReferencesLanUnchanged),
+    ("Frozen legacy Lan has unchanged direct references", ArchitectureGuardTests.TestFrozenLegacyLanHasUnchangedDirectReferences),
+    ("Every guarded project is built by the solution", ArchitectureGuardTests.TestEveryGuardedProjectIsBuiltBySolution)
 };
 
 var failures = 0;
