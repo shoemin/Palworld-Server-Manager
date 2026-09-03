@@ -259,6 +259,35 @@ public static class ArchitectureGuardTests
         return Task.CompletedTask;
     }
 
+    public static Task TestFrozenLegacyLanHasUnchangedDirectReferences()
+    {
+        // Round-11 review: same class of gap as round 10's Core check - Lan is absent from
+        // AllowedDirectReferences, the new-v0.5-project checks only detect paths TO Lan (not
+        // Lan acquiring a new outgoing reference), and the App check only examines App's own
+        // direct set. Lan's documented boundary (docs/developer/v0.5-architecture.md SS1,
+        // ARCH-002: "unchanged - whatever it depends on today") is Core only (confirmed by
+        // reading Lan.csproj) - assert that exactly, the same way App's frozen set is asserted.
+        foreach (var configuration in Configurations)
+        {
+            var actual = DirectReferences(Lan, configuration).ToHashSet();
+            var expected = new HashSet<string> { Core };
+
+            var unexpected = actual.Except(expected).ToList();
+            if (unexpected.Count > 0)
+            {
+                throw new Exception($"{Lan} ({configuration}) has unexpected direct ProjectReference(s) beyond its frozen {{Core}} set: {string.Join(", ", unexpected)}.");
+            }
+
+            var missing = expected.Except(actual).ToList();
+            if (missing.Count > 0)
+            {
+                throw new Exception($"{Lan} ({configuration}) is missing required direct ProjectReference(s) from its frozen {{Core}} set: {string.Join(", ", missing)}.");
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static void AssertNoHostSideDependencyPath(string clientProject, string configuration)
     {
         NotDependsOn(clientProject, Core, configuration);

@@ -137,7 +137,8 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host.Cli has no Contracts reference", ArchitectureGuardTests.TestHostCliHasNoContractsReference),
     ("Client.Avalonia and Client.Cli share Client.Platform.Contracts", ArchitectureGuardTests.TestOrdinaryClientsShareClientPlatformContracts),
     ("Windows and Linux implementations do not reference each other", ArchitectureGuardTests.TestWindowsAndLinuxImplementationsDoNotReferenceEachOther),
-    ("Frozen WPF App still references legacy Lan unchanged", ArchitectureGuardTests.TestFrozenWpfAppStillReferencesLanUnchanged)
+    ("Frozen WPF App still references legacy Lan unchanged", ArchitectureGuardTests.TestFrozenWpfAppStillReferencesLanUnchanged),
+    ("Frozen legacy Lan has unchanged direct references", ArchitectureGuardTests.TestFrozenLegacyLanHasUnchangedDirectReferences)
 };
 
 var failures = 0;
