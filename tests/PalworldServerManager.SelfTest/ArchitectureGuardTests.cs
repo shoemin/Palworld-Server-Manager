@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace PalworldServerManager.SelfTest;
 
@@ -62,6 +63,10 @@ public static class ArchitectureGuardTests
         ClientCli, ClientAvalonia, ClientPlatformContracts, ClientPlatformWindows
     ];
 
+    // Every project this class makes a dependency claim about - the 10 scaffolded by #39, plus
+    // the three pre-existing ones whose boundaries are asserted exactly (Core, Lan, App).
+    private static readonly string[] GuardedProjects = [.. AllNewV05Projects, Core, Lan, App];
+
     // The exact, complete set of direct ProjectReference edges the accepted #19 SS1 topology
     // authorizes for the current Windows-stage graph - both an allowlist (no unexpected extra
     // edge survives) and a requirement (every listed edge must actually be present). This is
@@ -80,6 +85,51 @@ public static class ArchitectureGuardTests
         [ClientCli] = [Contracts, ClientPlatformContracts, ClientPlatformWindows],
         [ClientAvalonia] = [Contracts, ClientPlatformContracts, ClientPlatformWindows],
     };
+
+    // Round-12 review: every other guard here evaluates .csproj files located directly on disk
+    // and never consults the .sln, so a project silently dropped from the solution (or left in
+    // it but without Build.0 entries) would stop being built by scripts/build.ps1 and CI while
+    // the whole topology stayed green. Assert solution membership explicitly.
+    public static Task TestEveryGuardedProjectIsBuiltBySolution()
+    {
+        var solutionText = File.ReadAllText(Path.Combine(RepositoryRoot(), SolutionFileName));
+
+        // Project("{type-guid}") = "Name", "relative\path.csproj", "{project-guid}"
+        var entries = Regex.Matches(solutionText, @"^Project\(""\{[^}]+\}""\)\s*=\s*""([^""]+)""\s*,\s*""([^""]+)""\s*,\s*""\{([^}]+)\}""", RegexOptions.Multiline)
+            .Select(m => (Name: m.Groups[1].Value, RelativePath: m.Groups[2].Value, Guid: m.Groups[3].Value))
+            .ToList();
+
+        foreach (var project in GuardedProjects)
+        {
+            var entry = entries.FirstOrDefault(e => string.Equals(e.Name, project, StringComparison.Ordinal));
+            if (entry.Name is null)
+            {
+                throw new Exception($"{project} is not listed in {SolutionFileName} - the architecture guards evaluate its .csproj from disk, but the solution build (scripts/build.ps1, CI) would not build it at all.");
+            }
+
+            // The solution must point at this repository's canonical location for that project,
+            // not some other same-named file (same reasoning as the round-5 canonical-path check).
+            var expectedPath = ResolveCsprojPath(project);
+            var actualPath = Path.GetFullPath(Path.Combine(RepositoryRoot(), entry.RelativePath.Replace('\\', Path.DirectorySeparatorChar)));
+            var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            if (!string.Equals(actualPath, Path.GetFullPath(expectedPath), pathComparison))
+            {
+                throw new Exception($"{SolutionFileName} maps {project} to '{actualPath}', but this repository's canonical location for it is '{Path.GetFullPath(expectedPath)}'.");
+            }
+
+            // ActiveCfg alone only selects a configuration; Build.0 is what actually enables the
+            // project to be built in that solution configuration.
+            foreach (var configuration in Configurations)
+            {
+                if (!solutionText.Contains($"{{{entry.Guid}}}.{configuration}|Any CPU.Build.0", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new Exception($"{project} is listed in {SolutionFileName} but has no '{configuration}|Any CPU.Build.0' entry - it would be skipped by the solution build in {configuration}, so its guarded topology would go unverified by any actual build.");
+                }
+            }
+        }
+
+        return Task.CompletedTask;
+    }
 
     // Named "ForSupportedContexts", not "Exactly" - see the class-level Product Decision note.
     // The accepted graph itself is checked exactly; what's bounded is the evaluation contexts
