@@ -245,8 +245,26 @@ public static class ArchitectureGuardTests
     private static List<string> DirectReferences(string project)
     {
         var csprojPath = ResolveCsprojPath(project);
+
+        // This reads only the project file itself, not the full MSBuild-evaluated item graph -
+        // an implicit Directory.Build.props/targets (auto-imported by directory-walk) or an
+        // explicit <Import> could add, remove, or update a ProjectReference invisibly to this
+        // guard. The repository has none of either today, so both are rejected outright rather
+        // than silently ignored.
+        var implicitBuildCustomization = FindDirectoryBuildCustomization(csprojPath);
+        if (implicitBuildCustomization is not null)
+        {
+            throw new Exception($"{project} is subject to an implicit build customization ({implicitBuildCustomization}) between its directory and the repository root - MSBuild auto-imports Directory.Build.props/targets and this static XML guard cannot see what ProjectReference item it might add, remove, or update, so it does not accept one existing.");
+        }
+
         var doc = XDocument.Load(csprojPath);
         var referenceElements = doc.Descendants("ProjectReference").ToList();
+
+        var importElement = doc.Descendants("Import").FirstOrDefault();
+        if (importElement is not null)
+        {
+            throw new Exception($"{project}.csproj has an explicit <Import Project=\"{importElement.Attribute("Project")?.Value}\" /> - this static XML guard reads only the project file itself and cannot see a ProjectReference item an import might add, remove, or update, so it does not accept an explicit import.");
+        }
 
         // This reads raw .csproj XML, not MSBuild-evaluated items - it has no way to know
         // whether an element's Condition (on the reference itself or an enclosing ItemGroup)
@@ -278,6 +296,32 @@ public static class ArchitectureGuardTests
             .Where(include => !string.IsNullOrEmpty(include))
             .Select(include => Path.GetFileNameWithoutExtension(include!.Replace('\\', Path.DirectorySeparatorChar)))
             .ToList();
+    }
+
+    private static string? FindDirectoryBuildCustomization(string csprojPath)
+    {
+        var root = new DirectoryInfo(RepositoryRoot());
+        var directory = new FileInfo(csprojPath).Directory;
+        while (directory is not null)
+        {
+            foreach (var name in new[] { "Directory.Build.props", "Directory.Build.targets" })
+            {
+                var candidate = Path.Combine(directory.FullName, name);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            if (string.Equals(directory.FullName.TrimEnd(Path.DirectorySeparatorChar), root.FullName.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            directory = directory.Parent;
+        }
+
+        return null;
     }
 
     private static bool ProjectExists(string project) => File.Exists(TryResolveCsprojPath(project));
