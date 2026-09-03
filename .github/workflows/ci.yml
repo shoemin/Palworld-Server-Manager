@@ -39,3 +39,25 @@ jobs:
           path: build-logs/*.log
           if-no-files-found: warn
           retention-days: 14
+
+  windows-integration:
+    name: Windows integration
+    runs-on: windows-latest
+    timeout-minutes: 25
+    # GitHub-hosted windows-latest runners run as Administrator with UAC disabled, which the #41
+    # harness requires to create its temporary service/group/users. The harness fails rather than
+    # skipping silently if that is ever not the case, so a lost capability surfaces as a red job
+    # instead of quietly reduced coverage.
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up .NET from global.json
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Run privileged Windows integration harness
+        shell: pwsh
+        run: .\scripts\windows-integration.ps1

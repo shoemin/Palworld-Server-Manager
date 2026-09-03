@@ -11,4 +11,7 @@
     <ProjectReference Include="..\PalworldServerManager.Platform.Contracts\PalworldServerManager.Platform.Contracts.csproj" />
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+  </ItemGroup>
 </Project>

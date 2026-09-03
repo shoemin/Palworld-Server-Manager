@@ -40,6 +40,32 @@ if (args.Length > 0)
         return 0;
     }
 
+    // Explicit PRIVILEGED Windows integration entry point (#41). Deliberately NOT part of the
+    // ordinary suite: it creates real services/groups/users, so ./scripts/build.ps1 stays safe for
+    // an ordinary developer to run. Invoked by scripts/windows-integration.ps1 and by CI.
+    if (args.Length == 1 && args[0] == "--windows-integration")
+    {
+        if (!WindowsIntegrationTests.IsElevated())
+        {
+            Console.Error.WriteLine("FAIL  Windows integration requires an elevated process; it is never silently skipped.");
+            return 2;
+        }
+
+        try
+        {
+            Console.WriteLine(await WindowsIntegrationTests.RunAllAsync());
+            Console.WriteLine();
+            Console.WriteLine("Windows integration harness passed.");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("FAIL  Windows integration harness");
+            Console.Error.WriteLine(ex);
+            return 1;
+        }
+    }
+
     if (args.Length == 2 && args[0] == "--lock-abandon")
     {
         // Acquire, then die WITHOUT releasing, to exercise the abandoned-mutex path.
@@ -171,6 +197,28 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Frozen WPF App still references legacy Lan unchanged", ArchitectureGuardTests.TestFrozenWpfAppStillReferencesLanUnchanged),
     ("Frozen legacy Lan has unchanged direct references", ArchitectureGuardTests.TestFrozenLegacyLanHasUnchangedDirectReferences),
     ("Every guarded project is built by the solution", ArchitectureGuardTests.TestEveryGuardedProjectIsBuiltBySolution),
+
+    // #41 - Windows platform seams
+    ("Service binary path quotes paths with spaces", WindowsPlatformTests.TestServiceBinaryPathQuotesPathsWithSpaces),
+    ("Activation group ACE grants exactly SERVICE_START|SERVICE_QUERY_STATUS", WindowsPlatformTests.TestActivationGroupAceGrantsExactlyStartAndQueryStatus),
+    ("Activation group ACE preserves existing ACEs", WindowsPlatformTests.TestActivationGroupAcePreservesExistingAces),
+    ("Activation group ACE application is idempotent", WindowsPlatformTests.TestActivationGroupAceIsIdempotent),
+    ("Boot start maps to the Windows service start type", WindowsPlatformTests.TestBootStartMapsToServiceStartType),
+    ("Dedicated service account is a per-service virtual account", WindowsPlatformTests.TestDedicatedServiceAccountIsAPerServiceVirtualAccount),
+    ("Machine-wide Host data root is under ProgramData", WindowsPlatformTests.TestMachineWideHostDataRootIsUnderProgramData),
+    ("Service SID is derived and matches Windows", WindowsPlatformTests.TestServiceSidIsDerivedAndMatchesWindows),
+    ("Host-state ACL grants service/admins but not the activation group", WindowsPlatformTests.TestHostStateAclGrantsServiceAndAdminsButNotTheActivationGroup),
+    ("Host activation is idempotent and maps failure classes", WindowsPlatformTests.TestActivationIsIdempotentAndMapsFailureClasses),
+    ("Login start uses a test-scoped store and quotes the command", WindowsPlatformTests.TestLoginStartUsesTestScopedStoreAndQuotesCommand),
+    ("Shell integration opens only local directories and never spawns", WindowsPlatformTests.TestShellIntegrationOpensOnlyLocalDirectoriesAndNeverSpawns),
+
+    // #41 - client LocalPrincipal credential store
+    ("Credential lifecycle from create through bind to delete", LocalPrincipalCredentialStoreTests.TestCredentialLifecycleFromCreateThroughBindToDelete),
+    ("Credential survives restart and is shared by same-user consumers", LocalPrincipalCredentialStoreTests.TestCredentialSurvivesRestartAndIsSharedBySameUserConsumers),
+    ("No plaintext private key on disk", LocalPrincipalCredentialStoreTests.TestNoPlaintextPrivateKeyOnDisk),
+    ("Credential store exposes no Host machine-credential surface", LocalPrincipalCredentialStoreTests.TestStoreExposesNoHostMachineCredentialSurface),
+    ("Interrupted write does not corrupt the last good credential", LocalPrincipalCredentialStoreTests.TestInterruptedWriteDoesNotCorruptLastGoodCredential),
+    ("No production key generator ships in this slice", LocalPrincipalCredentialStoreTests.TestNoProductionKeyGeneratorShipsInThisSlice),
 
     // #40 - Host persistence foundation
     ("Host database enables WAL journal mode", HostPersistenceTests.TestWalJournalModeEnabled),
