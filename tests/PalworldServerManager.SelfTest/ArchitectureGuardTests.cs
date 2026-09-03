@@ -1,12 +1,15 @@
-using System.Xml.Linq;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace PalworldServerManager.SelfTest;
 
 // Structural dependency-direction guards for the v0.5 topology accepted by #19
 // (docs/developer/v0.5-architecture.md SS1) and scaffolded by #39. These read each project's
-// .csproj <ProjectReference> elements directly from disk (via System.Xml.Linq, not assembly
-// loading), so a forbidden or missing reference fails a fast, static check the moment it's
-// changed in a .csproj - it doesn't require the referencing project to actually build first.
+// actual MSBuild-EVALUATED ProjectReference items (via `dotnet msbuild -getItem:ProjectReference`,
+// not raw .csproj XML text) so a forbidden or missing reference fails the moment it's changed -
+// it doesn't require the referencing project to actually build first, and it can't be defeated by
+// a Condition, Remove/Update, Exclude, Directory.Build.props/targets import, explicit <Import>, or
+// a Target-scoped item, the way a raw-XML text scan could (PR #58 review rounds 1-4).
 public static class ArchitectureGuardTests
 {
     private const string Core = "PalworldServerManager.Core";
@@ -242,86 +245,84 @@ public static class ArchitectureGuardTests
         return visited;
     }
 
+    // Evaluated once per project per self-test run and reused - each entry costs one
+    // `dotnet msbuild` process launch, and the transitive guards call this repeatedly.
+    private static readonly Dictionary<string, List<string>> DirectReferenceCache = new();
+
     private static List<string> DirectReferences(string project)
     {
-        var csprojPath = ResolveCsprojPath(project);
-
-        // This reads only the project file itself, not the full MSBuild-evaluated item graph -
-        // an implicit Directory.Build.props/targets (auto-imported by directory-walk) or an
-        // explicit <Import> could add, remove, or update a ProjectReference invisibly to this
-        // guard. The repository has none of either today, so both are rejected outright rather
-        // than silently ignored.
-        var implicitBuildCustomization = FindDirectoryBuildCustomization(csprojPath);
-        if (implicitBuildCustomization is not null)
+        if (DirectReferenceCache.TryGetValue(project, out var cached))
         {
-            throw new Exception($"{project} is subject to an implicit build customization ({implicitBuildCustomization}) between its directory and the repository root - MSBuild auto-imports Directory.Build.props/targets and this static XML guard cannot see what ProjectReference item it might add, remove, or update, so it does not accept one existing.");
+            return cached;
         }
 
-        var doc = XDocument.Load(csprojPath);
-        var referenceElements = doc.Descendants("ProjectReference").ToList();
-
-        var importElement = doc.Descendants("Import").FirstOrDefault();
-        if (importElement is not null)
-        {
-            throw new Exception($"{project}.csproj has an explicit <Import Project=\"{importElement.Attribute("Project")?.Value}\" /> - this static XML guard reads only the project file itself and cannot see a ProjectReference item an import might add, remove, or update, so it does not accept an explicit import.");
-        }
-
-        // This reads raw .csproj XML, not MSBuild-evaluated items - it has no way to know
-        // whether an element's Condition (on the reference itself or an enclosing ItemGroup)
-        // would evaluate true or false. The accepted #19 SS1 topology has zero conditional
-        // ProjectReferences today, so any conditioned reference is rejected outright rather
-        // than silently counted as unconditionally active or inactive. If OS-conditional
-        // selection (e.g. #21's Platform.Linux) later needs a real conditioned reference, this
-        // guard must be upgraded to MSBuild-evaluated items (e.g. Microsoft.Build.Evaluation)
-        // before that reference is introduced.
-        var conditioned = referenceElements.FirstOrDefault(e => e.AncestorsAndSelf().Any(a => a.Attribute("Condition") is not null));
-        if (conditioned is not null)
-        {
-            throw new Exception($"{project}.csproj has a conditioned ProjectReference ({conditioned.Attribute("Include")?.Value}) - this static XML guard cannot verify a conditioned reference's actual build-time state and does not accept one.");
-        }
-
-        // Same class of gap as Condition above: a later unconditional Remove/Update targeting an
-        // earlier Include would silently fold away in MSBuild's evaluated item set, but this flat
-        // XML read has no notion of item-list ordering/mutation, so it would still report the
-        // removed/updated reference as active. Reject outright rather than mis-evaluate.
-        var removedOrUpdated = referenceElements.FirstOrDefault(e => e.Attribute("Remove") is not null || e.Attribute("Update") is not null);
-        if (removedOrUpdated is not null)
-        {
-            var target = removedOrUpdated.Attribute("Remove")?.Value ?? removedOrUpdated.Attribute("Update")?.Value;
-            throw new Exception($"{project}.csproj has a ProjectReference Remove/Update operation ({target}) - this static XML guard reads a flat list of Include elements and does not fold Remove/Update into the evaluated item set, so it does not accept one.");
-        }
-
-        return referenceElements
-            .Select(element => element.Attribute("Include")?.Value)
-            .Where(include => !string.IsNullOrEmpty(include))
-            .Select(include => Path.GetFileNameWithoutExtension(include!.Replace('\\', Path.DirectorySeparatorChar)))
-            .ToList();
+        var references = EvaluateDirectReferences(project, ResolveCsprojPath(project));
+        DirectReferenceCache[project] = references;
+        return references;
     }
 
-    private static string? FindDirectoryBuildCustomization(string csprojPath)
+    // Asks MSBuild itself what project's ProjectReference items evaluate to, rather than
+    // reimplementing MSBuild's Condition/Remove/Update/Exclude/Import/Target semantics in a raw
+    // XML reader (PR #58 review rounds 1-4 each found a real gap in that reimplementation). No
+    // target is requested, so this is pure evaluation - no build output, no side effects.
+    private static List<string> EvaluateDirectReferences(string project, string csprojPath)
     {
-        var root = new DirectoryInfo(RepositoryRoot());
-        var directory = new FileInfo(csprojPath).Directory;
-        while (directory is not null)
+        var startInfo = new ProcessStartInfo
         {
-            foreach (var name in new[] { "Directory.Build.props", "Directory.Build.targets" })
-            {
-                var candidate = Path.Combine(directory.FullName, name);
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
-            }
+            FileName = "dotnet",
+            WorkingDirectory = RepositoryRoot(),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("msbuild");
+        startInfo.ArgumentList.Add(csprojPath);
+        startInfo.ArgumentList.Add("-nologo");
+        startInfo.ArgumentList.Add("-getItem:ProjectReference");
+        startInfo.ArgumentList.Add("-p:Configuration=Release");
 
-            if (string.Equals(directory.FullName.TrimEnd(Path.DirectorySeparatorChar), root.FullName.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
-            {
-                break;
-            }
+        using var process = Process.Start(startInfo)
+            ?? throw new Exception($"Failed to start 'dotnet msbuild' to evaluate {project}'s ProjectReference items.");
+        var stdout = process.StandardOutput.ReadToEnd();
+        var stderr = process.StandardError.ReadToEnd();
+        process.WaitForExit();
 
-            directory = directory.Parent;
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' exited {process.ExitCode} while evaluating {project} - this guard trusts only a clean MSBuild evaluation. stderr: {stderr}");
         }
 
-        return null;
+        JsonDocument document;
+        try
+        {
+            document = JsonDocument.Parse(stdout);
+        }
+        catch (JsonException ex)
+        {
+            throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' did not return parseable JSON while evaluating {project}: {ex.Message}. Output: {stdout}");
+        }
+
+        using (document)
+        {
+            if (!document.RootElement.TryGetProperty("Items", out var items) || !items.TryGetProperty("ProjectReference", out var references))
+            {
+                throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' output for {project} had no Items.ProjectReference array. Output: {stdout}");
+            }
+
+            var result = new List<string>();
+            foreach (var reference in references.EnumerateArray())
+            {
+                if (!reference.TryGetProperty("FullPath", out var fullPathElement) || fullPathElement.GetString() is not { Length: > 0 } fullPath)
+                {
+                    throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' returned a ProjectReference item for {project} with no resolvable FullPath.");
+                }
+
+                result.Add(Path.GetFileNameWithoutExtension(fullPath));
+            }
+
+            return result;
+        }
     }
 
     private static bool ProjectExists(string project) => File.Exists(TryResolveCsprojPath(project));
