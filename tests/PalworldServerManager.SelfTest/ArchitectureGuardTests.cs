@@ -4,12 +4,30 @@ using System.Text.Json;
 namespace PalworldServerManager.SelfTest;
 
 // Structural dependency-direction guards for the v0.5 topology accepted by #19
-// (docs/developer/v0.5-architecture.md SS1) and scaffolded by #39. These read each project's
-// actual MSBuild-EVALUATED ProjectReference items (via `dotnet msbuild -getItem:ProjectReference`,
-// not raw .csproj XML text) so a forbidden or missing reference fails the moment it's changed -
-// it doesn't require the referencing project to actually build first, and it can't be defeated by
-// a Condition, Remove/Update, Exclude, Directory.Build.props/targets import, explicit <Import>, or
-// a Target-scoped item, the way a raw-XML text scan could (PR #58 review rounds 1-4).
+// (docs/developer/v0.5-architecture.md SS1) and scaffolded by #39. The accepted dependency graph
+// itself (AllowedDirectReferences below) is exact and normative. These guards read each project's
+// actual MSBuild-EVALUATED ProjectReference items for the repository's two supported build
+// contexts (Debug/Release, standalone-project evaluation - see EvaluateDirectReferences) via
+// `dotnet msbuild -getItem:ProjectReference`, not raw .csproj XML text, so a forbidden or missing
+// reference fails the moment it's changed in the repository's normal project-authoring style -
+// it doesn't require the referencing project to actually build first, and it isn't defeated by
+// ordinary Condition, Remove/Update, Exclude, Directory.Build.props/targets import, explicit
+// <Import>, or Target-scoped item authoring the way a raw-XML text scan was (PR #58 review
+// rounds 1-4).
+//
+// PRODUCT DECISION (PR #58 round 9, recorded on #39): this is a normal-development
+// dependency-drift guard, not a complete or adversarially-exhaustive evaluator of every legal,
+// dynamic, imported, or solution-context-dependent MSBuild construction - it is defense-in-depth,
+// not a security boundary. Standalone per-project evaluation cannot faithfully reproduce every
+// property a real `dotnet build PalworldServerManager.sln` injects (round 8 closed six of them -
+// BuildingSolutionFile, SolutionDir/Ext/FileName/Name/Path - but round 9 found a seventh,
+// CurrentSolutionConfigurationContents, a per-configuration XML blob generated fresh from the
+// .sln and not safely hardcodable). This residual gap, and the general class of undiscovered
+// solution-only properties, is an accepted limitation of this test mechanism, not of the
+// accepted #19 architecture. Deliberately dynamic, imported, or solution-context-dependent
+// ProjectReference authoring that could evade this evaluation model is not implicitly authorized
+// by that acceptance; such authoring must explicitly address the architecture-guard implications
+// in its own bounded issue/review.
 public static class ArchitectureGuardTests
 {
     private const string SolutionFileName = "PalworldServerManager.sln";
@@ -63,7 +81,10 @@ public static class ArchitectureGuardTests
         [ClientAvalonia] = [Contracts, ClientPlatformContracts, ClientPlatformWindows],
     };
 
-    public static Task TestDirectReferenceGraphMatchesAcceptedTopologyExactly()
+    // Named "ForSupportedContexts", not "Exactly" - see the class-level Product Decision note.
+    // The accepted graph itself is checked exactly; what's bounded is the evaluation contexts
+    // (Debug/Release, standalone-project) this can faithfully evaluate, not the graph's rigor.
+    public static Task TestDirectReferenceGraphMatchesAcceptedTopologyForSupportedContexts()
     {
         foreach (var configuration in Configurations)
         {
@@ -314,6 +335,11 @@ public static class ArchitectureGuardTests
     // Import/Target semantics in a raw XML reader (PR #58 review rounds 1-4 each found a real
     // gap in that reimplementation). No target is requested, so this is pure evaluation - no
     // build output, no side effects.
+    //
+    // This is a STANDALONE per-project evaluation, not a full solution-build evaluation - it
+    // replicates the specific solution-context properties known to matter (below), but per the
+    // round-9 Product Decision, it does not and is not required to reproduce every possible
+    // dynamically-generated solution-only property (e.g. CurrentSolutionConfigurationContents).
     private static List<string> EvaluateDirectReferences(string project, string csprojPath, string configuration)
     {
         var startInfo = new ProcessStartInfo
@@ -337,7 +363,8 @@ public static class ArchitectureGuardTests
         // real solution build. A reference conditioned on any of them (e.g.
         // Condition="'$(BuildingSolutionFile)'=='true'") would be invisible without this. These
         // match exactly what the solution build sets for every project (verified via a
-        // temporary diagnostic target), not a guess.
+        // temporary diagnostic target), not a guess. This list is not claimed to be exhaustive
+        // of every solution-injected property (round-9 Product Decision, see class-level note).
         var solutionPath = Path.Combine(RepositoryRoot(), SolutionFileName);
         startInfo.ArgumentList.Add("-p:BuildingSolutionFile=true");
         startInfo.ArgumentList.Add($"-p:SolutionDir={RepositoryRoot()}{Path.DirectorySeparatorChar}");

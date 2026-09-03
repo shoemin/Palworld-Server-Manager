@@ -127,7 +127,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Restore registers as Restore and releases its lease on failure", CriticalOperationWiringTests.TestRestoreRegistersAsRestoreAndReleasesLeaseOnFailure),
     ("Settings save registers as SettingsWrite", CriticalOperationWiringTests.TestSettingsWriteRegistersAsSettingsWrite),
     ("Package export registers as PackageExport", CriticalOperationWiringTests.TestPackageExportRegistersAsPackageExport),
-    ("Direct ProjectReference graph matches the accepted #19 topology exactly", ArchitectureGuardTests.TestDirectReferenceGraphMatchesAcceptedTopologyExactly),
+    ("Direct ProjectReference graph matches the accepted #19 topology for supported build contexts", ArchitectureGuardTests.TestDirectReferenceGraphMatchesAcceptedTopologyForSupportedContexts),
     ("Core has no dependency on any new v0.5 project", ArchitectureGuardTests.TestCoreHasNoDependencyOnAnyNewV05Project),
     ("Contracts is Core-independent", ArchitectureGuardTests.TestContractsIsCoreIndependent),
     ("Contracts has no legacy Lan dependency", ArchitectureGuardTests.TestContractsHasNoLanDependency),
