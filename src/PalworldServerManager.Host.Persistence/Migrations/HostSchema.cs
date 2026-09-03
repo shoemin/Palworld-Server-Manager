@@ -113,7 +113,9 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             LocalPrincipalId                   TEXT NOT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
             OsPrincipalRef                     TEXT NOT NULL,
             SecretVerifier                     TEXT NOT NULL,
-            ExpectedCurrentPublicVerificationKey TEXT   NULL,
+            -- SS2b: every rotation ticket captures the current active Owner's key at creation -
+            -- it is the stale-ticket check itself, so it is never optional.
+            ExpectedCurrentPublicVerificationKey TEXT NOT NULL,
             ExpiresUtc                         TEXT NOT NULL,
             ConsumedUtc                        TEXT     NULL,
             InvalidatedUtc                     TEXT     NULL,
@@ -126,8 +128,10 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             RehomeTicketId                        TEXT PRIMARY KEY,
             NewOsPrincipalRef                     TEXT NOT NULL,
             SecretVerifier                        TEXT NOT NULL,
-            ExpectedCurrentOwnerLocalPrincipalId  TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
-            ExpectedCurrentOwnerPublicVerificationKey TEXT NULL,
+            -- SS2b: a re-home exists only against an initialized Host with an existing active
+            -- Owner, so the current-Owner snapshot is never optional.
+            ExpectedCurrentOwnerLocalPrincipalId  TEXT NOT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            ExpectedCurrentOwnerPublicVerificationKey TEXT NOT NULL,
             ExpectedTargetLocalPrincipalId        TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
             ExpectedTargetState                   TEXT     NULL CHECK (ExpectedTargetState IS NULL OR ExpectedTargetState IN ('Active','Revoked')),
             ExpectedTargetPublicVerificationKey   TEXT     NULL,
@@ -135,7 +139,22 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             ConsumedUtc                           TEXT     NULL,
             ResultLocalPrincipalId                TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
             InvalidatedUtc                        TEXT     NULL,
-            CreatedUtc                            TEXT NOT NULL
+            CreatedUtc                            TEXT NOT NULL,
+            -- SS2b's two valid target shapes: either no LocalPrincipal existed for the target
+            -- account at creation (all three null - the single-user, brand-new-account case), or
+            -- one did, in which case its captured key must agree with its captured state exactly
+            -- the way LocalPrincipals itself constrains them.
+            -- NOTE the explicit "ExpectedTargetState IS NOT NULL": a SQLite CHECK rejects only a
+            -- FALSE result, and passes on NULL. Without it, a half-populated tuple (target id
+            -- set, state NULL) makes every `state = '...'` comparison evaluate to NULL, so the
+            -- whole constraint yields NULL and the invalid row is ACCEPTED.
+            CHECK ((ExpectedTargetLocalPrincipalId IS NULL
+                    AND ExpectedTargetState IS NULL
+                    AND ExpectedTargetPublicVerificationKey IS NULL)
+                OR (ExpectedTargetLocalPrincipalId IS NOT NULL
+                    AND ExpectedTargetState IS NOT NULL
+                    AND ((ExpectedTargetState = 'Active'  AND ExpectedTargetPublicVerificationKey IS NOT NULL)
+                      OR (ExpectedTargetState = 'Revoked' AND ExpectedTargetPublicVerificationKey IS NULL))))
         );
 
         -- SS4d, IDENT-002: rows are this Host's own servers, but AuthoritativeHostId is stored
@@ -207,7 +226,12 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             -- Approval is a single fact: who approved and when are recorded together, so the row
             -- can never claim half an approval.
             CHECK ((ApprovedUtc IS NULL     AND ApprovedByOwnerLocalPrincipalId IS NULL)
-                OR (ApprovedUtc IS NOT NULL AND ApprovedByOwnerLocalPrincipalId IS NOT NULL))
+                OR (ApprovedUtc IS NOT NULL AND ApprovedByOwnerLocalPrincipalId IS NOT NULL)),
+            -- The snapshot captures a real TrustedManagers row, so its valid state/fingerprint
+            -- combinations mirror that table's own: a pinned peer had a pin, a revoked one
+            -- did not.
+            CHECK ((ExpectedTrustState IN ('PeerBound','Active') AND ExpectedCurrentTrustedPublicKeyFingerprint IS NOT NULL)
+                OR (ExpectedTrustState = 'Revoked'               AND ExpectedCurrentTrustedPublicKeyFingerprint IS NULL))
         );
 
         -- SS4a-i, IDENT-003. In-progress routine rotation state, with per-peer staging tracked
@@ -225,6 +249,22 @@ internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
             CutOverUtc       TEXT     NULL,
             CompletedUtc     TEXT     NULL
         );
+
+        -- SS4a's CredentialHistory[]: each peer's PRIOR credentials as observed by THIS Host,
+        -- appended when that peer promotes a staged credential (SS4a-i step 6). Distinct from
+        -- HostCredentialRotations, which describes this Host's OWN rotation and per-peer
+        -- progress. Retained for audit only.
+        --
+        -- SS4a-i step 6 fixes that history records only fingerprints and timestamps, NEVER a
+        -- RotationId - so no RotationId column exists here, deliberately.
+        CREATE TABLE TrustedManagerCredentialHistory (
+            CredentialHistoryId       TEXT PRIMARY KEY,
+            PeerHostId                TEXT NOT NULL REFERENCES TrustedManagers(PeerHostId),
+            PriorPublicKeyFingerprint TEXT NOT NULL,
+            RotatedUtc                TEXT NOT NULL
+        );
+
+        CREATE INDEX IX_TrustedManagerCredentialHistory_Peer ON TrustedManagerCredentialHistory (PeerHostId, RotatedUtc);
 
         CREATE TABLE HostCredentialRotationPeers (
             RotationId      TEXT NOT NULL REFERENCES HostCredentialRotations(RotationId),

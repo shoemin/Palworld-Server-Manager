@@ -99,8 +99,8 @@ public static class HostPersistenceTests
         Throws<SqliteException>(
             () => Execute(connection, """
                 INSERT INTO PendingCredentialReplacements
-                    (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpiresUtc, CreatedUtc)
-                VALUES ('r1', 'no-such-peer', 'fp', '2026-01-01T00:00:00Z', 'Active', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
+                    (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpectedCurrentTrustedPublicKeyFingerprint, ExpiresUtc, CreatedUtc)
+                VALUES ('r1', 'no-such-peer', 'fp', '2026-01-01T00:00:00Z', 'Active', 'fp-old', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');
                 """),
             "FK violation must be rejected");
         return Task.CompletedTask;
@@ -514,7 +514,7 @@ public static class HostPersistenceTests
         Equal("fp-1", HostDatabase.QueryScalarText(connection, "SELECT ExpectedCurrentTrustedPublicKeyFingerprint FROM PendingCredentialReplacements WHERE ReplacementId='r1';"), "expected fingerprint round-trips");
 
         Throws<SqliteException>(
-            () => Execute(connection, "INSERT INTO PendingCredentialReplacements (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpiresUtc, CreatedUtc) VALUES ('r2', 'peer-A', 'fp-3', '2026-01-01T00:00:00Z', 'NotARealState', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            () => Execute(connection, "INSERT INTO PendingCredentialReplacements (ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpectedCurrentTrustedPublicKeyFingerprint, ExpiresUtc, CreatedUtc) VALUES ('r2', 'peer-A', 'fp-3', '2026-01-01T00:00:00Z', 'NotARealState', 'fp-1', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
             "an invalid ExpectedTrustState must be rejected");
 
         // Approval metadata is a single fact: both halves or neither.
@@ -577,6 +577,129 @@ public static class HostPersistenceTests
         // SS4a-i: PendingRotationId alone legitimately survives promotion on a live row.
         Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, PendingRotationId, CreatedUtc) VALUES ('promoted', 'Active', 'fp-new', 'rot-9', '2026-01-01T00:00:00Z');");
         Equal("rot-9", HostDatabase.QueryScalarText(connection, "SELECT PendingRotationId FROM TrustedManagers WHERE PeerHostId='promoted';"), "a promoted peer may retain PendingRotationId alone");
+        return Task.CompletedTask;
+    }
+
+    // SS4a's CredentialHistory[]: each peer's prior credentials as observed by this Host.
+    public static Task TestTrustedManagerCredentialHistoryIsRetainedPerPeer()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+
+        Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, CreatedUtc) VALUES ('peer-A', 'Active', 'fp-A3', '2026-01-01T00:00:00Z');");
+        Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, CreatedUtc) VALUES ('peer-B', 'Active', 'fp-B2', '2026-01-01T00:00:00Z');");
+
+        // More than one prior fingerprint is retained for a single peer.
+        Execute(connection, "INSERT INTO TrustedManagerCredentialHistory (CredentialHistoryId, PeerHostId, PriorPublicKeyFingerprint, RotatedUtc) VALUES ('h1', 'peer-A', 'fp-A1', '2026-01-02T00:00:00Z');");
+        Execute(connection, "INSERT INTO TrustedManagerCredentialHistory (CredentialHistoryId, PeerHostId, PriorPublicKeyFingerprint, RotatedUtc) VALUES ('h2', 'peer-A', 'fp-A2', '2026-01-03T00:00:00Z');");
+        Execute(connection, "INSERT INTO TrustedManagerCredentialHistory (CredentialHistoryId, PeerHostId, PriorPublicKeyFingerprint, RotatedUtc) VALUES ('h3', 'peer-B', 'fp-B1', '2026-01-02T00:00:00Z');");
+
+        Equal(2L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM TrustedManagerCredentialHistory WHERE PeerHostId='peer-A';"), "multiple prior fingerprints retained for one peer");
+        // Histories stay distinct per peer.
+        Equal(1L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM TrustedManagerCredentialHistory WHERE PeerHostId='peer-B';"), "another peer's history is separate");
+        Equal("fp-B1", HostDatabase.QueryScalarText(connection, "SELECT PriorPublicKeyFingerprint FROM TrustedManagerCredentialHistory WHERE PeerHostId='peer-B';"), "peer-B history holds only its own prior fingerprint");
+
+        // FK integrity.
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO TrustedManagerCredentialHistory (CredentialHistoryId, PeerHostId, PriorPublicKeyFingerprint, RotatedUtc) VALUES ('h9', 'no-such-peer', 'fp-x', '2026-01-02T00:00:00Z');"),
+            "a dangling PeerHostId must be rejected");
+
+        // History survives the peer's current fingerprint changing (that is the point of it).
+        Execute(connection, "UPDATE TrustedManagers SET CurrentTrustedPublicKeyFingerprint='fp-A4' WHERE PeerHostId='peer-A';");
+        Equal(2L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM TrustedManagerCredentialHistory WHERE PeerHostId='peer-A';"), "history survives a current-fingerprint change");
+
+        // Audit-only: fingerprints and timestamps, never key material, and (SS4a-i step 6) never
+        // a RotationId.
+        var suspicious = HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM pragma_table_info('TrustedManagerCredentialHistory') WHERE name LIKE '%PrivateKey%' OR name LIKE '%Secret%' OR name='RotationId';");
+        Equal(0L, suspicious, "history carries no secret material and no RotationId");
+        return Task.CompletedTask;
+    }
+
+    // SS2b: the current-Owner stale-check snapshots are mandatory on both recovery tickets.
+    public static Task TestOwnerRecoveryTicketsRequireCurrentOwnerSnapshots()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+        Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc) VALUES ('owner1', 'S-1-5-21-OWNER', 'owner-key', 1, 'Active', '2026-01-01T00:00:00Z');");
+
+        // Rotation ticket: the captured current key IS the stale-ticket check, never optional.
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO PendingOwnerCredentialRotations (RotationTicketId, LocalPrincipalId, OsPrincipalRef, SecretVerifier, ExpiresUtc, CreatedUtc) VALUES ('t1', 'owner1', 'S-1-5-21-OWNER', 'v', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "a rotation ticket without the current-key snapshot must be rejected");
+
+        Execute(connection, "INSERT INTO PendingOwnerCredentialRotations (RotationTicketId, LocalPrincipalId, OsPrincipalRef, SecretVerifier, ExpectedCurrentPublicVerificationKey, ExpiresUtc, CreatedUtc) VALUES ('t1', 'owner1', 'S-1-5-21-OWNER', 'v', 'owner-key', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');");
+        Equal("owner-key", HostDatabase.QueryScalarText(connection, "SELECT ExpectedCurrentPublicVerificationKey FROM PendingOwnerCredentialRotations WHERE RotationTicketId='t1';"), "rotation snapshot round-trips");
+
+        // Re-home: both current-Owner components are mandatory.
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO PendingOwnerRehomes (RehomeTicketId, NewOsPrincipalRef, SecretVerifier, ExpectedCurrentOwnerPublicVerificationKey, ExpiresUtc, CreatedUtc) VALUES ('h1', 'S-1-5-21-NEW', 'v', 'owner-key', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "a re-home without the current-Owner principal id must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, "INSERT INTO PendingOwnerRehomes (RehomeTicketId, NewOsPrincipalRef, SecretVerifier, ExpectedCurrentOwnerLocalPrincipalId, ExpiresUtc, CreatedUtc) VALUES ('h2', 'S-1-5-21-NEW', 'v', 'owner1', '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');"),
+            "a re-home without the current-Owner key must be rejected");
+        return Task.CompletedTask;
+    }
+
+    // SS2b's two valid target-snapshot shapes.
+    public static Task TestRehomeTargetSnapshotTupleIsCoherent()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+        Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc) VALUES ('owner1', 'S-1-5-21-OWNER', 'owner-key', 1, 'Active', '2026-01-01T00:00:00Z');");
+        Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc) VALUES ('tgtA', 'S-1-5-21-TGTA', 'tgt-key', 0, 'Active', '2026-01-01T00:00:00Z');");
+        Execute(connection, "INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc, RevokedUtc) VALUES ('tgtR', 'S-1-5-21-TGTR', NULL, 0, 'Revoked', '2026-01-01T00:00:00Z', '2026-01-02T00:00:00Z');");
+
+        const string Cols = "(RehomeTicketId, NewOsPrincipalRef, SecretVerifier, ExpectedCurrentOwnerLocalPrincipalId, ExpectedCurrentOwnerPublicVerificationKey, ExpectedTargetLocalPrincipalId, ExpectedTargetState, ExpectedTargetPublicVerificationKey, ExpiresUtc, CreatedUtc)";
+        const string Tail = ", '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');";
+
+        // 1. brand-new account: all three null.
+        Execute(connection, $"INSERT INTO PendingOwnerRehomes {Cols} VALUES ('ok-null', 'S-1-5-21-NEW', 'v', 'owner1', 'owner-key', NULL, NULL, NULL{Tail}");
+        // 2a. existing Active target carries its key.
+        Execute(connection, $"INSERT INTO PendingOwnerRehomes {Cols} VALUES ('ok-active', 'S-1-5-21-TGTA', 'v', 'owner1', 'owner-key', 'tgtA', 'Active', 'tgt-key'{Tail}");
+        // 2b. existing Revoked target has none.
+        Execute(connection, $"INSERT INTO PendingOwnerRehomes {Cols} VALUES ('ok-revoked', 'S-1-5-21-TGTR', 'v', 'owner1', 'owner-key', 'tgtR', 'Revoked', NULL{Tail}");
+        Equal(3L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM PendingOwnerRehomes;"), "all three valid target shapes accepted");
+
+        // Partial tuples and state/key disagreement are rejected.
+        Throws<SqliteException>(
+            () => Execute(connection, $"INSERT INTO PendingOwnerRehomes {Cols} VALUES ('bad-partial-id', 'S-1-5-21-X', 'v', 'owner1', 'owner-key', 'tgtA', NULL, NULL{Tail}"),
+            "target id without a captured state must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, $"INSERT INTO PendingOwnerRehomes {Cols} VALUES ('bad-partial-state', 'S-1-5-21-X', 'v', 'owner1', 'owner-key', NULL, 'Active', NULL{Tail}"),
+            "captured state without a target id must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, $"INSERT INTO PendingOwnerRehomes {Cols} VALUES ('bad-active-nokey', 'S-1-5-21-X', 'v', 'owner1', 'owner-key', 'tgtA', 'Active', NULL{Tail}"),
+            "an Active target snapshot with no key must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, $"INSERT INTO PendingOwnerRehomes {Cols} VALUES ('bad-revoked-key', 'S-1-5-21-X', 'v', 'owner1', 'owner-key', 'tgtR', 'Revoked', 'leftover-key'{Tail}"),
+            "a Revoked target snapshot carrying a key must be rejected");
+        return Task.CompletedTask;
+    }
+
+    // The replacement snapshot mirrors TrustedManagers' own valid combinations.
+    public static Task TestReplacementExpectedTrustTupleMirrorsTrustedManagers()
+    {
+        using var temp = new TempRoot();
+        using var connection = temp.OpenMigrated();
+        Execute(connection, "INSERT INTO TrustedManagers (PeerHostId, State, CurrentTrustedPublicKeyFingerprint, CreatedUtc) VALUES ('peer-A', 'Active', 'fp-1', '2026-01-01T00:00:00Z');");
+
+        const string Cols = "(ReplacementId, PeerHostId, ProposedKeyFingerprint, VerifiedUtc, ExpectedTrustState, ExpectedCurrentTrustedPublicKeyFingerprint, ExpiresUtc, CreatedUtc)";
+        const string Tail = ", '2030-01-01T00:00:00Z', '2026-01-01T00:00:00Z');";
+
+        Execute(connection, $"INSERT INTO PendingCredentialReplacements {Cols} VALUES ('ok-active', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'Active', 'fp-1'{Tail}");
+        Execute(connection, $"INSERT INTO PendingCredentialReplacements {Cols} VALUES ('ok-peerbound', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'PeerBound', 'fp-0'{Tail}");
+        Execute(connection, $"INSERT INTO PendingCredentialReplacements {Cols} VALUES ('ok-revoked', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'Revoked', NULL{Tail}");
+        Equal(3L, HostDatabase.QueryScalarLong(connection, "SELECT COUNT(*) FROM PendingCredentialReplacements;"), "all three coherent snapshots accepted");
+
+        Throws<SqliteException>(
+            () => Execute(connection, $"INSERT INTO PendingCredentialReplacements {Cols} VALUES ('bad-active', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'Active', NULL{Tail}"),
+            "an Active snapshot with no pinned fingerprint must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, $"INSERT INTO PendingCredentialReplacements {Cols} VALUES ('bad-peerbound', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'PeerBound', NULL{Tail}"),
+            "a PeerBound snapshot with no pinned fingerprint must be rejected");
+        Throws<SqliteException>(
+            () => Execute(connection, $"INSERT INTO PendingCredentialReplacements {Cols} VALUES ('bad-revoked', 'peer-A', 'fp-2', '2026-01-01T00:00:00Z', 'Revoked', 'fp-leftover'{Tail}"),
+            "a Revoked snapshot carrying a fingerprint must be rejected");
         return Task.CompletedTask;
     }
 
