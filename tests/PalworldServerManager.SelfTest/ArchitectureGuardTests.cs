@@ -164,9 +164,25 @@ public static class ArchitectureGuardTests
 
     public static Task TestFrozenWpfAppStillReferencesLanUnchanged()
     {
-        // The frozen App project's existing Lan dependency (ARCH-002) must survive this
-        // scaffolding round untouched.
-        DependsOn(App, Lan);
+        // A transitive DependsOn(App, Lan) check alone would still pass if App gained a new
+        // forbidden direct reference, or if the required direct App -> Lan edge were replaced by
+        // an indirect path through an intermediate project - neither actually preserves "frozen"
+        // (ARCH-001/ARCH-002). Assert App's direct reference set exactly instead.
+        var actual = DirectReferences(App).ToHashSet();
+        var expected = new HashSet<string> { Core, Lan };
+
+        var unexpected = actual.Except(expected).ToList();
+        if (unexpected.Count > 0)
+        {
+            throw new Exception($"{App} has unexpected direct ProjectReference(s) beyond its frozen {{Core, Lan}} set: {string.Join(", ", unexpected)}.");
+        }
+
+        var missing = expected.Except(actual).ToList();
+        if (missing.Count > 0)
+        {
+            throw new Exception($"{App} is missing required direct ProjectReference(s) from its frozen {{Core, Lan}} set: {string.Join(", ", missing)}.");
+        }
+
         return Task.CompletedTask;
     }
 
@@ -244,6 +260,17 @@ public static class ArchitectureGuardTests
         if (conditioned is not null)
         {
             throw new Exception($"{project}.csproj has a conditioned ProjectReference ({conditioned.Attribute("Include")?.Value}) - this static XML guard cannot verify a conditioned reference's actual build-time state and does not accept one.");
+        }
+
+        // Same class of gap as Condition above: a later unconditional Remove/Update targeting an
+        // earlier Include would silently fold away in MSBuild's evaluated item set, but this flat
+        // XML read has no notion of item-list ordering/mutation, so it would still report the
+        // removed/updated reference as active. Reject outright rather than mis-evaluate.
+        var removedOrUpdated = referenceElements.FirstOrDefault(e => e.Attribute("Remove") is not null || e.Attribute("Update") is not null);
+        if (removedOrUpdated is not null)
+        {
+            var target = removedOrUpdated.Attribute("Remove")?.Value ?? removedOrUpdated.Attribute("Update")?.Value;
+            throw new Exception($"{project}.csproj has a ProjectReference Remove/Update operation ({target}) - this static XML guard reads a flat list of Include elements and does not fold Remove/Update into the evaluated item set, so it does not accept one.");
         }
 
         return referenceElements
