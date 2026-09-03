@@ -28,6 +28,12 @@ public static class ArchitectureGuardTests
     private const string ClientPlatformWindows = "PalworldServerManager.Client.Platform.Windows";
     private const string ClientPlatformLinux = "PalworldServerManager.Client.Platform.Linux";
 
+    // The solution's only two configurations (PalworldServerManager.sln
+    // SolutionConfigurationPlatforms). A ProjectReference conditioned on just one of these would
+    // be invisible to evaluation under the other, so every guard below checks both rather than
+    // trusting a single fixed Configuration=Release evaluation (PR #58 review round 5).
+    private static readonly string[] Configurations = ["Debug", "Release"];
+
     // Every project #39 is responsible for scaffolding. Host-side Platform.Linux and
     // Client.Platform.Linux are deliberately excluded from this project's own scope (#21).
     private static readonly string[] AllNewV05Projects =
@@ -57,22 +63,25 @@ public static class ArchitectureGuardTests
 
     public static Task TestDirectReferenceGraphMatchesAcceptedTopologyExactly()
     {
-        foreach (var (project, allowed) in AllowedDirectReferences)
+        foreach (var configuration in Configurations)
         {
-            var actual = DirectReferences(project);
-            var allowedSet = allowed.ToHashSet();
-            var actualSet = actual.ToHashSet();
-
-            var unexpected = actualSet.Except(allowedSet).ToList();
-            if (unexpected.Count > 0)
+            foreach (var (project, allowed) in AllowedDirectReferences)
             {
-                throw new Exception($"{project} has unexpected direct ProjectReference(s) outside the accepted #19 SS1 topology: {string.Join(", ", unexpected)}. Allowed: {(allowed.Length == 0 ? "(none)" : string.Join(", ", allowed))}.");
-            }
+                var actual = DirectReferences(project, configuration);
+                var allowedSet = allowed.ToHashSet();
+                var actualSet = actual.ToHashSet();
 
-            var missing = allowedSet.Except(actualSet).ToList();
-            if (missing.Count > 0)
-            {
-                throw new Exception($"{project} is missing required direct ProjectReference(s) from the accepted #19 SS1 topology: {string.Join(", ", missing)}.");
+                var unexpected = actualSet.Except(allowedSet).ToList();
+                if (unexpected.Count > 0)
+                {
+                    throw new Exception($"{project} ({configuration}) has unexpected direct ProjectReference(s) outside the accepted #19 SS1 topology: {string.Join(", ", unexpected)}. Allowed: {(allowed.Length == 0 ? "(none)" : string.Join(", ", allowed))}.");
+                }
+
+                var missing = allowedSet.Except(actualSet).ToList();
+                if (missing.Count > 0)
+                {
+                    throw new Exception($"{project} ({configuration}) is missing required direct ProjectReference(s) from the accepted #19 SS1 topology: {string.Join(", ", missing)}.");
+                }
             }
         }
 
@@ -81,21 +90,32 @@ public static class ArchitectureGuardTests
 
     public static Task TestContractsIsCoreIndependent()
     {
-        NotDependsOn(Contracts, Core);
+        foreach (var configuration in Configurations)
+        {
+            NotDependsOn(Contracts, Core, configuration);
+        }
+
         return Task.CompletedTask;
     }
 
     public static Task TestContractsHasNoLanDependency()
     {
-        NotDependsOn(Contracts, Lan);
+        foreach (var configuration in Configurations)
+        {
+            NotDependsOn(Contracts, Lan, configuration);
+        }
+
         return Task.CompletedTask;
     }
 
     public static Task TestNoNewV05ProjectReferencesLegacyLan()
     {
-        foreach (var project in AllNewV05Projects)
+        foreach (var configuration in Configurations)
         {
-            NotDependsOn(project, Lan);
+            foreach (var project in AllNewV05Projects)
+            {
+                NotDependsOn(project, Lan, configuration);
+            }
         }
 
         return Task.CompletedTask;
@@ -103,13 +123,21 @@ public static class ArchitectureGuardTests
 
     public static Task TestClientAvaloniaHasNoHostSideDependencyPath()
     {
-        AssertNoHostSideDependencyPath(ClientAvalonia);
+        foreach (var configuration in Configurations)
+        {
+            AssertNoHostSideDependencyPath(ClientAvalonia, configuration);
+        }
+
         return Task.CompletedTask;
     }
 
     public static Task TestClientCliHasNoHostSideDependencyPath()
     {
-        AssertNoHostSideDependencyPath(ClientCli);
+        foreach (var configuration in Configurations)
+        {
+            AssertNoHostSideDependencyPath(ClientCli, configuration);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -118,33 +146,44 @@ public static class ArchitectureGuardTests
         // Host.Cli is privileged offline bootstrap/recovery only (CLIENT-003) - it never speaks
         // the ordinary online client protocol, so it must never reference Contracts at all, not
         // merely "not use it in a normal mode".
-        NotDependsOn(HostCli, Contracts);
+        foreach (var configuration in Configurations)
+        {
+            NotDependsOn(HostCli, Contracts, configuration);
+        }
+
         return Task.CompletedTask;
     }
 
     public static Task TestOrdinaryClientsShareClientPlatformContracts()
     {
-        DependsOn(ClientAvalonia, ClientPlatformContracts);
-        DependsOn(ClientCli, ClientPlatformContracts);
+        foreach (var configuration in Configurations)
+        {
+            DependsOn(ClientAvalonia, ClientPlatformContracts, configuration);
+            DependsOn(ClientCli, ClientPlatformContracts, configuration);
+        }
+
         return Task.CompletedTask;
     }
 
     public static Task TestWindowsAndLinuxImplementationsDoNotReferenceEachOther()
     {
-        // No Platform.Linux/Client.Platform.Linux project exists yet (#21, out of scope for
-        // #39) - this asserts the Windows side never references a "*.Linux" sibling by name,
-        // so the check is meaningful now and keeps failing correctly once Linux is added.
-        AssertNoReferenceToProjectEndingWith(PlatformWindows, ".Linux");
-        AssertNoReferenceToProjectEndingWith(ClientPlatformWindows, ".Linux");
-
-        if (ProjectExists(PlatformLinux))
+        foreach (var configuration in Configurations)
         {
-            NotDependsOn(PlatformLinux, PlatformWindows);
-        }
+            // No Platform.Linux/Client.Platform.Linux project exists yet (#21, out of scope for
+            // #39) - this asserts the Windows side never references a "*.Linux" sibling by name,
+            // so the check is meaningful now and keeps failing correctly once Linux is added.
+            AssertNoReferenceToProjectEndingWith(PlatformWindows, ".Linux", configuration);
+            AssertNoReferenceToProjectEndingWith(ClientPlatformWindows, ".Linux", configuration);
 
-        if (ProjectExists(ClientPlatformLinux))
-        {
-            NotDependsOn(ClientPlatformLinux, ClientPlatformWindows);
+            if (ProjectExists(PlatformLinux))
+            {
+                NotDependsOn(PlatformLinux, PlatformWindows, configuration);
+            }
+
+            if (ProjectExists(ClientPlatformLinux))
+            {
+                NotDependsOn(ClientPlatformLinux, ClientPlatformWindows, configuration);
+            }
         }
 
         return Task.CompletedTask;
@@ -155,11 +194,14 @@ public static class ArchitectureGuardTests
         // Core's accepted dependency set is BCL-only plus one explicit legacy Velopack
         // carve-out (ARCH-001) - it must never acquire a ProjectReference to anything this
         // issue scaffolds. Core itself is not modified by #39; this only asserts that fact.
-        var actual = DirectReferences(Core).ToHashSet();
-        var offenders = actual.Intersect(AllNewV05Projects).ToList();
-        if (offenders.Count > 0)
+        foreach (var configuration in Configurations)
         {
-            throw new Exception($"Core has acquired a forbidden dependency on new v0.5 project(s): {string.Join(", ", offenders)}.");
+            var actual = DirectReferences(Core, configuration).ToHashSet();
+            var offenders = actual.Intersect(AllNewV05Projects).ToList();
+            if (offenders.Count > 0)
+            {
+                throw new Exception($"Core ({configuration}) has acquired a forbidden dependency on new v0.5 project(s): {string.Join(", ", offenders)}.");
+            }
         }
 
         return Task.CompletedTask;
@@ -171,63 +213,66 @@ public static class ArchitectureGuardTests
         // forbidden direct reference, or if the required direct App -> Lan edge were replaced by
         // an indirect path through an intermediate project - neither actually preserves "frozen"
         // (ARCH-001/ARCH-002). Assert App's direct reference set exactly instead.
-        var actual = DirectReferences(App).ToHashSet();
-        var expected = new HashSet<string> { Core, Lan };
-
-        var unexpected = actual.Except(expected).ToList();
-        if (unexpected.Count > 0)
+        foreach (var configuration in Configurations)
         {
-            throw new Exception($"{App} has unexpected direct ProjectReference(s) beyond its frozen {{Core, Lan}} set: {string.Join(", ", unexpected)}.");
-        }
+            var actual = DirectReferences(App, configuration).ToHashSet();
+            var expected = new HashSet<string> { Core, Lan };
 
-        var missing = expected.Except(actual).ToList();
-        if (missing.Count > 0)
-        {
-            throw new Exception($"{App} is missing required direct ProjectReference(s) from its frozen {{Core, Lan}} set: {string.Join(", ", missing)}.");
+            var unexpected = actual.Except(expected).ToList();
+            if (unexpected.Count > 0)
+            {
+                throw new Exception($"{App} ({configuration}) has unexpected direct ProjectReference(s) beyond its frozen {{Core, Lan}} set: {string.Join(", ", unexpected)}.");
+            }
+
+            var missing = expected.Except(actual).ToList();
+            if (missing.Count > 0)
+            {
+                throw new Exception($"{App} ({configuration}) is missing required direct ProjectReference(s) from its frozen {{Core, Lan}} set: {string.Join(", ", missing)}.");
+            }
         }
 
         return Task.CompletedTask;
     }
 
-    private static void AssertNoHostSideDependencyPath(string clientProject)
+    private static void AssertNoHostSideDependencyPath(string clientProject, string configuration)
     {
-        NotDependsOn(clientProject, Core);
-        NotDependsOn(clientProject, Host);
-        NotDependsOn(clientProject, HostPersistence);
-        NotDependsOn(clientProject, PlatformContracts);
-        NotDependsOn(clientProject, PlatformWindows);
+        NotDependsOn(clientProject, Core, configuration);
+        NotDependsOn(clientProject, Host, configuration);
+        NotDependsOn(clientProject, HostPersistence, configuration);
+        NotDependsOn(clientProject, PlatformContracts, configuration);
+        NotDependsOn(clientProject, PlatformWindows, configuration);
     }
 
-    private static void DependsOn(string project, string target)
+    private static void DependsOn(string project, string target, string configuration)
     {
-        if (!TransitiveReferences(project).Contains(target))
+        if (!TransitiveReferences(project, configuration).Contains(target))
         {
-            throw new Exception($"{project} does not reference {target} (directly or transitively), but the accepted #19 topology requires it to.");
+            throw new Exception($"{project} ({configuration}) does not reference {target} (directly or transitively), but the accepted #19 topology requires it to.");
         }
     }
 
-    private static void NotDependsOn(string project, string forbidden)
+    private static void NotDependsOn(string project, string forbidden, string configuration)
     {
-        var references = TransitiveReferences(project);
+        var references = TransitiveReferences(project, configuration);
         if (references.Contains(forbidden))
         {
-            throw new Exception($"{project} has a forbidden dependency path to {forbidden}. References found: {string.Join(", ", references)}");
+            throw new Exception($"{project} ({configuration}) has a forbidden dependency path to {forbidden}. References found: {string.Join(", ", references)}");
         }
     }
 
-    private static void AssertNoReferenceToProjectEndingWith(string project, string suffix)
+    private static void AssertNoReferenceToProjectEndingWith(string project, string suffix, string configuration)
     {
-        var offender = DirectReferences(project).FirstOrDefault(r => r.EndsWith(suffix, StringComparison.Ordinal));
+        var offender = DirectReferences(project, configuration).FirstOrDefault(r => r.EndsWith(suffix, StringComparison.Ordinal));
         if (offender is not null)
         {
-            throw new Exception($"{project} references {offender}, matching forbidden suffix '{suffix}'.");
+            throw new Exception($"{project} ({configuration}) references {offender}, matching forbidden suffix '{suffix}'.");
         }
     }
 
-    private static HashSet<string> TransitiveReferences(string project)
+    private static HashSet<string> TransitiveReferences(string project, string configuration)
     {
         var visited = new HashSet<string>();
-        var queue = new Queue<string>(DirectReferences(project));
+        var queue = new Queue<string>(DirectReferences(project, configuration));
         while (queue.Count > 0)
         {
             var next = queue.Dequeue();
@@ -236,7 +281,7 @@ public static class ArchitectureGuardTests
                 continue;
             }
 
-            foreach (var transitive in DirectReferences(next))
+            foreach (var transitive in DirectReferences(next, configuration))
             {
                 queue.Enqueue(transitive);
             }
@@ -245,27 +290,29 @@ public static class ArchitectureGuardTests
         return visited;
     }
 
-    // Evaluated once per project per self-test run and reused - each entry costs one
-    // `dotnet msbuild` process launch, and the transitive guards call this repeatedly.
-    private static readonly Dictionary<string, List<string>> DirectReferenceCache = new();
+    // Evaluated once per (project, configuration) pair per self-test run and reused - each entry
+    // costs one `dotnet msbuild` process launch, and the transitive guards call this repeatedly.
+    private static readonly Dictionary<(string Project, string Configuration), List<string>> DirectReferenceCache = new();
 
-    private static List<string> DirectReferences(string project)
+    private static List<string> DirectReferences(string project, string configuration)
     {
-        if (DirectReferenceCache.TryGetValue(project, out var cached))
+        var key = (project, configuration);
+        if (DirectReferenceCache.TryGetValue(key, out var cached))
         {
             return cached;
         }
 
-        var references = EvaluateDirectReferences(project, ResolveCsprojPath(project));
-        DirectReferenceCache[project] = references;
+        var references = EvaluateDirectReferences(project, ResolveCsprojPath(project), configuration);
+        DirectReferenceCache[key] = references;
         return references;
     }
 
-    // Asks MSBuild itself what project's ProjectReference items evaluate to, rather than
-    // reimplementing MSBuild's Condition/Remove/Update/Exclude/Import/Target semantics in a raw
-    // XML reader (PR #58 review rounds 1-4 each found a real gap in that reimplementation). No
-    // target is requested, so this is pure evaluation - no build output, no side effects.
-    private static List<string> EvaluateDirectReferences(string project, string csprojPath)
+    // Asks MSBuild itself what project's ProjectReference items evaluate to under the given
+    // configuration, rather than reimplementing MSBuild's Condition/Remove/Update/Exclude/
+    // Import/Target semantics in a raw XML reader (PR #58 review rounds 1-4 each found a real
+    // gap in that reimplementation). No target is requested, so this is pure evaluation - no
+    // build output, no side effects.
+    private static List<string> EvaluateDirectReferences(string project, string csprojPath, string configuration)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -280,17 +327,17 @@ public static class ArchitectureGuardTests
         startInfo.ArgumentList.Add(csprojPath);
         startInfo.ArgumentList.Add("-nologo");
         startInfo.ArgumentList.Add("-getItem:ProjectReference");
-        startInfo.ArgumentList.Add("-p:Configuration=Release");
+        startInfo.ArgumentList.Add($"-p:Configuration={configuration}");
 
         using var process = Process.Start(startInfo)
-            ?? throw new Exception($"Failed to start 'dotnet msbuild' to evaluate {project}'s ProjectReference items.");
+            ?? throw new Exception($"Failed to start 'dotnet msbuild' to evaluate {project}'s ProjectReference items ({configuration}).");
         var stdout = process.StandardOutput.ReadToEnd();
         var stderr = process.StandardError.ReadToEnd();
         process.WaitForExit();
 
         if (process.ExitCode != 0)
         {
-            throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' exited {process.ExitCode} while evaluating {project} - this guard trusts only a clean MSBuild evaluation. stderr: {stderr}");
+            throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference -p:Configuration={configuration}' exited {process.ExitCode} while evaluating {project} - this guard trusts only a clean MSBuild evaluation. stderr: {stderr}");
         }
 
         JsonDocument document;
@@ -300,14 +347,14 @@ public static class ArchitectureGuardTests
         }
         catch (JsonException ex)
         {
-            throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' did not return parseable JSON while evaluating {project}: {ex.Message}. Output: {stdout}");
+            throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference -p:Configuration={configuration}' did not return parseable JSON while evaluating {project}: {ex.Message}. Output: {stdout}");
         }
 
         using (document)
         {
             if (!document.RootElement.TryGetProperty("Items", out var items) || !items.TryGetProperty("ProjectReference", out var references))
             {
-                throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' output for {project} had no Items.ProjectReference array. Output: {stdout}");
+                throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference -p:Configuration={configuration}' output for {project} had no Items.ProjectReference array. Output: {stdout}");
             }
 
             var result = new List<string>();
@@ -315,10 +362,25 @@ public static class ArchitectureGuardTests
             {
                 if (!reference.TryGetProperty("FullPath", out var fullPathElement) || fullPathElement.GetString() is not { Length: > 0 } fullPath)
                 {
-                    throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference' returned a ProjectReference item for {project} with no resolvable FullPath.");
+                    throw new Exception($"'dotnet msbuild {csprojPath} -getItem:ProjectReference -p:Configuration={configuration}' returned a ProjectReference item for {project} with no resolvable FullPath.");
                 }
 
-                result.Add(Path.GetFileNameWithoutExtension(fullPath));
+                var canonicalName = Path.GetFileNameWithoutExtension(fullPath);
+
+                // Round-5 review: comparing only by filename would let a reference to some other
+                // file that merely happens to share a project's name (a duplicate/decoy .csproj
+                // elsewhere in the tree, or one located outside this repo's known project layout)
+                // silently satisfy that project's identity. Confirm the evaluated FullPath is
+                // actually this repository's one canonical location for that name.
+                var expectedPath = TryResolveCsprojPath(canonicalName);
+                var normalizedActual = Path.GetFullPath(fullPath);
+                var normalizedExpected = expectedPath is not null ? Path.GetFullPath(expectedPath) : null;
+                if (normalizedExpected is null || !string.Equals(normalizedActual, normalizedExpected, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new Exception($"{project} ({configuration}) references a project file at '{normalizedActual}' whose filename matches '{canonicalName}', but that is not this repository's canonical location for {canonicalName} ({normalizedExpected ?? "no known location"}) - refusing to treat it as the same project.");
+                }
+
+                result.Add(canonicalName);
             }
 
             return result;
