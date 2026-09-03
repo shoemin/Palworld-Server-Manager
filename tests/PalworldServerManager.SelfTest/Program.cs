@@ -2,6 +2,7 @@ using System.IO.Compression;
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
 using PalworldServerManager.Core.Services;
+using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.SelfTest;
 
 // A harness mode so this already-built apphost binary can stand in for a "PalServer.exe" that
@@ -16,6 +17,36 @@ if (args.Length > 0)
         var exitCode = int.Parse(args[2]);
         Thread.Sleep(TimeSpan.FromSeconds(seconds));
         return exitCode;
+    }
+
+    // Cross-process modes for #40's machine-wide exclusivity-lock tests (SS2/SS5a). A real second
+    // OS process is the only honest way to prove machine-wide exclusion, abandonment recovery,
+    // and Host.Cli's refusal while Host holds the lock.
+    if (args.Length == 2 && args[0] == "--lock-try")
+    {
+        // Attempt acquisition and report the outcome, then release immediately.
+        using var attempt = HostExclusivityLock.TryAcquire(TimeSpan.FromMilliseconds(500), args[1]);
+        Console.WriteLine(attempt is not null ? "ACQUIRED" : "DENIED");
+        return 0;
+    }
+
+    if (args.Length == 3 && args[0] == "--lock-hold")
+    {
+        // Acquire, announce, hold for a bounded time, then release normally.
+        using var held = HostExclusivityLock.TryAcquire(TimeSpan.FromSeconds(5), args[1]);
+        Console.WriteLine(held is not null ? "ACQUIRED" : "DENIED");
+        Console.Out.Flush();
+        Thread.Sleep(TimeSpan.FromSeconds(int.Parse(args[2])));
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--lock-abandon")
+    {
+        // Acquire, then die WITHOUT releasing, to exercise the abandoned-mutex path.
+        var abandoned = HostExclusivityLock.TryAcquire(TimeSpan.FromSeconds(5), args[1]);
+        Console.WriteLine(abandoned is not null ? "ACQUIRED" : "DENIED");
+        Console.Out.Flush();
+        Environment.Exit(0);
     }
 
     // Some tests also copy this apphost in as a stand-in "PalServer.exe" and let real production
@@ -139,7 +170,60 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows and Linux implementations do not reference each other", ArchitectureGuardTests.TestWindowsAndLinuxImplementationsDoNotReferenceEachOther),
     ("Frozen WPF App still references legacy Lan unchanged", ArchitectureGuardTests.TestFrozenWpfAppStillReferencesLanUnchanged),
     ("Frozen legacy Lan has unchanged direct references", ArchitectureGuardTests.TestFrozenLegacyLanHasUnchangedDirectReferences),
-    ("Every guarded project is built by the solution", ArchitectureGuardTests.TestEveryGuardedProjectIsBuiltBySolution)
+    ("Every guarded project is built by the solution", ArchitectureGuardTests.TestEveryGuardedProjectIsBuiltBySolution),
+
+    // #40 - Host persistence foundation
+    ("Host database enables WAL journal mode", HostPersistenceTests.TestWalJournalModeEnabled),
+    ("Host database enforces foreign keys on managed connections", HostPersistenceTests.TestForeignKeysEnforcedOnManagedConnections),
+    ("Fresh database migrates to latest schema", HostPersistenceTests.TestFreshDatabaseMigratesToLatest),
+    ("Prior-version fixture applies only the missing migration", HostPersistenceTests.TestPriorVersionFixtureAppliesOnlyTheMissingMigration),
+    ("Already-current database performs no migration writes", HostPersistenceTests.TestAlreadyCurrentDatabasePerformsNoMigrationWrites),
+    ("Failed migration rolls back fully and keeps the last committed version", HostPersistenceTests.TestFailedMigrationRollsBackFullyAndKeepsLastCommittedVersion),
+    ("Unknown/newer schema version is refused", HostPersistenceTests.TestUnknownNewerSchemaVersionIsRejected),
+    ("HostIdentity is a structural singleton", HostPersistenceTests.TestHostIdentityIsSingleton),
+    ("HostId is stable across reopen", HostPersistenceTests.TestHostIdIsStableAcrossReopen),
+    ("HostIdentity stores only an opaque credential reference", HostPersistenceTests.TestHostIdentityStoresOnlyAnOpaqueCredentialReference),
+    ("Duplicate OsPrincipalRef is rejected", HostPersistenceTests.TestDuplicateOsPrincipalRefIsRejected),
+    ("At most one active Owner is a database constraint", HostPersistenceTests.TestAtMostOneActiveOwnerIsADatabaseConstraint),
+    ("Revoked principal cannot retain a verification key", HostPersistenceTests.TestRevokedPrincipalCannotRetainVerificationKey),
+    ("Uninitialized Host has zero active Owners", HostPersistenceTests.TestUninitializedHostHasZeroActiveOwners),
+    ("Initialized transition requires exactly one active Owner atomically", HostPersistenceTests.TestInitializedTransitionRequiresExactlyOneActiveOwnerAtomically),
+    ("No observable Initialized state without exactly one Owner", HostPersistenceTests.TestNoObservableInitializedStateWithoutAnOwner),
+    ("Owner initialization is transaction-composable and rolls back", HostPersistenceTests.TestOwnerInitializationIsTransactionComposableAndRollsBack),
+    ("Active principal must have a verification key", HostPersistenceTests.TestActivePrincipalMustHaveAVerificationKey),
+    ("Enrollment persists its creating Owner principal", HostPersistenceTests.TestEnrollmentPersistsItsCreatingOwnerPrincipal),
+    ("Only one live initial-Owner enrollment may exist", HostPersistenceTests.TestOnlyOneLiveInitialOwnerEnrollmentMayExist),
+    ("PendingCredentialReplacement captures the expected trust snapshot", HostPersistenceTests.TestPendingCredentialReplacementCapturesExpectedTrustSnapshot),
+    ("TrustedManager state/credential combinations are constrained", HostPersistenceTests.TestTrustedManagerStateAndCredentialCombinationsAreConstrained),
+    ("HostCredentialRotation supports the Prepared state", HostPersistenceTests.TestHostCredentialRotationSupportsPreparedState),
+    ("TrustedManager credential history is retained per peer", HostPersistenceTests.TestTrustedManagerCredentialHistoryIsRetainedPerPeer),
+    ("Owner recovery tickets require current-Owner snapshots", HostPersistenceTests.TestOwnerRecoveryTicketsRequireCurrentOwnerSnapshots),
+    ("Re-home target snapshot tuple is coherent", HostPersistenceTests.TestRehomeTargetSnapshotTupleIsCoherent),
+    ("Replacement expected-trust tuple mirrors TrustedManagers", HostPersistenceTests.TestReplacementExpectedTrustTupleMirrorsTrustedManagers),
+    ("Schema has no raw secret persistence fields", HostPersistenceTests.TestSchemaHasNoRawSecretPersistenceFields),
+    ("Verifier and public-key persistence is allowed", HostPersistenceTests.TestVerifierAndPublicKeyPersistenceIsAllowed),
+    ("Transaction rollback discards all writes", HostPersistenceTests.TestTransactionRollbackDiscardsAllWrites),
+    ("ServerInventory identity is Host-qualified", HostPersistenceTests.TestServerInventoryIsHostQualified),
+    ("ServerInventory round-trips both ports", HostPersistenceTests.TestServerInventoryRoundTripsBothPorts),
+    ("HostCapabilityGrant requires exactly one TargetHostId", HostPersistenceTests.TestHostCapabilityGrantRequiresExactlyOneTargetHostId),
+    ("Host and server grant types are structurally distinct", HostPersistenceTests.TestGrantTypesAreStructurallyDistinct),
+    ("Grant delegation provenance is single-parent", HostPersistenceTests.TestGrantDelegationProvenanceIsSingleParent),
+    ("TrustedManager tombstone clears its pinned credential", HostPersistenceTests.TestTrustedManagerTombstoneClearsPinnedCredential),
+    ("PendingCredentialReplacement carries no grant authority", HostPersistenceTests.TestPendingCredentialReplacementCarriesNoGrantAuthority),
+    ("OperationRecord requires an explicit discriminated target", HostPersistenceTests.TestOperationRecordRequiresExplicitDiscriminatedTarget),
+    ("OperationLock scope is independent of target and requires its owning record", HostPersistenceTests.TestOperationLockScopeIsIndependentOfTargetAndRequiresOwningRecord),
+    ("RecoveryDisposition is persistable", HostPersistenceTests.TestRecoveryDispositionIsPersistable),
+    ("ConfigurationRevisions support revision tokens", HostPersistenceTests.TestConfigurationRevisionsSupportRevisionTokens),
+    ("AuditEvents support same-transaction offline-recovery writes", HostPersistenceTests.TestAuditEventsSupportSameTransactionOfflineRecoveryWrites),
+    ("WAL-safe snapshot captures uncheckpointed data and passes integrity check", HostPersistenceTests.TestSnapshotCapturesUncheckpointedWalDataAndPassesIntegrityCheck),
+    ("Raw file copy under WAL is demonstrably unsafe", HostPersistenceTests.TestRawFileCopyUnderWalIsUnsafeAndIsNotUsed),
+
+    // #40 - machine-wide exclusivity lock (cross-process)
+    ("Cross-process exclusion, release, and re-acquisition sequence", HostExclusivityLockTests.TestCrossProcessExclusionAndReleaseSequence),
+    ("Abandoned lock is reacquirable without requiring AbandonedMutexException", HostExclusivityLockTests.TestAbandonedLockIsReacquirableWithoutRequiringAbandonedMutexException),
+    ("Exclusivity lease survives async thread hops", HostExclusivityLockTests.TestLeaseSurvivesAsyncThreadHops),
+    ("Second writer is refused immediately", HostExclusivityLockTests.TestSecondWriterIsRefusedImmediately),
+    ("Exclusivity lock Dispose is idempotent", HostExclusivityLockTests.TestDisposeIsIdempotent)
 };
 
 var failures = 0;
