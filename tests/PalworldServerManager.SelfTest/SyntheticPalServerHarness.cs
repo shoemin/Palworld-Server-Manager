@@ -19,11 +19,24 @@ internal static class SyntheticPalServerHarness
         Directory.CreateDirectory(installPath);
         var sourceDir = AppContext.BaseDirectory;
         const string sourceName = "PalworldServerManager.SelfTest";
-        foreach (var extension in new[] { ".dll", ".runtimeconfig.json", ".deps.json" })
+
+        // Copy every managed assembly and runtime config alongside the apphost, not just this
+        // one assembly's own files. The apphost JITs its entry method before running any of it,
+        // which resolves every type that method references - so a dependency missing from this
+        // directory fails the process at startup even when the harness branch itself would never
+        // touch that dependency. (#40 added a Host.Persistence reference and surfaced exactly
+        // that: the copied process died with 0xE0434352 before reaching the --harness branch.)
+        foreach (var source in Directory.GetFiles(sourceDir, "*.dll"))
+        {
+            File.Copy(source, Path.Combine(installPath, Path.GetFileName(source)), true);
+        }
+
+        foreach (var extension in new[] { ".runtimeconfig.json", ".deps.json" })
         {
             var source = Path.Combine(sourceDir, sourceName + extension);
             if (File.Exists(source)) File.Copy(source, Path.Combine(installPath, sourceName + extension), true);
         }
+
         File.Copy(Path.Combine(sourceDir, sourceName + ".exe"), Path.Combine(installPath, "PalServer.exe"), true);
     }
 

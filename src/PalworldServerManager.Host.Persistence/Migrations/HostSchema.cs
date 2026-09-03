@@ -1,0 +1,341 @@
+using Microsoft.Data.Sqlite;
+
+namespace PalworldServerManager.Host.Persistence.Migrations;
+
+// The authoritative SS6 schema foundation.
+//
+// SCOPE RULE (#40): a table existing here does NOT mean the feature that consumes it is
+// implemented. This migration establishes storage shapes and the constraints #19 fixes as
+// semantic; the runtime engines (pairing, authorization evaluation, operation conflict
+// acquisition, recovery classification, Owner ceremonies) belong to later children.
+//
+// LocalHostTrustDescriptor is deliberately absent - SS6/SS3b require it to be a separate public
+// artifact readable by any authorized local user, which the Host-exclusive database
+// structurally cannot be (PERSIST-001, HOST-002).
+internal sealed class Migration001InitialHostSchema : IHostSchemaMigration
+{
+    public int Version => 1;
+
+    public void Apply(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        HostDatabase.Execute(connection, Sql, transaction);
+    }
+
+    private const string Sql = """
+        -- SS4a: stable semantic HostId, separate from the rotatable authentication credential
+        -- (IDENT-001). CurrentCredentialRef is an OPAQUE reference into ISecureCredentialStore
+        -- (SS7) - there is deliberately no column here shaped to hold private key bytes.
+        -- Singleton enforced structurally: a second row is impossible, not merely never written.
+        CREATE TABLE HostIdentity (
+            Id                   INTEGER PRIMARY KEY CHECK (Id = 1),
+            HostId               TEXT    NOT NULL UNIQUE,
+            HostBootstrapState   TEXT    NOT NULL CHECK (HostBootstrapState IN ('Uninitialized','Initialized')),
+            CurrentCredentialRef TEXT        NULL,
+            SetupUtc             TEXT    NOT NULL
+        );
+
+        -- SS3a. One LocalPrincipal per canonical OsPrincipalRef. Revoked rows are RETAINED as
+        -- durable tombstones, never deleted (LOCAL-003). Only the public verification key is
+        -- stored; the private half is held client-side by that user (LOCAL-002).
+        CREATE TABLE LocalPrincipals (
+            LocalPrincipalId      TEXT PRIMARY KEY,
+            OsPrincipalRef        TEXT NOT NULL UNIQUE,
+            PublicVerificationKey TEXT     NULL,
+            IsOwner               INTEGER NOT NULL CHECK (IsOwner IN (0,1)),
+            State                 TEXT NOT NULL CHECK (State IN ('Active','Revoked')),
+            CreatedUtc            TEXT NOT NULL,
+            RevokedUtc            TEXT     NULL,
+            -- A revoked principal must not retain a usable verification key (LOCAL-003).
+            CHECK (State = 'Active' OR PublicVerificationKey IS NULL)
+        );
+
+        -- LOCAL-001, OWNER-001: at most one ACTIVE Owner, enforced by the database rather than
+        -- by application discipline. This proves "at most one"; the "exactly one once
+        -- Initialized" half is enforced transactionally by the initialization path.
+        CREATE UNIQUE INDEX UX_LocalPrincipals_SingleActiveOwner
+            ON LocalPrincipals (IsOwner)
+            WHERE IsOwner = 1 AND State = 'Active';
+
+        -- SS3a. Owner-created, single-use, bounded-expiry enrollment/reactivation authorization.
+        -- Stores only a keyed verifier - never the raw EnrollmentCode (SS7). Retained after
+        -- consumption with ResultLocalPrincipalId so a lost-response retry is idempotent.
+        CREATE TABLE PendingLocalPrincipalEnrollments (
+            EnrollmentId           TEXT PRIMARY KEY,
+            OsPrincipalRef         TEXT NOT NULL,
+            EnrollmentCodeVerifier TEXT NOT NULL,
+            TargetLocalPrincipalId TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            ExpiresUtc             TEXT NOT NULL,
+            ConsumedUtc            TEXT     NULL,
+            ResultLocalPrincipalId TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            FailedAttempts         INTEGER NOT NULL DEFAULT 0,
+            InvalidatedUtc         TEXT     NULL,
+            CreatedUtc             TEXT NOT NULL
+        );
+
+        -- SS2c, OWNER-002. Single OsPrincipalRef-bound initial-Owner bootstrap authorization.
+        -- Verifier only, never the raw OwnerBootstrapSecret.
+        CREATE TABLE PendingOwnerEnrollments (
+            PendingOwnerEnrollmentId TEXT PRIMARY KEY,
+            OsPrincipalRef           TEXT NOT NULL,
+            SecretVerifier           TEXT NOT NULL,
+            ExpiresUtc               TEXT NOT NULL,
+            ConsumedUtc              TEXT     NULL,
+            ResultLocalPrincipalId   TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            InvalidatedUtc           TEXT     NULL,
+            CreatedUtc               TEXT NOT NULL
+        );
+
+        -- SS2b "Rotate the Owner's credential". ExpectedCurrentPublicVerificationKey is the
+        -- stale-ticket snapshot check; SS8's proactive invalidation (InvalidatedUtc) is what
+        -- actually closes the ABA case.
+        CREATE TABLE PendingOwnerCredentialRotations (
+            RotationTicketId                   TEXT PRIMARY KEY,
+            LocalPrincipalId                   TEXT NOT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            OsPrincipalRef                     TEXT NOT NULL,
+            SecretVerifier                     TEXT NOT NULL,
+            ExpectedCurrentPublicVerificationKey TEXT   NULL,
+            ExpiresUtc                         TEXT NOT NULL,
+            ConsumedUtc                        TEXT     NULL,
+            InvalidatedUtc                     TEXT     NULL,
+            CreatedUtc                         TEXT NOT NULL
+        );
+
+        -- SS2b "Re-home Owner status". Captures both the current-Owner side and the target side,
+        -- per the accepted staleness checks.
+        CREATE TABLE PendingOwnerRehomes (
+            RehomeTicketId                        TEXT PRIMARY KEY,
+            NewOsPrincipalRef                     TEXT NOT NULL,
+            SecretVerifier                        TEXT NOT NULL,
+            ExpectedCurrentOwnerLocalPrincipalId  TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            ExpectedCurrentOwnerPublicVerificationKey TEXT NULL,
+            ExpectedTargetLocalPrincipalId        TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            ExpectedTargetState                   TEXT     NULL CHECK (ExpectedTargetState IS NULL OR ExpectedTargetState IN ('Active','Revoked')),
+            ExpectedTargetPublicVerificationKey   TEXT     NULL,
+            ExpiresUtc                            TEXT NOT NULL,
+            ConsumedUtc                           TEXT     NULL,
+            ResultLocalPrincipalId                TEXT     NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            InvalidatedUtc                        TEXT     NULL,
+            CreatedUtc                            TEXT NOT NULL
+        );
+
+        -- SS4d, IDENT-002: rows are this Host's own servers, but AuthoritativeHostId is stored
+        -- explicitly and never omitted just because it is the trivial/local case, so a unified
+        -- local+remote inventory view never has to special-case which rows are "ours".
+        CREATE TABLE ServerInventory (
+            ServerProfileId     TEXT NOT NULL,
+            AuthoritativeHostId TEXT NOT NULL,
+            DisplayName         TEXT NOT NULL,
+            InstallPath         TEXT     NULL,
+            ImportProvenance    TEXT     NULL,
+            CreatedUtc          TEXT NOT NULL,
+            PRIMARY KEY (AuthoritativeHostId, ServerProfileId)
+        );
+
+        -- SS4a/SS4a-i/SS8. Paired peer ManagerIdentity rows. Revoked rows are retained as
+        -- tombstones (SS8), never deleted - including a PeerBound row that expired before
+        -- reaching Active. PeerHostId (stable identity) is kept distinct from the credential
+        -- fingerprints (IDENT-001), and staged-rotation state is separate from current trust
+        -- (IDENT-003). PeerRecoveryRequired supports IDENT-004.
+        CREATE TABLE TrustedManagers (
+            PeerHostId                         TEXT PRIMARY KEY,
+            State                              TEXT NOT NULL CHECK (State IN ('PeerBound','Active','Revoked')),
+            CurrentTrustedPublicKeyFingerprint TEXT     NULL,
+            PendingTrustedPublicKeyFingerprint TEXT     NULL,
+            PendingRotationId                  TEXT     NULL,
+            PendingRotationExpiresUtc          TEXT     NULL,
+            PendingReconfirmationRequired      INTEGER NOT NULL DEFAULT 0 CHECK (PendingReconfirmationRequired IN (0,1)),
+            PeerRecoveryRequired               INTEGER NOT NULL DEFAULT 0 CHECK (PeerRecoveryRequired IN (0,1)),
+            PairedUtc                          TEXT     NULL,
+            RevokedUtc                         TEXT     NULL,
+            CreatedUtc                         TEXT NOT NULL,
+            -- SS8: a tombstone never retains a usable pinned credential.
+            CHECK (State <> 'Revoked' OR CurrentTrustedPublicKeyFingerprint IS NULL)
+        );
+
+        -- SS4b-i, PAIR-004. Bounded, ZERO-AUTHORITY candidates awaiting explicit Owner approval
+        -- when a fresh pairing claims an already-known HostId. Deliberately carries no grant
+        -- linkage of any kind: prior grants never silently reactivate through this table.
+        CREATE TABLE PendingCredentialReplacements (
+            ReplacementId          TEXT PRIMARY KEY,
+            PeerHostId             TEXT NOT NULL REFERENCES TrustedManagers(PeerHostId),
+            ProposedKeyFingerprint TEXT NOT NULL,
+            ExpiresUtc             TEXT NOT NULL,
+            ApprovedUtc            TEXT     NULL,
+            InvalidatedUtc         TEXT     NULL,
+            CreatedUtc             TEXT NOT NULL
+        );
+
+        -- SS4a-i, IDENT-003. In-progress routine rotation state, with per-peer staging tracked
+        -- in its own child table (a peer reaching Active mid-rotation is added dynamically).
+        CREATE TABLE HostCredentialRotations (
+            RotationId       TEXT PRIMARY KEY,
+            OldCredentialRef TEXT     NULL,
+            NewCredentialRef TEXT     NULL,
+            State            TEXT NOT NULL CHECK (State IN ('Staging','ReadyForCutover','CutOver','Completed','Aborted')),
+            StartedUtc       TEXT NOT NULL,
+            CutOverUtc       TEXT     NULL,
+            CompletedUtc     TEXT     NULL
+        );
+
+        CREATE TABLE HostCredentialRotationPeers (
+            RotationId      TEXT NOT NULL REFERENCES HostCredentialRotations(RotationId),
+            PeerHostId      TEXT NOT NULL REFERENCES TrustedManagers(PeerHostId),
+            StagedUtc       TEXT     NULL,
+            AcknowledgedUtc TEXT     NULL,
+            PromotedUtc     TEXT     NULL,
+            PRIMARY KEY (RotationId, PeerHostId)
+        );
+
+        -- SS5, SS5b. Host- and server-capability grants are kept as two separate tables so a
+        -- Host-level capability can never become a server-scoped grant, and vice versa
+        -- (AUTH-001: type/scope valid BY CONSTRUCTION, not by validation code).
+        --
+        -- AUTH-002: DerivedFromGrantId is a single nullable self-reference - a single-parent
+        -- grant forest, never a multi-parent DAG.
+        -- AUTH-005: every HostCapabilityGrant targets exactly one HostId (NOT NULL).
+        CREATE TABLE HostCapabilityGrants (
+            GrantId             TEXT PRIMARY KEY,
+            TargetHostId        TEXT NOT NULL,
+            Capability          TEXT NOT NULL,
+            GranteeActorKind    TEXT NOT NULL CHECK (GranteeActorKind IN ('LocalPrincipal','RemoteManager')),
+            GranteeLocalPrincipalId TEXT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            GranteePeerHostId   TEXT     NULL REFERENCES TrustedManagers(PeerHostId),
+            GrantedByActorKind  TEXT NOT NULL CHECK (GrantedByActorKind IN ('LocalPrincipal','RemoteManager')),
+            GrantedByLocalPrincipalId TEXT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            GrantedByPeerHostId TEXT     NULL REFERENCES TrustedManagers(PeerHostId),
+            CanDelegate         INTEGER NOT NULL CHECK (CanDelegate IN (0,1)),
+            CanDelegateOnwardDelegation INTEGER NOT NULL CHECK (CanDelegateOnwardDelegation IN (0,1)),
+            DerivedFromGrantId  TEXT     NULL REFERENCES HostCapabilityGrants(GrantId),
+            CreatedUtc          TEXT NOT NULL,
+            InvalidatedUtc      TEXT     NULL,
+            -- SS5b ActorRef: exactly one actor shape populated on each side.
+            CHECK ((GranteeActorKind = 'LocalPrincipal' AND GranteeLocalPrincipalId IS NOT NULL AND GranteePeerHostId IS NULL)
+                OR (GranteeActorKind = 'RemoteManager'  AND GranteePeerHostId    IS NOT NULL AND GranteeLocalPrincipalId IS NULL)),
+            CHECK ((GrantedByActorKind = 'LocalPrincipal' AND GrantedByLocalPrincipalId IS NOT NULL AND GrantedByPeerHostId IS NULL)
+                OR (GrantedByActorKind = 'RemoteManager'  AND GrantedByPeerHostId    IS NOT NULL AND GrantedByLocalPrincipalId IS NULL)),
+            -- SS5: onward-delegation authority can never exceed delegation authority.
+            CHECK (CanDelegate = 1 OR CanDelegateOnwardDelegation = 0)
+        );
+
+        CREATE TABLE ServerCapabilityGrants (
+            GrantId             TEXT PRIMARY KEY,
+            AuthoritativeHostId TEXT NOT NULL,
+            ServerProfileId     TEXT NOT NULL,
+            Capability          TEXT NOT NULL,
+            GranteeActorKind    TEXT NOT NULL CHECK (GranteeActorKind IN ('LocalPrincipal','RemoteManager')),
+            GranteeLocalPrincipalId TEXT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            GranteePeerHostId   TEXT     NULL REFERENCES TrustedManagers(PeerHostId),
+            GrantedByActorKind  TEXT NOT NULL CHECK (GrantedByActorKind IN ('LocalPrincipal','RemoteManager')),
+            GrantedByLocalPrincipalId TEXT NULL REFERENCES LocalPrincipals(LocalPrincipalId),
+            GrantedByPeerHostId TEXT     NULL REFERENCES TrustedManagers(PeerHostId),
+            CanDelegate         INTEGER NOT NULL CHECK (CanDelegate IN (0,1)),
+            CanDelegateOnwardDelegation INTEGER NOT NULL CHECK (CanDelegateOnwardDelegation IN (0,1)),
+            DerivedFromGrantId  TEXT     NULL REFERENCES ServerCapabilityGrants(GrantId),
+            CreatedUtc          TEXT NOT NULL,
+            InvalidatedUtc      TEXT     NULL,
+            CHECK ((GranteeActorKind = 'LocalPrincipal' AND GranteeLocalPrincipalId IS NOT NULL AND GranteePeerHostId IS NULL)
+                OR (GranteeActorKind = 'RemoteManager'  AND GranteePeerHostId    IS NOT NULL AND GranteeLocalPrincipalId IS NULL)),
+            CHECK ((GrantedByActorKind = 'LocalPrincipal' AND GrantedByLocalPrincipalId IS NOT NULL AND GrantedByPeerHostId IS NULL)
+                OR (GrantedByActorKind = 'RemoteManager'  AND GrantedByPeerHostId    IS NOT NULL AND GrantedByLocalPrincipalId IS NULL)),
+            CHECK (CanDelegate = 1 OR CanDelegateOnwardDelegation = 0)
+        );
+
+        -- SS6, SS5b. ActorRef-keyed audit trail. NEVER secrets (SEC-001) - this table has no
+        -- column shaped to carry secret material, and later writers apply [Secret] redaction.
+        CREATE TABLE AuditEvents (
+            AuditEventId          TEXT PRIMARY KEY,
+            OccurredUtc           TEXT NOT NULL,
+            EventKind             TEXT NOT NULL,
+            ActorKind             TEXT     NULL CHECK (ActorKind IS NULL OR ActorKind IN ('LocalPrincipal','RemoteManager','OfflineRecovery')),
+            ActorLocalPrincipalId TEXT     NULL,
+            ActorPeerHostId       TEXT     NULL,
+            AffectedHostId        TEXT     NULL,
+            AffectedServerProfileId TEXT   NULL,
+            IsOfflineRecovery     INTEGER NOT NULL DEFAULT 0 CHECK (IsOfflineRecovery IN (0,1)),
+            Summary               TEXT     NULL
+        );
+
+        -- SS10, OPS-004. Every durable operation has an EXPLICIT discriminated target - never a
+        -- bare or synthetic ServerRef, and never inferred from Kind alone.
+        CREATE TABLE OperationRecords (
+            OperationId         TEXT PRIMARY KEY,
+            Kind                TEXT NOT NULL,
+            TargetKind          TEXT NOT NULL CHECK (TargetKind IN ('HostTarget','ServerTarget')),
+            TargetHostId        TEXT     NULL,
+            TargetServerProfileId TEXT   NULL,
+            Phase               TEXT NOT NULL,
+            IsTerminal          INTEGER NOT NULL DEFAULT 0 CHECK (IsTerminal IN (0,1)),
+            RecoveryDisposition TEXT     NULL CHECK (RecoveryDisposition IS NULL OR RecoveryDisposition IN ('SafeToRetryFromStart','SafeToResumeFromPhase','RequiresManualReview','SafeToDiscard')),
+            StartedUtc          TEXT NOT NULL,
+            LastHeartbeatUtc    TEXT     NULL,
+            -- HostTarget carries only a HostId; ServerTarget carries a Host-qualified ServerRef
+            -- (IDENT-002 - the AuthoritativeHostId is never omitted).
+            CHECK ((TargetKind = 'HostTarget'   AND TargetHostId IS NOT NULL AND TargetServerProfileId IS NULL)
+                OR (TargetKind = 'ServerTarget' AND TargetHostId IS NOT NULL AND TargetServerProfileId IS NOT NULL))
+        );
+
+        -- SS9, OPS-002/OPS-004. Lock scope is deliberately INDEPENDENT of the operation's target:
+        -- a server-targeted operation may legitimately hold a HostScope lock.
+        --
+        -- OwningOperationId is a NOT NULL foreign key into OperationRecords, so a durable lock
+        -- can never exist without the record startup reconciliation needs in order to classify
+        -- it - the accepted atomic record+lock relationship, enforced structurally.
+        CREATE TABLE OperationLocks (
+            OperationLockId     TEXT PRIMARY KEY,
+            ScopeKind           TEXT NOT NULL CHECK (ScopeKind IN ('HostScope','ServerScope')),
+            ScopeHostId         TEXT NOT NULL,
+            ScopeServerProfileId TEXT    NULL,
+            OperationKind       TEXT NOT NULL,
+            OwningOperationId   TEXT NOT NULL REFERENCES OperationRecords(OperationId),
+            AcquiredUtc         TEXT NOT NULL,
+            CHECK ((ScopeKind = 'HostScope'   AND ScopeServerProfileId IS NULL)
+                OR (ScopeKind = 'ServerScope' AND ScopeServerProfileId IS NOT NULL))
+        );
+
+        -- SS9, OPS-001. Revision tokens for optimistic concurrency. The stale-write COMPARISON
+        -- is #46's engine; this is the storage shape it will use.
+        CREATE TABLE ConfigurationRevisions (
+            ResourceKind    TEXT NOT NULL,
+            ResourceId      TEXT NOT NULL,
+            RevisionId      INTEGER NOT NULL CHECK (RevisionId >= 0),
+            LastModifiedUtc TEXT NOT NULL,
+            PRIMARY KEY (ResourceKind, ResourceId)
+        );
+
+        -- SS7, SEC-001. OPAQUE references/metadata pointing into the platform secure store. The
+        -- actual secret bytes never enter this database - there is no column here shaped to
+        -- hold them.
+        CREATE TABLE SecureCredentialReferences (
+            CredentialRef TEXT PRIMARY KEY,
+            Purpose       TEXT NOT NULL,
+            CreatedUtc    TEXT NOT NULL,
+            RetiredUtc    TEXT     NULL
+        );
+
+        -- MIG-001. v0.4 -> v0.5 migration AUDIT TRAIL only. #40 performs no data migration; the
+        -- existence of this table does not imply migration execution.
+        CREATE TABLE MigrationRecords (
+            MigrationRecordId TEXT PRIMARY KEY,
+            SourceDescription TEXT NOT NULL,
+            StartedUtc        TEXT NOT NULL,
+            CompletedUtc      TEXT     NULL,
+            Outcome           TEXT     NULL,
+            Notes             TEXT     NULL
+        );
+
+        CREATE INDEX IX_HostCapabilityGrants_Grantee ON HostCapabilityGrants (GranteeLocalPrincipalId, GranteePeerHostId);
+        CREATE INDEX IX_ServerCapabilityGrants_Grantee ON ServerCapabilityGrants (GranteeLocalPrincipalId, GranteePeerHostId);
+        CREATE INDEX IX_OperationRecords_NonTerminal ON OperationRecords (IsTerminal) WHERE IsTerminal = 0;
+        CREATE UNIQUE INDEX UX_OperationLocks_HostScope ON OperationLocks (ScopeHostId) WHERE ScopeKind = 'HostScope';
+        CREATE UNIQUE INDEX UX_OperationLocks_ServerScope ON OperationLocks (ScopeHostId, ScopeServerProfileId) WHERE ScopeKind = 'ServerScope';
+        CREATE INDEX IX_AuditEvents_OccurredUtc ON AuditEvents (OccurredUtc);
+        """;
+}
+
+public static class HostSchema
+{
+    public static IReadOnlyList<IHostSchemaMigration> AllMigrations() =>
+    [
+        new Migration001InitialHostSchema(),
+    ];
+}
