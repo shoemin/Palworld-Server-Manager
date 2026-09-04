@@ -252,6 +252,36 @@ public static class LocalPrincipalCredentialStoreTests
         Equal("principal-A", (await store.LoadAsync())!.LocalPrincipalId, "the original binding is unchanged after a rejected rebind");
     }
 
+    public static async Task TestCancellationDuringLockContentionExitsPromptlyWithoutMutation()
+    {
+        using var temp = new TempClientRoot();
+        var store = new WindowsLocalPrincipalCredentialStore(new FakeKeyPairGenerator(), temp.Directory);
+        await store.CreateAndStoreAsync();
+
+        // Hold the SAME lock file externally to force the next operation into genuine contention.
+        var lockPath = store.FilePath + ".lock";
+        using var externalHolder = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+
+        using var cts = new CancellationTokenSource();
+        var waitingTask = Task.Run(() => store.BindPrincipalIdAsync("principal-should-not-apply", cts.Token));
+
+        await Task.Delay(200);
+        True(!waitingTask.IsCompleted, "sanity: the second operation is genuinely waiting on the held lock");
+
+        cts.Cancel();
+
+        var completed = await Task.WhenAny(waitingTask, Task.Delay(TimeSpan.FromSeconds(3)));
+        True(completed == waitingTask, "cancellation must be observed promptly, not only after the full lock-contention window");
+        await AssertThrowsAsync<OperationCanceledException>(() => waitingTask,
+            "a canceled lock wait must exit with OperationCanceledException, not silently succeed or hang");
+
+        externalHolder.Dispose();
+
+        // The canceled Bind must not have mutated anything: still unbound (never bound at all).
+        Equal(false, await store.HasCredentialAsync(), "the canceled Bind must not have applied any mutation");
+        Equal(null, (await store.LoadAsync())?.LocalPrincipalId, "no principal id was ever bound by the canceled operation");
+    }
+
     public static Task TestNoProductionKeyGeneratorShipsInThisSlice()
     {
         // The crypto boundary, asserted structurally: #41 ships the store and the generator

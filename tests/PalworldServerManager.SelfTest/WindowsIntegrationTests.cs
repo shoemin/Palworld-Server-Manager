@@ -79,9 +79,25 @@ public static class WindowsIntegrationTests
             CreateNoWindow = true,
         })!;
 
-        var stdout = process.StandardOutput.ReadToEnd();
-        var stderr = process.StandardError.ReadToEnd();
-        process.WaitForExit(60_000);
+        // Read both streams CONCURRENTLY with the bounded wait below - reading either stream to
+        // completion first risks the classic redirected-pipe deadlock (the child blocks trying to
+        // write to a full stderr buffer while we are blocked reading stdout, or vice versa).
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+
+        if (!process.WaitForExit(60_000))
+        {
+            TryKillExactProcess(process);
+            throw new System.TimeoutException($"PowerShell did not complete within 60 seconds and was terminated: {script}");
+        }
+
+        // The parameterless WaitForExit() after a successful timed wait ensures redirected-stream
+        // EOF has actually been observed, per documented .NET guidance for combining a bounded
+        // wait with stream redirection.
+        process.WaitForExit();
+
+        var stdout = stdoutTask.GetAwaiter().GetResult();
+        var stderr = stderrTask.GetAwaiter().GetResult();
 
         if (process.ExitCode != 0)
         {
@@ -89,6 +105,23 @@ public static class WindowsIntegrationTests
         }
 
         return stdout.Trim();
+    }
+
+    /// <summary>Kills ONLY this exact process (and its exact child tree) - never by name.</summary>
+    private static void TryKillExactProcess(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit(5000);
+            }
+        }
+        catch
+        {
+            // Best-effort: the process may have already exited between the check and the kill.
+        }
     }
 
     /// <summary>Runs the TEST-ONLY helper mode of this same executable under a specific user's token.</summary>
@@ -322,33 +355,49 @@ public static class WindowsIntegrationTests
 
         log.Add("[10] normal stop released the lock");
 
-        // 11: abnormal termination must leave it reacquirable - killing the EXACT PID belonging
-        // to this unique temporary service, never by process name (which could kill an unrelated
-        // real Host on a developer machine).
+        // 11: abnormal termination must leave the lock reacquirable. Restart, capture the EXACT
+        // PID once, prove the ACTUAL running process token identity (item 3 - independent of the
+        // StartName configuration evidence already checked above), then reuse that SAME PID for
+        // termination - never re-querying by name.
         await lifecycle.StartAsync();
 
         var processId = int.Parse(RunPowerShell($"(Get-CimInstance Win32_Service -Filter \"Name='{ServiceName}'\").ProcessId"));
         True(processId > 0, "[5] resolved a real PID for the temporary test service before terminating it");
 
+        var actualTokenSid = ProcessTokenInspector.GetProcessTokenUserSid(processId);
+        var expectedSid = ServiceSecurityIdentifier.ForServiceName(ServiceName);
+        Equal(expectedSid.Value, actualTokenSid.Value,
+            "[token] the ACTUAL running process token SID must equal the derived per-service SID - this is runtime proof, independent of merely reading Win32_Service.StartName");
+        log.Add($"[token] running process (PID {processId}) token SID confirmed to equal the derived per-service SID: {actualTokenSid.Value}");
+
         RunPowerShell($"Stop-Process -Id {processId} -Force");
-        await Task.Delay(2000);
+
+        // Required ordering: (3) wait until SCM DEFINITIVELY reports not Running/StartPending -
+        // never a silent deadline - THEN (4) prove the unique test mutex is reacquirable. Item 11
+        // is logged as PASS only once BOTH have actually succeeded.
+        await WaitUntilNotRunningAsync(lifecycle);
 
         using (var afterKill = HostExclusivityLock.TryAcquire(TimeSpan.FromSeconds(10), MutexName))
         {
             True(afterKill is not null, "[11] the lock is reacquirable after abnormal termination");
         }
 
-        log.Add($"[5,11] terminated exact PID {processId} (never by process name); lock reacquirable after abnormal termination");
-
-        await WaitUntilNotRunningAsync(lifecycle);
+        log.Add($"[5,11] terminated exact PID {processId} (never by process name); SCM confirmed not-running, then the lock was reacquired");
     }
 
+    /// <summary>
+    /// Succeeds ONLY once SCM actually reports a non-Running/non-StartPending state - never
+    /// silently returns after an unexpired deadline while the service might still be Running.
+    /// </summary>
     private static async Task WaitUntilNotRunningAsync(WindowsHostServiceLifecycle lifecycle)
     {
         var deadline = DateTimeOffset.UtcNow.AddSeconds(15);
+        var lastObserved = HostServiceState.Other;
+
         while (DateTimeOffset.UtcNow < deadline)
         {
             var status = await lifecycle.QueryStatusAsync();
+            lastObserved = status.State;
             if (status.State is not (HostServiceState.Running or HostServiceState.StartPending))
             {
                 return;
@@ -356,6 +405,9 @@ public static class WindowsIntegrationTests
 
             await Task.Delay(300);
         }
+
+        throw new System.TimeoutException(
+            $"Service did not leave Running/StartPending within the deadline; last observed state: {lastObserved}.");
     }
 
     /// <summary>

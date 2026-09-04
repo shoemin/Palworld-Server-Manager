@@ -275,6 +275,8 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host activation is idempotent and maps failure classes", WindowsPlatformTests.TestActivationIsIdempotentAndMapsFailureClasses),
     ("Login start uses a test-scoped store and quotes the command", WindowsPlatformTests.TestLoginStartUsesTestScopedStoreAndQuotesCommand),
     ("Shell integration opens only local directories and never spawns", WindowsPlatformTests.TestShellIntegrationOpensOnlyLocalDirectoriesAndNeverSpawns),
+    ("ProcessAsUser terminates a hung child and reports timeout rather than hanging", WindowsPlatformTests.TestProcessAsUserTerminatesAHungChildAndReportsTimeoutRatherThanHanging),
+    ("ProcessAsUser captures output and exit code for a well-behaved child", WindowsPlatformTests.TestProcessAsUserCapturesOutputAndExitCodeForAWellBehavedChild),
 
     // #41 - client LocalPrincipal credential store
     ("Credential lifecycle from create through bind to delete", LocalPrincipalCredentialStoreTests.TestCredentialLifecycleFromCreateThroughBindToDelete),
@@ -285,6 +287,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("No production key generator ships in this slice", LocalPrincipalCredentialStoreTests.TestNoProductionKeyGeneratorShipsInThisSlice),
     ("Concurrent create across two store instances produces exactly one key", LocalPrincipalCredentialStoreTests.TestConcurrentCreateAcrossTwoStoreInstancesProducesExactlyOneKey),
     ("Rebind is idempotent for the same principal and rejects a different principal", LocalPrincipalCredentialStoreTests.TestRebindIsIdempotentForSamePrincipalAndRejectsADifferentPrincipal),
+    ("Cancellation during lock contention exits promptly without mutation", LocalPrincipalCredentialStoreTests.TestCancellationDuringLockContentionExitsPromptlyWithoutMutation),
 
     // #40 - Host persistence foundation
     ("Host database enables WAL journal mode", HostPersistenceTests.TestWalJournalModeEnabled),

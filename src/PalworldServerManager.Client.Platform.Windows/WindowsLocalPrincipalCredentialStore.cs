@@ -60,7 +60,7 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
     public Task<LocalPrincipalKeyPair> CreateAndStoreAsync(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        using var _ = AcquireLock();
+        using var _ = AcquireLock(ct);
 
         var existing = TryRead();
         if (existing is not null)
@@ -81,7 +81,7 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(localPrincipalId);
         ct.ThrowIfCancellationRequested();
-        using var _ = AcquireLock();
+        using var _ = AcquireLock(ct);
 
         var existing = TryRead()
             ?? throw new InvalidOperationException("No local principal key exists to bind; call CreateAndStoreAsync first.");
@@ -121,7 +121,7 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
     public Task DeleteAsync(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        using var _ = AcquireLock();
+        using var _ = AcquireLock(ct);
 
         if (File.Exists(_filePath))
         {
@@ -136,8 +136,12 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
     /// credential. A plain locked FileStream, not a Mutex: no thread affinity, and a crashed
     /// holder's handle is released by the OS automatically rather than requiring abandonment
     /// handling.
+    ///
+    /// Cancellation is checked before every attempt AND observed promptly while waiting between
+    /// retries (via the token's own WaitHandle rather than an uninterruptible Thread.Sleep), so a
+    /// caller that cancels does not have to wait out the full contention window.
     /// </summary>
-    private FileStream AcquireLock()
+    private FileStream AcquireLock(CancellationToken ct)
     {
         var directory = Path.GetDirectoryName(_lockPath)!;
         Directory.CreateDirectory(directory);
@@ -145,13 +149,17 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
         var deadline = DateTime.UtcNow.Add(LockTimeout);
         while (true)
         {
+            ct.ThrowIfCancellationRequested();
+
             try
             {
                 return new FileStream(_lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
             catch (IOException) when (DateTime.UtcNow < deadline)
             {
-                Thread.Sleep(25);
+                // Blocks for at most 25ms, but returns IMMEDIATELY once ct is canceled.
+                ct.WaitHandle.WaitOne(25);
+                ct.ThrowIfCancellationRequested();
             }
         }
     }

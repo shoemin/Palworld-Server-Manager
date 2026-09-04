@@ -253,6 +253,32 @@ public static class WindowsPlatformTests
         lifetime.Dispose();
     }
 
+    // ------------------------------------------------- ProcessAsUser timeout mechanism
+
+    public static Task TestProcessAsUserTerminatesAHungChildAndReportsTimeoutRatherThanHanging()
+    {
+        var selfTestExe = Environment.ProcessPath!;
+
+        // "--harness 60 0" sleeps 60s then exits 0 - deliberately far longer than the 2s timeout
+        // given here, proving the timeout genuinely bounds the wait rather than blocking on
+        // ReadToEnd first. Reuses the SAME WaitWithTimeout core that the real
+        // CreateProcessWithLogonW-based Run(...) path uses, via the current-user test seam.
+        Throws<TimeoutException>(
+            () => ProcessAsUser.RunAsCurrentUserForTest(selfTestExe, "--harness 60 0", TimeSpan.FromSeconds(2)),
+            "a deliberately hung child must be terminated and reported as a timeout, not hang the caller");
+        return Task.CompletedTask;
+    }
+
+    public static Task TestProcessAsUserCapturesOutputAndExitCodeForAWellBehavedChild()
+    {
+        var selfTestExe = Environment.ProcessPath!;
+
+        // "--harness 0 0" sleeps 0s and exits 0 immediately - the ordinary success path.
+        var (exitCode, _) = ProcessAsUser.RunAsCurrentUserForTest(selfTestExe, "--harness 0 3", TimeSpan.FromSeconds(30));
+        Equal(3, exitCode, "a well-behaved child's real exit code must be captured, not STILL_ACTIVE or a timeout");
+        return Task.CompletedTask;
+    }
+
     // ------------------------------------------------- boot start mapping
 
     public static Task TestBootStartMapsToServiceStartType()
