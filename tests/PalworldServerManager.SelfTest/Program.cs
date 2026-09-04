@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using PalworldServerManager.Client.Platform.Windows;
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
 using PalworldServerManager.Core.Services;
@@ -64,6 +65,64 @@ if (args.Length > 0)
             Console.Error.WriteLine(ex);
             return 1;
         }
+    }
+
+    // TEST-ONLY helper-process modes (#41), launched under a specific non-admin identity via
+    // CreateProcessWithLogonW by the privileged integration harness. Each prints exactly one
+    // result token per line to stdout for the (elevated) parent to parse. Never invoked by
+    // ordinary production code or by the ordinary self-test suite.
+    if (args.Length == 1 && args[0] == "--helper-nonadmin-check")
+    {
+        Console.WriteLine(WindowsIntegrationTests.IsElevated() ? "ADMIN" : "NONADMIN");
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-activation")
+    {
+        var activation = new WindowsHostActivation(args[1]);
+        var result = await activation.RequestStartAsync();
+        Console.WriteLine(result);
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-native-rights")
+    {
+        HelperNativeRights.ProbeForbiddenRights(args[1]);
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-dpapi-create")
+    {
+        var store = new WindowsLocalPrincipalCredentialStore(new WindowsIntegrationTests.HarnessFakeKeyPairGenerator(), args[1]);
+        await store.CreateAndStoreAsync();
+        await store.BindPrincipalIdAsync("psm-integration-test-principal");
+        Console.WriteLine("OK");
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-dpapi-load")
+    {
+        var filePath = Path.Combine(args[1], "localprincipal.v1.bin");
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine("FILE_MISSING");
+            return 0;
+        }
+
+        try
+        {
+            var store = new WindowsLocalPrincipalCredentialStore(new WindowsIntegrationTests.HarnessFakeKeyPairGenerator(), args[1]);
+            var loaded = await store.LoadAsync();
+            Console.WriteLine(loaded is not null ? "SUCCESS" : "UNBOUND");
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            // The correct, expected outcome for a DIFFERENT user attempting to unprotect data
+            // that DPAPI protected under someone else's CurrentUser key.
+            Console.WriteLine("DPAPI_DENIED");
+        }
+
+        return 0;
     }
 
     if (args.Length == 2 && args[0] == "--lock-abandon")
@@ -203,6 +262,11 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Activation group ACE grants exactly SERVICE_START|SERVICE_QUERY_STATUS", WindowsPlatformTests.TestActivationGroupAceGrantsExactlyStartAndQueryStatus),
     ("Activation group ACE preserves existing ACEs", WindowsPlatformTests.TestActivationGroupAcePreservesExistingAces),
     ("Activation group ACE application is idempotent", WindowsPlatformTests.TestActivationGroupAceIsIdempotent),
+    ("Activation group name defaults to the stable product group", WindowsPlatformTests.TestActivationGroupNameDefaultsToTheStableProductGroup),
+    ("Local group provisioner creates only when missing and never touches membership", WindowsPlatformTests.TestLocalGroupProvisionerCreatesOnlyWhenMissingAndNeverTouchesMembership),
+    ("Startup is ready only after initialization actually completes", WindowsPlatformTests.TestStartupReadyOnlyAfterInitializationActuallyCompletes),
+    ("Startup failure propagates before readiness can be claimed", WindowsPlatformTests.TestStartupFailurePropagatesBeforeReadinessCanBeClaimed),
+    ("StopAndWait blocks until simulated cleanup actually completes", WindowsPlatformTests.TestStopAndWaitBlocksUntilSimulatedCleanupActuallyCompletes),
     ("Boot start maps to the Windows service start type", WindowsPlatformTests.TestBootStartMapsToServiceStartType),
     ("Dedicated service account is a per-service virtual account", WindowsPlatformTests.TestDedicatedServiceAccountIsAPerServiceVirtualAccount),
     ("Machine-wide Host data root is under ProgramData", WindowsPlatformTests.TestMachineWideHostDataRootIsUnderProgramData),
@@ -219,6 +283,8 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Credential store exposes no Host machine-credential surface", LocalPrincipalCredentialStoreTests.TestStoreExposesNoHostMachineCredentialSurface),
     ("Interrupted write does not corrupt the last good credential", LocalPrincipalCredentialStoreTests.TestInterruptedWriteDoesNotCorruptLastGoodCredential),
     ("No production key generator ships in this slice", LocalPrincipalCredentialStoreTests.TestNoProductionKeyGeneratorShipsInThisSlice),
+    ("Concurrent create across two store instances produces exactly one key", LocalPrincipalCredentialStoreTests.TestConcurrentCreateAcrossTwoStoreInstancesProducesExactlyOneKey),
+    ("Rebind is idempotent for the same principal and rejects a different principal", LocalPrincipalCredentialStoreTests.TestRebindIsIdempotentForSamePrincipalAndRejectsADifferentPrincipal),
 
     // #40 - Host persistence foundation
     ("Host database enables WAL journal mode", HostPersistenceTests.TestWalJournalModeEnabled),

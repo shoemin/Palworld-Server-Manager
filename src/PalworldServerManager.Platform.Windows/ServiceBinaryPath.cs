@@ -17,6 +17,14 @@ public static class ServiceBinaryPath
             throw new ArgumentException("A service executable path is required.", nameof(executablePath));
         }
 
+        if (!Path.IsPathFullyQualified(executablePath))
+        {
+            // #41 never chooses an install directory: the caller supplies the executable's
+            // location, and a relative (or drive-relative) path would resolve against SCM's own
+            // working directory rather than any location the caller actually meant.
+            throw new ArgumentException("A service executable path must be absolute.", nameof(executablePath));
+        }
+
         if (executablePath.Contains('"'))
         {
             // A quote inside the path would let a caller terminate the quoted argument early and

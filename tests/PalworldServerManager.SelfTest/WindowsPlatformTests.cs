@@ -59,6 +59,13 @@ public static class WindowsPlatformTests
             "an embedded quote must be rejected");
         Throws<ArgumentException>(() => ServiceBinaryPath.Build("  "),
             "an empty path must be rejected");
+
+        // #41 never chooses an install directory - a relative (or drive-relative) path would
+        // resolve against SCM's own working directory rather than any location the caller meant.
+        Throws<ArgumentException>(() => ServiceBinaryPath.Build(@"Apps\Host.exe"),
+            "a relative path must be rejected");
+        Throws<ArgumentException>(() => ServiceBinaryPath.Build(@"\Apps\Host.exe"),
+            "a drive-relative (rooted but not fully qualified) path must be rejected");
         return Task.CompletedTask;
     }
 
@@ -117,6 +124,133 @@ public static class WindowsPlatformTests
         Equal(3, aceCount, "re-provisioning must not accumulate duplicate ACEs");
         Equal(0x14, ServiceDaclBuilder.FindActivationGroupMask(twice, group)!.Value, "mask unchanged after re-apply");
         return Task.CompletedTask;
+    }
+
+    // ------------------------------------------------- activation-group provisioning
+
+    private sealed class FakeLocalGroupNative : ILocalGroupNative
+    {
+        private readonly HashSet<string> _existing = new(StringComparer.OrdinalIgnoreCase);
+
+        public List<string> ExistsCalls { get; } = new();
+        public List<string> CreateCalls { get; } = new();
+
+        public bool GroupExists(string groupName)
+        {
+            ExistsCalls.Add(groupName);
+            return _existing.Contains(groupName);
+        }
+
+        public void CreateGroup(string groupName)
+        {
+            CreateCalls.Add(groupName);
+            _existing.Add(groupName);
+        }
+    }
+
+    public static Task TestActivationGroupNameDefaultsToTheStableProductGroup()
+    {
+        Equal(WindowsHostServiceLifecycle.DefaultActivationGroupName,
+            WindowsHostServiceLifecycle.ResolveActivationGroupName(new HostServiceInstallOptions("C:\\Host.exe")),
+            "a null/omitted ActivationGroupName means the stable product default, not 'no group'");
+
+        Equal("Explicit Test Group",
+            WindowsHostServiceLifecycle.ResolveActivationGroupName(
+                new HostServiceInstallOptions("C:\\Host.exe", ActivationGroupName: "Explicit Test Group")),
+            "an explicit group name is used as-is");
+        return Task.CompletedTask;
+    }
+
+    public static Task TestLocalGroupProvisionerCreatesOnlyWhenMissingAndNeverTouchesMembership()
+    {
+        var native = new FakeLocalGroupNative();
+        var provisioner = new LocalGroupProvisioner(native);
+
+        provisioner.EnsureExists("PalworldServerManager Users");
+        Equal(1, native.CreateCalls.Count, "a missing group is created exactly once");
+
+        // Idempotent: re-provisioning an already-existing group creates nothing further.
+        provisioner.EnsureExists("PalworldServerManager Users");
+        Equal(1, native.CreateCalls.Count, "re-provisioning an existing group does not create it again");
+        Equal(2, native.ExistsCalls.Count, "existence is checked on every call");
+
+        // A different, explicit group name is provisioned independently.
+        provisioner.EnsureExists("Explicit Test Group");
+        Equal(2, native.CreateCalls.Count, "a distinct explicit group name is provisioned on its own");
+
+        // Structural: the seam this provisioner is built on has no membership operation AT ALL -
+        // so "no member-add call occurs" is guaranteed by the interface shape, not just current
+        // behavior.
+        var memberishMembers = typeof(ILocalGroupNative).GetMembers()
+            .Select(m => m.Name)
+            .Where(n => n.Contains("Member", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        Equal(0, memberishMembers.Count, $"ILocalGroupNative must expose no membership operation; found: {string.Join(", ", memberishMembers)}");
+        return Task.CompletedTask;
+    }
+
+    // ------------------------------------------------- startup readiness / deterministic shutdown
+
+    public static async Task TestStartupReadyOnlyAfterInitializationActuallyCompletes()
+    {
+        var gate = new ManualResetEventSlim(false);
+        var reachedReady = false;
+
+        var lifetime = new HostServiceLifetime(async (ct, ready) =>
+        {
+            await Task.Run(() => gate.Wait(ct), ct);
+            reachedReady = true;
+            ready.TrySetResult(true);
+            await Task.Delay(Timeout.Infinite, ct);
+        });
+
+        var startTask = Task.Run(lifetime.Start);
+        await Task.Delay(300);
+        True(!startTask.IsCompleted, "Start() must not return before the runtime signals readiness");
+        True(!reachedReady, "sanity: the gate has not been released yet");
+
+        gate.Set();
+        await startTask;
+        True(reachedReady, "the runtime actually reached the readiness point before Start() returned");
+
+        lifetime.StopAndWait();
+        lifetime.Dispose();
+    }
+
+    public static Task TestStartupFailurePropagatesBeforeReadinessCanBeClaimed()
+    {
+        var lifetime = new HostServiceLifetime((ct, ready) => throw new InvalidOperationException("synthetic startup failure"));
+        Throws<InvalidOperationException>(lifetime.Start, "an initialization failure must propagate out of Start(), not be swallowed");
+        lifetime.Dispose();
+        return Task.CompletedTask;
+    }
+
+    public static async Task TestStopAndWaitBlocksUntilSimulatedCleanupActuallyCompletes()
+    {
+        var releaseGate = new ManualResetEventSlim(false);
+        var cleanupFinished = false;
+
+        var lifetime = new HostServiceLifetime(async (ct, ready) =>
+        {
+            ready.TrySetResult(true);
+            try { await Task.Delay(Timeout.Infinite, ct); }
+            catch (OperationCanceledException) { }
+            await Task.Run(() => releaseGate.Wait());
+            cleanupFinished = true;
+        });
+
+        lifetime.Start();
+
+        var stopTask = Task.Run(lifetime.StopAndWait);
+        await Task.Delay(300);
+        True(!stopTask.IsCompleted, "StopAndWait() must not return before cleanup actually finishes");
+        True(!cleanupFinished, "sanity: cleanup has not been released yet");
+
+        releaseGate.Set();
+        await stopTask;
+        True(cleanupFinished, "StopAndWait() only returned once cleanup genuinely finished");
+
+        lifetime.Dispose();
     }
 
     // ------------------------------------------------- boot start mapping

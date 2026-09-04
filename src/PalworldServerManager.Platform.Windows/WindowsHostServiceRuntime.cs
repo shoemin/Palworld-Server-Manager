@@ -12,20 +12,18 @@ namespace PalworldServerManager.Platform.Windows;
 /// choice with knowledge of their own requirements. Nothing here forecloses it - the runtime
 /// callbacks below are ordinary delegates.
 ///
-/// Resource lifetime is owned by the SERVICE LIFECYCLE, not by an arbitrary background thread:
-/// OnStop signals cancellation and then waits for the started work to finish releasing, so the
-/// #40 database and HostExclusivityLock are released before OnStop returns.
+/// The actual startup-readiness and deterministic-shutdown logic lives in
+/// <see cref="HostServiceLifetime"/>, which has no ServiceBase dependency and is unit-testable on
+/// its own; this class is a thin adapter onto the three ServiceBase lifecycle callbacks.
 /// </summary>
 public sealed class WindowsHostServiceRuntime : ServiceBase
 {
-    private readonly Func<CancellationToken, Task> _runAsync;
-    private readonly CancellationTokenSource _stopping = new();
-    private Task? _running;
+    private readonly HostServiceLifetime _lifetime;
 
-    public WindowsHostServiceRuntime(string serviceName, Func<CancellationToken, Task> runAsync)
+    public WindowsHostServiceRuntime(string serviceName, Func<CancellationToken, TaskCompletionSource<bool>, Task> runAsync)
     {
         ServiceName = serviceName;
-        _runAsync = runAsync ?? throw new ArgumentNullException(nameof(runAsync));
+        _lifetime = new HostServiceLifetime(runAsync);
 
         // The ordinary activation path only ever needs start; the Host still accepts an
         // administrative stop through SCM's own rights, which the activation group is not granted.
@@ -35,56 +33,20 @@ public sealed class WindowsHostServiceRuntime : ServiceBase
     }
 
     /// <summary>Registers this executable with SCM and blocks for the service lifetime.</summary>
-    public static void Run(string serviceName, Func<CancellationToken, Task> runAsync)
+    public static void Run(string serviceName, Func<CancellationToken, TaskCompletionSource<bool>, Task> runAsync)
         => ServiceBase.Run(new WindowsHostServiceRuntime(serviceName, runAsync));
 
-    protected override void OnStart(string[] args)
-    {
-        _running = Task.Run(async () =>
-        {
-            try
-            {
-                await _runAsync(_stopping.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (_stopping.IsCancellationRequested)
-            {
-                // Ordinary stop.
-            }
-        });
+    protected override void OnStart(string[] args) => _lifetime.Start();
 
-        // Surface an immediate startup failure to SCM rather than reporting a healthy service
-        // that already died (e.g. the exclusivity lock was already held).
-        if (_running.IsFaulted)
-        {
-            throw _running.Exception!.GetBaseException();
-        }
-    }
+    protected override void OnStop() => _lifetime.StopAndWait();
 
-    protected override void OnStop() => ShutDownDeterministically();
-
-    protected override void OnShutdown() => ShutDownDeterministically();
-
-    private void ShutDownDeterministically()
-    {
-        _stopping.Cancel();
-
-        // Wait for the runtime to actually finish releasing the database and the exclusivity lock
-        // before OnStop completes - a lock still held after "stopped" would block the next start.
-        try
-        {
-            _running?.Wait(TimeSpan.FromSeconds(30));
-        }
-        catch (AggregateException)
-        {
-            // Faults already surfaced through the service's own error handling.
-        }
-    }
+    protected override void OnShutdown() => _lifetime.StopAndWait();
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _stopping.Dispose();
+            _lifetime.Dispose();
         }
 
         base.Dispose(disposing);

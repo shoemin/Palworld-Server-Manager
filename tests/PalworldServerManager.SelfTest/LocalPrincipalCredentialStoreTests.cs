@@ -184,6 +184,74 @@ public static class LocalPrincipalCredentialStoreTests
         True(good.PrivateKeyBlob.SequenceEqual(after.PrivateKeyBlob), "last good key is intact");
     }
 
+    private static void Throws<TException>(Action action, string what) where TException : Exception
+    {
+        try { action(); }
+        catch (TException) { return; }
+        catch (Exception ex) { throw new Exception($"{what}: expected {typeof(TException).Name} but got {ex.GetType().Name}"); }
+        throw new Exception($"{what}: expected {typeof(TException).Name} but nothing was thrown");
+    }
+
+    private static async Task AssertThrowsAsync<TException>(Func<Task> action, string what) where TException : Exception
+    {
+        try { await action(); }
+        catch (TException) { return; }
+        catch (Exception ex) { throw new Exception($"{what}: expected {typeof(TException).Name} but got {ex.GetType().Name}"); }
+        throw new Exception($"{what}: expected {typeof(TException).Name} but nothing was thrown");
+    }
+
+    public static async Task TestConcurrentCreateAcrossTwoStoreInstancesProducesExactlyOneKey()
+    {
+        // CLIENT-003: Client.Avalonia and Client.Cli may run simultaneously as the same Windows
+        // user and race an initial create. The cross-process file lock must serialize them so
+        // only one key is ever generated, and every caller observes that SAME key.
+        using var temp = new TempClientRoot();
+        var generatorA = new FakeKeyPairGenerator();
+        var generatorB = new FakeKeyPairGenerator();
+        var storeA = new WindowsLocalPrincipalCredentialStore(generatorA, temp.Directory);
+        var storeB = new WindowsLocalPrincipalCredentialStore(generatorB, temp.Directory);
+
+        using var start = new Barrier(2);
+        LocalPrincipalKeyPair? resultA = null;
+        LocalPrincipalKeyPair? resultB = null;
+
+        var taskA = Task.Run(() =>
+        {
+            start.SignalAndWait();
+            resultA = storeA.CreateAndStoreAsync().GetAwaiter().GetResult();
+        });
+        var taskB = Task.Run(() =>
+        {
+            start.SignalAndWait();
+            resultB = storeB.CreateAndStoreAsync().GetAwaiter().GetResult();
+        });
+
+        await Task.WhenAll(taskA, taskB);
+
+        Equal(1, generatorA.GenerateCallCount + generatorB.GenerateCallCount, "exactly one generator call wins the race");
+        True(resultA!.PublicKeyBlob.SequenceEqual(resultB!.PublicKeyBlob), "both racing callers must observe the SAME resulting key");
+
+        var persisted = await storeA.CreateAndStoreAsync();
+        True(persisted.PublicKeyBlob.SequenceEqual(resultA.PublicKeyBlob), "the persisted credential matches what both callers observed");
+    }
+
+    public static async Task TestRebindIsIdempotentForSamePrincipalAndRejectsADifferentPrincipal()
+    {
+        using var temp = new TempClientRoot();
+        var store = new WindowsLocalPrincipalCredentialStore(new FakeKeyPairGenerator(), temp.Directory);
+        await store.CreateAndStoreAsync();
+        await store.BindPrincipalIdAsync("principal-A");
+
+        // Idempotent: rebinding to the SAME principal succeeds without mutating anything.
+        await store.BindPrincipalIdAsync("principal-A");
+        Equal("principal-A", (await store.LoadAsync())!.LocalPrincipalId, "rebind to the same principal is a no-op");
+
+        // Rejected: a DIFFERENT principal must never silently steal the same private key.
+        await AssertThrowsAsync<InvalidOperationException>(() => store.BindPrincipalIdAsync("principal-B"),
+            "binding to a different principal id must be rejected");
+        Equal("principal-A", (await store.LoadAsync())!.LocalPrincipalId, "the original binding is unchanged after a rejected rebind");
+    }
+
     public static Task TestNoProductionKeyGeneratorShipsInThisSlice()
     {
         // The crypto boundary, asserted structurally: #41 ships the store and the generator

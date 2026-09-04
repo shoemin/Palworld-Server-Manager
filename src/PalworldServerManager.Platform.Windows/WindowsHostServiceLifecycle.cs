@@ -20,11 +20,21 @@ public sealed class WindowsHostServiceLifecycle : IHostServiceLifecycle, IBootSt
     public const string DefaultActivationGroupName = "PalworldServerManager Users";
 
     private readonly string _serviceName;
+    private readonly LocalGroupProvisioner _groupProvisioner;
 
-    public WindowsHostServiceLifecycle(string serviceName = DefaultServiceName)
+    public WindowsHostServiceLifecycle(string serviceName = DefaultServiceName, LocalGroupProvisioner? groupProvisioner = null)
     {
         _serviceName = serviceName;
+        _groupProvisioner = groupProvisioner ?? new LocalGroupProvisioner();
     }
+
+    /// <summary>
+    /// A null/empty <see cref="HostServiceInstallOptions.ActivationGroupName"/> means "use the
+    /// accepted stable product group", never "no activation group" - installing with default
+    /// options therefore still provisions and secures <see cref="DefaultActivationGroupName"/>.
+    /// </summary>
+    public static string ResolveActivationGroupName(HostServiceInstallOptions options)
+        => options.ActivationGroupName is { Length: > 0 } name ? name : DefaultActivationGroupName;
 
     /// <summary>
     /// The per-service virtual account. No managed password, a stable per-service SID usable in
@@ -96,6 +106,12 @@ public sealed class WindowsHostServiceLifecycle : IHostServiceLifecycle, IBootSt
         // Caller-supplied executable path; #41 never chooses an install directory or copies files.
         var binaryPath = ServiceBinaryPath.Build(options.ExecutablePath, options.Arguments);
         var startType = ToNativeStartType(options.StartMode);
+        var groupName = ResolveActivationGroupName(options);
+
+        // Ensure the activation group EXISTS before the service is created and its DACL applied -
+        // an install with the default options must provision the stable product group, not skip
+        // provisioning because ActivationGroupName was null.
+        _groupProvisioner.EnsureExists(groupName);
 
         var scm = ServiceControlManagerNative.OpenSCManager(
             null, null, ServiceControlManagerNative.SC_MANAGER_CONNECT | ServiceControlManagerNative.SC_MANAGER_CREATE_SERVICE);
@@ -109,7 +125,7 @@ public sealed class WindowsHostServiceLifecycle : IHostServiceLifecycle, IBootSt
             var service = ServiceControlManagerNative.CreateService(
                 scm,
                 _serviceName,
-                options.ActivationGroupName is null ? DefaultDisplayName : DefaultDisplayName,
+                DefaultDisplayName,
                 ServiceControlManagerNative.SERVICE_CHANGE_CONFIG | ServiceControlManagerNative.SERVICE_QUERY_CONFIG
                     | ServiceControlManagerNative.READ_CONTROL | ServiceControlManagerNative.WRITE_DAC,
                 ServiceControlManagerNative.SERVICE_WIN32_OWN_PROCESS,
@@ -140,10 +156,9 @@ public sealed class WindowsHostServiceLifecycle : IHostServiceLifecycle, IBootSt
                     throw ServiceControlManagerNative.LastError("ChangeServiceConfig2(SERVICE_SID_INFO)");
                 }
 
-                if (options.ActivationGroupName is { Length: > 0 } groupName)
-                {
-                    ApplyActivationGroupAce(service, groupName);
-                }
+                // The group is guaranteed to exist by the EnsureExists call above, whether the
+                // caller supplied an explicit name or accepted the stable product default.
+                ApplyActivationGroupAce(service, groupName);
             }
             finally
             {

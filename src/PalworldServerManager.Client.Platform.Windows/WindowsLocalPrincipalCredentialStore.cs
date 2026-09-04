@@ -16,16 +16,24 @@ namespace PalworldServerManager.Client.Platform.Windows;
 /// CRYPTO BOUNDARY: this class implements storage LIFECYCLE only. Key generation is injected via
 /// ILocalPrincipalKeyPairGenerator, so #42 keeps the production signature-algorithm decision. #41
 /// deliberately ships no production generator.
+///
+/// CROSS-PROCESS SAFETY: Client.Avalonia and Client.Cli may run simultaneously as the same
+/// Windows user and intentionally share ONE credential (CLIENT-003). Every read-modify-write
+/// operation therefore acquires an exclusive file lock (localprincipal.v1.lock) for its whole
+/// duration - a plain FileStream opened with FileShare.None, not a Mutex, so there is no thread
+/// affinity and a crashed process releases it automatically when the OS reclaims its handles.
 /// </summary>
 public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCredentialStore
 {
     private const int FormatVersion = 1;
+    private static readonly TimeSpan LockTimeout = TimeSpan.FromSeconds(10);
 
     // Per-purpose DPAPI entropy: a blob protected for this purpose cannot be unprotected under a
     // different purpose string, even by the same user.
     private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("PalworldServerManager.LocalPrincipal.v1");
 
     private readonly string _filePath;
+    private readonly string _lockPath;
     private readonly ILocalPrincipalKeyPairGenerator _generator;
 
     public WindowsLocalPrincipalCredentialStore(ILocalPrincipalKeyPairGenerator generator, string? storageDirectory = null)
@@ -37,6 +45,7 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
             "PalworldServerManager");
 
         _filePath = Path.Combine(directory, "localprincipal.v1.bin");
+        _lockPath = _filePath + ".lock";
     }
 
     public string FilePath => _filePath;
@@ -51,11 +60,15 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
     public Task<LocalPrincipalKeyPair> CreateAndStoreAsync(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
+        using var _ = AcquireLock();
 
         var existing = TryRead();
         if (existing is not null)
         {
             // Idempotent while unbound - and equally, never silently replaces a bound credential.
+            // Serialized by the lock above: two racing callers can never both observe "no file"
+            // and each generate their own key - only the first to acquire the lock generates one,
+            // and every later caller (in this process or another) sees it via this branch.
             return Task.FromResult(new LocalPrincipalKeyPair(existing.AlgorithmId, existing.PublicKeyBlob));
         }
 
@@ -68,9 +81,23 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(localPrincipalId);
         ct.ThrowIfCancellationRequested();
+        using var _ = AcquireLock();
 
         var existing = TryRead()
             ?? throw new InvalidOperationException("No local principal key exists to bind; call CreateAndStoreAsync first.");
+
+        if (existing.LocalPrincipalId is { Length: > 0 } boundId)
+        {
+            if (string.Equals(boundId, localPrincipalId, StringComparison.Ordinal))
+            {
+                // Idempotent success: rebinding to the SAME principal is a no-op, not an error.
+                return Task.CompletedTask;
+            }
+
+            // Never silently rebind one private key to a different semantic principal.
+            throw new InvalidOperationException(
+                $"The stored local-principal credential is already bound to '{boundId}' and cannot be rebound to '{localPrincipalId}'.");
+        }
 
         Write(existing with { LocalPrincipalId = localPrincipalId });
         return Task.CompletedTask;
@@ -94,12 +121,39 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
     public Task DeleteAsync(CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
+        using var _ = AcquireLock();
+
         if (File.Exists(_filePath))
         {
             File.Delete(_filePath);
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Acquires the exclusive cross-process file lock guarding read-modify-write access to the
+    /// credential. A plain locked FileStream, not a Mutex: no thread affinity, and a crashed
+    /// holder's handle is released by the OS automatically rather than requiring abandonment
+    /// handling.
+    /// </summary>
+    private FileStream AcquireLock()
+    {
+        var directory = Path.GetDirectoryName(_lockPath)!;
+        Directory.CreateDirectory(directory);
+
+        var deadline = DateTime.UtcNow.Add(LockTimeout);
+        while (true)
+        {
+            try
+            {
+                return new FileStream(_lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException) when (DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(25);
+            }
+        }
     }
 
     private StoredCredential? TryRead()
