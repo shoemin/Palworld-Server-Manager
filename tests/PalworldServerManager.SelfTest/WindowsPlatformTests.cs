@@ -255,18 +255,55 @@ public static class WindowsPlatformTests
 
     // ------------------------------------------------- ProcessAsUser timeout mechanism
 
-    public static Task TestProcessAsUserTerminatesAHungChildAndReportsTimeoutRatherThanHanging()
+    public static Task TestProcessAsUserTerminatesAHungChildAndConfirmsItIsActuallyGone()
     {
         var selfTestExe = Environment.ProcessPath!;
+        var pidFile = Path.Combine(Path.GetTempPath(), "psm-hungchild-pid-" + Guid.NewGuid().ToString("N") + ".txt");
 
-        // "--harness 60 0" sleeps 60s then exits 0 - deliberately far longer than the 2s timeout
-        // given here, proving the timeout genuinely bounds the wait rather than blocking on
-        // ReadToEnd first. Reuses the SAME WaitWithTimeout core that the real
-        // CreateProcessWithLogonW-based Run(...) path uses, via the current-user test seam.
-        Throws<TimeoutException>(
-            () => ProcessAsUser.RunAsCurrentUserForTest(selfTestExe, "--harness 60 0", TimeSpan.FromSeconds(2)),
-            "a deliberately hung child must be terminated and reported as a timeout, not hang the caller");
+        try
+        {
+            // "--harness-report-pid <file> 60 0" writes its OWN pid to <file>, then sleeps 60s -
+            // deliberately far longer than the 3s timeout given here, proving the timeout
+            // genuinely bounds the wait rather than blocking on ReadToEnd first. Reuses the SAME
+            // WaitWithTimeout core that the real CreateProcessWithLogonW-based Run(...) path
+            // uses, via the current-user test seam.
+            Throws<TimeoutException>(
+                () => ProcessAsUser.RunAsCurrentUserForTest(selfTestExe, $"--harness-report-pid \"{pidFile}\" 60 0", TimeSpan.FromSeconds(3)),
+                "a deliberately hung child must be terminated and reported as a timeout, not hang the caller");
+
+            // By the time WaitWithTimeout throws, it has already confirmed termination via
+            // WaitForSingleObject - but independently re-verify the EXACT reported PID is
+            // actually gone, never via a process-name check.
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!File.Exists(pidFile) && DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(50);
+            }
+
+            True(File.Exists(pidFile), "the hung child must have reported its own PID before being terminated");
+            var pid = int.Parse(File.ReadAllText(pidFile).Trim());
+            True(!IsProcessAlive(pid), $"the EXACT hung child (PID {pid}) must be CONFIRMED terminated, not merely assumed");
+        }
+        finally
+        {
+            try { if (File.Exists(pidFile)) File.Delete(pidFile); } catch { }
+        }
+
         return Task.CompletedTask;
+    }
+
+    private static bool IsProcessAlive(int processId)
+    {
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById(processId);
+            return !process.HasExited;
+        }
+        catch (ArgumentException)
+        {
+            // No process with this PID exists any more.
+            return false;
+        }
     }
 
     public static Task TestProcessAsUserCapturesOutputAndExitCodeForAWellBehavedChild()

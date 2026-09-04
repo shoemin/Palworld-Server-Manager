@@ -7,8 +7,9 @@ namespace PalworldServerManager.SelfTest;
 
 /// <summary>
 /// TEST-ONLY native interop for launching a helper process under a DIFFERENT Windows user's
-/// token via CreateProcessWithLogonW, and capturing its stdout - with a REAL bounded timeout that
-/// terminates a hung child rather than blocking the caller forever.
+/// token via CreateProcessWithLogonW, and capturing its stdout - with a REAL, FAIL-CLOSED bounded
+/// timeout: every native call that matters for correctness (TerminateProcess, the post-kill wait,
+/// the output-reader's completion) is verified, never assumed.
 ///
 /// This exists purely to give the #41 privileged integration harness a genuine way to prove
 /// authorized-vs-unauthorized non-admin behavior and cross-user DPAPI isolation: an elevated
@@ -29,8 +30,9 @@ internal static class ProcessAsUser
     /// <summary>
     /// Runs <paramref name="exePath"/> <paramref name="arguments"/> as <paramref name="userName"/>
     /// (a local account), waits for it to exit, and returns its exit code and captured stdout.
-    /// Throws <see cref="TimeoutException"/> - after terminating EXACTLY that helper process, and
-    /// only that process - if it does not complete within <paramref name="timeout"/>.
+    /// Throws <see cref="TimeoutException"/> if it does not complete within <paramref name="timeout"/>
+    /// - and that exception is only thrown once termination has actually been CONFIRMED (or, if
+    /// confirmation itself failed, the exception says so explicitly rather than claiming success).
     /// </summary>
     internal static (int ExitCode, string StdOut) Run(
         string userName, string password, string exePath, string arguments, TimeSpan timeout)
@@ -42,10 +44,16 @@ internal static class ProcessAsUser
             throw new Win32Exception(Marshal.GetLastWin32Error(), "CreatePipe failed.");
         }
 
-        // The parent's read end must NOT be inherited by the child, or the pipe never reports EOF.
+        // From here, both pipe handles have exactly ONE clear owner at every point: THIS method,
+        // until either a setup failure below (this method closes both ends itself, exactly once)
+        // or process creation succeeds, at which point the write end is closed immediately below
+        // and readHandle's ownership transfers entirely to WaitWithTimeout's reader thread.
         if (!SetHandleInformation(readHandle, HANDLE_FLAG_INHERIT, 0))
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "SetHandleInformation failed.");
+            var error = Marshal.GetLastWin32Error();
+            CloseHandle(readHandle);
+            CloseHandle(writeHandle);
+            throw new Win32Exception(error, "SetHandleInformation failed.");
         }
 
         var startupInfo = NewRedirectedStartupInfo(writeHandle);
@@ -57,27 +65,20 @@ internal static class ProcessAsUser
         var commandLine = new StringBuilder($"\"{exePath}\" {arguments}");
 
         var started = CreateProcessWithLogonW(
-            userName,
-            ".",
-            password,
-            LOGON_WITH_PROFILE,
-            null,
-            commandLine,
-            CREATE_NO_WINDOW,
-            IntPtr.Zero,
-            null,
-            ref startupInfo,
-            out var processInformation);
-
-        // The parent no longer needs the write end - closing it lets the reader observe EOF once
-        // the child (the only other holder) exits or is terminated.
-        CloseHandle(writeHandle);
+            userName, ".", password, LOGON_WITH_PROFILE, null, commandLine, CREATE_NO_WINDOW,
+            IntPtr.Zero, null, ref startupInfo, out var processInformation);
 
         if (!started)
         {
+            var error = Marshal.GetLastWin32Error();
             CloseHandle(readHandle);
-            throw new Win32Exception(Marshal.GetLastWin32Error(), $"CreateProcessWithLogonW failed for user '{userName}'.");
+            CloseHandle(writeHandle);
+            throw new Win32Exception(error, $"CreateProcessWithLogonW failed for user '{userName}'.");
         }
+
+        // The parent no longer needs its own copy of the write end - closing it lets the reader
+        // observe EOF once the child (the only remaining holder) exits or is terminated.
+        CloseHandle(writeHandle);
 
         return WaitWithTimeout(processInformation.hProcess, processInformation.hThread, readHandle, timeout, $"user '{userName}'");
     }
@@ -99,7 +100,10 @@ internal static class ProcessAsUser
 
         if (!SetHandleInformation(readHandle, HANDLE_FLAG_INHERIT, 0))
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "SetHandleInformation failed.");
+            var error = Marshal.GetLastWin32Error();
+            CloseHandle(readHandle);
+            CloseHandle(writeHandle);
+            throw new Win32Exception(error, "SetHandleInformation failed.");
         }
 
         var startupInfo = NewRedirectedStartupInfo(writeHandle);
@@ -109,13 +113,15 @@ internal static class ProcessAsUser
             null, commandLine, IntPtr.Zero, IntPtr.Zero, true, CREATE_NO_WINDOW, IntPtr.Zero, null,
             ref startupInfo, out var processInformation);
 
-        CloseHandle(writeHandle);
-
         if (!started)
         {
+            var error = Marshal.GetLastWin32Error();
             CloseHandle(readHandle);
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "CreateProcess failed.");
+            CloseHandle(writeHandle);
+            throw new Win32Exception(error, "CreateProcess failed.");
         }
+
+        CloseHandle(writeHandle);
 
         return WaitWithTimeout(processInformation.hProcess, processInformation.hThread, readHandle, timeout, "current-user test helper");
     }
@@ -137,12 +143,22 @@ internal static class ProcessAsUser
     };
 
     /// <summary>
-    /// The shared timeout/capture core. Reads the pipe CONCURRENTLY with waiting for the process
-    /// to exit (never blocking on ReadToEnd before the wait, which would make the timeout
-    /// ineffective against a hung child). On timeout, terminates ONLY the exact process handle
-    /// passed in - never by name - waits for it to actually die, closes every handle on every
-    /// path, and throws <see cref="TimeoutException"/> rather than ever returning STILL_ACTIVE as
-    /// though it were a real exit code.
+    /// The shared timeout/capture core, FAIL-CLOSED at every step:
+    ///
+    /// - the pipe is read on a background thread CONCURRENTLY with waiting for the process to
+    ///   exit (never blocking on ReadToEnd before the wait, which would make the timeout
+    ///   ineffective against a hung child);
+    /// - on timeout, TerminateProcess's own return value is checked - a failure to terminate is
+    ///   reported as such, never silently assumed to have worked;
+    /// - the post-kill WaitForSingleObject result is checked (WAIT_OBJECT_0 = confirmed dead;
+    ///   WAIT_TIMEOUT or anything else = cleanup failure, reported explicitly);
+    /// - the output reader's completion is checked (bounded ManualResetEventSlim.Wait) on BOTH
+    ///   the timeout and the normal-completion path - output is only returned, and readHandle
+    ///   only closed, once the reader has actually finished;
+    /// - STILL_ACTIVE is never treated as a real exit code;
+    /// - process/thread handles are closed exactly once, on every path, via the outer finally.
+    ///
+    /// Termination is always by the exact process HANDLE captured at creation - never by name.
     /// </summary>
     private static (int ExitCode, string StdOut) WaitWithTimeout(
         IntPtr hProcess, IntPtr hThread, IntPtr readHandle, TimeSpan timeout, string identity)
@@ -151,7 +167,9 @@ internal static class ProcessAsUser
         {
             string? capturedOutput = null;
             Exception? readException = null;
+            var readerDone = new ManualResetEventSlim(false);
 
+            // Ownership of readHandle transfers here: this is the ONLY place that wraps/closes it.
             var readThread = new Thread(() =>
             {
                 try
@@ -165,6 +183,10 @@ internal static class ProcessAsUser
                 {
                     readException = ex;
                 }
+                finally
+                {
+                    readerDone.Set();
+                }
             })
             {
                 IsBackground = true,
@@ -172,16 +194,47 @@ internal static class ProcessAsUser
             };
             readThread.Start();
 
-            var boundedMillis = (uint)Math.Min(Math.Max(timeout.TotalMilliseconds, 0), uint.MaxValue - 1);
-            var waitResult = WaitForSingleObject(hProcess, boundedMillis);
+            var waitResult = WaitForSingleObject(hProcess, BoundedMillis(timeout));
 
             if (waitResult == WAIT_TIMEOUT)
             {
-                // Terminate ONLY this exact process handle - never a name-based kill.
-                TerminateProcess(hProcess, 1);
-                WaitForSingleObject(hProcess, 5000);
-                readThread.Join(TimeSpan.FromSeconds(5));
-                throw new TimeoutException($"Helper process ({identity}) did not complete within {timeout} and was terminated.");
+                if (!TerminateProcess(hProcess, 1))
+                {
+                    var terminateError = Marshal.GetLastWin32Error();
+                    throw new TimeoutException(
+                        $"Helper process ({identity}) did not complete within {timeout}, and TerminateProcess itself FAILED " +
+                        $"(Win32 error {terminateError}) - termination is NOT confirmed; the process may still be running.");
+                }
+
+                var postKillWait = WaitForSingleObject(hProcess, 5000);
+                if (postKillWait == WAIT_TIMEOUT)
+                {
+                    throw new TimeoutException(
+                        $"Helper process ({identity}) did not complete within {timeout}; TerminateProcess was called but the " +
+                        "process did not report terminated within 5s afterward - termination is NOT confirmed.");
+                }
+
+                if (postKillWait != WAIT_OBJECT_0)
+                {
+                    var waitError = Marshal.GetLastWin32Error();
+                    throw new TimeoutException(
+                        $"Helper process ({identity}) did not complete within {timeout}; the post-termination wait itself " +
+                        $"failed (Win32 error {waitError}) - termination is NOT confirmed.");
+                }
+
+                // Termination is now CONFIRMED (WAIT_OBJECT_0). The terminated process's copy of
+                // the pipe write end is now closed, so give the reader a bounded chance to
+                // observe EOF before reporting a cleanup failure.
+                if (!readerDone.Wait(TimeSpan.FromSeconds(5)))
+                {
+                    throw new TimeoutException(
+                        $"Helper process ({identity}) was confirmed terminated after timing out, but its output reader did " +
+                        "not reach EOF within 5s afterward.");
+                }
+
+                throw new TimeoutException(
+                    $"Helper process ({identity}) did not complete within {timeout} and was terminated " +
+                    "(termination confirmed; output reader confirmed drained).");
             }
 
             if (waitResult != WAIT_OBJECT_0)
@@ -189,9 +242,12 @@ internal static class ProcessAsUser
                 throw new Win32Exception(Marshal.GetLastWin32Error(), $"WaitForSingleObject failed for helper process ({identity}).");
             }
 
-            // The process has exited, closing its copy of the pipe's write end, so the read
-            // thread is already at or very near EOF - this join is a bounded safety net only.
-            readThread.Join(TimeSpan.FromSeconds(10));
+            // The process exited normally - confirm the reader actually reaches EOF rather than
+            // silently returning with it still blocked.
+            if (!readerDone.Wait(TimeSpan.FromSeconds(10)))
+            {
+                throw new TimeoutException($"Helper process ({identity}) exited, but its output reader did not reach EOF within 10s afterward.");
+            }
 
             if (readException is not null)
             {
@@ -219,6 +275,9 @@ internal static class ProcessAsUser
             CloseHandle(hProcess);
         }
     }
+
+    private static uint BoundedMillis(TimeSpan timeout)
+        => (uint)Math.Min(Math.Max(timeout.TotalMilliseconds, 0), uint.MaxValue - 1);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct SECURITY_ATTRIBUTES

@@ -20,6 +20,19 @@ if (args.Length > 0)
         return exitCode;
     }
 
+    // Same idea as "--harness", but reports its OWN process id to a file first - lets a test
+    // confirm the EXACT hung child was actually terminated (never a process-name check) rather
+    // than merely trusting that a TimeoutException was thrown (#41 timeout-hardening).
+    if (args.Length == 4 && args[0] == "--harness-report-pid")
+    {
+        var pidFile = args[1];
+        var seconds = int.Parse(args[2]);
+        var exitCode = int.Parse(args[3]);
+        File.WriteAllText(pidFile, Environment.ProcessId.ToString());
+        Thread.Sleep(TimeSpan.FromSeconds(seconds));
+        return exitCode;
+    }
+
     // Cross-process modes for #40's machine-wide exclusivity-lock tests (SS2/SS5a). A real second
     // OS process is the only honest way to prove machine-wide exclusion, abandonment recovery,
     // and Host.Cli's refusal while Host holds the lock.
@@ -275,7 +288,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host activation is idempotent and maps failure classes", WindowsPlatformTests.TestActivationIsIdempotentAndMapsFailureClasses),
     ("Login start uses a test-scoped store and quotes the command", WindowsPlatformTests.TestLoginStartUsesTestScopedStoreAndQuotesCommand),
     ("Shell integration opens only local directories and never spawns", WindowsPlatformTests.TestShellIntegrationOpensOnlyLocalDirectoriesAndNeverSpawns),
-    ("ProcessAsUser terminates a hung child and reports timeout rather than hanging", WindowsPlatformTests.TestProcessAsUserTerminatesAHungChildAndReportsTimeoutRatherThanHanging),
+    ("ProcessAsUser terminates a hung child and confirms it is actually gone", WindowsPlatformTests.TestProcessAsUserTerminatesAHungChildAndConfirmsItIsActuallyGone),
     ("ProcessAsUser captures output and exit code for a well-behaved child", WindowsPlatformTests.TestProcessAsUserCapturesOutputAndExitCodeForAWellBehavedChild),
 
     // #41 - client LocalPrincipal credential store

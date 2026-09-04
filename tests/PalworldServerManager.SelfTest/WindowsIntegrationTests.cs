@@ -87,8 +87,27 @@ public static class WindowsIntegrationTests
 
         if (!process.WaitForExit(60_000))
         {
-            TryKillExactProcess(process);
-            throw new System.TimeoutException($"PowerShell did not complete within 60 seconds and was terminated: {script}");
+            // FAIL-CLOSED: this is a machine-state-mutating integration harness (creating/
+            // deleting services, users, groups). A cleanup failure here must be surfaced loudly,
+            // never swallowed - PowerShell could still be mutating machine state.
+            Exception? cleanupFailure = null;
+            try
+            {
+                KillExactProcessTreeAndConfirmTerminated(process, "PowerShell 60s timeout cleanup");
+            }
+            catch (Exception ex)
+            {
+                cleanupFailure = ex;
+            }
+
+            if (cleanupFailure is not null)
+            {
+                throw new System.TimeoutException(
+                    $"PowerShell did not complete within 60 seconds AND cleanup could not be confirmed ({cleanupFailure.Message}). Script: {script}",
+                    cleanupFailure);
+            }
+
+            throw new System.TimeoutException($"PowerShell did not complete within 60 seconds and was terminated (confirmed): {script}");
         }
 
         // The parameterless WaitForExit() after a successful timed wait ensures redirected-stream
@@ -107,20 +126,37 @@ public static class WindowsIntegrationTests
         return stdout.Trim();
     }
 
-    /// <summary>Kills ONLY this exact process (and its exact child tree) - never by name.</summary>
-    private static void TryKillExactProcess(Process process)
+    /// <summary>
+    /// Kills ONLY this exact process (and its exact child tree) - never by name - and does not
+    /// return until termination is actually confirmed. Throws rather than swallowing any failure:
+    /// a Kill() failure that is not simply "it already exited", a WaitForExit timeout, or
+    /// HasExited still reading false afterward all surface as an explicit cleanup failure.
+    /// </summary>
+    private static void KillExactProcessTreeAndConfirmTerminated(Process process, string context)
     {
+        if (process.HasExited)
+        {
+            return;
+        }
+
         try
         {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-                process.WaitForExit(5000);
-            }
+            process.Kill(entireProcessTree: true);
         }
-        catch
+        catch (InvalidOperationException) when (process.HasExited)
         {
-            // Best-effort: the process may have already exited between the check and the kill.
+            // Exited between our check and the Kill call - not a cleanup failure.
+            return;
+        }
+
+        if (!process.WaitForExit(5000))
+        {
+            throw new System.TimeoutException($"{context}: termination was not confirmed within 5s after Kill().");
+        }
+
+        if (!process.HasExited)
+        {
+            throw new InvalidOperationException($"{context}: HasExited still reads false after a confirmed WaitForExit.");
         }
     }
 
