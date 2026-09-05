@@ -79,9 +79,9 @@ public static class ProtocolTests
         // C# codegen omits inferred json_name fields to shrink its embedded descriptor;
         // protoc descriptor-set output includes them. Restore the reflection-computed names
         // before comparing full snapshots; explicit JSON-name changes remain detectable.
-        foreach (var message in Wire.HostReflection.Descriptor.MessageTypes)
-            foreach (var field in message.Fields.InDeclarationOrder())
-                current.MessageType.Single(m => m.Name == message.Name).Field.Single(f => f.Number == field.FieldNumber).JsonName = field.JsonName;
+        foreach (var reflectedMessage in Wire.HostReflection.Descriptor.MessageTypes)
+            foreach (var field in reflectedMessage.Fields.InDeclarationOrder())
+                current.MessageType.Single(m => m.Name == reflectedMessage.Name).Field.Single(f => f.Number == field.FieldNumber).JsonName = field.JsonName;
         AssertAdditive(baseline, current);
         var snapshots = Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Fixtures"), "host-*.pb")
             .Select(path => FileDescriptorSet.Parser.ParseFrom(File.ReadAllBytes(path)).File.Single()).ToArray();
