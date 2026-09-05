@@ -3,9 +3,11 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.ServiceProcess;
 using System.Text;
+using System.Text.Json;
 using PalworldServerManager.Client.Platform.Contracts;
 using PalworldServerManager.Client.Platform.Windows;
 using PalworldServerManager.Host;
@@ -38,7 +40,7 @@ public static class WindowsIntegration
                     if (offline is not null) Check(offline.SequenceEqual(new byte[] { 8, 6, 4, 2 }), "Service cannot read offline-written credential.");
                     File.WriteAllText(Path.Combine(args[2], "secure-store.txt"), offline is null ? "SERVICE PASS" : "OFFLINE PASS");
                     File.WriteAllText(Path.Combine(args[2], "identity.txt"), identity.User!.Value + "\n" + Environment.ProcessId);
-                    return runtime;
+                    return new NativeTlsServiceFixture(args[1], args[2], runtime, ct);
                 }
                 catch { runtime.Dispose(); throw; }
             });
@@ -86,6 +88,23 @@ public static class WindowsIntegration
             await LocalIpcSpike.RejectWrongPinAsync(serviceName);
         }
         else if (action == "ipc-denied") await LocalIpcSpike.RejectTransportAsync(serviceName);
+        else if (action == "native-key-denied")
+        {
+            try
+            {
+                using var native = CngKey.Open(serviceName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey | CngKeyOpenOptions.Silent);
+                throw new Exception("Non-admin opened Host native private key.");
+            }
+            catch (CryptographicException) { }
+            foreach (var attempt in new Action[] {
+                () => { using var file = File.OpenRead(credentialPath); },
+                () => File.WriteAllBytes(credentialPath, new byte[] { 1 }),
+                () => File.Delete(credentialPath) })
+            {
+                try { attempt(); throw new Exception("Non-admin accessed native key file."); }
+                catch (UnauthorizedAccessException) { }
+            }
+        }
         else if (action == "credential-create")
         {
             var store = new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath);
@@ -124,6 +143,8 @@ public static class WindowsIntegration
         Check(root.StartsWith(baseRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase), "Unsafe test root.");
         var hostRoot = Path.Combine(root, "Host"); var mutex = @"Global\" + service;
         var platform = new WindowsHostPlatform(service, group, hostRoot);
+        var tlsHostId = Guid.NewGuid();
+        SecurityIdentifier? serviceSid = null;
         bool installed = false, aCreated = false, bCreated = false;
         string? sidA = null, sidB = null;
         var cleanupErrors = new List<Exception>();
@@ -138,6 +159,8 @@ public static class WindowsIntegration
             installed = true;
             var descriptor = new RawSecurityDescriptor(platform.ReadServiceSecurityDescriptor(), 0);
             var groupSid = (SecurityIdentifier)new NTAccount(Environment.MachineName, group).Translate(typeof(SecurityIdentifier));
+            serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", service).Translate(typeof(SecurityIdentifier));
+            File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, groupSid.Value)));
             var aces = descriptor.DiscretionaryAcl!.Cast<CommonAce>().ToArray();
             Check(aces.Length == 3 && aces.Single(a => a.SecurityIdentifier == groupSid).AccessMask == 0x14, "SCM DACL read-back failed.");
             Check(!await platform.IsEnabledAsync(), "Default boot-start not Manual.");
@@ -145,7 +168,7 @@ public static class WindowsIntegration
             await platform.SetEnabledAsync(false); Check(!await platform.IsEnabledAsync(), "Manual boot-start failed.");
             Console.WriteLine("PASS integration: provision virtual-account service, exact DACL, Manual/Automatic/Manual");
             await platform.StartAsync();
-            var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", service).Translate(typeof(SecurityIdentifier));
+            var firstTls = await NativeTlsServiceFixture.WaitReady(hostRoot);
             var identity = File.ReadAllLines(Path.Combine(hostRoot, "identity.txt"));
             Check(identity[0] == serviceSid.Value, "Service is not running as intended virtual account.");
             AssertLockDenied(mutex);
@@ -156,6 +179,14 @@ public static class WindowsIntegration
             {
                 Check(offlineLease is not null, "Offline store caller lacks exclusive lease.");
                 var secrets = new WindowsSecureCredentialStore(hostRoot, serviceSid);
+                var cache = new WindowsHostTlsCredentialCache(tlsHostId, serviceSid, secrets);
+                using (var offlineCertificate = await cache.LoadAsync("tls-current"))
+                using (var offlineKey = (ECDsaCng)offlineCertificate.GetECDsaPrivateKey()!)
+                    Check(offlineKey.Key.KeyName == firstTls.KeyName, "Elevated offline caller did not reopen service-created key.");
+                var pfx = await secrets.RetrieveAsync("tls-current") ?? throw new Exception("Missing TLS fixture authority.");
+                try { await secrets.StoreAsync("tls-stale", pfx); }
+                finally { CryptographicOperations.ZeroMemory(pfx); }
+                using (var stale = await cache.LoadAsync("tls-stale")) { }
                 Check((await secrets.RetrieveAsync("service-integration"))!.SequenceEqual(Encoding.UTF8.GetBytes("SYNTHETIC-SERVICE-SECRET-4bf5")), "Elevated offline caller could not read service-created blob.");
                 await secrets.StoreAsync("offline-integration", new byte[] { 8, 6, 4, 2 });
                 await SecureCredentialStoreContractTests.Run(() => new WindowsSecureCredentialStore(hostRoot, serviceSid));
@@ -174,6 +205,8 @@ public static class WindowsIntegration
                 File.Move(executable + ".update-test", executable, true);
             }
             await platform.StartAsync();
+            var secondTls = await NativeTlsServiceFixture.WaitReady(hostRoot);
+            Check(secondTls.KeyName == firstTls.KeyName && secondTls.Pin == firstTls.Pin, "Restart changed native key or machine identity.");
             Check(File.ReadAllText(Path.Combine(hostRoot, "secure-store.txt")) == "OFFLINE PASS", "Restarted service did not validate offline caller value.");
             identity = File.ReadAllLines(Path.Combine(hostRoot, "identity.txt"));
             using (var process = Process.GetProcessById(int.Parse(identity[1]))) { process.Kill(); Check(process.WaitForExit(30000), "Killed service did not exit."); }
@@ -190,7 +223,23 @@ public static class WindowsIntegration
             RunUser(executable, userB, password, "unauthorized", service, credential, hostRoot, shared);
             RunUser(executable, userA, password, "authorized", service, credential, hostRoot, shared);
             using (var controller = new ServiceController(service, ".")) controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+            var activeTls = await NativeTlsServiceFixture.WaitReady(hostRoot);
+            Check(activeTls.KeyName == firstTls.KeyName && activeTls.Pin == firstTls.Pin, "Abnormal restart changed machine credential.");
+            RunUser(executable, userB, password, "ipc-denied", activeTls.Pipe, activeTls.Pin, hostRoot, shared);
+            RunUser(executable, userA, password, "ipc-authorized", activeTls.Pipe, activeTls.Pin, hostRoot, shared);
+            RunUser(executable, userA, password, "native-key-denied", activeTls.KeyName, activeTls.KeyFile, hostRoot, shared);
+            RunUser(executable, userB, password, "native-key-denied", activeTls.KeyName, activeTls.KeyFile, hostRoot, shared);
             await platform.StopAsync();
+            using (var offlineLease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex))
+            {
+                Check(offlineLease is not null, "Native cache retirement lacks offline lease.");
+                var cache = new WindowsHostTlsCredentialCache(tlsHostId, serviceSid, new WindowsSecureCredentialStore(hostRoot, serviceSid));
+                await cache.ReconcileAsync([]);
+                Check(!CngKey.Exists(firstTls.KeyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey), "Native key survived retirement.");
+                using var rebuilt = await cache.LoadAsync("tls-current");
+                Check(Convert.ToHexString(SHA256.HashData(rebuilt.RawData)) == firstTls.Pin, "Offline cache reconstruction changed identity.");
+            }
+            Console.WriteLine("PASS integration: actual service native TLS, normal/crash restart, offline reopen/rebuild/retirement, nonadmin provider and file denial");
             RunUser(executable, userA, password, "credential-create", service, credential, hostRoot, shared);
             RunUser(executable, userB, password, "credential-denied", service, credential, hostRoot, shared);
             RunUser(executable, userA, password, "host-credential-denied", service, hostCredential, hostRoot, shared);
@@ -215,6 +264,12 @@ public static class WindowsIntegration
         {
             void Cleanup(Action action) { try { action(); } catch (Exception ex) { cleanupErrors.Add(ex); } }
             if (installed) Cleanup(() => { platform.StopAsync().GetAwaiter().GetResult(); platform.UninstallAsync().GetAwaiter().GetResult(); });
+            if (serviceSid is not null) Cleanup(() =>
+            {
+                using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
+                Check(lease is not null, "Native cleanup lacks machine lease.");
+                new WindowsHostTlsCredentialCache(tlsHostId, serviceSid, new WindowsSecureCredentialStore(hostRoot, serviceSid)).ReconcileAsync([]).GetAwaiter().GetResult();
+            });
             // A failed install may have created the uniquely named group before its failure.
             if (platform.ActivationGroupCreated)
                 Cleanup(() => { var code = Native.NetLocalGroupDel(null, group); if (code != 0) throw new Win32Exception((int)code); });

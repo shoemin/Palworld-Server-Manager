@@ -24,9 +24,10 @@ internal static class NativeTlsKeys
         {
             Marshal.StructureToPtr(new Buffer { Size = (name.Length + 1) * 2, Type = 45, Data = namePointer }, bufferPointer, false);
             var descriptor = new Buffers { Version = 0, Count = 1, Data = bufferPointer };
-            Check(NCryptImportKey(provider, IntPtr.Zero, "PKCS8_PRIVATEKEY", ref descriptor, out var key, pkcs8, pkcs8.Length, Machine | Silent | 0x400));
+            var imported = NCryptImportKey(provider, IntPtr.Zero, "PKCS8_PRIVATEKEY", ref descriptor, out var key, pkcs8, pkcs8.Length, Machine | Silent | 0x400);
             using (key)
             {
+                Check(imported);
                 try
                 {
                     // Set the boundary before finalization persists private material. Never overwrite/adopt.

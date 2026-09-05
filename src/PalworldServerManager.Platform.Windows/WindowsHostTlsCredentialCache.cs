@@ -35,7 +35,8 @@ public sealed class WindowsHostTlsCredentialCache : IHostTlsCredentialCache
         {
             using var authority = new X509Certificate2(pfx, (string?)null, X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable);
             using var signingKey = authority.GetECDsaPrivateKey() ?? throw new CryptographicException("Host credential must contain an ECDSA private key.");
-            if (signingKey.KeySize != 256) throw new CryptographicException("Unsupported Host credential curve.");
+            if (signingKey.ExportParameters(false).Curve.Oid.Value != "1.2.840.10045.3.1.7")
+                throw new CryptographicException("Unsupported Host credential curve.");
             lock (_gate)
             {
                 ct.ThrowIfCancellationRequested(); using var provider = NativeTlsKeys.Provider();
@@ -98,6 +99,8 @@ public sealed class WindowsHostTlsCredentialCache : IHostTlsCredentialCache
     {
         ValidateDescriptor(new RawSecurityDescriptor(NativeTlsKeys.Security(handle), 0));
         using var key = CngKey.Open(handle, CngKeyHandleOpenOptions.None);
+        if (key.ExportPolicy != CngExportPolicies.None || !key.IsMachineKey)
+            throw new UnauthorizedAccessException("Native cache protection policy is unsafe.");
         var uniqueName = key.UniqueName;
         if (string.IsNullOrEmpty(uniqueName) || uniqueName != Path.GetFileName(uniqueName)) throw new CryptographicException("Invalid native key filename.");
         var directory = new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys"));
