@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Settings validation and navigation states</title>
+<desc id="desc">Static Astra design prototype. All names, identifiers and status values are synthetic. Read the accompanying specification for keyboard and responsive behavior.</desc>
+<rect x="0" y="0" width="1600" height="900" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<text x="40" y="56" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#e8f2f5">SETTINGS / SAVE AND LEAVE STATES</text>
+<text x="40" y="92" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Main Server · Family PC · R1 · c58a1000…a001 · independent scenario panels</text>
+<rect x="40" y="132" width="480" height="580" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="64" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8f2f5">Invalid draft</text>
+<text x="64" y="232" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Experience gain: two</text>
+<text x="64" y="280" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">Enter a numeric multiplier.</text>
+<text x="64" y="328" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Draft remains in the editor.</text>
+<text x="64" y="376" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Save is unavailable until valid.</text>
+<rect x="64" y="542" width="204" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="76" y="567" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Return to field</text>
+<rect x="284" y="542" width="212" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="296" y="567" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Save —</text>
+<rect x="560" y="132" width="480" height="580" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="584" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8f2f5">Server running</text>
+<text x="584" y="232" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">2 unsaved changes</text>
+<text x="584" y="280" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">Stop server before saving.</text>
+<text x="584" y="328" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">No automatic restart or forced stop.</text>
+<text x="584" y="376" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Draft changes are not effective values.</text>
+<rect x="584" y="542" width="204" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="596" y="567" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Keep editing</text>
+<rect x="804" y="542" width="212" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="816" y="567" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Save —</text>
+<rect x="1080" y="132" width="480" height="580" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1104" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8f2f5">Leave settings?</text>
+<text x="1104" y="232" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">2 unsaved changes on this server</text>
+<text x="1104" y="280" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">Save and leave if valid and stopped.</text>
+<text x="1104" y="328" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Discard leaves saved values untouched.</text>
+<text x="1104" y="376" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Stay keeps the draft and focus.</text>
+<rect x="1104" y="542" width="204" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="1116" y="567" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Stay</text>
+<rect x="1324" y="542" width="212" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1336" y="567" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Discard and leave</text>
+<rect x="1104" y="598" width="432" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1116" y="623" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Save and leave · only when allowed</text>
+<text x="40" y="774" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Save rejects stale revisions. Keep the draft, explain the rejection and enter #38&#x27;s review/reload flow.</text>
+<text x="40" y="810" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Offline / not authorized / unsupported schema: explain the cause; no queue, forced overwrite or raw-file fallback.</text>
+<text x="40" y="846" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Saving success comes from the Host acknowledgment and returned revision, never merely closing a panel.</text>
+</svg>

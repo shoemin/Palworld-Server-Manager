@@ -291,3 +291,34 @@ Repeated full invariant matrix PASS: HOST-002/PROTO-001 unavailable-action evide
 ## #35 integration checkpoint
 
 Shadow #35 DONE. PR #65 final reviewed HEAD `f32418161225c74b24e30354de3270a8935a251b` passed local design/strict-doc checks and remote Docs `33989127338`; exact PR metadata/base and committed correction rechecked. Merged at `320e7760ade771d49a3e791657247d5f69f283ac`. Four correction iterations, no known escaped #35 defect. All source remains unchanged from #41/#43, whose 174-test evidence is retained without claiming a new run. Canonical planning untouched. Dependency refresh: #36/#37 design preflights eligible; #38 still waits for both. Host secure storage #27 remains an unanswered Product Decision, and production/security/Linux gates remain closed.
+## #36 readiness / preflight
+
+#36 — UI design slice: semantic Server Settings, parent #18, v0.5.0. Dependencies #33/#19/#34 satisfied; accepted #35 navigation also available. SHADOW READY on `astra/36-settings-design` from integration `799320f11d75e7d9b746219bda23aab3dbb53468`. Current canonical body already read in this turn. Scope is settings design/prototypes only: categories/search, semantic control families, modifications/save/discard/navigation/validation, unknown preservation and metadata-availability states.
+
+Sources checked at frozen baseline: Core `PalworldSettingSchema`, `SettingModels`, `PalworldSettingsService`, settings-editor guide, architecture section 12, canonical #47. The schema establishes meanings/categories and some enum choices/units; defaults are installation-derived and optional, and it does not establish general numeric bounds/restart metadata. Therefore no numeric limits/defaults/restart rules will be guessed. Conditional control templates may consume future Host metadata but will not bind invented ranges or path-setting semantics to a real Palworld key. Concrete examples use known boolean, enum, text/password and multiplier meanings, with explicitly synthetic configured values; unknown metadata disables the corresponding reset/range/restart claim. Saving still requires stopped state under accepted parity.
+
+Expected changes: docs/design/astra-36 and ledger; reuse accepted design primitives. No Core parser/catalog, production Avalonia, client references, credential store, permission UI or actual write. Applicable ARCH-001/002, HOST-002, PERSIST-001, CLIENT-001/002/003, IDENT-001/002, REMOTE-001/002, PROTO-001, OPS-001–004, SEC-001, PLATFORM-001/002, MIG-001; all other registry families checked as negative scope. Recheck every input/reset/preset/raw/secret/save path for authority, stale revisions, unknown preservation and secrets. Optional presets are not introduced by this slice.
+
+Allowed choices: category/search/control composition and modified-state language only. Validation: 16:9/21:9/narrow settings boards, semantic-control gallery, validation/unsaved-navigation/raw/secret states, rendered review, deterministic XML/token checks, strict docs, remote Docs and two distinct invariant audits. #38 owns final cross-surface acceptance; no live UI evidence will be claimed from SVG. No Product Decision identified: unknown metadata remains unknown rather than selecting product semantics.
+## #36 Review Pass A
+
+Complete source/specification/seven-board review against integration `799320f`. Acceptance mapping: semantic normal UI → mixed typed editor and twelve-family gallery; domain meaning rather than storage type → known baseline examples and explicitly unbound templates; unknown preservation → Advanced/raw specification and panel; unsaved/validation/restart clarity → two-change editor, stopped/running/invalid/navigation panels and unknown-metadata labels; responsive/keyboard/reduce-motion → 1600×900, 2100×900, 800×900 plus expanded narrow row and inherited focus/motion contracts.
+
+Review-only findings corrected in one iteration: the first gallery described semantic families but drew too many as identical textboxes; changed segmented boolean, integer stepper, multiline, compound choices and unit-bearing compositions. Global Alerts entry had been omitted from settings chrome; restored it. Narrow reset/revert existed only in prose with no affordance; added Details controls and an expanded-row board showing unavailable Reset and actual Revert. No automated-test failure before review; no known escaped defect.
+
+All seven SVGs rendered and inspected; shared contrast and reproducibility/XML checks PASS, strict docs PASS. Unknown numeric bounds/defaults/restart rules remain unselected. Path/bounded-number templates bind no invented real setting. Synthetic configured values are never represented as defaults. No actual secret or live UI/accessibility/field behavior is claimed.
+
+| Invariant | Why affected | Evidence/check | Result |
+|---|---|---|---|
+| ARCH-001/002, CLIENT-001, PLATFORM-001 | Layering | New design docs only; no parser/catalog/production dependency changes | PASS |
+| HOST-001/002, PERSIST-001 | Save/reset/raw effects | All saves are Host-authorized scoped writes; reset/revert are draft-only, no client INI/file path | PASS |
+| CLIENT-002/003, LOCAL-001–004, OWNER-001/002 | Client security | No Host identity credential/bootstrap/enrollment/Owner shortcut; same authenticated local route | PASS / unaffected mechanisms |
+| IDENT-001/002, REMOTE-001/002 | Target continuity | Stable full server/Host target, local-Host remote routing, dual authorization retained | PASS |
+| IDENT-003/004, PAIR-001–004, AUTH-001–005 | Trust/grants | No trust, recovery, permission or preset mechanism introduced; unavailable authorization never bypassed | Unaffected / PASS boundary |
+| PROTO-001 | Schema compatibility | Unknown metadata remains unknown; unsupported schema cannot trigger direct-file fallback | PASS |
+| OPS-001–004, RECOVERY-001 | Saving concurrency | Exact revision rejection; stopped-save parity; no forced overwrite/automatic stop/offline queue; Host owns locks/effects | PASS |
+| SEC-001 | Every secret presentation path | Unchanged/replace/clear explicit; redaction before normal/raw/error/search/comparison; no logs or disk drafts | PASS |
+| MIG-001 | Unknown/config preservation | No migration/normalization/store merge; unrelated unknown entries/comments preserved | PASS / unaffected migration |
+| PLATFORM-002, LINUX-001 | Platform scope | No generic file browser, Host shell, Avalonia or Linux production | PASS |
+
+Stale/contradictory search covered guessed ranges/defaults/restart, effective/configured conflation, hidden raw-value rewrite, secret placeholder serialization, running saves, revision bypass, missing chrome entries and #37/#38 scope. No Product Decision is resolved by this design and #27 remains open. No mandatory unperformed #36 field criterion; Pass A clean, PR then fresh Pass B.

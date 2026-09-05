@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1060" viewBox="0 0 1600 1060" role="img" aria-labelledby="title desc">
+<title id="title">Semantic editor family patterns / conditional schema bindings</title>
+<desc id="desc">Static Astra design prototype. All names, identifiers and status values are synthetic. Read the accompanying specification for keyboard and responsive behavior.</desc>
+<rect x="0" y="0" width="1600" height="1060" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<text x="40" y="54" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#e8f2f5">SEMANTIC CONTROL FAMILIES</text>
+<text x="40" y="88" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">A pattern does not add a setting. Bind only to a Host definition with an established domain meaning.</text>
+<rect x="40" y="122" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="56" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Boolean</text>
+<text x="56" y="177" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Fast travel</text>
+<text x="56" y="232" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">On / Off; not a True/False textbox.</text>
+<rect x="450" y="156" width="140" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="462" y="181" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">On</text>
+<rect x="602" y="156" width="140" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="614" y="181" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Off</text>
+<rect x="820" y="122" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="836" y="150" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Enumeration</text>
+<text x="836" y="177" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Death penalty</text>
+<text x="836" y="232" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Only documented choices; unknown value preserved.</text>
+<rect x="1230" y="156" width="306" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1242" y="181" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">All  ▾</text>
+<rect x="40" y="270" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="56" y="298" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Bounded numeric</text>
+<text x="56" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Conditional pattern</text>
+<text x="56" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Slider only with authoritative min/max/step.</text>
+<path d="M458 328L742 328" fill="none" stroke="#56dcf0" stroke-width="3"/>
+<rect x="580" y="318" width="16" height="20" rx="3" fill="#56dcf0" stroke="none" stroke-width="1"/>
+<text x="458" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">min</text>
+<text x="714" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">max</text>
+<rect x="820" y="270" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="836" y="298" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Integer</text>
+<text x="836" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Player limit</text>
+<text x="836" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Integer entry; no guessed maximum or default.</text>
+<rect x="1230" y="304" width="44" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1242" y="329" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">−</text>
+<rect x="1282" y="304" width="180" height="40" rx="3" fill="#152e3b" stroke="#7291a2" stroke-width="1"/>
+<text x="1300" y="329" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">value</text>
+<rect x="1470" y="304" width="44" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1482" y="329" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">+</text>
+<rect x="40" y="418" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="56" y="446" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Text</text>
+<text x="56" y="473" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Server name</text>
+<text x="56" y="528" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Single-line text; validation comes from Host.</text>
+<rect x="450" y="452" width="306" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="462" y="477" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Weekend World</text>
+<rect x="820" y="418" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="836" y="446" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Multiline text</text>
+<text x="836" y="473" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Server description</text>
+<text x="836" y="528" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Wrapping paragraph entry; not a one-line key/value wall.</text>
+<rect x="1230" y="452" width="306" height="56" rx="3" fill="#152e3b" stroke="#7291a2" stroke-width="1"/>
+<text x="1242" y="474" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Welcome to our world.</text>
+<text x="1242" y="496" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Bring your friends.</text>
+<rect x="40" y="566" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="56" y="594" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Path</text>
+<text x="56" y="621" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Conditional pattern</text>
+<text x="56" y="676" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">No baseline path key bound; no generic remote browser.</text>
+<rect x="450" y="600" width="306" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="462" y="625" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Host-defined setting path</text>
+<rect x="820" y="566" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="836" y="594" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Password</text>
+<text x="836" y="621" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Administrator password</text>
+<text x="836" y="676" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Unchanged / Replace / explicit Clear; no stored-value echo.</text>
+<rect x="1230" y="600" width="306" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1242" y="625" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Replace password…</text>
+<rect x="40" y="714" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="56" y="742" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Duration</text>
+<text x="56" y="769" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Huge Egg hatching time</text>
+<text x="56" y="824" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Known hours unit; no arbitrary timer range.</text>
+<rect x="450" y="748" width="204" height="40" rx="3" fill="#152e3b" stroke="#7291a2" stroke-width="1"/>
+<text x="462" y="773" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">value</text>
+<text x="670" y="773" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">hours</text>
+<rect x="820" y="714" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="836" y="742" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Rate / multiplier</text>
+<text x="836" y="769" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Experience gain</text>
+<text x="836" y="824" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Numeric magnitude plus ×; bounds only when known.</text>
+<rect x="1230" y="748" width="204" height="40" rx="3" fill="#152e3b" stroke="#7291a2" stroke-width="1"/>
+<text x="1242" y="773" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">value</text>
+<text x="1450" y="773" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">×</text>
+<rect x="40" y="862" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="56" y="890" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Compound</text>
+<text x="56" y="917" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Crossplay platforms</text>
+<text x="56" y="972" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host-defined known platform choices; preserve unknown tokens.</text>
+<rect x="450" y="896" width="68" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="456" y="920" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#56dcf0">✓ Steam</text>
+<rect x="526" y="896" width="68" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="532" y="920" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#56dcf0">✓ Xbox</text>
+<rect x="602" y="896" width="68" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="608" y="920" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#56dcf0">✓ PS5</text>
+<rect x="678" y="896" width="68" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="684" y="920" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#56dcf0">✓ Mac</text>
+<rect x="820" y="862" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="836" y="890" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Unknown / raw</text>
+<text x="836" y="917" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Future setting</text>
+<text x="836" y="972" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Explicit Advanced/raw edit; unchanged bytes preserved.</text>
+<rect x="1230" y="896" width="306" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1242" y="921" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Review raw value…</text>
+<text x="40" y="1034" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">Missing metadata never becomes a made-up default, validation range, restart badge or domain meaning.</text>
+</svg>
