@@ -11,6 +11,8 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args[0].StartsWith("--windows-", StringComparison.Ordinal))
+        return await WindowsIntegration.RunAsync(args);
     if (args.Length == 3 && args[0] == "--harness")
     {
         var seconds = int.Parse(args[1]);
@@ -59,6 +61,14 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Windows activation is idempotent and classifies native errors", WindowsPlatformTests.Activation),
+    ("Windows platform DACL and root policy are least privilege", WindowsPlatformTests.SecurityPolicy),
+    ("Windows login command quoting uses a test registry", WindowsPlatformTests.LoginStart),
+    ("Windows shell only opens bounded local directories through a fake launcher", WindowsPlatformTests.Shell),
+    ("Client CurrentUser DPAPI complete credential lifecycle and shared binding", WindowsPlatformTests.CredentialLifecycle),
+    ("Client credential atomic-write failure preserves last good state", WindowsPlatformTests.CredentialWriteFailure),
+    ("Concurrent client stores converge on one credential", WindowsPlatformTests.ConcurrentCredentials),
+    ("Host runtime holds and deterministically releases database and lock", WindowsPlatformTests.Runtime),
     ("Config parser handles quoted commas and nested lists", TestConfigParser),
     ("Config round-trip preserves unknown settings", TestUnknownRoundTrip),
     ("Directory copy leaves source byte-for-byte unchanged", TestNonDestructiveCopy),

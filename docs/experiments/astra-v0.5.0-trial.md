@@ -60,7 +60,7 @@ Canonical issue: **#41 — Windows platform slice — Host service lifecycle, ac
 - Cross-section audit: group membership grants transport/start eligibility only; never Owner or enrollment; service start is not Host authentication; uninstall cannot remove authoritative data; boot-start and login-start remain separate.
 - Applicable invariants: ARCH-001/002, HOST-001/002, PERSIST-001, CLIENT-001/002/003, LOCAL-002/003/004, OWNER-002, SEC-001, PLATFORM-001/002, LINUX-001. Full registry read; implementation audit not yet performed.
 - Environment: current token is medium integrity, Administrators SID deny-only. Privileged integration cannot be reported as passed locally under this token. Mandatory actual service/multi-user evidence remains required.
-- Branch/PR: not created yet; implementation result: preflight only.
+- Branch: astra/41-windows-platform; implementation result: see stage-1 record below.
 - Tests: pending baseline run; no #41 tests exist yet.
 - GitHub Codex: not requested; no reviewed implementation HEAD.
 - Allowed Decisions made: none yet.
@@ -68,4 +68,45 @@ Canonical issue: **#41 — Windows platform slice — Host service lifecycle, ac
 - Field-test requirements: all 15 issue-specified real Windows integration criteria remain unfulfilled.
 - Deviations: normal workflow review/wait/Project-mutation steps replaced only as explicitly authorized by the trial request.
 - Final result: pending.
+
+## #41 implementation and stage-1 audit
+
+Branch: `astra/41-windows-platform`, from integration commit `0ccc6af`.
+Product Owner explicitly authorized using the current #41 body despite the normal Project's Product Decision label.
+
+Implemented bounded Host/client contracts, native SCM and local-group provisioning, virtual-account service lifetime, protected machine root, #40 runtime composition, query/start-only client activation, test-injected HKCU startup and Explorer integration, and atomic versioned CurrentUser-DPAPI client credentials with an injected generator. No production generator is supplied. SelfTest now targets Windows with authorized test-only references; the production reference graph/allowlist is unchanged.
+
+Allowed decisions: stable service `PalworldServerManagerHost`, group `PalworldServerManagerUsers`; compact activation enum; version 1 encrypted JSON payload; caller-supplied test path/write seam; file-sharing lock serializes same-user clients; real logon helper in SelfTest; unique integration service/group/user names. The running Host never provisions itself. Existing registrations are not silently adopted. Groups and authoritative data are retained at service uninstall.
+
+Self-review found and corrected an existing-state ACL edge in the new provisioner: securing a root alone does not remove explicit permissions from old child files/protected directories. The implementation rejects unsafe explicit child access and reparse paths before permitting the new service to start. A build found an ambiguous test-harness TimeoutException name; qualified it. These are Astra/test findings, not GitHub Codex findings.
+
+| Invariant | Why affected | Evidence/check | Result |
+|---|---|---|---|
+| ARCH-001 | Legacy WPF boundary | No App/Core/Lan edits | PASS |
+| ARCH-002 | Legacy LAN isolation | No new production references; existing architecture guards | PASS |
+| HOST-001 | Machine runtime | #40 mutex held by service runtime, second runtime rejected | PASS local; SCM field pending |
+| HOST-002 | Mutation executor | Service work Host-side; client shell is bounded local action only | PASS |
+| PERSIST-001 | Writer lifetime | Acquire before DB open/migration; clear pool/dispose before mutex release | PASS local; service field pending |
+| CLIENT-001 | Client topology | Core-independent client contracts/implementation; production guard unchanged | PASS |
+| CLIENT-002 | Machine secrets | No client Host-key API | PASS |
+| CLIENT-003 | Shared per-user identity | One per-user DPAPI file shared by both clients, no Host.Cli change | PASS storage; IPC deferred #42 |
+| LOCAL-002 | Private-key holder | Generator/storage client-side only | PASS |
+| LOCAL-003 | Group eligibility | No auto-membership, enrollment, reactivation, or grants | PASS code; real-token field pending |
+| LOCAL-004 | Activation boundary | Query/start result is not authentication; no IPC/credential transmission implemented | PASS scope |
+| OWNER-002 | Bootstrap authority | Handoff contract only; no bootstrap execution or Owner creation | PASS scope |
+| SEC-001 | At-rest secrets | DPAPI CurrentUser over entire payload; atomic writes; no secret logging | PASS same-user; cross-user field pending |
+| PLATFORM-001 | OS seams | Windows APIs confined to Windows implementations/composition and tests | PASS |
+| PLATFORM-002 | Interactive actions | Explorer client-only with injected launcher and local-path validation | PASS |
+| LINUX-001 | Windows-first gate | No Linux implementation | PASS |
+| IDENT-001–004, LOCAL-001, OWNER-001 | Identity/recovery boundaries | No changes to HostIdentity/authentication/recovery | Unaffected |
+| REMOTE-001–002, PAIR-001–004 | Remote trust/authority | No remote implementation or routes | Unaffected |
+| AUTH-001–005, PROTO-001 | Grants/protocol | No grant or protocol implementation | Unaffected |
+| OPS-001–004, RECOVERY-001, MIG-001 | Operations/migration | No business operations, recovery, migration changes | Unaffected |
+
+Baseline validation: 161/161 self-tests. Final stage-1 local suite: 169/169, including all #39/#40 tests, after the ACL and cleanup audit corrections. Release build succeeds. Strict docs build succeeds. Explicit integration invocation fails at the privilege gate under this medium-integrity token before creating OS objects: **FIELD EVIDENCE REQUIRED / privileged integration pending mandatory PR CI**. This is not an integration PASS. CI now has a dedicated explicit integration job, as #41 requires; trigger branches remain unchanged. No remote run or Codex result yet.
+
+Acceptance mapping: service runtime/account/start-type/DACL/root ACL/boot toggles/uninstall/path quoting are covered by provisioner plus the explicit SCM harness; non-admin eligibility and cross-user DPAPI are covered by actual-logon probes; local activation/credential lifecycle/quoting/runtime tests pass; #39/#40 checks remain in the full suite. All real Windows criteria require a successful integration run before Shadow Done.
+
+Stale-reference search checked Host scaffold wording, package versions, production project references, service/account/DPAPI scopes, shell launch placement, and issue-closing phrases. No production topology change, Host-side shell, production signature selection, Linux, IPC, or frozen source edit was introduced.
+
 

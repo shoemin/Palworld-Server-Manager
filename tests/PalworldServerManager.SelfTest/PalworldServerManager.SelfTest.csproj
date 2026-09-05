@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -15,5 +15,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\PalworldServerManager.Host.Persistence\PalworldServerManager.Host.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\PalworldServerManager.Host\PalworldServerManager.Host.csproj" />
+    <ProjectReference Include="..\..\src\PalworldServerManager.Platform.Contracts\PalworldServerManager.Platform.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\PalworldServerManager.Platform.Windows\PalworldServerManager.Platform.Windows.csproj" />
+    <ProjectReference Include="..\..\src\PalworldServerManager.Client.Platform.Contracts\PalworldServerManager.Client.Platform.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\PalworldServerManager.Client.Platform.Windows\PalworldServerManager.Client.Platform.Windows.csproj" />
   </ItemGroup>
 </Project>

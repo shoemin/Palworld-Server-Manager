@@ -1,0 +1,251 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using System.ServiceProcess;
+using System.Text;
+using PalworldServerManager.Client.Platform.Contracts;
+using PalworldServerManager.Client.Platform.Windows;
+using PalworldServerManager.Host;
+using PalworldServerManager.Host.Persistence;
+using PalworldServerManager.Platform.Windows;
+using static PalworldServerManager.SelfTest.WindowsPlatformTests;
+
+namespace PalworldServerManager.SelfTest;
+
+// Explicit opt-in only. Real SCM service, real virtual account, real non-admin logons and DPAPI.
+// Every OS object has a fresh trial prefix; cleanup failure fails the invocation.
+public static class WindowsIntegration
+{
+    public static async Task<int> RunAsync(string[] args)
+    {
+        if (args[0] == "--windows-service" && args.Length == 4)
+        {
+            using var lifetime = new WindowsHostServiceLifetime(args[1], ct =>
+            {
+                var runtime = HostServiceRuntime.Start(new HostDataRoot(args[2]), ct, args[3]);
+                try
+                {
+                    using var identity = WindowsIdentity.GetCurrent();
+                    File.WriteAllText(Path.Combine(args[2], "identity.txt"), identity.User!.Value + "\n" + Environment.ProcessId);
+                    return runtime;
+                }
+                catch { runtime.Dispose(); throw; }
+            });
+            ServiceBase.Run(lifetime); return 0;
+        }
+        if (args[0] == "--windows-user" && args.Length == 6)
+        {
+            try { await UserProbe(args[1], args[2], args[3], args[4]); File.WriteAllText(args[5], "PASS"); return 0; }
+            catch (Exception ex) { File.WriteAllText(args[5], ex.GetType().Name + ": " + ex.Message); return 1; }
+        }
+        if (args.Length != 1 || args[0] != "--windows-integration") throw new ArgumentException("Unknown Windows integration invocation.");
+        using var admin = WindowsIdentity.GetCurrent();
+        if (!new WindowsPrincipal(admin).IsInRole(WindowsBuiltInRole.Administrator))
+            throw new UnauthorizedAccessException("FIELD EVIDENCE REQUIRED: explicit Windows integration requires an elevated Administrator token; no test was skipped as PASS.");
+        await Suite(); return 0;
+    }
+    private static async Task UserProbe(string action, string serviceName, string credentialPath, string hostRoot)
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        Check(!new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator), "Probe token is Administrator.");
+        Native.Check(Native.GetTokenInformation(identity.Token, 20, out var elevated, sizeof(int), out _));
+        Check(elevated == 0, "Probe token is elevated.");
+        var activation = new WindowsHostActivation(() => new WindowsHostActivation.ActivationService(serviceName));
+        if (action is "authorized" or "unauthorized")
+        {
+            var result = await activation.RequestStartAsync();
+            Check(result.Status == (action == "authorized" ? HostActivationStatus.StartRequested : HostActivationStatus.AccessDenied), "Unexpected non-admin activation result: " + result.Status);
+            if (action == "authorized")
+            {
+                using var manager = Native.Manager(1);
+                foreach (uint right in new uint[] { 0x20, 2, 0x10000, 0x20000, 0x40000, 0x80000, 0x40 })
+                {
+                    using var handle = Native.OpenService(manager, serviceName, right);
+                    Check(handle.IsInvalid && Marshal.GetLastWin32Error() == 5, "Forbidden service right was granted: " + right);
+                }
+                try { using var file = File.OpenRead(Path.Combine(hostRoot, "host.db")); throw new Exception("Activation member read Host state."); }
+                catch (UnauthorizedAccessException) { }
+            }
+        }
+        else if (action == "credential-create")
+        {
+            var store = new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath);
+            await store.CreateAndStoreAsync(); await store.BindPrincipalIdAsync(Guid.NewGuid());
+            Check(await store.HasCredentialAsync(), "User A did not persist credential.");
+        }
+        else if (action == "credential-denied")
+        {
+            var bytes = File.ReadAllBytes(credentialPath); // file readable, so this proves DPAPI isolation
+            try { ProtectedData.Unprotect(bytes, null, DataProtectionScope.CurrentUser); throw new Exception("User B decrypted user A credential."); }
+            catch (CryptographicException) { }
+            try { await new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath).LoadAsync(); throw new Exception("User B retrieved user A credential."); }
+            catch (CryptographicException) { }
+        }
+        else throw new ArgumentException("Unknown probe action.");
+    }
+    private static async Task Suite()
+    {
+        var suffix = Guid.NewGuid().ToString("N")[..12];
+        var service = "PSMAstra" + suffix; var group = "PSMAstraG" + suffix;
+        var userA = "psma" + suffix; var userB = "psmb" + suffix;
+        var password = "Aa1!" + Convert.ToHexString(RandomNumberGenerator.GetBytes(24));
+        var baseRoot = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData));
+        var root = Path.GetFullPath(Path.Combine(baseRoot, "PSM Astra Test " + suffix));
+        Check(root.StartsWith(baseRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase), "Unsafe test root.");
+        var hostRoot = Path.Combine(root, "Host"); var mutex = @"Global\" + service;
+        var platform = new WindowsHostPlatform(service, group, hostRoot);
+        bool installed = false, aCreated = false, bCreated = false;
+        string? sidA = null, sidB = null;
+        var cleanupErrors = new List<Exception>();
+        try
+        {
+            Directory.CreateDirectory(root);
+            Grant(root, new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.ReadAndExecute);
+            var binaries = Path.Combine(root, "Service Binaries");
+            CopyDirectory(AppContext.BaseDirectory, binaries);
+            var executable = Path.Combine(binaries, "PalworldServerManager.SelfTest.exe");
+            await platform.InstallForServiceAsync(executable, ["--windows-service", service, hostRoot, mutex]);
+            installed = true;
+            var descriptor = new RawSecurityDescriptor(platform.ReadServiceSecurityDescriptor(), 0);
+            var groupSid = (SecurityIdentifier)new NTAccount(Environment.MachineName, group).Translate(typeof(SecurityIdentifier));
+            var aces = descriptor.DiscretionaryAcl!.Cast<CommonAce>().ToArray();
+            Check(aces.Length == 3 && aces.Single(a => a.SecurityIdentifier == groupSid).AccessMask == 0x14, "SCM DACL read-back failed.");
+            Check(!await platform.IsEnabledAsync(), "Default boot-start not Manual.");
+            await platform.SetEnabledAsync(true); Check(await platform.IsEnabledAsync(), "Automatic boot-start failed.");
+            await platform.SetEnabledAsync(false); Check(!await platform.IsEnabledAsync(), "Manual boot-start failed.");
+            Console.WriteLine("PASS integration: provision virtual-account service, exact DACL, Manual/Automatic/Manual");
+            await platform.StartAsync();
+            var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", service).Translate(typeof(SecurityIdentifier));
+            var identity = File.ReadAllLines(Path.Combine(hostRoot, "identity.txt"));
+            Check(identity[0] == serviceSid.Value, "Service is not running as intended virtual account.");
+            AssertLockDenied(mutex);
+            Check(File.Exists(Path.Combine(hostRoot, "host.db")), "SCM workload did not open #40 database.");
+            await platform.StopAsync(); AssertLockAvailable(mutex);
+            await platform.StartAsync();
+            identity = File.ReadAllLines(Path.Combine(hostRoot, "identity.txt"));
+            using (var process = Process.GetProcessById(int.Parse(identity[1]))) { process.Kill(); Check(process.WaitForExit(30000), "Killed service did not exit."); }
+            using (var controller = new ServiceController(service, ".")) controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+            AssertLockAvailable(mutex);
+            Console.WriteLine("PASS integration: virtual identity, database, lock contention, normal stop and abnormal termination");
+            Native.CreateUser(userA, password); aCreated = true; sidA = Sid(userA);
+            Native.CreateUser(userB, password); bCreated = true; sidB = Sid(userB);
+            Native.AddMember(group, userA);
+            var shared = Path.Combine(root, "Probe Results"); Directory.CreateDirectory(shared);
+            Grant(shared, new SecurityIdentifier(sidA), FileSystemRights.FullControl);
+            Grant(shared, new SecurityIdentifier(sidB), FileSystemRights.FullControl);
+            var credential = Path.Combine(shared, "credential.bin");
+            RunUser(executable, userB, password, "unauthorized", service, credential, hostRoot, shared);
+            RunUser(executable, userA, password, "authorized", service, credential, hostRoot, shared);
+            using (var controller = new ServiceController(service, ".")) controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+            await platform.StopAsync();
+            RunUser(executable, userA, password, "credential-create", service, credential, hostRoot, shared);
+            RunUser(executable, userB, password, "credential-denied", service, credential, hostRoot, shared);
+            Console.WriteLine("PASS integration: real non-admin query/start, forbidden rights, unauthorized start denied, Host-data denied, cross-user DPAPI");
+            await platform.UninstallAsync(); installed = false;
+            Check(File.Exists(Path.Combine(hostRoot, "host.db")), "Uninstall removed authoritative database.");
+            Check(Sid(group) == groupSid.Value, "Uninstall removed activation group.");
+            Console.WriteLine("PASS integration: uninstall preserves Host data and group");
+        }
+        finally
+        {
+            void Cleanup(Action action) { try { action(); } catch (Exception ex) { cleanupErrors.Add(ex); } }
+            if (installed) Cleanup(() => { platform.StopAsync().GetAwaiter().GetResult(); platform.UninstallAsync().GetAwaiter().GetResult(); });
+            // A failed install may have created the uniquely named group before its failure.
+            if (platform.ActivationGroupCreated)
+                Cleanup(() => { var code = Native.NetLocalGroupDel(null, group); if (code != 0) throw new Win32Exception((int)code); });
+            if (aCreated) Cleanup(() => Native.RemoveUser(userA, sidA));
+            if (bCreated) Cleanup(() => Native.RemoveUser(userB, sidB));
+            Cleanup(() =>
+            {
+                var resolved = Path.GetFullPath(root);
+                Check(resolved == Path.Combine(baseRoot, "PSM Astra Test " + suffix), "Cleanup path escaped unique test directory.");
+                if (Directory.Exists(resolved)) Directory.Delete(resolved, true);
+            });
+            if (cleanupErrors.Count > 0) throw new AggregateException("Windows integration cleanup FAILED.", cleanupErrors);
+            Console.WriteLine("PASS integration cleanup: unique service/group/users/profiles/files removed");
+        }
+    }
+    private static void AssertLockDenied(string mutex)
+    {
+        try { using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex); Check(lease is null, "Second writer acquired service lock."); }
+        catch (InvalidOperationException ex) when (ex.InnerException is UnauthorizedAccessException) { /* kernel denied contender */ }
+    }
+    private static void AssertLockAvailable(string mutex)
+    { using var lease = HostExclusivityLock.TryAcquire(TimeSpan.FromSeconds(2), mutex); Check(lease is not null, "Service failed to release mutex."); }
+    private static string Sid(string account) => ((SecurityIdentifier)new NTAccount(Environment.MachineName, account).Translate(typeof(SecurityIdentifier))).Value;
+    private static void Grant(string directory, SecurityIdentifier sid, FileSystemRights rights)
+    {
+        var info = new DirectoryInfo(directory); var acl = info.GetAccessControl();
+        acl.AddAccessRule(new FileSystemAccessRule(sid, rights, InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+        info.SetAccessControl(acl);
+    }
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.EnumerateFiles(source)) File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
+        foreach (var directory in Directory.EnumerateDirectories(source)) CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
+    }
+    private static void RunUser(string executable, string user, string password, string action, string service, string credential, string hostRoot, string results)
+    {
+        var output = Path.Combine(results, action + ".txt");
+        var command = new StringBuilder(WindowsClientCommandLine.Build(new ClientLaunchTarget(executable, ["--windows-user", action, service, credential, hostRoot, output])));
+        var startup = new Native.StartupInfo { Size = Marshal.SizeOf<Native.StartupInfo>(), Flags = 1, ShowWindow = 0 };
+        Native.Check(Native.CreateProcessWithLogonW(user, Environment.MachineName, password, 1, executable, command, 0x08000000, IntPtr.Zero, results, ref startup, out var process));
+        try
+        {
+            var wait = Native.WaitForSingleObject(process.Process, 60000);
+            if (wait != 0) { Native.TerminateProcess(process.Process, 1); Native.WaitForSingleObject(process.Process, 10000); throw new System.TimeoutException("Non-admin integration helper timed out."); }
+            Native.Check(Native.GetExitCodeProcess(process.Process, out var code));
+            Check(code == 0 && File.Exists(output) && File.ReadAllText(output) == "PASS", "User probe failed: " + action + "; " + (File.Exists(output) ? File.ReadAllText(output) : "No result file; exit " + code));
+        }
+        finally { Native.CloseHandle(process.Thread); Native.CloseHandle(process.Process); }
+    }
+    private static class Native
+    {
+        internal sealed class Handle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
+        { public Handle() : base(true) { } protected override bool ReleaseHandle() => CloseServiceHandle(handle); }
+        internal static void Check(bool value) { if (!value) throw new Win32Exception(Marshal.GetLastWin32Error()); }
+        internal static Handle Manager(uint access) { var result = OpenSCManager(null, null, access); if (result.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error()); return result; }
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern Handle OpenSCManager(string? machine, string? database, uint access);
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)] internal static extern Handle OpenService(Handle manager, string service, uint access);
+        [DllImport("advapi32.dll", SetLastError = true)] private static extern bool CloseServiceHandle(IntPtr handle);
+        [DllImport("advapi32.dll", SetLastError = true)] internal static extern bool GetTokenInformation(IntPtr token, int informationClass, out int information, int length, out int returned);
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] private struct UserInfo
+        { public string Name; public string Password; public uint Age; public uint Privilege; public string? Home; public string? Comment; public uint Flags; public string? Script; }
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] private struct MemberInfo { public string Name; }
+        [DllImport("netapi32.dll", CharSet = CharSet.Unicode)] private static extern uint NetUserAdd(string? server, uint level, ref UserInfo info, out uint error);
+        [DllImport("netapi32.dll", CharSet = CharSet.Unicode)] private static extern uint NetUserDel(string? server, string user);
+        [DllImport("netapi32.dll", CharSet = CharSet.Unicode)] internal static extern uint NetLocalGroupDel(string? server, string group);
+        [DllImport("netapi32.dll", CharSet = CharSet.Unicode)] private static extern uint NetLocalGroupAddMembers(string? server, string group, uint level, ref MemberInfo member, uint count);
+        [DllImport("userenv.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool DeleteProfile(string sid, string? profile, string? computer);
+        internal static void CreateUser(string name, string password)
+        { var info = new UserInfo { Name = name, Password = password, Privilege = 1, Flags = 0x10001 }; var result = NetUserAdd(null, 1, ref info, out _); if (result != 0) throw new Win32Exception((int)result); }
+        internal static void AddMember(string group, string user)
+        { var info = new MemberInfo { Name = Environment.MachineName + "\\" + user }; var result = NetLocalGroupAddMembers(null, group, 3, ref info, 1); if (result != 0) throw new Win32Exception((int)result); }
+        internal static void RemoveUser(string user, string? sid)
+        {
+            // Delete only the profile created by these temporary logons; missing profile is fine.
+            Exception? profileError = null;
+            if (sid is not null && !DeleteProfile(sid, null, null) && Marshal.GetLastWin32Error() is not 2 and not 3)
+                profileError = new Win32Exception(Marshal.GetLastWin32Error());
+            var result = NetUserDel(null, user); if (result != 0) throw new Win32Exception((int)result);
+            if (profileError is not null) throw profileError;
+        }
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] internal struct StartupInfo
+        {
+            public int Size; public string? Reserved; public string? Desktop; public string? Title;
+            public uint X, Y, XSize, YSize, XCountChars, YCountChars, FillAttribute, Flags;
+            public ushort ShowWindow, ReservedCount; public IntPtr ReservedBytes, StdInput, StdOutput, StdError;
+        }
+        [StructLayout(LayoutKind.Sequential)] internal struct ProcessInfo { public IntPtr Process, Thread; public uint ProcessId, ThreadId; }
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)] internal static extern bool CreateProcessWithLogonW(string username, string domain, string password, uint logonFlags, string application, StringBuilder command, uint flags, IntPtr environment, string directory, ref StartupInfo startup, out ProcessInfo process);
+        [DllImport("kernel32.dll", SetLastError = true)] internal static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+        [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool GetExitCodeProcess(IntPtr process, out uint code);
+        [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool TerminateProcess(IntPtr process, uint code);
+        [DllImport("kernel32.dll", SetLastError = true)] internal static extern bool CloseHandle(IntPtr handle);
+    }
+}
+

@@ -39,3 +39,19 @@ jobs:
           path: build-logs/*.log
           if-no-files-found: warn
           retention-days: 14
+
+  windows-integration:
+    name: Windows service and multi-user integration
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Build integration harness
+        shell: pwsh
+        run: dotnet build PalworldServerManager.sln -c Release
+      - name: Run explicit privileged integration (no skip)
+        shell: pwsh
+        run: .\scripts\test-windows-integration.ps1
