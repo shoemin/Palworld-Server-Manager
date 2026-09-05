@@ -34,7 +34,7 @@ internal static class NativeTlsKeys
                 try
                 {
                     // Set the boundary before finalization persists private material. Never overwrite/adopt.
-                    Check(NCryptSetProperty(key, "Security Descr", security, security.Length, 5));
+                    Check(NCryptSetProperty(key, "Security Descr", security, security.Length, 4));
                     Check(NCryptSetProperty(key, "Export Policy", BitConverter.GetBytes(0), sizeof(int), 0));
                     Check(NCryptFinalizeKey(key, Silent));
                 }

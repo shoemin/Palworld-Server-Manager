@@ -294,6 +294,20 @@ public static class WindowsIntegration
                 Check(lease is not null, "Native cleanup lacks machine lease.");
                 new WindowsHostTlsCredentialCache(tlsHostId, serviceSid, new WindowsSecureCredentialStore(hostRoot, serviceSid)).ReconcileAsync([]).GetAwaiter().GetResult();
             });
+            if (serviceSid is not null) Cleanup(() =>
+            {
+                using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
+                Check(lease is not null, "Fixture fallback cleanup lacks offline lease.");
+                foreach (var reference in new[] { "tls-current", "tls-stale" })
+                {
+                    var name = "PalworldServerManager.HostTls.v1." + tlsHostId.ToString("N") + "." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(reference)));
+                    if (!CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey)) continue;
+                    using var key = CngKey.Open(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey);
+                    key.Delete();
+                    Check(!CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey), "Rejected fixture key survived elevated cleanup.");
+                    Console.WriteLine("Fixture-only elevated cleanup removed rejected native container; production reconciliation remains FAILED.");
+                }
+            });
             if (nativeGrantAdded && serviceSid is not null) Cleanup(() =>
             {
                 using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
