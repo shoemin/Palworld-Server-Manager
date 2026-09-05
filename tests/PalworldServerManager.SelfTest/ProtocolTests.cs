@@ -97,14 +97,25 @@ public static class ProtocolTests
         Reject<InvalidDataException>(() => AssertAdditive(baseline, changedEnum));
         var changedRpc = current.Clone(); changedRpc.Service[0].Method[1].OutputType = ".wrong.Type";
         Reject<InvalidDataException>(() => AssertAdditive(baseline, changedRpc));
+        var nestedBaseline = current.Clone();
+        nestedBaseline.MessageType[0].NestedType.Add(new DescriptorProto { Name = "Nested", Field = { new FieldDescriptorProto { Name = "original", Number = 1, Type = FieldDescriptorProto.Types.Type.String } } });
+        var nestedChanged = nestedBaseline.Clone(); nestedChanged.MessageType[0].NestedType[0].Field[0].Name = "reused";
+        Reject<InvalidDataException>(() => AssertAdditive(nestedBaseline, nestedChanged));
         return Task.CompletedTask;
     }
     private static void AssertAdditive(FileDescriptorProto baseline, FileDescriptorProto current)
     {
         void Require(bool okay) { if (!okay) throw new InvalidDataException("Breaking protocol schema change or unreserved field removal."); }
-        foreach (var oldMessage in baseline.MessageType)
+        void CompareEnum(EnumDescriptorProto oldEnum, EnumDescriptorProto? next)
         {
-            var next = current.MessageType.SingleOrDefault(m => m.Name == oldMessage.Name); Require(next is not null);
+            Require(next is not null);
+            foreach (var value in oldEnum.Value) Require(next!.Value.Any(v => v.Name == value.Name && v.Number == value.Number));
+            foreach (var range in oldEnum.ReservedRange) Require(next!.ReservedRange.Any(r => r.Start <= range.Start && r.End >= range.End));
+            foreach (var name in oldEnum.ReservedName) Require(next!.ReservedName.Contains(name));
+        }
+        void CompareMessage(DescriptorProto oldMessage, DescriptorProto? next)
+        {
+            Require(next is not null);
             foreach (var field in oldMessage.Field)
             {
                 var sameNumber = next!.Field.SingleOrDefault(f => f.Number == field.Number);
@@ -114,12 +125,11 @@ public static class ProtocolTests
             }
             foreach (var range in oldMessage.ReservedRange) Require(next!.ReservedRange.Any(r => r.Start <= range.Start && r.End >= range.End));
             foreach (var name in oldMessage.ReservedName) Require(next!.ReservedName.Contains(name));
+            foreach (var nested in oldMessage.NestedType) CompareMessage(nested, next!.NestedType.SingleOrDefault(m => m.Name == nested.Name));
+            foreach (var nestedEnum in oldMessage.EnumType) CompareEnum(nestedEnum, next!.EnumType.SingleOrDefault(e => e.Name == nestedEnum.Name));
         }
-        foreach (var oldEnum in baseline.EnumType)
-        {
-            var next = current.EnumType.SingleOrDefault(e => e.Name == oldEnum.Name); Require(next is not null);
-            foreach (var value in oldEnum.Value) Require(next!.Value.Any(v => v.Name == value.Name && v.Number == value.Number));
-        }
+        foreach (var oldMessage in baseline.MessageType) CompareMessage(oldMessage, current.MessageType.SingleOrDefault(m => m.Name == oldMessage.Name));
+        foreach (var oldEnum in baseline.EnumType) CompareEnum(oldEnum, current.EnumType.SingleOrDefault(e => e.Name == oldEnum.Name));
         foreach (var oldService in baseline.Service)
         {
             var next = current.Service.SingleOrDefault(s => s.Name == oldService.Name); Require(next is not null);
