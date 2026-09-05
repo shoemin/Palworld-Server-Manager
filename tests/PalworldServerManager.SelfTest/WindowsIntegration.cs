@@ -146,6 +146,7 @@ public static class WindowsIntegration
         var tlsHostId = Guid.NewGuid();
         SecurityIdentifier? serviceSid = null;
         bool nativeGrantAdded = false;
+        string? staleNativeName = null;
         bool installed = false, aCreated = false, bCreated = false;
         string? sidA = null, sidB = null;
         var cleanupErrors = new List<Exception>();
@@ -193,7 +194,8 @@ public static class WindowsIntegration
                 var pfx = await secrets.RetrieveAsync("tls-current") ?? throw new Exception("Missing TLS fixture authority.");
                 try { await secrets.StoreAsync("tls-stale", pfx); }
                 finally { CryptographicOperations.ZeroMemory(pfx); }
-                using (var stale = await cache.LoadAsync("tls-stale")) { }
+                using (var stale = await cache.LoadAsync("tls-stale"))
+                using (var staleKey = (ECDsaCng)stale.GetECDsaPrivateKey()!) staleNativeName = staleKey.Key.KeyName!;
                 Check((await secrets.RetrieveAsync("service-integration"))!.SequenceEqual(Encoding.UTF8.GetBytes("SYNTHETIC-SERVICE-SECRET-4bf5")), "Elevated offline caller could not read service-created blob.");
                 await secrets.StoreAsync("offline-integration", new byte[] { 8, 6, 4, 2 });
                 await SecureCredentialStoreContractTests.Run(() => new WindowsSecureCredentialStore(hostRoot, serviceSid));
@@ -214,6 +216,7 @@ public static class WindowsIntegration
             await platform.StartAsync();
             var secondTls = await NativeTlsServiceFixture.WaitReady(hostRoot);
             Check(secondTls.KeyName == firstTls.KeyName && secondTls.Pin == firstTls.Pin, "Restart changed native key or machine identity.");
+            Check(!CngKey.Exists(staleNativeName!, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey), "Service startup retained stale native key.");
             Check(File.ReadAllText(Path.Combine(hostRoot, "secure-store.txt")) == "OFFLINE PASS", "Restarted service did not validate offline caller value.");
             identity = File.ReadAllLines(Path.Combine(hostRoot, "identity.txt"));
             using (var process = Process.GetProcessById(int.Parse(identity[1]))) { process.Kill(); Check(process.WaitForExit(30000), "Killed service did not exit."); }
@@ -267,6 +270,20 @@ public static class WindowsIntegration
             Check(Sid(group) == groupSid.Value, "Uninstall removed activation group.");
             Console.WriteLine("PASS integration: uninstall preserves Host data and group");
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Windows integration primary failure: " + ex);
+            foreach (var reference in new[] { "tls-current", "tls-stale" })
+            {
+                var name = "PalworldServerManager.HostTls.v1." + tlsHostId.ToString("N") + "." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(reference)));
+                if (!CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey)) continue;
+                using var key = CngKey.Open(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey);
+                Console.WriteLine("Fixture native descriptor: " + new RawSecurityDescriptor(key.GetProperty("Security Descr", (CngPropertyOptions)5).GetValue()!, 0).GetSddlForm(AccessControlSections.Owner | AccessControlSections.Access));
+                var file = new FileInfo(Path.Combine(baseRoot, "Microsoft", "Crypto", "Keys", key.UniqueName!));
+                Console.WriteLine("Fixture key-file descriptor: " + file.GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access));
+            }
+            throw;
+        }
         finally
         {
             void Cleanup(Action action) { try { action(); } catch (Exception ex) { cleanupErrors.Add(ex); } }
@@ -276,7 +293,15 @@ public static class WindowsIntegration
                 using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
                 Check(lease is not null, "Native cleanup lacks machine lease.");
                 new WindowsHostTlsCredentialCache(tlsHostId, serviceSid, new WindowsSecureCredentialStore(hostRoot, serviceSid)).ReconcileAsync([]).GetAwaiter().GetResult();
-                if (nativeGrantAdded) WindowsNativeTlsProvisioning.RemoveCreatePermission(serviceSid);
+            });
+            if (nativeGrantAdded && serviceSid is not null) Cleanup(() =>
+            {
+                using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
+                Check(lease is not null, "Native provisioning cleanup lacks offline lease.");
+                WindowsNativeTlsProvisioning.RemoveCreatePermission(serviceSid);
+                var directory = new DirectoryInfo(Path.Combine(baseRoot, "Microsoft", "Crypto", "Keys"));
+                Check(!directory.GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>()
+                    .Any(rule => rule.IdentityReference == serviceSid), "Unique native directory grant survived cleanup.");
             });
             // A failed install may have created the uniquely named group before its failure.
             if (platform.ActivationGroupCreated)
