@@ -108,7 +108,7 @@ def revocation():
     b=frame("Review revocation consequences")
     panel(b,328,232,592,536,"Revoke grant G102",["Target: Main Server · This PC · exact ServerRef", "Capability: ViewServer", "Affected: G102 (Bob), G103 (R1)", "Unaffected: G101 and independent G201", "Grant revocation follows this subtree only.", "The Host rechecks the current graph before commit."])
     b.button(348,692,248,"Cancel"); b.button(612,692,288,"Revoke 2 grants",True)
-    panel(b,940,232,632,536,"Unpair / revoke trust with R1",["Family PC · c58a1000…a001 · exact peer identity", "This Host revokes trust and dependent grants now.", "Peer notification is best-effort, not a prerequisite.", "An unreachable peer may retain its own stale state.", "No promise that both machines changed atomically.", "Fresh pairing cannot silently restore prior grants."])
+    panel(b,940,232,632,536,"Unpair / revoke trust with R1",["Family PC · c58a1000…a001 · exact peer identity", "Affected here: G103 · ViewServer · Main Server @ This PC", "G103 has no descendants in this reviewed snapshot.", "G101 / G102 / G201 remain; current graph is rechecked.", "This Host revokes now; peer notice is best-effort.", "An unreachable peer may retain its own stale state.", "Fresh pairing cannot silently restore prior grants."])
     b.button(960,692,240,"Cancel"); b.button(1216,692,332,"Revoke trust here",True)
     b.text(328,816,"Owner cannot be revoked by an ordinary local or remote operation. These confirmations never change Owner.",14,"warning")
     return b

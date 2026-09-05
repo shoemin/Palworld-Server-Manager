@@ -359,3 +359,8 @@ Two review-only correction iterations: restored the permanent server rail when M
 | MIG-001, PLATFORM-002, LINUX-001 | No migration, generic OS UI, service shell or Linux production | Unaffected / PASS boundary |
 
 Stale-reference audit examined trust-as-authority, ManagePermissions-as-issuer, default retroactivity, derived rights escalation, HostId changes, global-server scopes, own-Owner remote authority, peer-ack revocation, guessed preset membership, recovery and #27 ACL assumptions. Final design preserves accepted semantics; Pass A clean. PR then independent Pass B required.
+## #37 Review Pass B
+
+PR #67 at 30d7f85931d5797ffd00dee3a2bfc2578405fab3 reviewed afresh: full twelve-file diff, all acceptance criteria, all invariant rows above, source and generated boards, negative issuance/recovery paths and sibling design consistency. Found a consequence-preview omission: trust revocation explained dependent grants generically without naming the concrete affected grant in this scenario. Added G103, zero descendants and unaffected G101/G102/G201, with current-graph recheck. This is the third correction iteration total; no automated-test defect or known escaped defect.
+
+Rechecked both revocation columns against the forest: subtree revocation G102 affects G102/G103; peer R1 revocation affects only G103 here. All other acceptance/invariant checks remain PASS; no Owner, preset, default or #27 policy changes. Generator/reproducibility and strict docs pass. Pass B clean after correction review; final-head remote Docs and exact metadata/base check remain before merge. No external review used.
