@@ -93,7 +93,7 @@ def shell(width, name, collapsed=False, drawer=True, theme="refined"):
     cw = right-x
     b.rect(0, 0, width, D["chrome"], "surface")
     b.text(20, 35, "PALWORLD" if collapsed else "PALWORLD  /  SERVER MANAGER", 16, "text", 600)
-    b.text(width-464, 35, "Activity  2", 14, "accent")
+    b.text(width-464, 35, "Activity  1", 14, "accent")
     b.text(width-344, 35, "Alerts  1", 14, "text")
     b.text(width-236, 35, "Settings", 14, "text")
     b.text(width-116, 35, "—   □   ×", 16, "muted")
@@ -135,9 +135,9 @@ def shell(width, name, collapsed=False, drawer=True, theme="refined"):
     if drawer:
         dx = width-dw
         b.rect(dx, 72, dw-12, 768, "surface")
-        b.text(dx+20, 108, "ACTIVITY  2", 14, "text", 600)
+        b.text(dx+20, 108, "ACTIVITY  1 ACTIVE", 14, "text", 600)
         b.text(width-44, 108, "×", 18, "muted")
-        for i, (title, target, status) in enumerate([("Backup", "R1 · Main Server", "In progress · 42%"), ("Update", "L · Main Server", "Waiting for operation lock")]):
+        for i, (title, target, status) in enumerate([("Backup", "L · Main Server", "In progress · 42%"), ("Backup", "R1 · Main Server", "Completed · yesterday")]):
             ay=136+i*156
             b.rect(dx+12, ay, dw-36, 136, "raised")
             b.text(dx+28, ay+30, title, 18, "text", 600)

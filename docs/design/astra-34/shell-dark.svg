@@ -4,7 +4,7 @@
 <rect x="0" y="0" width="1600" height="900" rx="3" fill="#121719" stroke="none" stroke-width="1"/>
 <rect x="0" y="0" width="1600" height="56" rx="3" fill="#1d2528" stroke="none" stroke-width="1"/>
 <text x="20" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#f2f5f6">PALWORLD  /  SERVER MANAGER</text>
-<text x="1136" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#89dceb">Activity  2</text>
+<text x="1136" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#89dceb">Activity  1</text>
 <text x="1256" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f2f5f6">Alerts  1</text>
 <text x="1364" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f2f5f6">Settings</text>
 <text x="1484" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#becbd1">—   □   ×</text>
@@ -78,18 +78,18 @@
 <text x="324" y="746" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f2f5f6">Family PC · R1 · c58a1000…a001</text>
 <text x="304" y="826" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#becbd1">Synthetic design data · controls show placement only</text>
 <rect x="1296" y="72" width="292" height="768" rx="3" fill="#1d2528" stroke="none" stroke-width="1"/>
-<text x="1316" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#f2f5f6">ACTIVITY  2</text>
+<text x="1316" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#f2f5f6">ACTIVITY  1 ACTIVE</text>
 <text x="1556" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="400" fill="#becbd1">×</text>
 <rect x="1308" y="136" width="268" height="136" rx="3" fill="#2c373c" stroke="none" stroke-width="1"/>
 <text x="1324" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#f2f5f6">Backup</text>
-<text x="1324" y="192" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#89dceb">R1 · Main Server</text>
+<text x="1324" y="192" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#89dceb">L · Main Server</text>
 <text x="1324" y="224" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#becbd1">In progress · 42%</text>
 <rect x="1324" y="242" width="236" height="4" rx="3" fill="#7b8c94" stroke="none" stroke-width="1"/>
 <rect x="1324" y="242" width="99.11999999999999" height="4" rx="3" fill="#89dceb" stroke="none" stroke-width="1"/>
 <rect x="1308" y="292" width="268" height="136" rx="3" fill="#2c373c" stroke="none" stroke-width="1"/>
-<text x="1324" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#f2f5f6">Update</text>
-<text x="1324" y="348" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#89dceb">L · Main Server</text>
-<text x="1324" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#becbd1">Waiting for operation lock</text>
+<text x="1324" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#f2f5f6">Backup</text>
+<text x="1324" y="348" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#89dceb">R1 · Main Server</text>
+<text x="1324" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#becbd1">Completed · yesterday</text>
 <text x="1316" y="500" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#becbd1">Host-owned work continues</text>
 <text x="1316" y="524" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#becbd1">when this drawer closes.</text>
 <text x="1316" y="800" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#89dceb">View activity</text>
