@@ -136,5 +136,13 @@ Pass A findings: explicit permissions on existing descendants could survive root
 
 The final corrected ACL and provisioning-order suite passed locally at 170/170; Release build had zero warnings/errors and strict docs passed. Provisioning-order change requires fresh final-head remote integration. Full applicable invariant matrix re-evaluated: no changes to IDs/scope; LOCAL-003 and SEC-001 now additionally require root protection before group activation rights. Review Pass B is pending final validation and exact-head recheck; no Codex re-review will be requested or inspected.
 
+## #41 acceptance record
+
+Implementation HEAD `4fa361a3399adbf036e12a1582a6808814bf8386` passed local 170/170 tests, zero-warning Release build, strict docs, remote CI `33986519538` (ordinary suite plus dedicated real Windows integration) and Docs `33986520567`. Both remote runs report this exact SHA. Integration passed actual virtual-account identity, exact DACL, boot toggles, DB/mutex lifecycle including crash, confirmed non-admin eligibility/denied rights, cross-user DPAPI, uninstall preservation, and full cleanup. No remaining mandatory #41 field evidence.
+
+Pass B repeated against that exact HEAD: **PASS**, complete diff and all 18 changed files reviewed, every #41 criterion mapped to local or real CI evidence above, full invariant matrix PASS, negative frozen-source/production-topology/scope search clean, no Product Decision. The production service is Windows-only with no idle policy, no Owner/bootstrap execution, no production signature selection, no Host secret store, and no server operations. Compatibility with accepted #40 is covered by the retained suite. Three correction iterations are recorded above. No known escaped defect or regression remains. Historical external finding is not a completion gate under the revised authorization.
+
+This acceptance-record update changes documentation only; code/tests remain byte-identical to validated `4fa361a`. Final PR metadata/base/HEAD and strict docs are rechecked before merge. Shadow result: accepted for integration merge; canonical #41 remains untouched. Post-merge commit identity and dependency refresh will be appended to the integration ledger.
+
 
 
