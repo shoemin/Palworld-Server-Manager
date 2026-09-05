@@ -78,6 +78,12 @@ public static class WindowsIntegration
                 catch (UnauthorizedAccessException) { }
             }
         }
+        else if (action == "ipc-authorized")
+        {
+            Check(await LocalIpcSpike.RequestAsync(serviceName, credentialPath) == identity.User!.Value, "Native SID did not match real OS user.");
+            await LocalIpcSpike.RejectWrongPinAsync(serviceName);
+        }
+        else if (action == "ipc-denied") await LocalIpcSpike.RejectTransportAsync(serviceName);
         else if (action == "credential-create")
         {
             var store = new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath);
@@ -189,6 +195,15 @@ public static class WindowsIntegration
             RunUser(executable, userB, password, "host-credential-denied", service, hostCredential, hostRoot, shared);
             Console.WriteLine("PASS integration: service/elevated-offline credential interoperability, restart, real nonadmin read/write/delete denial");
             Console.WriteLine("PASS integration: real non-admin query/start, forbidden rights, unauthorized start denied, Host-data denied, cross-user DPAPI");
+            await using (var spike = await LocalIpcSpike.StartAsync(groupSid))
+            {
+                RunUser(executable, userB, password, "ipc-denied", spike.PipeName, spike.PublicPin, hostRoot, shared);
+                RunUser(executable, userA, password, "ipc-authorized", spike.PipeName, spike.PublicPin, hostRoot, shared);
+                Native.AddMember(group, userB); // New logon must pick up membership; no principal authority is created.
+                RunUser(executable, userB, password, "ipc-authorized", spike.PipeName, spike.PublicPin, hostRoot, shared);
+                Check(spike.ObservedSids.Count == 2 && spike.ObservedSids.Contains(sidA!) && spike.ObservedSids.Contains(sidB!), "Two native users did not remain distinct, or rejected TLS delivered a request.");
+                Console.WriteLine("PASS integration: Kestrel named-pipe TLS, group denial, two distinct native SIDs, wrong-pin requests never delivered");
+            }
             await platform.UninstallAsync(); installed = false;
             Check(File.Exists(Path.Combine(hostRoot, "host.db")), "Uninstall removed authoritative database.");
             Check(Sid(group) == groupSid.Value, "Uninstall removed activation group.");
