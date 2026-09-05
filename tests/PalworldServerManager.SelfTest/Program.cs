@@ -11,6 +11,7 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args.Length == 1 && args[0] == "--local-ipc-spike") { await LocalIpcSpike.LocalProof(); return 0; }
     if (args[0].StartsWith("--windows-", StringComparison.Ordinal))
         return await WindowsIntegration.RunAsync(args);
     if (args.Length == 3 && args[0] == "--harness")
@@ -61,6 +62,7 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Local IPC spike proves named-pipe TLS native SID and pre-request pin rejection", LocalIpcSpike.LocalProof),
     ("Protocol wire/domain server identities preserve Host qualification", ProtocolTests.Identities),
     ("Secure credential store lifecycle contract survives reopen and cancellation", SecureStoreTests.Lifecycle),
     ("Machine credential store rejects tamper swaps plaintext and failed replacement", SecureStoreTests.NegativePaths),
