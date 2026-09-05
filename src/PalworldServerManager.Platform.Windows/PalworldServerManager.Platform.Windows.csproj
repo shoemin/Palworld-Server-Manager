@@ -8,6 +8,7 @@
     <InformationalVersion>0.3.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
     <ProjectReference Include="..\PalworldServerManager.Platform.Contracts\PalworldServerManager.Platform.Contracts.csproj" />
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
   </ItemGroup>
