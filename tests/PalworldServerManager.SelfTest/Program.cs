@@ -59,6 +59,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Protocol wire/domain server identities preserve Host qualification", ProtocolTests.Identities),
+    ("Protocol negotiation gates features independently of product versions", ProtocolTests.Negotiation),
+    ("Protocol unknown fields survive and unknown authority values deny", ProtocolTests.UnknownValues),
+    ("Protocol schema evolution preserves fields/enums/RPCs and removed reservations", ProtocolTests.SchemaEvolution),
     ("Config parser handles quoted commas and nested lists", TestConfigParser),
     ("Config round-trip preserves unknown settings", TestUnknownRoundTrip),
     ("Directory copy leaves source byte-for-byte unchanged", TestNonDestructiveCopy),

@@ -1,5 +1,14 @@
 # Astra v0.5.0 development trial
 
+## Review model — Product Owner update, 2026-09-05
+
+GitHub Codex external review was intentionally removed from the Astra lane by Product Owner decision, effective immediately during #41. Astra now owns implementation and two distinct substantive reviews: Pass A before PR creation and Pass B against the exact final PR HEAD. No further Codex requests, waiting, review-surface inspection, reviewed-SHA requirement, or review-attempt merge gate applies. Normal-lane process is unchanged. Scope, invariants, product-decision boundaries, actual field evidence, CI, frozen baseline, and experiment-only merges remain mandatory.
+
+Normal and Astra review models differ; benchmark comparisons must account for this. Historical exception: before this update, #41 received one external finding already read and under correction. That evidence is retained below and is not relabeled as an Astra finding. The revised no-external-review model applies from this update forward; claiming the entire earlier history contained no external review would be inaccurate.
+
+Each completed item records Pass A/Pass B findings, test-discovered defects, review-only defects, correction counts, and any later escaped defect. Final reporting uses **Astra review effectiveness** and identifies this workflow transition explicitly.
+
+
 ## Baseline and isolation
 
 - Repository: `shoemin/Palworld-Server-Manager`.
@@ -68,4 +77,14 @@ Canonical issue: **#41 — Windows platform slice — Host service lifecycle, ac
 - Field-test requirements: all 15 issue-specified real Windows integration criteria remain unfulfilled.
 - Deviations: normal workflow review/wait/Project-mutation steps replaced only as explicitly authorized by the trial request.
 - Final result: pending.
+
+## #43 independent readiness/preflight
+
+Canonical issue **#43 — Protocol slice — Host contracts, ServerRef identity, and version/capability negotiation**, parent #20, milestone v0.5.0. Dependencies #33/#19/#39/#40 are accepted at the frozen baseline. The bounded objective, exclusions, allowed naming/package choices, testable criteria, validation, stop conditions and review protocol are explicit in its current body. **SHADOW READY** despite canonical Backlog.
+
+#41 has passed local/remote validation on PR #61 but is awaiting its independent reviewer after two requests. #43 has no #41 dependency and does not prejudge any Windows decision. Its branch `astra/43-protocol` starts at integration `0ccc6af`, not the unmerged #41 branch.
+
+Preflight: change Contracts schemas, OS-neutral identity/compatibility helpers, SelfTest and protocol documentation only. No production reference topology change. Contracts runtime remains protobuf-only; Grpc.Tools is private build-time tooling. gRPC services are defined in schemas; endpoint/stub hosting belongs in subsequent transport composition. No credentials, authority-creation path, persistence writer, or operation executor is implemented. Grant DTOs express accepted types; they do not issue/evaluate grants. No arbitrary shell, general filesystem RPC, TLS, pairing, permission evaluator, business operation, UI, or Linux implementation.
+
+Applicable invariants: CLIENT-001, IDENT-001/002, PROTO-001, REMOTE-001, AUTH-001/005, PLATFORM-001; ARCH-001/002 and all untouched security/authority families remain negative-scope checks. Audit cross-section consequences: malformed/default protobuf identities, host-qualified equality/routing/grants, unknown authorization values, incompatible-major versus additive-minor negotiation, removed-field reservation. Allowed decisions: exact schema names/field numbers, initial protocol 1.0, Google.Protobuf 3.36.1 and private Grpc.Tools 2.83.0 (verified official package listings). No product decision identified. No field evidence required by this bounded contract-only issue. PR/review/tests/result pending.
 
