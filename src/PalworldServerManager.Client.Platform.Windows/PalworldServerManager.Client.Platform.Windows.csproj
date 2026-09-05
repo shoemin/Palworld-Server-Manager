@@ -10,4 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\PalworldServerManager.Client.Platform.Contracts\PalworldServerManager.Client.Platform.Contracts.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+  </ItemGroup>
 </Project>

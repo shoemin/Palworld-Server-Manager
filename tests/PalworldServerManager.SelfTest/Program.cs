@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using PalworldServerManager.Client.Platform.Windows;
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
 using PalworldServerManager.Core.Services;
@@ -15,6 +16,19 @@ if (args.Length > 0)
     {
         var seconds = int.Parse(args[1]);
         var exitCode = int.Parse(args[2]);
+        Thread.Sleep(TimeSpan.FromSeconds(seconds));
+        return exitCode;
+    }
+
+    // Same idea as "--harness", but reports its OWN process id to a file first - lets a test
+    // confirm the EXACT hung child was actually terminated (never a process-name check) rather
+    // than merely trusting that a TimeoutException was thrown (#41 timeout-hardening).
+    if (args.Length == 4 && args[0] == "--harness-report-pid")
+    {
+        var pidFile = args[1];
+        var seconds = int.Parse(args[2]);
+        var exitCode = int.Parse(args[3]);
+        File.WriteAllText(pidFile, Environment.ProcessId.ToString());
         Thread.Sleep(TimeSpan.FromSeconds(seconds));
         return exitCode;
     }
@@ -37,6 +51,90 @@ if (args.Length > 0)
         Console.WriteLine(held is not null ? "ACQUIRED" : "DENIED");
         Console.Out.Flush();
         Thread.Sleep(TimeSpan.FromSeconds(int.Parse(args[2])));
+        return 0;
+    }
+
+    // Explicit PRIVILEGED Windows integration entry point (#41). Deliberately NOT part of the
+    // ordinary suite: it creates real services/groups/users, so ./scripts/build.ps1 stays safe for
+    // an ordinary developer to run. Invoked by scripts/windows-integration.ps1 and by CI.
+    if (args.Length == 1 && args[0] == "--windows-integration")
+    {
+        if (!WindowsIntegrationTests.IsElevated())
+        {
+            Console.Error.WriteLine("FAIL  Windows integration requires an elevated process; it is never silently skipped.");
+            return 2;
+        }
+
+        try
+        {
+            Console.WriteLine(await WindowsIntegrationTests.RunAllAsync());
+            Console.WriteLine();
+            Console.WriteLine("Windows integration harness passed.");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("FAIL  Windows integration harness");
+            Console.Error.WriteLine(ex);
+            return 1;
+        }
+    }
+
+    // TEST-ONLY helper-process modes (#41), launched under a specific non-admin identity via
+    // CreateProcessWithLogonW by the privileged integration harness. Each prints exactly one
+    // result token per line to stdout for the (elevated) parent to parse. Never invoked by
+    // ordinary production code or by the ordinary self-test suite.
+    if (args.Length == 1 && args[0] == "--helper-nonadmin-check")
+    {
+        Console.WriteLine(WindowsIntegrationTests.IsElevated() ? "ADMIN" : "NONADMIN");
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-activation")
+    {
+        var activation = new WindowsHostActivation(args[1]);
+        var result = await activation.RequestStartAsync();
+        Console.WriteLine(result);
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-native-rights")
+    {
+        HelperNativeRights.ProbeForbiddenRights(args[1]);
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-dpapi-create")
+    {
+        var store = new WindowsLocalPrincipalCredentialStore(new WindowsIntegrationTests.HarnessFakeKeyPairGenerator(), args[1]);
+        await store.CreateAndStoreAsync();
+        await store.BindPrincipalIdAsync("psm-integration-test-principal");
+        Console.WriteLine("OK");
+        return 0;
+    }
+
+    if (args.Length == 2 && args[0] == "--helper-dpapi-load")
+    {
+        var filePath = Path.Combine(args[1], "localprincipal.v1.bin");
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine("FILE_MISSING");
+            return 0;
+        }
+
+        try
+        {
+            var store = new WindowsLocalPrincipalCredentialStore(new WindowsIntegrationTests.HarnessFakeKeyPairGenerator(), args[1]);
+            var loaded = await store.LoadAsync();
+            Console.WriteLine(loaded is not null ? "SUCCESS" : "UNBOUND");
+        }
+        catch (System.Security.Cryptography.CryptographicException)
+        {
+            // The correct, expected outcome for a DIFFERENT user attempting to unprotect data
+            // that DPAPI protected under someone else's CurrentUser key.
+            Console.WriteLine("DPAPI_DENIED");
+        }
+
         return 0;
     }
 
@@ -171,6 +269,39 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Frozen WPF App still references legacy Lan unchanged", ArchitectureGuardTests.TestFrozenWpfAppStillReferencesLanUnchanged),
     ("Frozen legacy Lan has unchanged direct references", ArchitectureGuardTests.TestFrozenLegacyLanHasUnchangedDirectReferences),
     ("Every guarded project is built by the solution", ArchitectureGuardTests.TestEveryGuardedProjectIsBuiltBySolution),
+
+    // #41 - Windows platform seams
+    ("Service binary path quotes paths with spaces", WindowsPlatformTests.TestServiceBinaryPathQuotesPathsWithSpaces),
+    ("Activation group ACE grants exactly SERVICE_START|SERVICE_QUERY_STATUS", WindowsPlatformTests.TestActivationGroupAceGrantsExactlyStartAndQueryStatus),
+    ("Activation group ACE preserves existing ACEs", WindowsPlatformTests.TestActivationGroupAcePreservesExistingAces),
+    ("Activation group ACE application is idempotent", WindowsPlatformTests.TestActivationGroupAceIsIdempotent),
+    ("Activation group name defaults to the stable product group", WindowsPlatformTests.TestActivationGroupNameDefaultsToTheStableProductGroup),
+    ("Local group provisioner creates only when missing and never touches membership", WindowsPlatformTests.TestLocalGroupProvisionerCreatesOnlyWhenMissingAndNeverTouchesMembership),
+    ("Startup is ready only after initialization actually completes", WindowsPlatformTests.TestStartupReadyOnlyAfterInitializationActuallyCompletes),
+    ("Startup failure propagates before readiness can be claimed", WindowsPlatformTests.TestStartupFailurePropagatesBeforeReadinessCanBeClaimed),
+    ("StopAndWait blocks until simulated cleanup actually completes", WindowsPlatformTests.TestStopAndWaitBlocksUntilSimulatedCleanupActuallyCompletes),
+    ("Boot start maps to the Windows service start type", WindowsPlatformTests.TestBootStartMapsToServiceStartType),
+    ("Dedicated service account is a per-service virtual account", WindowsPlatformTests.TestDedicatedServiceAccountIsAPerServiceVirtualAccount),
+    ("Machine-wide Host data root is under ProgramData", WindowsPlatformTests.TestMachineWideHostDataRootIsUnderProgramData),
+    ("Service SID is derived and matches Windows", WindowsPlatformTests.TestServiceSidIsDerivedAndMatchesWindows),
+    ("Host-state ACL grants service/admins but not the activation group", WindowsPlatformTests.TestHostStateAclGrantsServiceAndAdminsButNotTheActivationGroup),
+    ("Host activation is idempotent and maps failure classes", WindowsPlatformTests.TestActivationIsIdempotentAndMapsFailureClasses),
+    ("Login start uses a test-scoped store and quotes the command", WindowsPlatformTests.TestLoginStartUsesTestScopedStoreAndQuotesCommand),
+    ("Shell integration opens only local directories and never spawns", WindowsPlatformTests.TestShellIntegrationOpensOnlyLocalDirectoriesAndNeverSpawns),
+    ("ProcessAsUser terminates a hung child and confirms it is actually gone", WindowsPlatformTests.TestProcessAsUserTerminatesAHungChildAndConfirmsItIsActuallyGone),
+    ("ProcessAsUser captures output and exit code for a well-behaved child", WindowsPlatformTests.TestProcessAsUserCapturesOutputAndExitCodeForAWellBehavedChild),
+    ("RunPowerShell never leaks a secret into command text or diagnostics", WindowsPlatformTests.TestRunPowerShellNeverLeaksASecretIntoCommandTextOrDiagnostics),
+
+    // #41 - client LocalPrincipal credential store
+    ("Credential lifecycle from create through bind to delete", LocalPrincipalCredentialStoreTests.TestCredentialLifecycleFromCreateThroughBindToDelete),
+    ("Credential survives restart and is shared by same-user consumers", LocalPrincipalCredentialStoreTests.TestCredentialSurvivesRestartAndIsSharedBySameUserConsumers),
+    ("No plaintext private key on disk", LocalPrincipalCredentialStoreTests.TestNoPlaintextPrivateKeyOnDisk),
+    ("Credential store exposes no Host machine-credential surface", LocalPrincipalCredentialStoreTests.TestStoreExposesNoHostMachineCredentialSurface),
+    ("Interrupted write does not corrupt the last good credential", LocalPrincipalCredentialStoreTests.TestInterruptedWriteDoesNotCorruptLastGoodCredential),
+    ("No production key generator ships in this slice", LocalPrincipalCredentialStoreTests.TestNoProductionKeyGeneratorShipsInThisSlice),
+    ("Concurrent create across two store instances produces exactly one key", LocalPrincipalCredentialStoreTests.TestConcurrentCreateAcrossTwoStoreInstancesProducesExactlyOneKey),
+    ("Rebind is idempotent for the same principal and rejects a different principal", LocalPrincipalCredentialStoreTests.TestRebindIsIdempotentForSamePrincipalAndRejectsADifferentPrincipal),
+    ("Cancellation during lock contention exits promptly without mutation", LocalPrincipalCredentialStoreTests.TestCancellationDuringLockContentionExitsPromptlyWithoutMutation),
 
     // #40 - Host persistence foundation
     ("Host database enables WAL journal mode", HostPersistenceTests.TestWalJournalModeEnabled),
