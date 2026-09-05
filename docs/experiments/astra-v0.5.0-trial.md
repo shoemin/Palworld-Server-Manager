@@ -30,7 +30,7 @@ Accepted baseline inputs: #17, #19, #33, #39, #40. Existing acceptance is inheri
 
 | Items | Dependencies beyond accepted baseline | Initial shadow state |
 |---|---|---|
-| #41 Windows platform | None; Product Owner confirmed current issue body | SHADOW READY |
+| #41 Windows platform | Complete in experiment; PR #61 | SHADOW DONE |
 | #34 Design system/shell | None; readiness audit needed | NOT REACHED |
 | #43 Protocol/contracts | None; readiness audit needed | NOT REACHED |
 | #35, #36, #37 Design surfaces | #34 | NOT REACHED |
@@ -145,4 +145,9 @@ Pass B repeated against that exact HEAD: **PASS**, complete diff and all 18 chan
 This acceptance-record update changes documentation only; code/tests remain byte-identical to validated `4fa361a`. Final PR metadata/base/HEAD and strict docs are rechecked before merge. Shadow result: accepted for integration merge; canonical #41 remains untouched. Post-merge commit identity and dependency refresh will be appended to the integration ledger.
 
 
+
+
+## Integration checkpoint after #41
+
+PR #61 merged at ffe78fee3fd6d197308a9807e965b123a086b5de. Final PR HEAD d787a7d403f3840ae319cd77d97461d2d9852334 changes only the ledger relative to validated implementation 4fa361a; strict Docs run 33986674874 passed on that final HEAD. Pass B rechecked that exact final diff and merge base. Shadow #41 DONE; normal issue and Project untouched. Dependency refresh: #42 and #27 now satisfy their declared implementation dependencies and need readiness/impact analysis; #43 is independently in progress; #34 remains an independent design candidate. Later security/server/UI/Linux gates remain closed.
 
