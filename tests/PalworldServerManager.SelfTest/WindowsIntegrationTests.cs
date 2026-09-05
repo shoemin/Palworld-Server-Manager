@@ -76,16 +76,22 @@ public static class WindowsIntegrationTests
     /// Diagnostics (timeout/non-zero-exit messages) report <paramref name="operationDescription"/>
     /// - never the raw script text - so callers cannot accidentally leak a secret merely by
     /// interpolating it into a script string. A secret that MUST reach the child process (e.g. a
-    /// generated temporary-user password) is passed via <paramref name="environment"/> - a
-    /// per-call child-process environment variable, never command-line text - and the script
-    /// references it as <c>$env:&lt;name&gt;</c>. The variable exists only for that one child
-    /// process's lifetime; nothing is written to disk and this process's own environment is never
-    /// touched. As defense in depth, any environment value is also redacted from stdout/stderr
-    /// before either can appear in a returned value or an exception message.
+    /// generated temporary-user password) is passed via <paramref name="secretViaStdin"/> - the
+    /// child's redirected STANDARD INPUT, read with <c>[Console]::In.ReadLine()</c> - never
+    /// command-line text and never an environment variable. This was deliberately chosen over a
+    /// per-call environment variable after that approach broke Windows PowerShell's module
+    /// autoload (ConvertTo-SecureString/Microsoft.PowerShell.Security) on the GitHub Actions
+    /// windows-latest runner: constructing a custom environment block forces .NET to fully
+    /// reconstruct it from a managed snapshot rather than letting the OS hand the child a verbatim
+    /// copy of this process's own (already-correct) environment. Stdin redirection carries the
+    /// secret without touching the environment block at all, so every RunPowerShell call - with or
+    /// without a secret - gets an identical, byte-for-byte-inherited environment. As defense in
+    /// depth, the secret is also redacted from stdout/stderr before either can appear in a
+    /// returned value or an exception message.
     /// </summary>
-    private static string RunPowerShell(string script, string operationDescription, IReadOnlyDictionary<string, string>? environment = null)
+    private static string RunPowerShell(string script, string operationDescription, string? secretViaStdin = null)
     {
-        var startInfo = BuildPowerShellStartInfo(script, environment);
+        var startInfo = BuildPowerShellStartInfo(script, redirectStandardInput: secretViaStdin is not null);
         using var process = Process.Start(startInfo)!;
 
         // Read both streams CONCURRENTLY with the bounded wait below - reading either stream to
@@ -93,6 +99,12 @@ public static class WindowsIntegrationTests
         // write to a full stderr buffer while we are blocked reading stdout, or vice versa).
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
         var stderrTask = process.StandardError.ReadToEndAsync();
+
+        if (secretViaStdin is not null)
+        {
+            process.StandardInput.WriteLine(secretViaStdin);
+            process.StandardInput.Close();
+        }
 
         if (!process.WaitForExit(PowerShellTimeoutSeconds * 1000))
         {
@@ -125,8 +137,8 @@ public static class WindowsIntegrationTests
         // wait with stream redirection.
         process.WaitForExit();
 
-        var stdout = SanitizeSecrets(stdoutTask.GetAwaiter().GetResult(), environment);
-        var stderr = SanitizeSecrets(stderrTask.GetAwaiter().GetResult(), environment);
+        var stdout = SanitizeSecret(stdoutTask.GetAwaiter().GetResult(), secretViaStdin);
+        var stderr = SanitizeSecret(stderrTask.GetAwaiter().GetResult(), secretViaStdin);
 
         if (process.ExitCode != 0)
         {
@@ -136,47 +148,28 @@ public static class WindowsIntegrationTests
         return stdout.Trim();
     }
 
-    /// <summary>Builds the child process configuration - factored out so it is independently testable.</summary>
-    internal static ProcessStartInfo BuildPowerShellStartInfo(string script, IReadOnlyDictionary<string, string>? environment)
+    /// <summary>
+    /// Builds the child process configuration - factored out so it is independently testable.
+    /// Deliberately never touches EnvironmentVariables: doing so forces .NET to reconstruct the
+    /// whole environment block instead of letting the OS hand the child a verbatim inherited copy
+    /// (see the RunPowerShell doc-comment for why that broke module autoload on GitHub Actions).
+    /// </summary>
+    internal static ProcessStartInfo BuildPowerShellStartInfo(string script, bool redirectStandardInput)
     {
-        var startInfo = new ProcessStartInfo("powershell.exe")
+        return new ProcessStartInfo("powershell.exe")
         {
             ArgumentList = { "-NoProfile", "-NonInteractive", "-Command", script },
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            RedirectStandardInput = redirectStandardInput,
             UseShellExecute = false,
             CreateNoWindow = true,
         };
-
-        if (environment is not null)
-        {
-            foreach (var (key, value) in environment)
-            {
-                startInfo.EnvironmentVariables[key] = value;
-            }
-        }
-
-        return startInfo;
     }
 
-    /// <summary>Redacts every value of <paramref name="environment"/> (e.g. a passed-through secret) from <paramref name="text"/>.</summary>
-    internal static string SanitizeSecrets(string text, IReadOnlyDictionary<string, string>? environment)
-    {
-        if (environment is null)
-        {
-            return text;
-        }
-
-        foreach (var value in environment.Values)
-        {
-            if (!string.IsNullOrEmpty(value))
-            {
-                text = text.Replace(value, "***REDACTED***", StringComparison.Ordinal);
-            }
-        }
-
-        return text;
-    }
+    /// <summary>Redacts every occurrence of <paramref name="secret"/> from <paramref name="text"/>, if any was supplied.</summary>
+    internal static string SanitizeSecret(string text, string? secret)
+        => string.IsNullOrEmpty(secret) ? text : text.Replace(secret, "***REDACTED***", StringComparison.Ordinal);
 
     internal static string BuildTimeoutMessage(string operationDescription, TimeSpan timeout)
         => $"PowerShell operation '{operationDescription}' did not complete within {timeout.TotalSeconds:0}s and was terminated (confirmed).";
@@ -306,16 +299,15 @@ public static class WindowsIntegrationTests
             log.Add("[6] boot-start toggle verified");
 
             // 12 + 13. authorized vs unauthorized NON-ADMIN identities. The generated password
-            // is passed to PowerShell ONLY as a per-call child-process environment variable -
-            // never interpolated into script/command text - so it can never appear in a timeout
-            // or non-zero-exit diagnostic (SEC-001).
-            var passwordEnvironment = new Dictionary<string, string> { ["PSM_TEST_PASSWORD"] = password };
+            // is passed to PowerShell ONLY via the child's redirected stdin - never interpolated
+            // into script/command text and never via an environment variable - so it can never
+            // appear in a timeout or non-zero-exit diagnostic (SEC-001).
             const string createUserScript =
-                "$p = ConvertTo-SecureString $env:PSM_TEST_PASSWORD -AsPlainText -Force; " +
+                "$p = ConvertTo-SecureString ([Console]::In.ReadLine()) -AsPlainText -Force; " +
                 "New-LocalUser -Name '{0}' -Password $p -AccountNeverExpires:$true | Out-Null";
 
-            RunPowerShell(string.Format(createUserScript, userA), "create temporary non-admin user A", passwordEnvironment);
-            RunPowerShell(string.Format(createUserScript, userB), "create temporary non-admin user B", passwordEnvironment);
+            RunPowerShell(string.Format(createUserScript, userA), "create temporary non-admin user A", secretViaStdin: password);
+            RunPowerShell(string.Format(createUserScript, userB), "create temporary non-admin user B", secretViaStdin: password);
             RunPowerShell($"Add-LocalGroupMember -Group '{GroupName}' -Member '{userA}'", "add user A to activation group");
             log.Add($"[12,13] created non-admin users {userA} (in group) and {userB} (not in group)");
 
