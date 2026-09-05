@@ -435,3 +435,22 @@ Local Release build: zero warnings/errors. Full suite: 178/178 PASS, including f
 ## #27 second pre-PR correction
 
 Candidate 85f670cf0ba953fe5ab746e9deeccd40c05ae635 passed actual Windows CI 33995319774 (service and multi-user integration plus full build/self-test) and Docs 33995321511. Review then found orphan encrypted temporary writes were not associated with a key and could survive later retirement. Added per-root in-process serialization and exact-key temporary retirement on retry/delete; file creation now installs its protected ACL atomically, avoiding a crash between inherited creation and explicit protection. The first crash-fixture test failed because copying a file then applying an unmodified ACL object did not protect the new file; corrected the fixture to create with the exact ACL. This is one automated test/fixture failure within correction iteration 2, not evidence of a released defect. Full local suite now 178/178, Release build zero warnings/errors, strict docs PASS. Updated candidate requires fresh real Windows CI before Pass A closure.
+
+## #27 Review Pass A
+
+Reviewed the entire ten-file diff against d3cf320b247ced1025c89a90d6ccb9d210a91b42, every changed file, current canonical #27 and the complete normative registry. Acceptance map: private material stays in encrypted files, never database DTOs (ciphertext/tamper/database checks); ordinary clients retain no Host-side project dependency and two actual non-elevated users are denied file read/write/delete; marked logging/audit/JSON payloads redact; real virtual-service -> elevated offline lease holder -> restarted/replaced service reads persist; threat limitations explicitly cover privileged ownership, snapshots and memory; plaintext legacy and corrupt/wrong-key material fail closed for later migration; portable contract tests contain no Windows/GUI dependency. No new rotation, recovery, enrollment, grants, RPC or migration implementation is smuggled into the store.
+
+| Invariant IDs | Concrete evidence / applicability | Result |
+|---|---|---|
+| ARCH-001/002, CLIENT-001 | Ten-file boundary; no WPF/Lan/client reference changes; topology tests pass | PASS |
+| HOST-001/002, PERSIST-001 | Trusted Host-side composition only; real service lease and stopped/elevated offline lease; no online CLI path or competing lease | PASS |
+| CLIENT-002/003, LOCAL-002 | Separate Host and per-user stores, protected blob ACL, real two-user denial; no client principal private keys in Host store | PASS |
+| IDENT-001/003/004 | Opaque stable key refs; atomic replacement/idempotent exact-key retirement supports later orchestrators; no HostId, current-ref, staged rotation or recovery state changed | PASS boundary |
+| SEC-001 | Machine DPAPI plus approved service/BA/SY ACL and owner validation, atomic protected creation, key-bound entropy, tamper/legacy/reparse denial, redaction tests and internal buffer clearing | PASS |
+| LOCAL-001/003/004, OWNER-001/002 | No bootstrap/enrollment/Owner or local-channel authority introduced; approved recovery ACL is not RPC authorization | PASS unchanged |
+| IDENT-002, REMOTE-001/002, PAIR-001–004, AUTH-001–005, PROTO-001 | No transport, peer/grant/state/negotiation changes; retained full suite passes | PASS unchanged |
+| OPS-001–004, RECOVERY-001 | Store is a bounded primitive, no durable operation bypass; failed replacement retains current blob; orphan encrypted writes discarded only for exact-key retry/delete under serialized writer | PASS boundary |
+| MIG-001, PLATFORM-001/002, LINUX-001 | No migration execution, GUI or Linux implementation; OS behavior confined to Windows seam, cross-platform contract independent | PASS |
+
+Stale/reference search covered service-only ACL claims, client access, secure-store consumers, legacy plaintext fallback, unqualified authority and store layout. Architecture §7 is changed only for the explicit Product Owner ACL decision; historical blocked checkpoint remains labelled historical. Two pre-PR correction iterations are recorded above. One failed test fixture was corrected; no released/escaped #27 defect known. No unavailable real field behavior is labelled PASS: reboot, release-package qualification and Linux are outside this store slice, while actual privileged service/multi-user behavior was executed.
+`475b092f6826a3b0c9db8c42cba752e554ba7266`: CI 33995667758 PASS (both jobs including real service/multi-user), Docs 33995668602 PASS. All required local and remotely executable validation passed; Pass A clean.
