@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Create a server / sequential guided panels</title>
+<desc id="desc">Static Astra design prototype. All names, identifiers and status values are synthetic. Read the accompanying specification for keyboard and responsive behavior.</desc>
+<rect x="0" y="0" width="1600" height="900" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<text x="40" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#e8f2f5">Create a server</text>
+<text x="40" y="94" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Storyboard: these are separate steps, shown side by side for review. Product shows one panel at a time.</text>
+<rect x="40" y="136" width="480" height="596" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="64" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8f2f5">1  Choose destination</text>
+<text x="64" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">This PC · L · …0001</text>
+<text x="64" y="288" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Family PC · R1 · …a001  [selected]</text>
+<text x="64" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Family PC · R2 · …a002 · offline</text>
+<text x="64" y="392" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Available to create on selected Host</text>
+<text x="64" y="494" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Review full Host identity before confirming.</text>
+<text x="64" y="532" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">Unavailable destinations cannot be submitted.</text>
+<rect x="64" y="646" width="108" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="76" y="671" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Back</text>
+<rect x="184" y="646" width="312" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="196" y="671" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Continue</text>
+<rect x="560" y="136" width="480" height="596" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="584" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8f2f5">2  Name server</text>
+<text x="584" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Name: Weekend World</text>
+<text x="584" y="288" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Destination: Family PC · R1 · …a001</text>
+<text x="584" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Name accepted</text>
+<text x="584" y="392" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">You can edit settings after creation</text>
+<text x="584" y="494" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Review full Host identity before confirming.</text>
+<text x="584" y="532" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">Unavailable destinations cannot be submitted.</text>
+<rect x="584" y="646" width="108" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="596" y="671" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Back</text>
+<rect x="704" y="646" width="312" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="716" y="671" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Review</text>
+<rect x="1080" y="136" width="480" height="596" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1104" y="178" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" fill="#e8f2f5">3  Review creation</text>
+<text x="1104" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Weekend World</text>
+<text x="1104" y="288" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Destination: Family PC · R1 · …a001</text>
+<text x="1104" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Fresh runtime installed by SteamCMD</text>
+<text x="1104" y="392" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Creates a new managed profile</text>
+<text x="1104" y="494" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Review full Host identity before confirming.</text>
+<text x="1104" y="532" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">Unavailable destinations cannot be submitted.</text>
+<rect x="1104" y="646" width="108" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="1116" y="671" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Back</text>
+<rect x="1224" y="646" width="312" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="1236" y="671" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Create on Family PC</text>
+<text x="40" y="782" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Host revalidates authority, capability and target at submission. If any change, stay on review and explain.</text>
+<text x="40" y="816" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Accepted work opens its Host-owned Activity record. Closing the wizard does not cancel it or start another copy.</text>
+<text x="40" y="852" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">No offline queue, arbitrary remote path browser, resumable transfer, or silent overwrite of an existing profile.</text>
+</svg>
