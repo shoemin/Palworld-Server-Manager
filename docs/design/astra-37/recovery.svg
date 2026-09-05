@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Owner and credential recovery guidance</title>
+<desc id="desc">Static Astra design prototype. All names, identifiers and status values are synthetic. Read the accompanying specification for keyboard and responsive behavior.</desc>
+<rect x="0" y="0" width="1600" height="900" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="0" y="0" width="1600" height="56" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#e8f2f5">PALWORLD / SERVER MANAGER</text>
+<text x="1140" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Activity</text>
+<text x="1240" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Alerts</text>
+<text x="1330" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Manager Settings</text>
+<rect x="12" y="72" width="256" height="44" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">▦  ALL SERVERS</text>
+<text x="20" y="156" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">L  THIS PC</text>
+<text x="20" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host 7d3a9100…0001</text>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">○  Stopped</text>
+<text x="20" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">R1  FAMILY PC</text>
+<text x="20" y="324" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host c58a1000…a001</text>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<path d="M24 336H12V348" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 336H268V348" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M24 400H12V388" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 400H268V388" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">●  Running · 5 / 32 players</text>
+<text x="20" y="452" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">R2  FAMILY PC</text>
+<text x="20" y="472" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host c58a1000…a002</text>
+<rect x="12" y="484" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="509" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="532" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#f6ce79">!  Host offline · last known</text>
+<rect x="12" y="686" width="256" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="24" y="711" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">+  ADD / IMPORT</text>
+<rect x="12" y="738" width="256" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="763" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">«  Collapse server rail</text>
+<path d="M280 56L280 856" fill="none" stroke="#7291a2" stroke-width="1"/>
+<rect x="10" y="186" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Stopped</text>
+<rect x="10" y="334" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">Running</text>
+<text x="328" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">General</text>
+<text x="504" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">Appearance</text>
+<text x="700" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Connections / Security</text>
+<path d="M700 108L840 108" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<text x="1040" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">Updates</text>
+<text x="1250" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">Diagnostics</text>
+<text x="328" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#e8f2f5">Owner and credential recovery guidance</text>
+<text x="328" y="170" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">This PC · local Host 7d3a9100-1000-4000-8000-000000000001</text>
+<text x="328" y="200" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Acting as: Owner · this Host · independent synthetic snapshot</text>
+<path d="M0 856L1600 856" fill="none" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="882" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Design prototype · labels are presentation, never authorization</text>
+<rect x="328" y="232" width="592" height="492" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="348" y="266" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" fill="#e8f2f5">Owner is structural</text>
+<text x="348" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Exactly one active Owner after initialization.</text>
+<text x="348" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Owner status is not a role preset or grant checkbox.</text>
+<text x="348" y="374" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Remote actors cannot revoke, demote or replace it.</text>
+<text x="348" y="408" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Ordinary local clients have no Owner-replacement RPC.</text>
+<text x="348" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">OS activation-group membership is not enrollment.</text>
+<text x="348" y="476" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Non-Owner enrollment/reactivation needs Owner approval.</text>
+<rect x="940" y="232" width="632" height="492" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="960" y="266" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" fill="#e8f2f5">Exceptional recovery is local and privileged</text>
+<text x="960" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Use the accepted offline Host recovery procedure</text>
+<text x="960" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">on the affected machine with actual OS privilege.</text>
+<text x="960" y="374" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Offline preparation requires Host stopped and exclusive lock.</text>
+<text x="960" y="408" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Intended-user completion uses the authenticated local client.</text>
+<text x="960" y="442" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Lost/compromised Host credential requires fresh local trust</text>
+<text x="960" y="476" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">and peer-local Owner-approved re-pairing; no old grant revival.</text>
+<text x="328" y="764" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Routine rotation is different: staged credentials wait for remaining peers, or explicit Owner revocation/exclusion.</text>
+<text x="328" y="802" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#f6ce79">No generic administrator console, one-click remote Owner reset, or trust-anyway bypass is introduced.</text>
+</svg>
