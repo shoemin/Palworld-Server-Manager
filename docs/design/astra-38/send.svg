@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Send to PC · review before offer</title>
+<desc id="desc">Static Astra design prototype. All names, identifiers and status values are synthetic. Read the accompanying specification for keyboard and responsive behavior.</desc>
+<rect x="0" y="0" width="1600" height="900" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="0" y="0" width="1600" height="56" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#e8f2f5">PALWORLD / SERVER MANAGER</text>
+<text x="1160" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Activity</text>
+<text x="1272" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Alerts</text>
+<text x="1360" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Manager Settings</text>
+<rect x="12" y="72" width="256" height="44" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">▦  ALL SERVERS</text>
+<text x="20" y="156" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">L  THIS PC</text>
+<text x="20" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host 7d3a9100…0001</text>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">○  Stopped</text>
+<text x="20" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">R1  FAMILY PC</text>
+<text x="20" y="324" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host c58a1000…a001</text>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<path d="M24 336H12V348" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 336H268V348" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M24 400H12V388" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 400H268V388" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">●  Running · 5 / 32 players</text>
+<text x="20" y="452" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">R2  FAMILY PC</text>
+<text x="20" y="472" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host c58a1000…a002</text>
+<rect x="12" y="484" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="509" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="532" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#f6ce79">!  Host offline · last known</text>
+<rect x="12" y="686" width="256" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="24" y="711" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">+  ADD / IMPORT</text>
+<rect x="12" y="738" width="256" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="763" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">«  Collapse server rail</text>
+<path d="M280 56L280 856" fill="none" stroke="#7291a2" stroke-width="1"/>
+<rect x="10" y="186" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Stopped</text>
+<rect x="10" y="334" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">Running</text>
+<text x="328" y="110" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#e8f2f5">Send to PC · review before offer</text>
+<text x="328" y="148" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Independent synthetic snapshot · exact targets retained in every detail</text>
+<path d="M0 856L1600 856" fill="none" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="882" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Design only · Host owns operations · closing a surface does not cancel work</text>
+<rect x="10" y="186" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<path d="M24 188H12V200" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 188H268V200" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M24 252H12V240" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 252H268V240" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">Running</text>
+<rect x="10" y="334" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">Running</text>
+<rect x="328" y="200" width="596" height="568" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="348" y="234" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" fill="#e8f2f5">Source server</text>
+<text x="348" y="274" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Main Server · This PC · L</text>
+<text x="348" y="308" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Host 7d3a9100…0001 / profile 680a9100…0007</text>
+<text x="348" y="342" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Running · must save and stop before export</text>
+<text x="348" y="376" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">No live copy and no automatic restart promised.</text>
+<text x="348" y="410" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">TransferExport and safe-stop authority are rechecked.</text>
+<text x="348" y="444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Stop/finalization failure prevents package creation.</text>
+<rect x="948" y="200" width="624" height="568" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="968" y="234" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" fill="#e8f2f5">Destination / consequences</text>
+<text x="968" y="274" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Family PC · R1 · Host c58a1000…a001</text>
+<text x="968" y="308" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Active trust; actual transfer authorization required</text>
+<text x="968" y="342" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Package includes world/config; excludes runtime.</text>
+<text x="968" y="376" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Destination reviews size and integrity information.</text>
+<text x="968" y="410" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">No bytes sent until this offer is accepted.</text>
+<text x="968" y="444" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Verified receipt does not automatically import.</text>
+<rect x="348" y="696" width="228" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="360" y="721" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Cancel</text>
+<rect x="592" y="696" width="304" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="604" y="721" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Save, stop and offer…</text>
+<text x="328" y="814" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Unavailable destination explains offline / unpaired / not authorized / unsupported; nothing is queued offline.</text>
+</svg>
