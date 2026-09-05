@@ -206,3 +206,39 @@ This acceptance record is documentation-only. Code and tests remain identical to
 ## Integration checkpoint after #43
 
 Shadow #43 DONE. PR #62 merged at `ee8e558a12cad12b8108a511cadccf613730677a`; final PR HEAD `16233206433dca4d5243ee4fc1c157851d066f1e` differed from tested `22f2102` only by its acceptance record. Strict Docs `33987906177` passed on final HEAD. Canonical planning remained untouched. Dependency refresh: #34 is independently eligible; #27 awaits its explicit ACL Product Decision; #42 needs bounded preflight and secure-channel dependencies; later #44+ and production UI/Linux gates remain closed.
+## #34 readiness and preflight
+
+#34 — UI design slice: design system, application shell, and unified server rail; parent #18, v0.5.0. Dependencies #33/#19 accepted at the frozen baseline. Current canonical issue body reread: bounded design-only scope, explicit exclusions and six testable criteria; shadow authorization supplies autonomous two-pass review. SHADOW READY on branch `astra/34-shell-design`, from integration `41fc7bf`.
+
+Expected changes: only `docs/design/astra-34/` vector prototypes, token data, deterministic generator and design specification, plus this ledger. No production project/dependency change, authority creation, credential consumer, persistence writer or operation executor. Applicable IDs: ARCH-001/002, HOST-001/002, CLIENT-001/002/003, IDENT-001/002, REMOTE-001/002, PAIR-001/002, AUTH-001/003/005, PROTO-001, OPS-001–004, PLATFORM-002, SEC-001. Remaining registry families audited as negative scope. Recheck all routes/labels for exact Host context, permission-filtered inventory, trust-versus-authority distinction, stale/error states, and no client-owned mutation. No detailed settings, permissions, Activity flows, production Avalonia or Linux.
+
+Allowed decisions: 4-unit spacing scale, semantic palette, type hierarchy, project-owned vector icons/angular decoration, responsive dimensions/focus/motion guidance. Validation plan: generated 1600×900 and 2100×900 boards, 800×900 collapsed board, component/state board and token alternatives; inspect rendered boards for clipping/identity/context; programmatic SVG/XML, palette contrast, fixture identity uniqueness and reproducibility checks; strict docs; two distinct full-diff/invariant reviews. Accepted canonical #18 textual direction has been read. Canonical image browser capture repeatedly times out; no successful visual comparison is claimed. If still unavailable at acceptance, record the exact visual-evidence limitation, not a fabricated PASS.
+## #34 Review Pass A
+
+All design sources and seven rendered SVG boards inspected, including the canonical #18 image (successfully viewed at natural size using the in-app browser; the earlier Edge capture limitation is resolved). Six acceptance criteria map respectively to duplicate-name/ID-prefix fixtures and full identity expansion; 1600×900 plus 2100×900 boards; 800×900 collapsed and keyboard-identity boards; shared token/generator components; identical-layout Dark/Light palette boards; explicit Host-only authority and filtered-inventory specification. No production source is changed.
+
+Review-only findings: neutral control borders initially measured 2.70:1 on the flagship surface despite passing text checks; strengthened the border token and expanded checks to all surfaces. Collapsed identity behavior initially existed only in prose; added a separate focused identity board with both full UUIDs. Several core dimensions were literal in the generator; bound core chrome/rail/drawer/control/corner/title dimensions to their shared token values. One correction iteration covers these related foundation/evidence changes. No automated-test defect before review, no escaped defect known.
+
+Validation: seven deterministic SVG/XML/reproducibility checks PASS; text contrast >=4.5:1 and interactive boundary/focus contrast >=3:1 for all three palettes PASS; exact fixture Host/profile pairs distinct PASS; strict MkDocs PASS. Visual review found no clipped labels or overlapping controls in the demonstrated layouts; distinct local/remote target context remains visible. Static SVGs do not establish live keyboard/screen-reader behavior or final cross-surface acceptance; those remain #38/production validation, not required evidence waived from #34.
+
+| Invariant | Why affected | Evidence/check | Result |
+|---|---|---|---|
+| ARCH-001/002, CLIENT-001 | Design-only boundary | Only docs/design and ledger; no frozen/source/dependency edits | PASS |
+| HOST-001/002, PERSIST-001 | Shell command placement | Host alone owns inventory/mutations; no executable process/filesystem/store path | PASS |
+| CLIENT-002/003, LOCAL-001–004, OWNER-001/002, SEC-001 | Client authority and secrets | No keys, bootstrap, enrollment, recovery, or privilege shortcut; synthetic public IDs only | PASS / unaffected mechanisms |
+| IDENT-001/002 | Collision-safe presentation | Stable semantic UUIDs; duplicate Host/server names and prefixes; exact pair selection and full details | PASS |
+| IDENT-003/004 | Rotation/recovery | No credential fingerprint substituted for HostId; no recovery design | Unaffected |
+| REMOTE-001/002, PAIR-001/002 | Remote navigation | Local-Host route; only authorized inventory; trust never entitlement; no PeerBound ordinary management | PASS |
+| PAIR-003/004 | Trust transactions/replacement | No pairing/replacement flow | Unaffected |
+| AUTH-001–005 | Authority creation | No grants, presets, scopes or delegation engine; full target retains authoritative Host | PASS / unaffected mechanisms |
+| PROTO-001 | Capability presentation | Unsupported actions retain reason; no app-version inference | PASS |
+| OPS-001–004, RECOVERY-001 | Activity/lifecycle summaries | No stale write or client-owned operation; closing drawer never releases/cancels work; detailed flow deferred | PASS / unaffected mechanisms |
+| MIG-001 | Add/Import entry | Placement only; no copy/move/merge semantics | Unaffected |
+| PLATFORM-001/002, LINUX-001 | OS boundary | Static project-owned vectors, no shell execution/Avalonia/Linux production | PASS |
+
+Negative/contradictory-reference review checked remote routing, grants/trust, full identity, stale status, Files/Logs versus bounded parity, #35–#38 ownership, client mutation, private keys, import targeting, theme reuse, and final-acceptance claims. No Product Decision or mandatory field gap identified within this bounded design slice. Pass A clean; next action is PR creation into the experiment branch, then fresh Pass B.
+## #34 Review Pass B and acceptance
+
+PR #63 final design HEAD `9aba886d7f8ed23ce9c54a31483292cc5e92e0c7`. Fresh post-PR review covered the complete 11-file diff, every vector/source/token/document, all six criteria, collision/alias behavior, unavailable/remote actions, token contrast, layout/focus evidence, retained #41/#43 boundaries and all invariant families above. No additional defect found. No Product Decision and no mandatory unperformed #34 field criterion; static evidence is explicitly not live accessibility or #38 final design acceptance. No external reviewer used.
+
+Local generator/reproducibility/contrast/identity checks and strict docs PASS. Remote Docs `33988354529` PASS on the exact design SHA. No production source/tests or CI workflow changed, so the existing 174-test/real-Windows evidence remains intact and is not relabeled as a new run. Pass A and Pass B clean. One correction iteration, review-only findings as recorded; no known escaped defect or regression. This acceptance update is ledger-only; final strict docs and PR HEAD/base are rechecked before integration merge.

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Light Minimal token feasibility</title>
+<desc id="desc">Static Astra design prototype. All names, identifiers and status values are synthetic. Read the accompanying specification for keyboard and responsive behavior.</desc>
+<rect x="0" y="0" width="1600" height="900" rx="3" fill="#eef3f5" stroke="none" stroke-width="1"/>
+<rect x="0" y="0" width="1600" height="56" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="20" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#172d39">PALWORLD  /  SERVER MANAGER</text>
+<text x="1136" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#006777">Activity  2</text>
+<text x="1256" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#172d39">Alerts  1</text>
+<text x="1364" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#172d39">Settings</text>
+<text x="1484" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#465f6d">—   □   ×</text>
+<rect x="12" y="72" width="256" height="44" rx="3" fill="#ffffff" stroke="#647986" stroke-width="1"/>
+<text x="24" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">▦  ALL SERVERS</text>
+<text x="20" y="156" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#465f6d">L  THIS PC</text>
+<text x="20" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Host 7d3a9100…0001</text>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">○  Stopped</text>
+<text x="20" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#465f6d">R1  FAMILY PC</text>
+<text x="20" y="324" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Host c58a1000…a001</text>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#d5edf2" stroke="#006777" stroke-width="1"/>
+<path d="M24 336H12V348" fill="none" stroke="#006777" stroke-width="2"/>
+<path d="M256 336H268V348" fill="none" stroke="#006777" stroke-width="2"/>
+<path d="M24 400H12V388" fill="none" stroke="#006777" stroke-width="2"/>
+<path d="M256 400H268V388" fill="none" stroke="#006777" stroke-width="2"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#236b43">●  Running · 5 / 32 players</text>
+<text x="20" y="452" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#465f6d">R2  FAMILY PC</text>
+<text x="20" y="472" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Host c58a1000…a002</text>
+<rect x="12" y="484" width="256" height="64" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="24" y="509" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">Main Server</text>
+<text x="24" y="532" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#795400">!  Host offline · last known</text>
+<rect x="12" y="686" width="256" height="40" rx="3" fill="#d5edf2" stroke="#006777" stroke-width="1"/>
+<text x="24" y="711" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#006777">+  ADD / IMPORT</text>
+<rect x="12" y="738" width="256" height="40" rx="3" fill="#ffffff" stroke="#647986" stroke-width="1"/>
+<text x="24" y="763" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">«  Collapse server rail</text>
+<path d="M280 56L280 856" fill="none" stroke="#647986" stroke-width="1"/>
+<text x="304" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#006777">SERVER WORKSPACE  /  REMOTE</text>
+<rect x="304" y="120" width="968" height="220" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<path d="M316 120H304V132" fill="none" stroke="#006777" stroke-width="2"/>
+<path d="M1260 120H1272V132" fill="none" stroke="#006777" stroke-width="2"/>
+<path d="M316 340H304V328" fill="none" stroke="#006777" stroke-width="2"/>
+<path d="M1260 340H1272V328" fill="none" stroke="#006777" stroke-width="2"/>
+<text x="324" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#172d39">Main Server</text>
+<text x="324" y="194" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#006777">Family PC · R1 · Remote</text>
+<text x="324" y="216" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Host c58a1000…a001   ·   Identity details</text>
+<text x="324" y="250" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#236b43">●  Running     5 / 32 players     Uptime 6h 42m</text>
+<rect x="324" y="278" width="126" height="40" rx="3" fill="#d5edf2" stroke="#006777" stroke-width="1"/>
+<text x="336" y="303" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#006777">Safe stop</text>
+<rect x="462" y="278" width="112" height="40" rx="3" fill="#ffffff" stroke="#647986" stroke-width="1"/>
+<text x="474" y="303" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">Restart</text>
+<rect x="586" y="278" width="62" height="40" rx="3" fill="#ffffff" stroke="#647986" stroke-width="1"/>
+<text x="598" y="303" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">···</text>
+<text x="312.0" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#006777">Overview</text>
+<text x="505.6" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#465f6d">Players</text>
+<text x="699.2" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#465f6d">Metrics</text>
+<text x="892.8" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#465f6d">Settings</text>
+<text x="1086.4" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#465f6d">Backups</text>
+<path d="M304 396L1272 396" fill="none" stroke="#647986" stroke-width="1"/>
+<path d="M304 396L497.6 396" fill="none" stroke="#006777" stroke-width="2"/>
+<rect x="304.0" y="420" width="314.6666666666667" height="132" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="320.0" y="448" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#465f6d">PLAYERS</text>
+<text x="320.0" y="488" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="600" fill="#172d39">5 / 32</text>
+<text x="320.0" y="524" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Current occupancy</text>
+<rect x="630.6666666666667" y="420" width="314.6666666666667" height="132" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="646.6666666666667" y="448" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#465f6d">PERFORMANCE</text>
+<text x="646.6666666666667" y="488" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="600" fill="#172d39">59.8 FPS</text>
+<text x="646.6666666666667" y="524" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Host-reported</text>
+<rect x="957.3333333333334" y="420" width="314.6666666666667" height="132" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="973.3333333333334" y="448" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#465f6d">UPTIME</text>
+<text x="973.3333333333334" y="488" font-family="Segoe UI, Arial, sans-serif" font-size="32" font-weight="600" fill="#172d39">6h 42m</text>
+<text x="973.3333333333334" y="524" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Since latest start</text>
+<rect x="304" y="568" width="968" height="224" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="324" y="600" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#465f6d">WORKSPACE CONTENT</text>
+<text x="324" y="634" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#172d39">Server information and recent activity</text>
+<text x="324" y="664" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#465f6d">Bounded workspace surfaces are detailed in #35.</text>
+<path d="M324 688L1252 688" fill="none" stroke="#647986" stroke-width="1"/>
+<text x="324" y="720" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#465f6d">Authoritative Host</text>
+<text x="324" y="746" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#172d39">Family PC · R1 · c58a1000…a001</text>
+<text x="304" y="826" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Synthetic design data · controls show placement only</text>
+<rect x="1296" y="72" width="292" height="768" rx="3" fill="#ffffff" stroke="none" stroke-width="1"/>
+<text x="1316" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#172d39">ACTIVITY  2</text>
+<text x="1556" y="108" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="400" fill="#465f6d">×</text>
+<rect x="1308" y="136" width="268" height="136" rx="3" fill="#e1eaef" stroke="none" stroke-width="1"/>
+<text x="1324" y="166" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#172d39">Backup</text>
+<text x="1324" y="192" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#006777">R1 · Main Server</text>
+<text x="1324" y="224" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">In progress · 42%</text>
+<rect x="1324" y="242" width="236" height="4" rx="3" fill="#647986" stroke="none" stroke-width="1"/>
+<rect x="1324" y="242" width="99.11999999999999" height="4" rx="3" fill="#006777" stroke="none" stroke-width="1"/>
+<rect x="1308" y="292" width="268" height="136" rx="3" fill="#e1eaef" stroke="none" stroke-width="1"/>
+<text x="1324" y="322" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#172d39">Update</text>
+<text x="1324" y="348" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#006777">L · Main Server</text>
+<text x="1324" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Waiting for operation lock</text>
+<text x="1316" y="500" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#465f6d">Host-owned work continues</text>
+<text x="1316" y="524" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#465f6d">when this drawer closes.</text>
+<text x="1316" y="800" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#006777">View activity</text>
+<path d="M0 856L1600 856" fill="none" stroke="#647986" stroke-width="1"/>
+<text x="20" y="882" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">Local Host · connected     /     Only authorized servers shown</text>
+<text x="1392" y="882" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#465f6d">ASTRA · DESIGN PROTOTYPE</text>
+</svg>
