@@ -63,6 +63,7 @@ var tests = new List<(string Name, Func<Task> Run)>
 {
     ("Windows activation is idempotent and classifies native errors", WindowsPlatformTests.Activation),
     ("Windows platform DACL and root policy are least privilege", WindowsPlatformTests.SecurityPolicy),
+    ("Existing protected Host state requires service access and privileged ownership", WindowsPlatformTests.ExistingStateAcl),
     ("Windows login command quoting uses a test registry", WindowsPlatformTests.LoginStart),
     ("Windows shell only opens bounded local directories through a fake launcher", WindowsPlatformTests.Shell),
     ("Client CurrentUser DPAPI complete credential lifecycle and shared binding", WindowsPlatformTests.CredentialLifecycle),

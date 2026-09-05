@@ -1,5 +1,14 @@
 # Astra v0.5.0 development trial
 
+## Review model — Product Owner update, 2026-09-05
+
+GitHub Codex external review was intentionally removed from the Astra lane by Product Owner decision, effective immediately during #41. Astra now owns implementation and two distinct substantive reviews: Pass A before PR creation and Pass B against the exact final PR HEAD. No further Codex requests, waiting, review-surface inspection, reviewed-SHA requirement, or review-attempt merge gate applies. Normal-lane process is unchanged. Scope, invariants, product-decision boundaries, actual field evidence, CI, frozen baseline, and experiment-only merges remain mandatory.
+
+Normal and Astra review models differ; benchmark comparisons must account for this. Historical exception: before this update, #41 received one external finding already read and under correction. That evidence is retained below and is not relabeled as an Astra finding. The revised no-external-review model applies from this update forward; claiming the entire earlier history contained no external review would be inaccurate.
+
+Each completed item records Pass A/Pass B findings, test-discovered defects, review-only defects, correction counts, and any later escaped defect. Final reporting uses **Astra review effectiveness** and identifies this workflow transition explicitly.
+
+
 ## Baseline and isolation
 
 - Repository: `shoemin/Palworld-Server-Manager`.
@@ -108,5 +117,24 @@ Baseline validation: 161/161 self-tests. Final stage-1 local suite: 169/169, inc
 Acceptance mapping: service runtime/account/start-type/DACL/root ACL/boot toggles/uninstall/path quoting are covered by provisioner plus the explicit SCM harness; non-admin eligibility and cross-user DPAPI are covered by actual-logon probes; local activation/credential lifecycle/quoting/runtime tests pass; #39/#40 checks remain in the full suite. All real Windows criteria require a successful integration run before Shadow Done.
 
 Stale-reference search checked Host scaffold wording, package versions, production project references, service/account/DPAPI scopes, shell launch placement, and issue-closing phrases. No production topology change, Host-side shell, production signature selection, Linux, IPC, or frozen source edit was introduced.
+
+## #41 external review round 1
+
+PR #61 targets the experiment branch. Reviewed SHA `d2ecae8f6ed43c7448801710479ce7eaa0e7b4de`. All four review surfaces checked. Two requests were made after the initial five-minute window; GitHub Codex returned review `5122646739` and inline finding `3941740363` / thread `PRRT_kwDOT8td0c6fmFRi`.
+
+Valid P1 finding credited to `@chatgpt-codex-connector[bot]`: protected descendants containing Administrator/SYSTEM-only ACLs or a service deny ACE passed the existing-state check but prevented service startup. Correction requires protected descendants to grant the service full, non-inherit-only access; deny ACLs fail closed instead of guessing group effective access. Related self-review also rejects unprivileged child owners, who can change DACLs despite lacking an explicit data-write ACE. A dedicated regression test covers protected administrator-only state, service/group denies, outsider ownership/access, and usable protected/inheritable layouts.
+
+Original exact-head remote evidence: CI workflow run `33985777171` PASS (169/169 plus real service/multi-user integration and successful service/group/user/profile/file cleanup); Docs run `33985778847` PASS. These establish actual virtual-account identity, DACL, boot toggles, database/lock lifecycle, non-admin rights, cross-user DPAPI, and uninstall preservation. They are pre-correction evidence; fresh runs and a fresh invariant audit are required for the correction HEAD.
+
+Full registry re-audit of the correction: same matrix above; changes affect HOST-001/PERSIST-001/SEC-001 provisioning access and preserve the three-identity Host-state boundary. No other authority creation/executor/credential path was added. Frozen source and production dependency graph remain unchanged. No new Product Decision. External re-review was subsequently removed by Product Owner authorization; correction proceeds through Astra Pass B.
+
+## #41 Review Pass B under revised workflow
+
+Fresh final-diff review examined all changed files against integration `0ccc6af`, including native handle/error ownership, SCM access delegation order, runtime resource cleanup, encrypted credential concurrency, path quoting, negative tests, actual CI evidence, and privileged helper cleanup. One additional Astra-only security finding: the provisioner delegated SERVICE_START before securing the data root, allowing an existing activation-group member to race installation. Corrected by completing Host-state protection before publishing the activation DACL. Default SCM permissions do not delegate start to that group. This is a Pass B finding, independent of the earlier external protected-descendant finding.
+
+Pass A findings: explicit permissions on existing descendants could survive root-only protection; integration group cleanup needed proof of creation. Pass B findings: protected descendants' service usability/owner/deny checks (continuation of the pre-policy external finding plus related Astra owner audit), and activation-delegation ordering. Test-discovered defect: ambiguous TimeoutException type caused the first integration-harness compile failure. Correction iterations: initial Pass A corrections, post-PR ACL regression correction, and fresh Pass B provisioning-order correction. No post-merge escaped defect known (not merged yet).
+
+The final corrected ACL and provisioning-order suite passed locally at 170/170; Release build had zero warnings/errors and strict docs passed. Provisioning-order change requires fresh final-head remote integration. Full applicable invariant matrix re-evaluated: no changes to IDs/scope; LOCAL-003 and SEC-001 now additionally require root protection before group activation rights. Review Pass B is pending final validation and exact-head recheck; no Codex re-review will be requested or inspected.
+
 
 

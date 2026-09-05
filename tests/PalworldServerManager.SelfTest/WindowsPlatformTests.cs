@@ -62,6 +62,34 @@ public static class WindowsPlatformTests
         Check(new WindowsHostPlatform().GetHostDataRoot() == Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "PalworldServerManager", "Host"), "Wrong machine root.");
         return Task.CompletedTask;
     }
+    public static Task ExistingStateAcl()
+    {
+        var service = new SecurityIdentifier("S-1-5-80-1-2-3-4-5");
+        var administrator = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+        var outsider = new SecurityIdentifier("S-1-5-21-1-2-3-1001");
+        FileSecurity Acl(bool protectedAcl, bool grantService)
+        {
+            var acl = new FileSecurity(); acl.SetOwner(administrator); acl.SetAccessRuleProtection(protectedAcl, false);
+            acl.AddAccessRule(new FileSystemAccessRule(administrator, FileSystemRights.FullControl, AccessControlType.Allow));
+            if (grantService) acl.AddAccessRule(new FileSystemAccessRule(service, FileSystemRights.FullControl, AccessControlType.Allow));
+            return acl;
+        }
+        void Rejected(FileSecurity acl)
+        {
+            try { WindowsHostPlatform.ValidateExistingStateAcl(acl, service); throw new Exception("Unsafe/unusable existing ACL accepted."); }
+            catch (UnauthorizedAccessException) { }
+        }
+        Rejected(Acl(true, false)); // reviewer regression: protected administrator-only database
+        var denied = Acl(true, true); denied.AddAccessRule(new FileSystemAccessRule(service, FileSystemRights.WriteData, AccessControlType.Deny)); Rejected(denied);
+        var groupDeny = Acl(false, true); groupDeny.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.WriteData, AccessControlType.Deny)); Rejected(groupDeny);
+        var wrongOwner = Acl(true, true); wrongOwner.SetOwner(outsider); Rejected(wrongOwner);
+        var broad = Acl(true, true); broad.AddAccessRule(new FileSystemAccessRule(outsider, FileSystemRights.ReadData, AccessControlType.Allow)); Rejected(broad);
+        WindowsHostPlatform.ValidateExistingStateAcl(Acl(true, true), service);
+        WindowsHostPlatform.ValidateExistingStateAcl(Acl(false, false), service); // root propagation supplies service rights
+        var directory = WindowsHostPlatform.BuildHostDirectoryAcl(service);
+        WindowsHostPlatform.ValidateExistingStateAcl(directory, service);
+        return Task.CompletedTask;
+    }
     private sealed class FakeRegistry : ILoginStartRegistry
     { public string? Value; public string? Read() => Value; public void Write(string command) => Value = command; public void Delete() => Value = null; }
     public static async Task LoginStart()

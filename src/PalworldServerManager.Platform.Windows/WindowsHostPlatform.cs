@@ -89,11 +89,13 @@ public sealed class WindowsHostPlatform : IHostServiceLifecycle, IBootStartPlatf
         {
             var sidInfo = 1; // SERVICE_SID_TYPE_UNRESTRICTED; dedicated virtual service identity
             Native.Check(Native.ChangeServiceConfig2(service, 5, ref sidInfo));
+            // Make the data boundary safe before delegating SERVICE_START. Otherwise an
+            // existing group member can race provisioning and start against an unsafe root.
+            var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", _service).Translate(typeof(SecurityIdentifier));
+            ProtectHostRoot(serviceSid);
             var descriptor = new RawSecurityDescriptor(BuildServiceDacl(groupSid));
             var bytes = new byte[descriptor.BinaryLength]; descriptor.GetBinaryForm(bytes, 0);
             Native.Check(Native.SetServiceObjectSecurity(service, 4, bytes));
-            var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", _service).Translate(typeof(SecurityIdentifier));
-            ProtectHostRoot(serviceSid);
         }
         catch
         {
@@ -135,14 +137,31 @@ public sealed class WindowsHostPlatform : IHostServiceLifecycle, IBootStartPlatf
                 throw new IOException("Existing Host state contains a reparse point.");
             FileSystemSecurity acl = entry is DirectoryInfo child
                 ? child.GetAccessControl() : new FileInfo(entry.FullName).GetAccessControl();
-            // Inherited grants will be replaced by the protected root's propagation. A
-            // protected descendant does not inherit that correction, so inspect all its ACEs.
-            foreach (FileSystemAccessRule rule in acl.GetAccessRules(true, acl.AreAccessRulesProtected, typeof(SecurityIdentifier)))
-                if (rule.AccessControlType == AccessControlType.Allow && rule.IdentityReference is SecurityIdentifier sid &&
-                    !sid.Equals(serviceSid) && !sid.IsWellKnown(WellKnownSidType.LocalSystemSid) && !sid.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid))
-                    throw new UnauthorizedAccessException("Existing Host state has explicit access outside the service/Administrator boundary.");
+            ValidateExistingStateAcl(acl, serviceSid);
             if (entry is DirectoryInfo subdirectory) ValidateExistingChildren(subdirectory, serviceSid);
         }
+    }
+    public static void ValidateExistingStateAcl(FileSystemSecurity acl, SecurityIdentifier serviceSid)
+    {
+        static bool PrivilegedSid(SecurityIdentifier sid, SecurityIdentifier service) => sid.Equals(service) ||
+            sid.IsWellKnown(WellKnownSidType.LocalSystemSid) || sid.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid);
+        // Ownership is itself a DACL-changing authority even when no write ACE is present.
+        if (acl.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner || !PrivilegedSid(owner, serviceSid))
+            throw new UnauthorizedAccessException("Existing Host state has an unprivileged owner.");
+        var rules = acl.GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().ToArray();
+        // Do not guess effective group membership when deny ACEs are present. Require explicit
+        // privileged repair of that layout rather than claiming a successful service install.
+        if (rules.Any(rule => rule.AccessControlType == AccessControlType.Deny))
+            throw new UnauthorizedAccessException("Existing Host state contains deny permissions requiring explicit repair.");
+        foreach (var rule in rules.Where(rule => !rule.IsInherited || acl.AreAccessRulesProtected))
+            if (!PrivilegedSid((SecurityIdentifier)rule.IdentityReference, serviceSid))
+                throw new UnauthorizedAccessException("Existing Host state has access outside the service/Administrator boundary.");
+        // Protected descendants retain their ACL when the root is secured. They must already
+        // grant the virtual service account usable rights on this object, not just its children.
+        if (acl.AreAccessRulesProtected && !rules.Any(rule => rule.IdentityReference.Equals(serviceSid) &&
+            (rule.PropagationFlags & PropagationFlags.InheritOnly) == 0 &&
+            (rule.FileSystemRights & FileSystemRights.FullControl) == FileSystemRights.FullControl))
+            throw new UnauthorizedAccessException("Protected Host state does not grant the service full access.");
     }
     private static string QuoteArgument(string value)
     {
