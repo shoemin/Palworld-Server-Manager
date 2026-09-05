@@ -571,3 +571,9 @@ Stale/contradictory search covered cache-vs-authority, native key ownership, enc
 
 Code candidate 59173b754d874d15a8d456f962834f644f729a94: Docs 33999277959 PASS; required fresh CI/local results still pending before declaring Pass A clean and opening a PR.
 Local corrected Release build (zero warnings/errors), 180/180 ordinary self-tests, and strict docs PASS. CI 33999275841 at 59173b754d874d15a8d456f962834f644f729a94 PASS, including actual service/multi-user/cache integration. All Pass A rows remain PASS. Pass A clean after three pre-PR correction cycles; no external reviewer used. Only documentation/ledger changed after this validated code candidate.
+
+## #42b1 Review Pass B correction
+
+Fresh review of PR #71 at exact HEAD 89b6563e1d7a7d492d6d3663dd5ae97f094362d7 against unchanged experiment base af398cafd7759ff5c572da854a73e5c0ad164f9a re-read the complete implementation/tests/docs, acceptance map and all registry families. Two test-evidence weaknesses were found only in this pass: fallback fixture cleanup could log failure yet permit a green test if production reconciliation returned successfully but left a key; and a recycled process ID could make a prior readiness file look current after restart. Fixed the fallback to explicitly fail after cleaning every known fixture key, and clear prior readiness/start markers in the synchronous fixture startup before launching its worker. No production authority/storage behavior changed. The earlier successful CI did not use fallback cleanup; no observed false pass is asserted retroactively.
+
+This is correction cycle 4 (three before PR, one in Pass B). Re-audited every Pass A invariant row: all retain the same boundary/evidence classification. Fresh full local and actual Windows validation is required before repeating final Pass B. No external review, new Product Decision or escaped production defect.

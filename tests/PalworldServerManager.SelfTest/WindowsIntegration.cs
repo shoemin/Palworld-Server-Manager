@@ -38,6 +38,9 @@ public static class WindowsIntegration
                     else Check(previous.SequenceEqual(expected), "Service credential changed across restart.");
                     var offline = secrets.RetrieveAsync("offline-integration").GetAwaiter().GetResult();
                     if (offline is not null) Check(offline.SequenceEqual(new byte[] { 8, 6, 4, 2 }), "Service cannot read offline-written credential.");
+                    // A recycled PID must not make an earlier process's readiness look current.
+                    File.Delete(Path.Combine(args[2], "tls-ready.json"));
+                    File.Delete(Path.Combine(args[2], "tls-started.txt"));
                     File.WriteAllText(Path.Combine(args[2], "secure-store.txt"), offline is null ? "SERVICE PASS" : "OFFLINE PASS");
                     File.WriteAllText(Path.Combine(args[2], "identity.txt"), identity.User!.Value + "\n" + Environment.ProcessId);
                     return new NativeTlsServiceFixture(args[1], args[2], runtime, ct);
@@ -298,6 +301,7 @@ public static class WindowsIntegration
             {
                 using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
                 Check(lease is not null, "Fixture fallback cleanup lacks offline lease.");
+                var requiredFallback = false;
                 foreach (var reference in new[] { "tls-current", "tls-stale" })
                 {
                     var name = "PalworldServerManager.HostTls.v1." + tlsHostId.ToString("N") + "." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(reference)));
@@ -305,8 +309,10 @@ public static class WindowsIntegration
                     using var key = CngKey.Open(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey);
                     key.Delete();
                     Check(!CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey), "Rejected fixture key survived elevated cleanup.");
+                    requiredFallback = true;
                     Console.WriteLine("Fixture-only elevated cleanup removed rejected native container; production reconciliation remains FAILED.");
                 }
+                Check(!requiredFallback, "Native reconciliation left a fixture key; fallback cleanup cannot convert this to PASS.");
             });
             if (nativeGrantAdded && serviceSid is not null) Cleanup(() =>
             {
