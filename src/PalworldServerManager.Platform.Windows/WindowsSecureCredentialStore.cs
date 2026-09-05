@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -12,6 +13,8 @@ namespace PalworldServerManager.Platform.Windows;
 public sealed class WindowsSecureCredentialStore : ISecureCredentialStore
 {
     public const int MaximumSecretBytes = 1024 * 1024;
+    private static readonly ConcurrentDictionary<string, object> Gates = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _gate;
     private static readonly byte[] Header = "PSM1"u8.ToArray();
     private readonly DirectoryInfo _hostRoot;
     private readonly DirectoryInfo _store;
@@ -27,29 +30,32 @@ public sealed class WindowsSecureCredentialStore : ISecureCredentialStore
         if (!Path.IsPathFullyQualified(hostDataRoot) || hostDataRoot.StartsWith(@"\\"))
             throw new ArgumentException("An absolute local Host root is required.");
         _hostRoot = new DirectoryInfo(Path.GetFullPath(hostDataRoot));
+        _gate = Gates.GetOrAdd(_hostRoot.FullName, _ => new object());
         _store = new DirectoryInfo(Path.Combine(_hostRoot.FullName, "credentials"));
         _service = serviceSid ?? throw new ArgumentNullException(nameof(serviceSid));
         _allowed = [_service, new(WellKnownSidType.BuiltinAdministratorsSid, null), new(WellKnownSidType.LocalSystemSid, null)];
     }
 
     public Task StoreAsync(string key, ReadOnlyMemory<byte> secret, CancellationToken ct = default)
+    { lock (_gate) return StoreCore(key, secret, ct); }
+    private Task StoreCore(string key, ReadOnlyMemory<byte> secret, CancellationToken ct)
     {
         var hash = KeyHash(key); ct.ThrowIfCancellationRequested();
         if (secret.Length > MaximumSecretBytes) throw new ArgumentException("Credential exceeds the store size limit.");
-        Prepare(); var destination = Blob(hash); ValidateBlobIfPresent(destination);
+        Prepare(); RetireTemporaryFiles(hash); var destination = Blob(hash); ValidateBlobIfPresent(destination);
         var plaintext = secret.ToArray(); byte[] encrypted;
         try { encrypted = ProtectedData.Protect(plaintext, hash, DataProtectionScope.LocalMachine); }
         finally { CryptographicOperations.ZeroMemory(plaintext); }
-        var temporary = Path.Combine(_store.FullName, Guid.NewGuid().ToString("N") + ".tmp");
+        var temporary = Path.Combine(_store.FullName, Convert.ToHexString(hash) + "." + Guid.NewGuid().ToString("N") + ".tmp");
         var created = false;
         try
         {
-            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+            var security = new FileSecurity(); SetPolicy(security);
+            using (var stream = new FileInfo(temporary).Create(FileMode.CreateNew, FileSystemRights.Write,
+                FileShare.None, 4096, FileOptions.WriteThrough, security))
             {
                 created = true; stream.Write(Header); stream.Write(encrypted); stream.Flush(true);
             }
-            var security = new FileSecurity(); SetPolicy(security);
-            new FileInfo(temporary).SetAccessControl(security);
             ct.ThrowIfCancellationRequested();
             Prepare(); ValidateBlobIfPresent(destination);
             File.Move(temporary, destination, true); // same-directory atomic name replacement
@@ -59,6 +65,8 @@ public sealed class WindowsSecureCredentialStore : ISecureCredentialStore
     }
 
     public Task<byte[]?> RetrieveAsync(string key, CancellationToken ct = default)
+    { lock (_gate) return RetrieveCore(key, ct); }
+    private Task<byte[]?> RetrieveCore(string key, CancellationToken ct)
     {
         var hash = KeyHash(key); ct.ThrowIfCancellationRequested(); Prepare(); var path = Blob(hash);
         if (!ValidateBlobIfPresent(path)) return Task.FromResult<byte[]?>(null);
@@ -75,12 +83,22 @@ public sealed class WindowsSecureCredentialStore : ISecureCredentialStore
     }
 
     public Task DeleteAsync(string key, CancellationToken ct = default)
+    { lock (_gate) return DeleteCore(key, ct); }
+    private Task DeleteCore(string key, CancellationToken ct)
     {
         var hash = KeyHash(key); ct.ThrowIfCancellationRequested(); Prepare(); var path = Blob(hash);
+        RetireTemporaryFiles(hash);
         if (ValidateBlobIfPresent(path)) File.Delete(path);
         return Task.CompletedTask;
     }
 
+    private void RetireTemporaryFiles(byte[] hash)
+    {
+        // Per-root in-process serialization plus the caller's machine lease exclude live writers.
+        // A retry/delete retires encrypted interrupted writes for this exact key as well.
+        foreach (var path in Directory.EnumerateFiles(_store.FullName, Convert.ToHexString(hash) + ".*.tmp"))
+            if (ValidateBlobIfPresent(path)) File.Delete(path);
+    }
     private static byte[] KeyHash(string key)
     {
         if (string.IsNullOrEmpty(key) || key.Length > 128 || key.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '-' and not '_' and not '.'))

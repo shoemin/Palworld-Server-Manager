@@ -42,6 +42,13 @@ public static class SecureStoreTests
             Check(Directory.GetFiles(directory, "*.tmp").Length == 0, "Failed write leaked temporary file.");
         }
         finally { File.SetAttributes(a, FileAttributes.Normal); }
+        var interrupted = Path.ChangeExtension(a, null) + ".crash.tmp";
+        using (var stream = new FileInfo(interrupted).Create(FileMode.CreateNew, FileSystemRights.Write,
+            FileShare.None, 4096, FileOptions.WriteThrough, new FileInfo(a).GetAccessControl()))
+            stream.Write(File.ReadAllBytes(a));
+        await store.DeleteAsync("a");
+        Check(!File.Exists(a) && !File.Exists(interrupted), "Retirement retained an interrupted encrypted write.");
+
     });
     public static Task AclRejection() => WithStore(async (root, sid) =>
     {
