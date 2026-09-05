@@ -22,9 +22,11 @@
 <text x="56" y="298" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Bounded numeric</text>
 <text x="56" y="325" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Conditional pattern</text>
 <text x="56" y="380" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Slider only with authoritative min/max/step.</text>
-<path d="M458 328L742 328" fill="none" stroke="#56dcf0" stroke-width="3"/>
-<rect x="580" y="318" width="16" height="20" rx="3" fill="#56dcf0" stroke="none" stroke-width="1"/>
-<text x="458" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">min</text>
+<rect x="450" y="304" width="92" height="40" rx="3" fill="#152e3b" stroke="#7291a2" stroke-width="1"/>
+<text x="462" y="329" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">value</text>
+<path d="M560 328L742 328" fill="none" stroke="#56dcf0" stroke-width="3"/>
+<rect x="650" y="318" width="16" height="20" rx="3" fill="#56dcf0" stroke="none" stroke-width="1"/>
+<text x="560" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">min</text>
 <text x="714" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">max</text>
 <rect x="820" y="270" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
 <text x="836" y="298" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Integer</text>
@@ -45,7 +47,7 @@
 <rect x="820" y="418" width="740" height="132" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
 <text x="836" y="446" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="600" fill="#56dcf0">Multiline text</text>
 <text x="836" y="473" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Server description</text>
-<text x="836" y="528" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Wrapping paragraph entry; not a one-line key/value wall.</text>
+<text x="836" y="528" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Soft wrapping; stored newlines only if Host schema allows.</text>
 <rect x="1230" y="452" width="306" height="56" rx="3" fill="#152e3b" stroke="#7291a2" stroke-width="1"/>
 <text x="1242" y="474" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Welcome to our world.</text>
 <text x="1242" y="496" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Bring your friends.</text>

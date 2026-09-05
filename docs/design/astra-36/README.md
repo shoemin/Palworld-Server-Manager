@@ -32,7 +32,7 @@ Concrete examples use established meanings: fast travel is boolean; experience g
 | Enum | Named choice list, readable labels, current choice | Preserve an unknown current choice; never silently coerce to first item |
 | Bounded number | Value entry plus slider, visible min/max/unit/step | No slider until bounds/step are actually defined |
 | Integer | Numeric entry/stepper honoring known integer domain | No invented maximum/default; Host validates |
-| Text / multiline | Name input or wrapping description area | No arbitrary length/regex restriction unless supplied |
+| Text / multiline | Name input or softly wrapping description area | Stored line breaks only if schema allows; no guessed length/regex rule |
 | Path | Text for a defined bounded Host setting; explicit Host context | No new path key, generic browse or UNC/remote filesystem authority |
 | Password | Unchanged / Replace / explicit Clear, masked new draft | Never fill with a stored secret or submit a placeholder as a new value |
 | Duration | Numeric magnitude with documented unit | No guessed unit conversion or timer range |

@@ -91,7 +91,7 @@ def gallery():
         ("Bounded numeric","Conditional pattern","Slider only with authoritative min/max/step.","slider"),
         ("Integer","Player limit","Integer entry; no guessed maximum or default.","−    value    +"),
         ("Text","Server name","Single-line text; validation comes from Host.","Weekend World"),
-        ("Multiline text","Server description","Wrapping paragraph entry; not a one-line key/value wall.","Welcome to our world…"),
+        ("Multiline text","Server description","Soft wrapping; stored newlines only if Host schema allows.","Welcome to our world…"),
         ("Path","Conditional pattern","No baseline path key bound; no generic remote browser.","Host-defined setting path"),
         ("Password","Administrator password","Unchanged / Replace / explicit Clear; no stored-value echo.","Replace password…"),
         ("Duration","Huge Egg hatching time","Known hours unit; no arbitrary timer range.","value   hours"),
@@ -107,9 +107,10 @@ def gallery():
         b.text(x+16,y+110,desc,12,"muted")
         cx=x+410; cy=y+34
         if control=="slider":
-            b.line(x+418,y+58,x+702,y+58,"accent",3)
-            b.rect(x+540,y+48,16,20,"accent")
-            b.text(x+418,y+86,"min",12,"muted"); b.text(x+674,y+86,"max",12,"muted")
+            b.rect(cx,cy,92,40,"raised","border"); b.text(cx+12,cy+25,"value",14)
+            b.line(x+520,y+58,x+702,y+58,"accent",3)
+            b.rect(x+610,y+48,16,20,"accent")
+            b.text(x+520,y+86,"min",12,"muted"); b.text(x+674,y+86,"max",12,"muted")
         elif kind=="Boolean":
             b.button(cx,cy,140,"On",True); b.button(cx+152,cy,140,"Off")
         elif kind=="Integer":
