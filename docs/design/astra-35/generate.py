@@ -119,6 +119,11 @@ def players():
 def metrics():
     b=frame("Metrics with explicit missing-data gap", "Metrics")
     rail_selection(b,"R1","Running · REST data stale")
+    b.rect(1178,124,282,44,"canvas")
+    b.button(1180,126,142,"Safe stop —")
+    b.button(1336,126,122,"Restart —")
+    b.text(1180,190,"REST unavailable",12,"warning")
+    b.text(1336,190,"REST unavailable",12,"warning")
     b.text(304,320,"Metrics · recent observed history",18,"text",600)
     b.text(304,350,"Degraded · last sample 14:30 · REST data unavailable",14,"warning")
     for i,(label,unit) in enumerate([("Server FPS","FPS"),("Frame time","ms"),("Player count","players")]):

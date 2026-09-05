@@ -283,3 +283,8 @@ Local eight-board XML/reproducibility and shared palette checks PASS; retained #
 | PLATFORM-002, LINUX-001 | Filesystem/platform | Bounded package handoff/local-folder seam only; no remote browser/UNC or Linux production | PASS |
 
 Negative/contradictory search covered direct filesystem/REST, hidden inventory, trust-as-permission, implicit target, raw backup files, resume/queue, revision/lock bypass, stale samples, #36–#38 scope and final field claims. No unresolved Product Decision or mandatory #35 field evidence. Pass A clean; open PR then fresh Pass B.
+## #35 Review Pass B
+
+PR #65 initially at `eb83a2c8bc30ca6d5d1dcf9ce28e82e03f276047`. Fresh complete 11-file review found one additional fixture contradiction: the Metrics board declared REST unavailable while Safe Stop/Restart still appeared usable. Corrected those controls to unavailable with REST-specific reasons; running process status remains independently visible. Rendered the correction and final restore-reference/axis details. No additional issue on repeat review. This is a Pass B-only finding; correction count now 4. No automated-test defect or escaped #35 defect known.
+
+Repeated full invariant matrix PASS: HOST-002/PROTO-001 unavailable-action evidence strengthened, OPS/identity/data-ownership/security/platform boundaries unchanged. No new product semantics, generic endpoint, field substitution or #27 decision. Eight-board and retained seven-board checks PASS; strict docs rerun before commit. Pass A and repeated Pass B clean for final corrected diff; remote Docs and exact committed HEAD/base verification remain the merge gate. No external reviewer used. Final SHA/run/merge evidence will be appended at the integration checkpoint after those checks succeed.
