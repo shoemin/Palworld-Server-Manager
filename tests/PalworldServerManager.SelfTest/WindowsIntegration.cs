@@ -53,6 +53,8 @@ public static class WindowsIntegration
         using var admin = WindowsIdentity.GetCurrent();
         if (!new WindowsPrincipal(admin).IsInRole(WindowsBuiltInRole.Administrator))
             throw new UnauthorizedAccessException("FIELD EVIDENCE REQUIRED: explicit Windows integration requires an elevated Administrator token; no test was skipped as PASS.");
+        await NativeTlsCacheTests.Lifecycle();
+        Console.WriteLine("PASS integration: native TLS cache authority, nonexportability, reopen and retirement");
         await Suite(); return 0;
     }
     private static async Task UserProbe(string action, string serviceName, string credentialPath, string hostRoot)
