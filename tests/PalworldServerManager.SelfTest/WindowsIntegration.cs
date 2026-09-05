@@ -29,6 +29,14 @@ public static class WindowsIntegration
                 try
                 {
                     using var identity = WindowsIdentity.GetCurrent();
+                    var secrets = new WindowsSecureCredentialStore(args[2], identity.User!);
+                    var expected = Encoding.UTF8.GetBytes("SYNTHETIC-SERVICE-SECRET-4bf5");
+                    var previous = secrets.RetrieveAsync("service-integration").GetAwaiter().GetResult();
+                    if (previous is null) secrets.StoreAsync("service-integration", expected).GetAwaiter().GetResult();
+                    else Check(previous.SequenceEqual(expected), "Service credential changed across restart.");
+                    var offline = secrets.RetrieveAsync("offline-integration").GetAwaiter().GetResult();
+                    if (offline is not null) Check(offline.SequenceEqual(new byte[] { 8, 6, 4, 2 }), "Service cannot read offline-written credential.");
+                    File.WriteAllText(Path.Combine(args[2], "secure-store.txt"), offline is null ? "SERVICE PASS" : "OFFLINE PASS");
                     File.WriteAllText(Path.Combine(args[2], "identity.txt"), identity.User!.Value + "\n" + Environment.ProcessId);
                     return runtime;
                 }
@@ -75,6 +83,17 @@ public static class WindowsIntegration
             var store = new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath);
             await store.CreateAndStoreAsync(); await store.BindPrincipalIdAsync(Guid.NewGuid());
             Check(await store.HasCredentialAsync(), "User A did not persist credential.");
+        }
+        else if (action == "host-credential-denied")
+        {
+            foreach (var attempt in new Action[] {
+                () => { using var file = File.OpenRead(credentialPath); },
+                () => File.WriteAllBytes(credentialPath, new byte[] { 1 }),
+                () => File.Delete(credentialPath) })
+            {
+                try { attempt(); throw new Exception("Non-admin accessed Host encrypted credential."); }
+                catch (UnauthorizedAccessException) { }
+            }
         }
         else if (action == "credential-denied")
         {
@@ -124,7 +143,30 @@ public static class WindowsIntegration
             AssertLockDenied(mutex);
             Check(File.Exists(Path.Combine(hostRoot, "host.db")), "SCM workload did not open #40 database.");
             await platform.StopAsync(); AssertLockAvailable(mutex);
+            string hostCredential;
+            using (var offlineLease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex))
+            {
+                Check(offlineLease is not null, "Offline store caller lacks exclusive lease.");
+                var secrets = new WindowsSecureCredentialStore(hostRoot, serviceSid);
+                Check((await secrets.RetrieveAsync("service-integration"))!.SequenceEqual(Encoding.UTF8.GetBytes("SYNTHETIC-SERVICE-SECRET-4bf5")), "Elevated offline caller could not read service-created blob.");
+                await secrets.StoreAsync("offline-integration", new byte[] { 8, 6, 4, 2 });
+                await SecureCredentialStoreContractTests.Run(() => new WindowsSecureCredentialStore(hostRoot, serviceSid));
+                hostCredential = Directory.GetFiles(Path.Combine(hostRoot, "credentials"), "*.bin").First();
+                var beforeLink = Directory.GetFiles(Path.Combine(hostRoot, "credentials"), "*.bin");
+                await secrets.StoreAsync("reparse-test", new byte[] { 1 });
+                var link = Directory.GetFiles(Path.Combine(hostRoot, "credentials"), "*.bin").Except(beforeLink).Single();
+                File.Delete(link); File.CreateSymbolicLink(link, hostCredential);
+                await SecureStoreTests.Reject<IOException>(() => secrets.RetrieveAsync("reparse-test"));
+                await SecureStoreTests.Reject<IOException>(() => secrets.DeleteAsync("reparse-test"));
+                File.Delete(link);
+                Check(File.Exists(hostCredential), "Rejected symlink delete touched destination.");
+                Check(!Encoding.UTF8.GetString(File.ReadAllBytes(Path.Combine(hostRoot, "host.db"))).Contains("SYNTHETIC-SERVICE-SECRET-4bf5"), "Host database contains private secret.");
+                // Update-style executable replacement at the same service path; not a release/package test.
+                File.Copy(executable, executable + ".update-test");
+                File.Move(executable + ".update-test", executable, true);
+            }
             await platform.StartAsync();
+            Check(File.ReadAllText(Path.Combine(hostRoot, "secure-store.txt")) == "OFFLINE PASS", "Restarted service did not validate offline caller value.");
             identity = File.ReadAllLines(Path.Combine(hostRoot, "identity.txt"));
             using (var process = Process.GetProcessById(int.Parse(identity[1]))) { process.Kill(); Check(process.WaitForExit(30000), "Killed service did not exit."); }
             using (var controller = new ServiceController(service, ".")) controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
@@ -143,6 +185,9 @@ public static class WindowsIntegration
             await platform.StopAsync();
             RunUser(executable, userA, password, "credential-create", service, credential, hostRoot, shared);
             RunUser(executable, userB, password, "credential-denied", service, credential, hostRoot, shared);
+            RunUser(executable, userA, password, "host-credential-denied", service, hostCredential, hostRoot, shared);
+            RunUser(executable, userB, password, "host-credential-denied", service, hostCredential, hostRoot, shared);
+            Console.WriteLine("PASS integration: service/elevated-offline credential interoperability, restart, real nonadmin read/write/delete denial");
             Console.WriteLine("PASS integration: real non-admin query/start, forbidden rights, unauthorized start denied, Host-data denied, cross-user DPAPI");
             await platform.UninstallAsync(); installed = false;
             Check(File.Exists(Path.Combine(hostRoot, "host.db")), "Uninstall removed authoritative database.");

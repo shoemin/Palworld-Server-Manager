@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
     <ProjectReference Include="..\PalworldServerManager.Platform.Contracts\PalworldServerManager.Platform.Contracts.csproj" />
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
   </ItemGroup>
