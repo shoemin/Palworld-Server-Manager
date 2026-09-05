@@ -244,7 +244,17 @@ public static class WindowsIntegrationTests
         var userB = $"psmtB{RunId[..6]}";
         var password = $"Pw!{Guid.NewGuid():N}Aa1";
 
-        var dataRoot = Path.Combine(Path.GetTempPath(), $"psm-integration-root-{RunId}");
+        // Deliberately NOT under Path.GetTempPath(): that resolves to the ELEVATED HARNESS USER's
+        // own per-user profile Temp folder, which a per-service virtual account (NT SERVICE\X) has
+        // no default rights to create a subdirectory under - only that one user (+ SYSTEM +
+        // Administrators) does. %ProgramData% is the location production itself proves works for
+        // an arbitrary per-service identity (WindowsHostDataRootProvider), so the isolated test
+        // root uses the SAME parent, under a completely different top-level folder name than the
+        // real product ("PalworldServerManagerIntegrationTest" vs "PalworldServerManager") so the
+        // isolation assertion against the real production root stays meaningful.
+        var dataRoot = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "PalworldServerManagerIntegrationTest", $"root-{RunId}");
         var dpapiDir = Path.Combine(Path.GetTempPath(), $"psm-integration-dpapi-{RunId}");
 
         // ISOLATION baseline: snapshot the REAL production Host data root before doing anything,
@@ -395,6 +405,42 @@ public static class WindowsIntegrationTests
         log.Add($"[4] live service DACL verified: activation-group mask 0x{mask:X}");
     }
 
+    /// <summary>
+    /// Starts the temporary service and, ONLY if it fails to reach Running, enriches the failure
+    /// with recent Application/System event-log entries mentioning this service name - the only
+    /// way to see what actually happened INSIDE the started process (an unhandled exception, or
+    /// SCM's own start-timeout) since CI gives no other window into it.
+    /// </summary>
+    private static async Task StartAndDiagnoseOnFailureAsync(WindowsHostServiceLifecycle lifecycle)
+    {
+        try
+        {
+            await lifecycle.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception(
+                $"lifecycle.StartAsync() failed: {ex.Message}\n--- recent event-log entries for '{ServiceName}' ---\n{CaptureRecentServiceDiagnostics()}",
+                ex);
+        }
+    }
+
+    private static string CaptureRecentServiceDiagnostics()
+    {
+        try
+        {
+            return RunPowerShell(
+                "Get-WinEvent -FilterHashtable @{LogName='Application','System'; StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue | " +
+                $"Where-Object {{ $_.Message -like '*{ServiceName}*' -or $_.Message -like '*PalworldServerManager*' }} | " +
+                "Select-Object -First 25 TimeCreated,Id,ProviderName,LevelDisplayName,Message | Format-List | Out-String -Width 4096",
+                "capture recent event-log diagnostics for the temporary service");
+        }
+        catch (Exception ex)
+        {
+            return $"(failed to capture event-log diagnostics: {ex.Message})";
+        }
+    }
+
     /// <summary>Item 2C: refused start while the lock is held must not leave a hollow "Running" process.</summary>
     private static async Task VerifyStartupReadinessRefusesWhenLockAlreadyHeldAsync(WindowsHostServiceLifecycle lifecycle, List<string> log)
     {
@@ -413,6 +459,19 @@ public static class WindowsIntegrationTests
 
         True(startFailure is not null, "[2C] starting the service must fail while the exclusivity lock is already held");
 
+        if (startFailure is System.TimeoutException)
+        {
+            // A refusal SHOULD fail fast (the runtime observes the held lock and throws
+            // immediately) - a 30s SCM/status-poll timeout instead would mean the service never
+            // even reached the lock-acquire step, which is a genuine startup defect, not the
+            // intended refusal behavior this test is meant to prove. Surface event-log evidence
+            // rather than let that ambiguity hide behind a passing assertion.
+            throw new Exception(
+                $"[2C] the refusal manifested as a 30s status-poll TimeoutException, not a fast failure - this likely means the " +
+                $"service never reached its lock-acquire step at all.\n--- recent event-log entries for '{ServiceName}' ---\n{CaptureRecentServiceDiagnostics()}",
+                startFailure);
+        }
+
         var status = await lifecycle.QueryStatusAsync();
         True(status.State != HostServiceState.Running, "[2C] the service must not remain Running as a hollow process after a refused start");
 
@@ -422,7 +481,7 @@ public static class WindowsIntegrationTests
     /// <summary>Items 4/5/8-11: the #40 exclusivity lock, isolation, and PID-exact crash recovery around the real (isolated) service lifetime.</summary>
     private static async Task VerifyExclusivityLockAsync(WindowsHostServiceLifecycle lifecycle, List<string> log)
     {
-        await lifecycle.StartAsync();
+        await StartAndDiagnoseOnFailureAsync(lifecycle);
         Equal(HostServiceState.Running, (await lifecycle.QueryStatusAsync()).State, "[8] service reached Running");
 
         // 8 + 9: while the isolated Host workload runs it holds ITS OWN unique mutex, so a second
