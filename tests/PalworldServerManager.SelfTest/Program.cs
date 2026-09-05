@@ -11,6 +11,7 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args.Length == 1 && args[0] == "--native-tls-cache-probe") { await NativeTlsCacheTests.Lifecycle(); return 0; }
     if (args.Length == 1 && args[0] == "--local-ipc-spike") { await LocalIpcSpike.LocalProof(); return 0; }
     if (args[0].StartsWith("--windows-", StringComparison.Ordinal))
         return await WindowsIntegration.RunAsync(args);

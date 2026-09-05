@@ -45,9 +45,15 @@ internal static class CriticalOperationWiringTests
             var processes = new ServerProcessService(settings, rest, logger, tracker);
             var profile = new ServerProfile { Name = "Force Stop Wiring Test", InstallPath = Path.Combine(paths.ServersRoot, "force-stop-test") };
 
-            using var fake = SyntheticPalServerHarness.Start(profile.InstallPath, waitSeconds: 10, exitCode: 0);
+            using var fake = SyntheticPalServerHarness.Start(profile.InstallPath, waitSeconds: 30, exitCode: 0);
             try
             {
+                // Process.Start can return before name/module inspection can observe the child.
+                // Establish the running precondition; otherwise StopAsync correctly takes its no-op path.
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (!ProcessInspection.IsPalServerRunningFrom(profile.InstallPath) && !fake.HasExited && DateTime.UtcNow < deadline)
+                    await Task.Delay(25);
+                True(!fake.HasExited && ProcessInspection.IsPalServerRunningFrom(profile.InstallPath), "synthetic force-stop process never became observable");
                 var result = await processes.StopAsync(profile, force: true);
                 True(result.Success, "force-stopping a real synthetic process should succeed: " + result.Message);
                 Equal(1, tracker.Calls.Count(c => c.Kind == CriticalOperationKind.ServerForceStop && c.Detail == profile.Name));

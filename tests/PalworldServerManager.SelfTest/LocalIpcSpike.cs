@@ -27,10 +27,11 @@ public sealed class LocalIpcSpike : IAsyncDisposable
     private readonly X509Certificate2 _certificate;
     private readonly string _nativeKeyName;
     private readonly CngProvider _nativeProvider;
+    private readonly bool _ownsNativeKey;
     public string PipeName { get; }
     public string PublicPin { get; }
     public ConcurrentBag<string> ObservedSids { get; } = [];
-    private LocalIpcSpike(WebApplication application, X509Certificate2 certificate, string pipeName)
+    private LocalIpcSpike(WebApplication application, X509Certificate2 certificate, string pipeName, bool ownsNativeKey)
     {
         _application = application; _certificate = certificate; PipeName = pipeName;
         PublicPin = Convert.ToHexString(SHA256.HashData(certificate.RawData));
@@ -38,19 +39,14 @@ public sealed class LocalIpcSpike : IAsyncDisposable
         var cng = signingKey as ECDsaCng ?? throw new Exception("Probe needs a tracked Windows CNG key.");
         _nativeKeyName = cng.Key.KeyName ?? throw new Exception("Probe key container was not named.");
         _nativeProvider = cng.Key.Provider!;
+        _ownsNativeKey = ownsNativeKey;
     }
 
-    public static async Task<LocalIpcSpike> StartAsync(SecurityIdentifier group)
+    public static async Task<LocalIpcSpike> StartAsync(SecurityIdentifier group, X509Certificate2? cacheCertificate = null)
     {
         using var identity = WindowsIdentity.GetCurrent();
         var pipeName = "PSMAstraIpcProbe" + Guid.NewGuid().ToString("N");
-        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var request = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256);
-        using var generated = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
-        var pfx = generated.Export(X509ContentType.Pfx);
-        X509Certificate2 certificate;
-        try { certificate = new X509Certificate2(pfx, (string?)null, X509KeyStorageFlags.DefaultKeySet); }
-        finally { CryptographicOperations.ZeroMemory(pfx); }
+        var certificate = cacheCertificate is null ? CreateTestCertificate() : new X509Certificate2(cacheCertificate);
         var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
         builder.Logging.ClearProviders(); // Request content, keys and bearer values must not enter logs.
         builder.WebHost.UseNamedPipes(options =>
@@ -69,7 +65,7 @@ public sealed class LocalIpcSpike : IAsyncDisposable
             listen.UseHttps(certificate, https => https.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13);
         }));
         var application = builder.Build();
-        var spike = new LocalIpcSpike(application, certificate, pipeName);
+        var spike = new LocalIpcSpike(application, certificate, pipeName, cacheCertificate is null);
         application.MapPost("/probe", async context =>
         {
             Check(context.Request.IsHttps && context.Request.Protocol == "HTTP/2", "Probe lacked HTTP/2 TLS.");
@@ -87,6 +83,16 @@ public sealed class LocalIpcSpike : IAsyncDisposable
         });
         try { await application.StartAsync(); return spike; }
         catch { await spike.DisposeAsync(); throw; }
+    }
+
+    private static X509Certificate2 CreateTestCertificate()
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        using var generated = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256)
+            .CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
+        var pfx = generated.Export(X509ContentType.Pfx);
+        try { return new X509Certificate2(pfx, (string?)null, X509KeyStorageFlags.DefaultKeySet); }
+        finally { CryptographicOperations.ZeroMemory(pfx); }
     }
 
     public static async Task<string> RequestAsync(string pipeName, string pin)
@@ -151,9 +157,9 @@ public sealed class LocalIpcSpike : IAsyncDisposable
             finally
             {
                 _certificate.Dispose();
-                if (CngKey.Exists(_nativeKeyName, _nativeProvider))
+                if (_ownsNativeKey && CngKey.Exists(_nativeKeyName, _nativeProvider))
                 { using var key = CngKey.Open(_nativeKeyName, _nativeProvider); key.Delete(); }
-                Check(!CngKey.Exists(_nativeKeyName, _nativeProvider), "Probe native key cleanup failed.");
+                if (_ownsNativeKey) Check(!CngKey.Exists(_nativeKeyName, _nativeProvider), "Probe native key cleanup failed.");
             }
         }
     }
