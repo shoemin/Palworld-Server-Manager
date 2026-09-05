@@ -23,11 +23,13 @@ internal sealed class NativeTlsServiceFixture : IDisposable
             try
             {
                 // NCrypt must not run on the SCM start callback, or while it is StartPending.
-                using var controller = new ServiceController(service, ".");
+                // The elevated harness signals after it observes SCM Running. The intentionally
+                // minimal service DACL does not grant the virtual account QUERY_STATUS on itself.
+                var started = Path.Combine(root, "tls-started.txt");
                 while (true)
                 {
-                    stop.ThrowIfCancellationRequested(); controller.Refresh();
-                    if (controller.Status == ServiceControllerStatus.Running) break;
+                    stop.ThrowIfCancellationRequested();
+                    if (File.Exists(started) && File.ReadAllText(started) == Environment.ProcessId.ToString()) break;
                     await Task.Delay(50, stop);
                 }
                 var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
@@ -66,6 +68,9 @@ internal sealed class NativeTlsServiceFixture : IDisposable
     }
     internal static async Task<Ready> WaitReady(string root)
     {
+        var startedPid = File.ReadAllLines(Path.Combine(root, "identity.txt"))[1];
+        File.WriteAllText(Path.Combine(root, "tls-started.tmp"), startedPid);
+        File.Move(Path.Combine(root, "tls-started.tmp"), Path.Combine(root, "tls-started.txt"), true);
         var deadline = DateTime.UtcNow.AddSeconds(30);
         while (DateTime.UtcNow < deadline)
         {
