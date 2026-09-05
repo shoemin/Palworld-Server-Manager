@@ -1,7 +1,5 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Security.AccessControl;
-using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace PalworldServerManager.Platform.Windows;
@@ -36,16 +34,8 @@ internal static class NativeTlsKeys
                 try
                 {
                     // Set the boundary before finalization persists private material. Never overwrite/adopt.
-                    Check(NCryptSetProperty(key, "Security Descr", security, security.Length, 0x80000005));
+                    Check(NCryptSetProperty(key, "Security Descr", security, security.Length, 5));
                     Check(NCryptSetProperty(key, "Export Policy", BitConverter.GetBytes(0), sizeof(int), 0));
-                    Check(NCryptGetProperty(key, "Unique Name", null, 0, out var length, 0));
-                    var unique = new byte[length];
-                    Check(NCryptGetProperty(key, "Unique Name", unique, length, out _, 0));
-                    var uniqueName = Encoding.Unicode.GetString(unique).TrimEnd('\0');
-                    if (uniqueName.Length == 0 || Path.GetFileName(uniqueName) != uniqueName) throw new CryptographicException("Invalid native key filename.");
-                    var file = new FileInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", uniqueName));
-                    var acl = new FileSecurity(); acl.SetSecurityDescriptorBinaryForm(security, AccessControlSections.Owner | AccessControlSections.Access);
-                    using (file.Create(FileMode.CreateNew, FileSystemRights.FullControl, FileShare.None, 4096, FileOptions.None, acl)) { }
                     Check(NCryptFinalizeKey(key, Silent));
                 }
                 catch { if (NCryptDeleteKey(key, Silent) == 0) key.SetHandleAsInvalid(); throw; }
