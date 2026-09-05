@@ -29,7 +29,7 @@ public sealed class WindowsSecureCredentialStore : ISecureCredentialStore
     {
         if (!Path.IsPathFullyQualified(hostDataRoot) || hostDataRoot.StartsWith(@"\\"))
             throw new ArgumentException("An absolute local Host root is required.");
-        _hostRoot = new DirectoryInfo(Path.GetFullPath(hostDataRoot));
+        _hostRoot = new DirectoryInfo(Path.TrimEndingDirectorySeparator(Path.GetFullPath(hostDataRoot)));
         _gate = Gates.GetOrAdd(_hostRoot.FullName, _ => new object());
         _store = new DirectoryInfo(Path.Combine(_hostRoot.FullName, "credentials"));
         _service = serviceSid ?? throw new ArgumentNullException(nameof(serviceSid));

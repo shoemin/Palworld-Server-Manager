@@ -60,15 +60,37 @@ public static class SecureStoreTests
         await Reject<UnauthorizedAccessException>(() => store.RetrieveAsync("acl"));
         await Reject<UnauthorizedAccessException>(() => store.StoreAsync("acl", new byte[] { 2 }));
         await Reject<UnauthorizedAccessException>(() => store.DeleteAsync("acl"));
-        info.SetAccessControl(original);
+        Restore();
+        Check((await store.RetrieveAsync("acl"))!.SequenceEqual(new byte[] { 1 }), "ACL restore did not return to valid baseline.");
         acl = info.GetAccessControl();
         acl.PurgeAccessRules(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null)); info.SetAccessControl(acl);
         await Reject<UnauthorizedAccessException>(() => store.RetrieveAsync("acl"));
-        info.SetAccessControl(original);
+        Restore();
+        Check((await store.RetrieveAsync("acl"))!.SequenceEqual(new byte[] { 1 }), "Missing-SYSTEM repair did not return to valid baseline.");
         var directory = new DirectoryInfo(Path.Combine(root, "credentials")); var goodDirectory = directory.GetAccessControl();
         var badDirectory = directory.GetAccessControl(); badDirectory.SetAccessRuleProtection(false, true); directory.SetAccessControl(badDirectory);
         await Reject<UnauthorizedAccessException>(() => store.RetrieveAsync("acl"));
-        directory.SetAccessControl(goodDirectory);
+        var restoredDirectory = new DirectorySecurity();
+        restoredDirectory.SetSecurityDescriptorBinaryForm(goodDirectory.GetSecurityDescriptorBinaryForm(), AccessControlSections.Access);
+        directory.SetAccessControl(restoredDirectory);
+        Check((await store.RetrieveAsync("acl"))!.SequenceEqual(new byte[] { 1 }), "Directory ACL restore failed.");
+        void Restore()
+        {
+            var restored = new FileSecurity(); restored.SetSecurityDescriptorBinaryForm(original.GetSecurityDescriptorBinaryForm(), AccessControlSections.Access);
+            info.SetAccessControl(restored);
+        }
+    });
+    public static Task ConcurrentWriters() => WithStore(async (root, sid) =>
+    {
+        var stores = new[] { new WindowsSecureCredentialStore(root, sid), new WindowsSecureCredentialStore(root + Path.DirectorySeparatorChar, sid) };
+        await Task.WhenAll(Enumerable.Range(0, 32).Select(i => Task.Run(async () =>
+        {
+            await stores[i % 2].StoreAsync("shared", Enumerable.Repeat((byte)i, 2048).ToArray());
+            var value = await stores[i % 2].RetrieveAsync("shared");
+            Check(value is { Length: 2048 } && value.All(b => b == value[0]), "Concurrent writer exposed a partial credential.");
+        })));
+        await stores[0].DeleteAsync("shared");
+        Check(Directory.GetFiles(Path.Combine(root, "credentials")).Length == 0, "Concurrent writes left orphan files.");
     });
     public static Task Redaction()
     {
