@@ -330,3 +330,37 @@ Rendered the final gallery and repeated design checks; no further defect on repe
 ## #36 integration checkpoint / #37 readiness
 
 Shadow #36 DONE. PR #66 final HEAD `4d37fe7d48910a96c7c844566d858871dd81d35b` passed local design checks and remote Docs `33989699852`; exact metadata/base and correction checked before merge at `f4ae27931102d267919930784d5e69c56dfe38bc`. Two correction iterations, no known escaped #36 defect. Canonical planning untouched. #37 is now the remaining prerequisite before #38 final design work; #27 remains Product Decision.
+## #37 readiness / preflight
+
+#37 — UI design slice: Manager Settings, trust, sharing and permissions, parent #18, v0.5.0. Current canonical body reread; dependencies #33/#19/#34 accepted. SHADOW READY on `astra/37-security-design`, from `c5a4010c612ad17cec15d39bf577e530b5466a67`. One coherent design-only security/Manager Settings slice; no implementation, generic OS administration or cloud/relay scope.
+
+Read accepted architecture sections 2/2a/2b, 4b, 5/5a/5b and 8, with current full registry already available. Expected files: docs/design/astra-37 prototypes/spec/generator and ledger. No production topology, credential holders, writers or executors change. Applicable all CLIENT/HOST/IDENT/LOCAL/OWNER/REMOTE/PAIR/AUTH/PROTO/SEC/PERSIST families, plus ARCH, OPS, RECOVERY, PLATFORM, LINUX negative boundaries. Authority-creation audit includes structural Owner bootstrap/root grants, ordinary delegated grants, role-preset expansion, Owner-only DefaultGrantTemplate, creator convenience, Owner adoption/re-home and credential replacement. None may become an alternate grant-issuance path through UX.
+
+Design distinctions to preserve: exact Host/server scopes (no AllServers grant); LocalPrincipal versus RemoteManager actor; independent CanDelegate/CanDelegateOnwardDelegation; single-parent provenance forest; ManagePermissions is inspection, not grant issuance or defaults editing; defaults applied only at Active and not retroactively; same-HostId unproven replacement needs Owner approval; local revocation is immediate regardless of peer acknowledgment. Privileged offline recovery is guidance only, never an ordinary/remote Owner replacement button. Host boot configuration remains privileged setup while UI sign-in is per-user; no new privileged helper chosen. #27 ACL choice remains untouched.
+
+Allowed decisions: internal Manager Settings navigation, role-card/graph/confirmation layout. No preset membership or factory-default grant list is invented: role cards preview Host-defined entries, Custom shows explicit synthetic grants, factory template is identified as Host-provided least privilege. Validation: scoped Manager Settings, trust/defaults/custom-grants/provenance/revocation/update-diagnostics boards, static rendering/semantic audit, deterministic XML/shared token checks, strict/remote Docs, full two-pass review. No Product Decision found in this bounded presentation plan.
+## #37 Review Pass A
+
+Reviewed every source/spec/board and complete proposed change against integration c5a4010. Nine rendered boards cover all seven acceptance criteria: trust versus grants; typed exact targets; root/derived forest and independent onward flags; structural Owner boundaries; future-only defaults; subtree preview; unsupported action with reason. Canonical scope maps General/Appearance/trust/defaults/grants/provenance/revocation/recovery/update-history to concrete boards. No production files change.
+
+Two review-only correction iterations: restored the permanent server rail when Manager Settings initially replaced it; added a concrete unsupported history-export control because prose alone was weak unavailable-capability evidence. All nine initial renders inspected; final changes checked in generator/SVG. Deterministic XML and shared contrast checks for #34–#37 PASS, strict docs PASS. No automated-test defect or known escaped #37 defect. No live keyboard, security or field test is claimed by static art.
+
+| Invariant IDs | Why affected / evidence | Result |
+|---|---|---|
+| ARCH-001/002, CLIENT-001, PLATFORM-001 | Docs-only diff; frozen WPF and dependency topology untouched | PASS |
+| HOST-001/002, PERSIST-001 | Authoritative Host context; no UI writer; offline recovery retains same lock | PASS |
+| CLIENT-002/003, LOCAL-001–004, OWNER-001/002 | No private Host key/client shortcut, first-connection Owner, group enrollment or ordinary Owner reset; privileged preparation/intended-user completion | PASS |
+| IDENT-001/002, REMOTE-001/002 | Full Host and server identities, typed actors and local-to-remote dual authorization | PASS |
+| IDENT-003/004, PAIR-001–004 | Rotation versus loss; PeerBound no management; Owner-gated known identity; immediate unilateral revocation, no distributed transaction | PASS |
+| AUTH-001–005 | Exact type/target/source and both independent flags; preset/default paths obey issuance; Owner-only nonretroactive templates; forest cascade leaves independent roots | PASS |
+| PROTO-001 | Negotiated support; unknown/unsupported denied, no version-string authority or raw-file fallback | PASS |
+| OPS-001–004, RECOVERY-001 | Recheck stale graph before commit; Host owns effects; no new lock/recovery kind or blind retry | PASS / unchanged mechanisms |
+| SEC-001 | No actual secrets; redacted history; #27 storage policy explicitly unresolved | PASS boundary |
+| MIG-001, PLATFORM-002, LINUX-001 | No migration, generic OS UI, service shell or Linux production | Unaffected / PASS boundary |
+
+Stale-reference audit examined trust-as-authority, ManagePermissions-as-issuer, default retroactivity, derived rights escalation, HostId changes, global-server scopes, own-Owner remote authority, peer-ack revocation, guessed preset membership, recovery and #27 ACL assumptions. Final design preserves accepted semantics; Pass A clean. PR then independent Pass B required.
+## #37 Review Pass B
+
+PR #67 at 30d7f85931d5797ffd00dee3a2bfc2578405fab3 reviewed afresh: full twelve-file diff, all acceptance criteria, all invariant rows above, source and generated boards, negative issuance/recovery paths and sibling design consistency. Found a consequence-preview omission: trust revocation explained dependent grants generically without naming the concrete affected grant in this scenario. Added G103, zero descendants and unaffected G101/G102/G201, with current-graph recheck. This is the third correction iteration total; no automated-test defect or known escaped defect.
+
+Rechecked both revocation columns against the forest: subtree revocation G102 affects G102/G103; peer R1 revocation affects only G103 here. All other acceptance/invariant checks remain PASS; no Owner, preset, default or #27 policy changes. Generator/reproducibility and strict docs pass. Pass B clean after correction review; final-head remote Docs and exact metadata/base check remain before merge. No external review used.

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Updates and diagnostics</title>
+<desc id="desc">Static Astra design prototype. All names, identifiers and status values are synthetic. Read the accompanying specification for keyboard and responsive behavior.</desc>
+<rect x="0" y="0" width="1600" height="900" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="0" y="0" width="1600" height="56" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="600" fill="#e8f2f5">PALWORLD / SERVER MANAGER</text>
+<text x="1140" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Activity</text>
+<text x="1240" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#e8f2f5">Alerts</text>
+<text x="1330" y="35" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#56dcf0">Manager Settings</text>
+<rect x="12" y="72" width="256" height="44" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="100" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">▦  ALL SERVERS</text>
+<text x="20" y="156" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">L  THIS PC</text>
+<text x="20" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host 7d3a9100…0001</text>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">○  Stopped</text>
+<text x="20" y="304" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">R1  FAMILY PC</text>
+<text x="20" y="324" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host c58a1000…a001</text>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<path d="M24 336H12V348" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 336H268V348" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M24 400H12V388" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<path d="M256 400H268V388" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">●  Running · 5 / 32 players</text>
+<text x="20" y="452" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#a8beca">R2  FAMILY PC</text>
+<text x="20" y="472" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Host c58a1000…a002</text>
+<rect x="12" y="484" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="509" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="532" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#f6ce79">!  Host offline · last known</text>
+<rect x="12" y="686" width="256" height="40" rx="3" fill="#183d4e" stroke="#56dcf0" stroke-width="1"/>
+<text x="24" y="711" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">+  ADD / IMPORT</text>
+<rect x="12" y="738" width="256" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="763" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">«  Collapse server rail</text>
+<path d="M280 56L280 856" fill="none" stroke="#7291a2" stroke-width="1"/>
+<rect x="10" y="186" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="188" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="213" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Stopped</text>
+<rect x="10" y="334" width="260" height="68" rx="3" fill="#07131c" stroke="none" stroke-width="1"/>
+<rect x="12" y="336" width="256" height="64" rx="3" fill="#0d202b" stroke="none" stroke-width="1"/>
+<text x="24" y="361" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Main Server</text>
+<text x="24" y="384" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#8bddaf">Running</text>
+<text x="328" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">General</text>
+<text x="504" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">Appearance</text>
+<text x="700" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">Connections / Security</text>
+<text x="1040" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#56dcf0">Updates</text>
+<path d="M1040 108L1180 108" fill="none" stroke="#56dcf0" stroke-width="2"/>
+<text x="1250" y="96" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#a8beca">Diagnostics</text>
+<text x="328" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#e8f2f5">Updates and diagnostics</text>
+<text x="328" y="170" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">This PC · local Host 7d3a9100-1000-4000-8000-000000000001</text>
+<text x="328" y="200" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Acting as: Alice · LocalPrincipal · non-Owner · independent synthetic snapshot</text>
+<path d="M0 856L1600 856" fill="none" stroke="#7291a2" stroke-width="1"/>
+<text x="24" y="882" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="400" fill="#a8beca">Design prototype · labels are presentation, never authorization</text>
+<rect x="328" y="232" width="592" height="232" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="348" y="266" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" fill="#e8f2f5">Client update / this user</text>
+<text x="348" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Client package state is separate from Host state.</text>
+<text x="348" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Display version is informational, not compatibility.</text>
+<text x="348" y="374" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">No publication or update is executed by this prototype.</text>
+<rect x="940" y="232" width="632" height="232" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="960" y="266" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" fill="#e8f2f5">Host update / this Host</text>
+<text x="960" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">ManageHostUpdates: not authorized in this scenario</text>
+<text x="960" y="340" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">ManageHostSettings does not include update authority.</text>
+<text x="960" y="374" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Host-targeted operation; never a fake server target.</text>
+<rect x="960" y="392" width="580" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="972" y="417" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Update Host — Not authorized</text>
+<rect x="328" y="488" width="1244" height="300" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="348" y="522" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" fill="#e8f2f5">Diagnostics / security history</text>
+<text x="348" y="562" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">14:12 · LocalPrincipal Alex · Owner issued root grant G101 · this Host / Main Server</text>
+<text x="348" y="596" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">14:14 · LocalPrincipal Alice · delegated grant G102 · same target / source G101</text>
+<text x="348" y="630" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">14:18 · RemoteManager R1 · request denied · missing exact-target capability</text>
+<text x="348" y="664" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Audit shows actor kind, target, outcome and provenance; never pairing codes, tokens or private keys.</text>
+<text x="348" y="698" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Unsupported capability / incompatible protocol: explain negotiation result; do not compare app versions.</text>
+<rect x="348" y="730" width="556" height="40" rx="3" fill="#0d202b" stroke="#7291a2" stroke-width="1"/>
+<text x="360" y="755" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#e8f2f5">Export history — Unsupported by this Host</text>
+<text x="928" y="756" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">Unavailable; no raw-file fallback</text>
+<text x="328" y="828" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="400" fill="#a8beca">This panel illustrates authorized inspection only; a denied history request reveals no hidden actor or resource data.</text>
+</svg>
