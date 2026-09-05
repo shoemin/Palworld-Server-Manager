@@ -1,5 +1,14 @@
 # Astra v0.5.0 development trial
 
+## Review model — Product Owner update, 2026-09-05
+
+GitHub Codex external review was intentionally removed from the Astra lane by Product Owner decision, effective immediately during #41. Astra now owns implementation and two distinct substantive reviews: Pass A before PR creation and Pass B against the exact final PR HEAD. No further Codex requests, waiting, review-surface inspection, reviewed-SHA requirement, or review-attempt merge gate applies. Normal-lane process is unchanged. Scope, invariants, product-decision boundaries, actual field evidence, CI, frozen baseline, and experiment-only merges remain mandatory.
+
+Normal and Astra review models differ; benchmark comparisons must account for this. Historical exception: before this update, #41 received one external finding already read and under correction. That evidence is retained below and is not relabeled as an Astra finding. The revised no-external-review model applies from this update forward; claiming the entire earlier history contained no external review would be inaccurate.
+
+Each completed item records Pass A/Pass B findings, test-discovered defects, review-only defects, correction counts, and any later escaped defect. Final reporting uses **Astra review effectiveness** and identifies this workflow transition explicitly.
+
+
 ## Baseline and isolation
 
 - Repository: `shoemin/Palworld-Server-Manager`.
@@ -60,7 +69,7 @@ Canonical issue: **#41 — Windows platform slice — Host service lifecycle, ac
 - Cross-section audit: group membership grants transport/start eligibility only; never Owner or enrollment; service start is not Host authentication; uninstall cannot remove authoritative data; boot-start and login-start remain separate.
 - Applicable invariants: ARCH-001/002, HOST-001/002, PERSIST-001, CLIENT-001/002/003, LOCAL-002/003/004, OWNER-002, SEC-001, PLATFORM-001/002, LINUX-001. Full registry read; implementation audit not yet performed.
 - Environment: current token is medium integrity, Administrators SID deny-only. Privileged integration cannot be reported as passed locally under this token. Mandatory actual service/multi-user evidence remains required.
-- Branch/PR: not created yet; implementation result: preflight only.
+- Branch: astra/41-windows-platform; implementation result: see stage-1 record below.
 - Tests: pending baseline run; no #41 tests exist yet.
 - GitHub Codex: not requested; no reviewed implementation HEAD.
 - Allowed Decisions made: none yet.
@@ -68,4 +77,72 @@ Canonical issue: **#41 — Windows platform slice — Host service lifecycle, ac
 - Field-test requirements: all 15 issue-specified real Windows integration criteria remain unfulfilled.
 - Deviations: normal workflow review/wait/Project-mutation steps replaced only as explicitly authorized by the trial request.
 - Final result: pending.
+
+## #41 implementation and stage-1 audit
+
+Branch: `astra/41-windows-platform`, from integration commit `0ccc6af`.
+Product Owner explicitly authorized using the current #41 body despite the normal Project's Product Decision label.
+
+Implemented bounded Host/client contracts, native SCM and local-group provisioning, virtual-account service lifetime, protected machine root, #40 runtime composition, query/start-only client activation, test-injected HKCU startup and Explorer integration, and atomic versioned CurrentUser-DPAPI client credentials with an injected generator. No production generator is supplied. SelfTest now targets Windows with authorized test-only references; the production reference graph/allowlist is unchanged.
+
+Allowed decisions: stable service `PalworldServerManagerHost`, group `PalworldServerManagerUsers`; compact activation enum; version 1 encrypted JSON payload; caller-supplied test path/write seam; file-sharing lock serializes same-user clients; real logon helper in SelfTest; unique integration service/group/user names. The running Host never provisions itself. Existing registrations are not silently adopted. Groups and authoritative data are retained at service uninstall.
+
+Self-review found and corrected an existing-state ACL edge in the new provisioner: securing a root alone does not remove explicit permissions from old child files/protected directories. The implementation rejects unsafe explicit child access and reparse paths before permitting the new service to start. A build found an ambiguous test-harness TimeoutException name; qualified it. These are Astra/test findings, not GitHub Codex findings.
+
+| Invariant | Why affected | Evidence/check | Result |
+|---|---|---|---|
+| ARCH-001 | Legacy WPF boundary | No App/Core/Lan edits | PASS |
+| ARCH-002 | Legacy LAN isolation | No new production references; existing architecture guards | PASS |
+| HOST-001 | Machine runtime | #40 mutex held by service runtime, second runtime rejected | PASS local; SCM field pending |
+| HOST-002 | Mutation executor | Service work Host-side; client shell is bounded local action only | PASS |
+| PERSIST-001 | Writer lifetime | Acquire before DB open/migration; clear pool/dispose before mutex release | PASS local; service field pending |
+| CLIENT-001 | Client topology | Core-independent client contracts/implementation; production guard unchanged | PASS |
+| CLIENT-002 | Machine secrets | No client Host-key API | PASS |
+| CLIENT-003 | Shared per-user identity | One per-user DPAPI file shared by both clients, no Host.Cli change | PASS storage; IPC deferred #42 |
+| LOCAL-002 | Private-key holder | Generator/storage client-side only | PASS |
+| LOCAL-003 | Group eligibility | No auto-membership, enrollment, reactivation, or grants | PASS code; real-token field pending |
+| LOCAL-004 | Activation boundary | Query/start result is not authentication; no IPC/credential transmission implemented | PASS scope |
+| OWNER-002 | Bootstrap authority | Handoff contract only; no bootstrap execution or Owner creation | PASS scope |
+| SEC-001 | At-rest secrets | DPAPI CurrentUser over entire payload; atomic writes; no secret logging | PASS same-user; cross-user field pending |
+| PLATFORM-001 | OS seams | Windows APIs confined to Windows implementations/composition and tests | PASS |
+| PLATFORM-002 | Interactive actions | Explorer client-only with injected launcher and local-path validation | PASS |
+| LINUX-001 | Windows-first gate | No Linux implementation | PASS |
+| IDENT-001–004, LOCAL-001, OWNER-001 | Identity/recovery boundaries | No changes to HostIdentity/authentication/recovery | Unaffected |
+| REMOTE-001–002, PAIR-001–004 | Remote trust/authority | No remote implementation or routes | Unaffected |
+| AUTH-001–005, PROTO-001 | Grants/protocol | No grant or protocol implementation | Unaffected |
+| OPS-001–004, RECOVERY-001, MIG-001 | Operations/migration | No business operations, recovery, migration changes | Unaffected |
+
+Baseline validation: 161/161 self-tests. Final stage-1 local suite: 169/169, including all #39/#40 tests, after the ACL and cleanup audit corrections. Release build succeeds. Strict docs build succeeds. Explicit integration invocation fails at the privilege gate under this medium-integrity token before creating OS objects: **FIELD EVIDENCE REQUIRED / privileged integration pending mandatory PR CI**. This is not an integration PASS. CI now has a dedicated explicit integration job, as #41 requires; trigger branches remain unchanged. No remote run or Codex result yet.
+
+Acceptance mapping: service runtime/account/start-type/DACL/root ACL/boot toggles/uninstall/path quoting are covered by provisioner plus the explicit SCM harness; non-admin eligibility and cross-user DPAPI are covered by actual-logon probes; local activation/credential lifecycle/quoting/runtime tests pass; #39/#40 checks remain in the full suite. All real Windows criteria require a successful integration run before Shadow Done.
+
+Stale-reference search checked Host scaffold wording, package versions, production project references, service/account/DPAPI scopes, shell launch placement, and issue-closing phrases. No production topology change, Host-side shell, production signature selection, Linux, IPC, or frozen source edit was introduced.
+
+## #41 external review round 1
+
+PR #61 targets the experiment branch. Reviewed SHA `d2ecae8f6ed43c7448801710479ce7eaa0e7b4de`. All four review surfaces checked. Two requests were made after the initial five-minute window; GitHub Codex returned review `5122646739` and inline finding `3941740363` / thread `PRRT_kwDOT8td0c6fmFRi`.
+
+Valid P1 finding credited to `@chatgpt-codex-connector[bot]`: protected descendants containing Administrator/SYSTEM-only ACLs or a service deny ACE passed the existing-state check but prevented service startup. Correction requires protected descendants to grant the service full, non-inherit-only access; deny ACLs fail closed instead of guessing group effective access. Related self-review also rejects unprivileged child owners, who can change DACLs despite lacking an explicit data-write ACE. A dedicated regression test covers protected administrator-only state, service/group denies, outsider ownership/access, and usable protected/inheritable layouts.
+
+Original exact-head remote evidence: CI workflow run `33985777171` PASS (169/169 plus real service/multi-user integration and successful service/group/user/profile/file cleanup); Docs run `33985778847` PASS. These establish actual virtual-account identity, DACL, boot toggles, database/lock lifecycle, non-admin rights, cross-user DPAPI, and uninstall preservation. They are pre-correction evidence; fresh runs and a fresh invariant audit are required for the correction HEAD.
+
+Full registry re-audit of the correction: same matrix above; changes affect HOST-001/PERSIST-001/SEC-001 provisioning access and preserve the three-identity Host-state boundary. No other authority creation/executor/credential path was added. Frozen source and production dependency graph remain unchanged. No new Product Decision. External re-review was subsequently removed by Product Owner authorization; correction proceeds through Astra Pass B.
+
+## #41 Review Pass B under revised workflow
+
+Fresh final-diff review examined all changed files against integration `0ccc6af`, including native handle/error ownership, SCM access delegation order, runtime resource cleanup, encrypted credential concurrency, path quoting, negative tests, actual CI evidence, and privileged helper cleanup. One additional Astra-only security finding: the provisioner delegated SERVICE_START before securing the data root, allowing an existing activation-group member to race installation. Corrected by completing Host-state protection before publishing the activation DACL. Default SCM permissions do not delegate start to that group. This is a Pass B finding, independent of the earlier external protected-descendant finding.
+
+Pass A findings: explicit permissions on existing descendants could survive root-only protection; integration group cleanup needed proof of creation. Pass B findings: protected descendants' service usability/owner/deny checks (continuation of the pre-policy external finding plus related Astra owner audit), and activation-delegation ordering. Test-discovered defect: ambiguous TimeoutException type caused the first integration-harness compile failure. Correction iterations: initial Pass A corrections, post-PR ACL regression correction, and fresh Pass B provisioning-order correction. No post-merge escaped defect known (not merged yet).
+
+The final corrected ACL and provisioning-order suite passed locally at 170/170; Release build had zero warnings/errors and strict docs passed. Provisioning-order change requires fresh final-head remote integration. Full applicable invariant matrix re-evaluated: no changes to IDs/scope; LOCAL-003 and SEC-001 now additionally require root protection before group activation rights. Review Pass B is pending final validation and exact-head recheck; no Codex re-review will be requested or inspected.
+
+## #41 acceptance record
+
+Implementation HEAD `4fa361a3399adbf036e12a1582a6808814bf8386` passed local 170/170 tests, zero-warning Release build, strict docs, remote CI `33986519538` (ordinary suite plus dedicated real Windows integration) and Docs `33986520567`. Both remote runs report this exact SHA. Integration passed actual virtual-account identity, exact DACL, boot toggles, DB/mutex lifecycle including crash, confirmed non-admin eligibility/denied rights, cross-user DPAPI, uninstall preservation, and full cleanup. No remaining mandatory #41 field evidence.
+
+Pass B repeated against that exact HEAD: **PASS**, complete diff and all 18 changed files reviewed, every #41 criterion mapped to local or real CI evidence above, full invariant matrix PASS, negative frozen-source/production-topology/scope search clean, no Product Decision. The production service is Windows-only with no idle policy, no Owner/bootstrap execution, no production signature selection, no Host secret store, and no server operations. Compatibility with accepted #40 is covered by the retained suite. Three correction iterations are recorded above. No known escaped defect or regression remains. Historical external finding is not a completion gate under the revised authorization.
+
+This acceptance-record update changes documentation only; code/tests remain byte-identical to validated `4fa361a`. Final PR metadata/base/HEAD and strict docs are rechecked before merge. Shadow result: accepted for integration merge; canonical #41 remains untouched. Post-merge commit identity and dependency refresh will be appended to the integration ledger.
+
+
 
