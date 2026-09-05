@@ -58,8 +58,14 @@ public sealed class WindowsHostDataRootProvider : IHostDataRootProvider
         var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
         var administrators = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
 
-        security.SetOwner(administrators);
-
+        // Deliberately no explicit SetOwner call. This directory is created and ACL'd by the
+        // Host process itself, running as the per-service virtual account - a non-Administrator
+        // identity that is NOT allowed to assign ownership to a SID it does not hold
+        // (Persist throws "The security identifier is not allowed to be the owner of this
+        // object" for exactly this reason; confirmed against a real service in CI). Leaving the
+        // owner at its OS-assigned default (the creating identity, i.e. the service SID itself)
+        // does not weaken the intended posture: Administrators still gets a Full Control ACE
+        // below, which is sufficient for it to take ownership/manage the object at any time.
         security.AddAccessRule(new FileSystemAccessRule(
             system, FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
 

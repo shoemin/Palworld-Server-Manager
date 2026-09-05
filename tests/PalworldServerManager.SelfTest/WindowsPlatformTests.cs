@@ -460,6 +460,14 @@ public static class WindowsPlatformTests
         // access - start eligibility is not SQLite authority.
         True(!sids.Contains(users), "ordinary Users have no direct Host-state access");
         Equal(3, rules.Count, "exactly SYSTEM, Administrators, and the service account");
+
+        // Regression: an explicit SetOwner(Administrators) here previously made a real service -
+        // running as its own non-Administrator per-service virtual account - crash with
+        // "The security identifier is not allowed to be the owner of this object" the first time
+        // it tried to actually persist this descriptor (confirmed against a real service in CI).
+        // No owner should ever be set explicitly; it must default to the creating identity.
+        True(security.GetOwner(typeof(SecurityIdentifier)) is null,
+            "no explicit owner must be set - the creating (non-Administrator) service identity cannot assign ownership to Administrators");
         return Task.CompletedTask;
     }
 
