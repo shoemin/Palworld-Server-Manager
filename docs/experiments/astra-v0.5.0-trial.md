@@ -484,3 +484,18 @@ Primary applicable IDs across #42: ARCH-001/002, HOST-001/002, PERSIST-001, CLIE
 ## #42a initial spike findings
 
 Implemented the test-only selected-stack spike and multi-user integration extension. Automated local test found Schannel rejects EphemeralKeySet; captured diagnostic is in the trial-local evidence folder, with no production key used. DefaultKeySet synthetic loading succeeds, but creates a native CNG container, now explicitly tracked/deleted/verified absent after probe disposal. This is not silently selected as production storage. Local full suite 180/180 before the cleanup assertion; focused spike including cleanup passes. One implementation correction cycle covers the failed ephemeral-key assumption and honest native-key lifecycle. Actual two-user CI remains required; no issue #42 completion or principal authorization claimed.
+
+## #42a Review Pass A
+
+Reviewed all five changed files against integration 18cb97fb61937b4a624573880c599315cacad9b3: full spike, mode routing, real-user integration, preflight/decomposition/evidence. Local Release zero warnings/errors, full 180/180 suite and strict docs PASS. CI 33996302179 PASS at dbcbe8ca31d1939f1ed50bd280c8cc043306cbc9: real nonmember denial, two fresh nonadmin logons with distinct native SIDs, TLS wrong-pin requests absent from handler, explicit native-key cleanup plus retained service/store tests. Docs 33996303365 PASS. One correction cycle; failed ephemeral-key assumption found by execution; explicit native-container tracking/cleanup and scoped evidence wording found during review. No escaped defect known.
+
+| Invariant IDs | Concrete applicability / evidence | Result |
+|---|---|---|
+| ARCH-001/002, CLIENT-001, PLATFORM-001 | Test/docs-only delta; production executable dependency graph and WPF/Lan unchanged | PASS |
+| LOCAL-004, CLIENT-002, SEC-001 | Real TLS before request, wrong-pin failure classified as authentication, no secret delivery, synthetic-only certificate; new native persistence finding explicitly reserved for production decision | PASS for spike |
+| LOCAL-001/002/003, OWNER-001/002, CLIENT-003 | Native SID observed but grants/enrollment/principal bootstrap not implemented or inferred; no Host private key issued to a client | PASS unchanged |
+| HOST-001/002, PERSIST-001, IDENT-001/003/004 | Unique test endpoint/credential only; no product database, HostId, current reference, rotation or recovery change; existing machine lease integration retained | PASS unchanged |
+| IDENT-002, REMOTE-001/002, PAIR-001–004, AUTH-001–005, PROTO-001 | No product RPC/protocol/authority or remote listener; HTTP/2 probe is explicitly not logical operation implementation | PASS unchanged |
+| OPS-001–004, RECOVERY-001, MIG-001, PLATFORM-002, LINUX-001 | No server operations, migration, shell action or Linux production; bounded native-key/server/test-identity cleanup | PASS unchanged |
+
+Acceptance map: named-pipe TLS=local and real CI; ACL=actual nonmember denied before membership; native identity=two exact OS SIDs at server; untrusted endpoint=no handler calls after wrong pin; no TCP=only ListenNamedPipe configured and observed pipe address; cleanup=key absence assertion plus suite cleanup. No virtual-service-hosted Kestrel or production native-cache protection is claimed. Stale/reference search rejects describing DefaultKeySet as ephemeral/memory-only or group eligibility as authority. Pass A clean for 42a. Production #42b remains at the documented native-cache Product Decision, not silently resolved by this spike.
