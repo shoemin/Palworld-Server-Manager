@@ -68,16 +68,25 @@ public static class WindowsIntegrationTests
         return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
     }
 
-    private static string RunPowerShell(string script)
+    private const int PowerShellTimeoutSeconds = 60;
+
+    /// <summary>
+    /// Runs a PowerShell script with a SAFE, secret-free diagnostic surface (SEC-001).
+    ///
+    /// Diagnostics (timeout/non-zero-exit messages) report <paramref name="operationDescription"/>
+    /// - never the raw script text - so callers cannot accidentally leak a secret merely by
+    /// interpolating it into a script string. A secret that MUST reach the child process (e.g. a
+    /// generated temporary-user password) is passed via <paramref name="environment"/> - a
+    /// per-call child-process environment variable, never command-line text - and the script
+    /// references it as <c>$env:&lt;name&gt;</c>. The variable exists only for that one child
+    /// process's lifetime; nothing is written to disk and this process's own environment is never
+    /// touched. As defense in depth, any environment value is also redacted from stdout/stderr
+    /// before either can appear in a returned value or an exception message.
+    /// </summary>
+    private static string RunPowerShell(string script, string operationDescription, IReadOnlyDictionary<string, string>? environment = null)
     {
-        using var process = Process.Start(new ProcessStartInfo("powershell.exe")
-        {
-            ArgumentList = { "-NoProfile", "-NonInteractive", "-Command", script },
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        })!;
+        var startInfo = BuildPowerShellStartInfo(script, environment);
+        using var process = Process.Start(startInfo)!;
 
         // Read both streams CONCURRENTLY with the bounded wait below - reading either stream to
         // completion first risks the classic redirected-pipe deadlock (the child blocks trying to
@@ -85,7 +94,7 @@ public static class WindowsIntegrationTests
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
         var stderrTask = process.StandardError.ReadToEndAsync();
 
-        if (!process.WaitForExit(60_000))
+        if (!process.WaitForExit(PowerShellTimeoutSeconds * 1000))
         {
             // FAIL-CLOSED: this is a machine-state-mutating integration harness (creating/
             // deleting services, users, groups). A cleanup failure here must be surfaced loudly,
@@ -93,7 +102,7 @@ public static class WindowsIntegrationTests
             Exception? cleanupFailure = null;
             try
             {
-                KillExactProcessTreeAndConfirmTerminated(process, "PowerShell 60s timeout cleanup");
+                KillExactProcessTreeAndConfirmTerminated(process, $"PowerShell timeout cleanup for '{operationDescription}'");
             }
             catch (Exception ex)
             {
@@ -103,11 +112,12 @@ public static class WindowsIntegrationTests
             if (cleanupFailure is not null)
             {
                 throw new System.TimeoutException(
-                    $"PowerShell did not complete within 60 seconds AND cleanup could not be confirmed ({cleanupFailure.Message}). Script: {script}",
+                    $"PowerShell operation '{operationDescription}' did not complete within {PowerShellTimeoutSeconds}s AND cleanup could " +
+                    $"not be confirmed ({cleanupFailure.Message}).",
                     cleanupFailure);
             }
 
-            throw new System.TimeoutException($"PowerShell did not complete within 60 seconds and was terminated (confirmed): {script}");
+            throw new System.TimeoutException(BuildTimeoutMessage(operationDescription, TimeSpan.FromSeconds(PowerShellTimeoutSeconds)));
         }
 
         // The parameterless WaitForExit() after a successful timed wait ensures redirected-stream
@@ -115,16 +125,64 @@ public static class WindowsIntegrationTests
         // wait with stream redirection.
         process.WaitForExit();
 
-        var stdout = stdoutTask.GetAwaiter().GetResult();
-        var stderr = stderrTask.GetAwaiter().GetResult();
+        var stdout = SanitizeSecrets(stdoutTask.GetAwaiter().GetResult(), environment);
+        var stderr = SanitizeSecrets(stderrTask.GetAwaiter().GetResult(), environment);
 
         if (process.ExitCode != 0)
         {
-            throw new Exception($"PowerShell failed ({process.ExitCode}): {script}\n{stderr}");
+            throw new Exception(BuildNonZeroExitMessage(operationDescription, process.ExitCode, stderr));
         }
 
         return stdout.Trim();
     }
+
+    /// <summary>Builds the child process configuration - factored out so it is independently testable.</summary>
+    internal static ProcessStartInfo BuildPowerShellStartInfo(string script, IReadOnlyDictionary<string, string>? environment)
+    {
+        var startInfo = new ProcessStartInfo("powershell.exe")
+        {
+            ArgumentList = { "-NoProfile", "-NonInteractive", "-Command", script },
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+
+        if (environment is not null)
+        {
+            foreach (var (key, value) in environment)
+            {
+                startInfo.EnvironmentVariables[key] = value;
+            }
+        }
+
+        return startInfo;
+    }
+
+    /// <summary>Redacts every value of <paramref name="environment"/> (e.g. a passed-through secret) from <paramref name="text"/>.</summary>
+    internal static string SanitizeSecrets(string text, IReadOnlyDictionary<string, string>? environment)
+    {
+        if (environment is null)
+        {
+            return text;
+        }
+
+        foreach (var value in environment.Values)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                text = text.Replace(value, "***REDACTED***", StringComparison.Ordinal);
+            }
+        }
+
+        return text;
+    }
+
+    internal static string BuildTimeoutMessage(string operationDescription, TimeSpan timeout)
+        => $"PowerShell operation '{operationDescription}' did not complete within {timeout.TotalSeconds:0}s and was terminated (confirmed).";
+
+    internal static string BuildNonZeroExitMessage(string operationDescription, int exitCode, string sanitizedStderr)
+        => $"PowerShell operation '{operationDescription}' failed ({exitCode}). {sanitizedStderr}";
 
     /// <summary>
     /// Kills ONLY this exact process (and its exact child tree) - never by name - and does not
@@ -219,7 +277,9 @@ public static class WindowsIntegrationTests
             log.Add($"[1,3] installed service {ServiceName} under {lifecycle.ServiceAccountName}, isolated data root {dataRoot}");
 
             // 1 (activation-group provisioning): InstallAsync itself created GroupName - confirm.
-            var groupExists = RunPowerShell($"[bool](Get-LocalGroup -Name '{GroupName}' -ErrorAction SilentlyContinue)");
+            var groupExists = RunPowerShell(
+                $"[bool](Get-LocalGroup -Name '{GroupName}' -ErrorAction SilentlyContinue)",
+                "query activation group existence");
             Equal("True", groupExists, "[1] InstallAsync must itself provision the activation group");
             log.Add($"[1] production provisioning created the activation group {GroupName}");
 
@@ -230,7 +290,8 @@ public static class WindowsIntegrationTests
 
             // 7. the service is configured to run under the intended NT SERVICE virtual account
             var account = RunPowerShell(
-                $"(Get-CimInstance Win32_Service -Filter \"Name='{ServiceName}'\").StartName");
+                $"(Get-CimInstance Win32_Service -Filter \"Name='{ServiceName}'\").StartName",
+                "query service account");
             Equal($@"NT SERVICE\{ServiceName}", account, "[7] service runs under the dedicated virtual account");
             log.Add($"[7] service account verified: {account}");
 
@@ -244,16 +305,25 @@ public static class WindowsIntegrationTests
             Equal(HostServiceStartMode.Manual, (await lifecycle.QueryStatusAsync()).StartMode, "[6] boot-start off -> Manual");
             log.Add("[6] boot-start toggle verified");
 
-            // 12 + 13. authorized vs unauthorized NON-ADMIN identities
-            RunPowerShell($"$p = ConvertTo-SecureString '{password}' -AsPlainText -Force; New-LocalUser -Name '{userA}' -Password $p -AccountNeverExpires:$true | Out-Null");
-            RunPowerShell($"$p = ConvertTo-SecureString '{password}' -AsPlainText -Force; New-LocalUser -Name '{userB}' -Password $p -AccountNeverExpires:$true | Out-Null");
-            RunPowerShell($"Add-LocalGroupMember -Group '{GroupName}' -Member '{userA}'");
+            // 12 + 13. authorized vs unauthorized NON-ADMIN identities. The generated password
+            // is passed to PowerShell ONLY as a per-call child-process environment variable -
+            // never interpolated into script/command text - so it can never appear in a timeout
+            // or non-zero-exit diagnostic (SEC-001).
+            var passwordEnvironment = new Dictionary<string, string> { ["PSM_TEST_PASSWORD"] = password };
+            const string createUserScript =
+                "$p = ConvertTo-SecureString $env:PSM_TEST_PASSWORD -AsPlainText -Force; " +
+                "New-LocalUser -Name '{0}' -Password $p -AccountNeverExpires:$true | Out-Null";
+
+            RunPowerShell(string.Format(createUserScript, userA), "create temporary non-admin user A", passwordEnvironment);
+            RunPowerShell(string.Format(createUserScript, userB), "create temporary non-admin user B", passwordEnvironment);
+            RunPowerShell($"Add-LocalGroupMember -Group '{GroupName}' -Member '{userA}'", "add user A to activation group");
             log.Add($"[12,13] created non-admin users {userA} (in group) and {userB} (not in group)");
 
             foreach (var user in new[] { userA, userB })
             {
                 var isAdmin = RunPowerShell(
-                    $"[bool](Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue | Where-Object {{ $_.Name -like '*\\{user}' }})");
+                    $"[bool](Get-LocalGroupMember -Group 'Administrators' -ErrorAction SilentlyContinue | Where-Object {{ $_.Name -like '*\\{user}' }})",
+                    $"query administrator membership for {user}");
                 Equal("False", isAdmin, $"[12,13] {user} must not be an Administrator (sanity, elevated-process view)");
             }
 
@@ -278,9 +348,9 @@ public static class WindowsIntegrationTests
             // 15. always remove every temporary resource; cleanup failure FAILS the run.
             TryCleanup(() => lifecycle.StopAsync().GetAwaiter().GetResult(), "stop service", cleanupErrors);
             TryCleanup(() => lifecycle.UninstallAsync().GetAwaiter().GetResult(), "uninstall service", cleanupErrors);
-            TryCleanup(() => RunPowerShell($"Remove-LocalGroup -Name '{GroupName}' -ErrorAction SilentlyContinue"), "remove group", cleanupErrors);
-            TryCleanup(() => RunPowerShell($"Remove-LocalUser -Name '{userA}' -ErrorAction SilentlyContinue"), "remove userA", cleanupErrors);
-            TryCleanup(() => RunPowerShell($"Remove-LocalUser -Name '{userB}' -ErrorAction SilentlyContinue"), "remove userB", cleanupErrors);
+            TryCleanup(() => RunPowerShell($"Remove-LocalGroup -Name '{GroupName}' -ErrorAction SilentlyContinue", "remove temporary group"), "remove group", cleanupErrors);
+            TryCleanup(() => RunPowerShell($"Remove-LocalUser -Name '{userA}' -ErrorAction SilentlyContinue", "remove temporary user A"), "remove userA", cleanupErrors);
+            TryCleanup(() => RunPowerShell($"Remove-LocalUser -Name '{userB}' -ErrorAction SilentlyContinue", "remove temporary user B"), "remove userB", cleanupErrors);
             TryCleanup(() => { if (Directory.Exists(dataRoot)) Directory.Delete(dataRoot, recursive: true); }, "remove isolated data root", cleanupErrors);
             TryCleanup(() => { if (Directory.Exists(dpapiDir)) Directory.Delete(dpapiDir, recursive: true); }, "remove DPAPI test directory", cleanupErrors);
         }
@@ -313,7 +383,7 @@ public static class WindowsIntegrationTests
     /// <summary>Item 4: read the live DACL back and assert the exact delegated rights.</summary>
     private static void VerifyServiceDacl(List<string> log)
     {
-        var sddl = RunPowerShell($"(sc.exe sdshow {ServiceName}) -join ''").Trim();
+        var sddl = RunPowerShell($"(sc.exe sdshow {ServiceName}) -join ''", "read service DACL").Trim();
         True(sddl.StartsWith("D:", StringComparison.Ordinal), "[4] a DACL SDDL was returned");
 
         var groupSid = ((NTAccount)new NTAccount(Environment.MachineName, GroupName))
@@ -397,7 +467,8 @@ public static class WindowsIntegrationTests
         // termination - never re-querying by name.
         await lifecycle.StartAsync();
 
-        var processId = int.Parse(RunPowerShell($"(Get-CimInstance Win32_Service -Filter \"Name='{ServiceName}'\").ProcessId"));
+        var processId = int.Parse(RunPowerShell(
+            $"(Get-CimInstance Win32_Service -Filter \"Name='{ServiceName}'\").ProcessId", "query temporary service process id"));
         True(processId > 0, "[5] resolved a real PID for the temporary test service before terminating it");
 
         var actualTokenSid = ProcessTokenInspector.GetProcessTokenUserSid(processId);
@@ -406,7 +477,7 @@ public static class WindowsIntegrationTests
             "[token] the ACTUAL running process token SID must equal the derived per-service SID - this is runtime proof, independent of merely reading Win32_Service.StartName");
         log.Add($"[token] running process (PID {processId}) token SID confirmed to equal the derived per-service SID: {actualTokenSid.Value}");
 
-        RunPowerShell($"Stop-Process -Id {processId} -Force");
+        RunPowerShell($"Stop-Process -Id {processId} -Force", "terminate temporary service process");
 
         // Required ordering: (3) wait until SCM DEFINITIVELY reports not Running/StartPending -
         // never a silent deadline - THEN (4) prove the unique test mutex is reacquirable. Item 11
@@ -510,7 +581,8 @@ public static class WindowsIntegrationTests
     private static async Task VerifyCrossUserDpapiIsolationAsync(string dpapiDir, string userA, string userB, string password, List<string> log)
     {
         Directory.CreateDirectory(dpapiDir);
-        RunPowerShell($"icacls '{dpapiDir}' /grant '{userA}:(OI)(CI)F' '{userB}:(OI)(CI)F' | Out-Null");
+        RunPowerShell($"icacls '{dpapiDir}' /grant '{userA}:(OI)(CI)F' '{userB}:(OI)(CI)F' | Out-Null",
+            "grant DPAPI test directory access to both temporary users");
 
         var createResult = RunAsUser(userA, password, $"--helper-dpapi-create \"{dpapiDir}\"", "[14] userA DPAPI create");
         Equal("OK", createResult, "[14] userA must be able to create and bind its own credential");

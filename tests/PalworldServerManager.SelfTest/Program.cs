@@ -290,6 +290,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Shell integration opens only local directories and never spawns", WindowsPlatformTests.TestShellIntegrationOpensOnlyLocalDirectoriesAndNeverSpawns),
     ("ProcessAsUser terminates a hung child and confirms it is actually gone", WindowsPlatformTests.TestProcessAsUserTerminatesAHungChildAndConfirmsItIsActuallyGone),
     ("ProcessAsUser captures output and exit code for a well-behaved child", WindowsPlatformTests.TestProcessAsUserCapturesOutputAndExitCodeForAWellBehavedChild),
+    ("RunPowerShell never leaks a secret into command text or diagnostics", WindowsPlatformTests.TestRunPowerShellNeverLeaksASecretIntoCommandTextOrDiagnostics),
 
     // #41 - client LocalPrincipal credential store
     ("Credential lifecycle from create through bind to delete", LocalPrincipalCredentialStoreTests.TestCredentialLifecycleFromCreateThroughBindToDelete),

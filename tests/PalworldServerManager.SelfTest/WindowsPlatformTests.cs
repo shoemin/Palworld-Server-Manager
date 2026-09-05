@@ -1,5 +1,6 @@
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.Diagnostics;
 using PalworldServerManager.Client.Platform.Contracts;
 using PalworldServerManager.Client.Platform.Windows;
 using PalworldServerManager.Platform.Contracts;
@@ -313,6 +314,57 @@ public static class WindowsPlatformTests
         // "--harness 0 0" sleeps 0s and exits 0 immediately - the ordinary success path.
         var (exitCode, _) = ProcessAsUser.RunAsCurrentUserForTest(selfTestExe, "--harness 0 3", TimeSpan.FromSeconds(30));
         Equal(3, exitCode, "a well-behaved child's real exit code must be captured, not STILL_ACTIVE or a timeout");
+        return Task.CompletedTask;
+    }
+
+    // ------------------------------------------------- RunPowerShell secret-safety (SEC-001)
+
+    /// <summary>
+    /// Proves, without running PowerShell or touching any machine state, that a secret passed
+    /// through the harness's environment-variable channel never reaches PowerShell command text,
+    /// operation-description diagnostics, or a (simulated) failure message - even in the worst
+    /// case where a command's own stderr happens to echo it back.
+    /// </summary>
+    public static Task TestRunPowerShellNeverLeaksASecretIntoCommandTextOrDiagnostics()
+    {
+        const string sentinelSecret = "SENTINEL-SECRET-VALUE-DO-NOT-LEAK";
+        const string script =
+            "$p = ConvertTo-SecureString $env:PSM_TEST_PASSWORD -AsPlainText -Force; New-LocalUser -Name 'x' -Password $p";
+        var environment = new Dictionary<string, string> { ["PSM_TEST_PASSWORD"] = sentinelSecret };
+        const string operationDescription = "create temporary non-admin user A";
+
+        // The script text itself references the secret only via $env:, never interpolates it.
+        True(!script.Contains(sentinelSecret, StringComparison.Ordinal),
+            "the PowerShell script text must reference the secret only via an environment variable, never interpolate it");
+
+        var startInfo = WindowsIntegrationTests.BuildPowerShellStartInfo(script, environment);
+        True(!string.Join(' ', startInfo.ArgumentList).Contains(sentinelSecret, StringComparison.Ordinal),
+            "the constructed process argument list (the actual command line) must never contain the secret");
+
+        True(!operationDescription.Contains(sentinelSecret, StringComparison.Ordinal),
+            "sanity: the operation description itself carries no secret");
+
+        var timeoutMessage = WindowsIntegrationTests.BuildTimeoutMessage(operationDescription, TimeSpan.FromSeconds(60));
+        True(!timeoutMessage.Contains(sentinelSecret, StringComparison.Ordinal), "a timeout failure message must never contain the secret");
+        True(timeoutMessage.Contains(operationDescription, StringComparison.Ordinal), "a timeout failure message must still identify which operation failed");
+
+        // Worst case: simulate a command whose OWN stderr happens to echo the secret back (e.g. a
+        // verbose/debug trace). The sanitizer must still redact it before any exception message
+        // is built from it.
+        var forcedStderr = $"some diagnostic text containing {sentinelSecret} by accident";
+        var sanitizedStderr = WindowsIntegrationTests.SanitizeSecrets(forcedStderr, environment);
+        True(!sanitizedStderr.Contains(sentinelSecret, StringComparison.Ordinal), "sanitized stderr must never contain the secret");
+        True(sanitizedStderr.Contains("***REDACTED***", StringComparison.Ordinal), "the redaction marker must be present where the secret was");
+
+        var failureMessage = WindowsIntegrationTests.BuildNonZeroExitMessage(operationDescription, 1, sanitizedStderr);
+        True(!failureMessage.Contains(sentinelSecret, StringComparison.Ordinal), "a non-zero-exit failure message must never contain the secret");
+
+        // A script/description with NO secret at all must pass through sanitization unchanged.
+        Equal("nothing sensitive here", WindowsIntegrationTests.SanitizeSecrets("nothing sensitive here", environment),
+            "sanitization must not alter text that never contained a secret value");
+        Equal("nothing sensitive here", WindowsIntegrationTests.SanitizeSecrets("nothing sensitive here", null),
+            "sanitization with no environment at all must be a no-op");
+
         return Task.CompletedTask;
     }
 
