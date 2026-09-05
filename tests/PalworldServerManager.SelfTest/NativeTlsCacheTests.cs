@@ -18,7 +18,8 @@ public static class NativeTlsCacheTests
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         using var original = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256)
             .CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
-        store.Bytes = original.Export(X509ContentType.Pfx);
+        var originalPfx = original.Export(X509ContentType.Pfx);
+        store.Bytes = originalPfx;
         var hostId = Guid.NewGuid();
         using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, @"Global\PSMNativeCacheTest" + hostId.ToString("N"));
         Check(lease is not null, "Native cache test lacks its exclusive writer lease.");
@@ -91,7 +92,7 @@ public static class NativeTlsCacheTests
                 KeyCreationOptions = CngKeyCreationOptions.MachineKey,
                 ExportPolicy = CngExportPolicies.AllowPlaintextExport
             };
-            weakenedParameters.Parameters.Add(new CngProperty("Security Descr", approvedDescriptor!, (CngPropertyOptions)unchecked((int)0x80000005)));
+            weakenedParameters.Parameters.Add(new CngProperty("Security Descr", approvedDescriptor!, (CngPropertyOptions)4));
             using (var weakened = CngKey.Create(CngAlgorithm.ECDsaP256, name, weakenedParameters))
             {
                 try
@@ -106,8 +107,8 @@ public static class NativeTlsCacheTests
         }
         finally
         {
-            await cache.ReconcileAsync([]);
-            if (store.Bytes is not null) CryptographicOperations.ZeroMemory(store.Bytes);
+            try { await cache.ReconcileAsync([]); }
+            finally { CryptographicOperations.ZeroMemory(originalPfx); }
         }
     }
     private sealed class TestStore : ISecureCredentialStore

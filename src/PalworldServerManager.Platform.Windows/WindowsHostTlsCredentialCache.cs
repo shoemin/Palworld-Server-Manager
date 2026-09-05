@@ -90,9 +90,8 @@ public sealed class WindowsHostTlsCredentialCache : IHostTlsCredentialCache
     }
     private byte[] NewSecurity()
     {
-        using var identity = WindowsIdentity.GetCurrent();
-        var owner = identity.User == _allowed[0] || identity.User == _allowed[2] ? identity.User! : _allowed[1];
-        var sddl = "O:" + owner.Value + "D:P" + string.Concat(_allowed.Distinct().Select(sid => "(A;;GA;;;" + sid.Value + ")"));
+        // The provider assigns the creator's default owner, which Validate checks independently.
+        var sddl = "D:P" + string.Concat(_allowed.Distinct().Select(sid => "(A;;GA;;;" + sid.Value + ")"));
         var descriptor = new RawSecurityDescriptor(sddl); var bytes = new byte[descriptor.BinaryLength]; descriptor.GetBinaryForm(bytes, 0); return bytes;
     }
     private void Validate(SafeNCryptKeyHandle handle)

@@ -34,6 +34,8 @@ internal static class NativeTlsKeys
                 try
                 {
                     // Set the boundary before finalization persists private material. Never overwrite/adopt.
+                    // DACL only: requesting OWNER as well fails under a real virtual-service token.
+                    // The provider's default owner is independently verified after finalization.
                     Check(NCryptSetProperty(key, "Security Descr", security, security.Length, 4));
                     Check(NCryptSetProperty(key, "Export Policy", BitConverter.GetBytes(0), sizeof(int), 0));
                     Check(NCryptFinalizeKey(key, Silent));
