@@ -298,16 +298,15 @@ public static class WindowsIntegrationTests
             Equal(HostServiceStartMode.Manual, (await lifecycle.QueryStatusAsync()).StartMode, "[6] boot-start off -> Manual");
             log.Add("[6] boot-start toggle verified");
 
-            // 12 + 13. authorized vs unauthorized NON-ADMIN identities. The generated password
-            // is passed to PowerShell ONLY via the child's redirected stdin - never interpolated
-            // into script/command text and never via an environment variable - so it can never
-            // appear in a timeout or non-zero-exit diagnostic (SEC-001).
-            const string createUserScript =
-                "$p = ConvertTo-SecureString ([Console]::In.ReadLine()) -AsPlainText -Force; " +
-                "New-LocalUser -Name '{0}' -Password $p -AccountNeverExpires:$true | Out-Null";
-
-            RunPowerShell(string.Format(createUserScript, userA), "create temporary non-admin user A", secretViaStdin: password);
-            RunPowerShell(string.Format(createUserScript, userB), "create temporary non-admin user B", secretViaStdin: password);
+            // 12 + 13. authorized vs unauthorized NON-ADMIN identities. Created via native
+            // NetUserAdd (NetUserNative), NOT PowerShell's New-LocalUser/ConvertTo-SecureString -
+            // Windows PowerShell 5.1's own Microsoft.PowerShell.Security module fails to autoload
+            // on the GitHub Actions windows-latest runner regardless of how the child process's
+            // environment is built (confirmed by two independent CI failures). NetUserAdd takes
+            // the password directly, so it never touches ANY child process's command line,
+            // environment, or stdin at all (SEC-001).
+            NetUserNative.CreateNonAdminUser(userA, password);
+            NetUserNative.CreateNonAdminUser(userB, password);
             RunPowerShell($"Add-LocalGroupMember -Group '{GroupName}' -Member '{userA}'", "add user A to activation group");
             log.Add($"[12,13] created non-admin users {userA} (in group) and {userB} (not in group)");
 
@@ -341,8 +340,8 @@ public static class WindowsIntegrationTests
             TryCleanup(() => lifecycle.StopAsync().GetAwaiter().GetResult(), "stop service", cleanupErrors);
             TryCleanup(() => lifecycle.UninstallAsync().GetAwaiter().GetResult(), "uninstall service", cleanupErrors);
             TryCleanup(() => RunPowerShell($"Remove-LocalGroup -Name '{GroupName}' -ErrorAction SilentlyContinue", "remove temporary group"), "remove group", cleanupErrors);
-            TryCleanup(() => RunPowerShell($"Remove-LocalUser -Name '{userA}' -ErrorAction SilentlyContinue", "remove temporary user A"), "remove userA", cleanupErrors);
-            TryCleanup(() => RunPowerShell($"Remove-LocalUser -Name '{userB}' -ErrorAction SilentlyContinue", "remove temporary user B"), "remove userB", cleanupErrors);
+            TryCleanup(() => NetUserNative.DeleteUserIfExists(userA), "remove userA", cleanupErrors);
+            TryCleanup(() => NetUserNative.DeleteUserIfExists(userB), "remove userB", cleanupErrors);
             TryCleanup(() => { if (Directory.Exists(dataRoot)) Directory.Delete(dataRoot, recursive: true); }, "remove isolated data root", cleanupErrors);
             TryCleanup(() => { if (Directory.Exists(dpapiDir)) Directory.Delete(dpapiDir, recursive: true); }, "remove DPAPI test directory", cleanupErrors);
         }
