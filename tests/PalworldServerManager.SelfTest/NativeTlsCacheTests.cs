@@ -24,12 +24,22 @@ public static class NativeTlsCacheTests
         Check(lease is not null, "Native cache test lacks its exclusive writer lease.");
         var cache = new WindowsHostTlsCredentialCache(hostId, identity.User!, store);
         string? name = null;
+        byte[]? approvedDescriptor = null;
         try
         {
+            using (var canceled = new CancellationTokenSource())
+            {
+                canceled.Cancel();
+                await SecureStoreTests.Reject<OperationCanceledException>(() => cache.LoadAsync("current", canceled.Token));
+                await SecureStoreTests.Reject<OperationCanceledException>(() => cache.ReconcileAsync([], canceled.Token));
+            }
+            await SecureStoreTests.Reject<ArgumentException>(() => cache.LoadAsync("../invalid"));
+            await SecureStoreTests.Reject<ArgumentException>(() => cache.ReconcileAsync(["../invalid"]));
             using (var loaded = await cache.LoadAsync("current"))
             {
                 Check(loaded.RawData.SequenceEqual(original.RawData), "Cache changed certificate identity.");
                 using var cached = (ECDsaCng)loaded.GetECDsaPrivateKey()!; name = cached.Key.KeyName!;
+                approvedDescriptor = cached.Key.GetProperty("Security Descr", (CngPropertyOptions)5).GetValue();
                 var challenge = RandomNumberGenerator.GetBytes(32);
                 Check(key.VerifyData(challenge, cached.SignData(challenge, HashAlgorithmName.SHA256), HashAlgorithmName.SHA256), "Cached key mismatched authority.");
                 try { cached.ExportPkcs8PrivateKey(); throw new Exception("Cache private key was exportable."); } catch (CryptographicException) { }
@@ -74,6 +84,23 @@ public static class NativeTlsCacheTests
             Check(CngKey.Exists(name!, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey), "Retained current key was retired.");
             await cache.ReconcileAsync([]);
             Check(!CngKey.Exists(name!, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey), "Stale native key survived retirement.");
+            // A pre-existing, exportable native object must never be adopted, even with this name.
+            var weakenedParameters = new CngKeyCreationParameters
+            {
+                Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                KeyCreationOptions = CngKeyCreationOptions.MachineKey,
+                ExportPolicy = CngExportPolicies.AllowPlaintextExport
+            };
+            weakenedParameters.Parameters.Add(new CngProperty("Security Descr", approvedDescriptor!, (CngPropertyOptions)unchecked((int)0x80000005)));
+            using (var weakened = CngKey.Create(CngAlgorithm.ECDsaP256, name, weakenedParameters))
+            {
+                try
+                {
+                    try { using var invalid = await cache.LoadAsync("current"); throw new Exception("Exportable cache was adopted."); }
+                    catch (UnauthorizedAccessException ex) { Check(ex.Message == "Native cache protection policy is unsafe.", "Export-policy test failed for an unrelated reason."); }
+                }
+                finally { weakened.Delete(); }
+            }
             using var rebuilt = await cache.LoadAsync("current");
             Check(rebuilt.RawData.SequenceEqual(original.RawData), "Missing cache could not rebuild from authority.");
         }

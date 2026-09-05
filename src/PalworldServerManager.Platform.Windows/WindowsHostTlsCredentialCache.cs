@@ -39,7 +39,7 @@ public sealed class WindowsHostTlsCredentialCache : IHostTlsCredentialCache
                 throw new CryptographicException("Unsupported Host credential curve.");
             lock (_gate)
             {
-                ct.ThrowIfCancellationRequested(); using var provider = NativeTlsKeys.Provider();
+                ct.ThrowIfCancellationRequested(); NativeDirectory(); using var provider = NativeTlsKeys.Provider();
                 using (var existing = NativeTlsKeys.Open(provider, name))
                 {
                     if (existing is null)
@@ -70,7 +70,7 @@ public sealed class WindowsHostTlsCredentialCache : IHostTlsCredentialCache
         var retained = retainedCredentialReferences.Select(Name).ToHashSet(StringComparer.Ordinal);
         lock (_gate)
         {
-            ct.ThrowIfCancellationRequested(); using var provider = NativeTlsKeys.Provider();
+            ct.ThrowIfCancellationRequested(); NativeDirectory(); using var provider = NativeTlsKeys.Provider();
             foreach (var name in NativeTlsKeys.Names(provider, _prefix))
             {
                 ct.ThrowIfCancellationRequested();
@@ -103,12 +103,17 @@ public sealed class WindowsHostTlsCredentialCache : IHostTlsCredentialCache
             throw new UnauthorizedAccessException("Native cache protection policy is unsafe.");
         var uniqueName = key.UniqueName;
         if (string.IsNullOrEmpty(uniqueName) || uniqueName != Path.GetFileName(uniqueName)) throw new CryptographicException("Invalid native key filename.");
-        var directory = new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys"));
-        for (DirectoryInfo? ancestor = directory; ancestor is not null; ancestor = ancestor.Parent)
-            if (!ancestor.Exists || (ancestor.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Native key path is unsafe.");
+        var directory = NativeDirectory();
         var file = new FileInfo(Path.Combine(directory.FullName, uniqueName));
         if (!file.Exists || (file.Attributes & (FileAttributes.ReparsePoint | FileAttributes.Directory)) != 0) throw new IOException("Native key file is unsafe.");
         ValidateDescriptor(new RawSecurityDescriptor(file.GetAccessControl().GetSecurityDescriptorBinaryForm(), 0));
+    }
+    private static DirectoryInfo NativeDirectory()
+    {
+        var directory = new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys"));
+        for (DirectoryInfo? ancestor = directory; ancestor is not null; ancestor = ancestor.Parent)
+            if (!ancestor.Exists || (ancestor.Attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("Native key path is unsafe.");
+        return directory;
     }
     private void ValidateDescriptor(RawSecurityDescriptor descriptor)
     {
@@ -118,7 +123,7 @@ public sealed class WindowsHostTlsCredentialCache : IHostTlsCredentialCache
         var grants = new HashSet<SecurityIdentifier>();
         foreach (GenericAce ace in descriptor.DiscretionaryAcl)
         {
-            if (ace is not CommonAce rule || rule.AceQualifier != AceQualifier.AccessAllowed || !_allowed.Contains(rule.SecurityIdentifier) ||
+            if (ace is not CommonAce rule || rule.IsCallback || rule.AceQualifier != AceQualifier.AccessAllowed || !_allowed.Contains(rule.SecurityIdentifier) ||
                 (rule.AceFlags & (AceFlags.InheritOnly | AceFlags.Inherited)) != 0)
                 throw new UnauthorizedAccessException("Native key permissions require privileged repair.");
             if ((rule.AccessMask & 0x10000000) != 0 || (rule.AccessMask & 0x1f01ff) == 0x1f01ff) grants.Add(rule.SecurityIdentifier);

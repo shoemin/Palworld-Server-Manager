@@ -145,6 +145,7 @@ public static class WindowsIntegration
         var platform = new WindowsHostPlatform(service, group, hostRoot);
         var tlsHostId = Guid.NewGuid();
         SecurityIdentifier? serviceSid = null;
+        bool nativeGrantAdded = false;
         bool installed = false, aCreated = false, bCreated = false;
         string? sidA = null, sidB = null;
         var cleanupErrors = new List<Exception>();
@@ -160,6 +161,12 @@ public static class WindowsIntegration
             var descriptor = new RawSecurityDescriptor(platform.ReadServiceSecurityDescriptor(), 0);
             var groupSid = (SecurityIdentifier)new NTAccount(Environment.MachineName, group).Translate(typeof(SecurityIdentifier));
             serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", service).Translate(typeof(SecurityIdentifier));
+            using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex))
+            {
+                Check(lease is not null, "Native provisioning lacks offline lease.");
+                nativeGrantAdded = WindowsNativeTlsProvisioning.EnsureCreatePermission(serviceSid);
+                Check(!WindowsNativeTlsProvisioning.EnsureCreatePermission(serviceSid), "Native provisioning was not idempotent.");
+            }
             File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, groupSid.Value)));
             var aces = descriptor.DiscretionaryAcl!.Cast<CommonAce>().ToArray();
             Check(aces.Length == 3 && aces.Single(a => a.SecurityIdentifier == groupSid).AccessMask == 0x14, "SCM DACL read-back failed.");
@@ -269,6 +276,7 @@ public static class WindowsIntegration
                 using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
                 Check(lease is not null, "Native cleanup lacks machine lease.");
                 new WindowsHostTlsCredentialCache(tlsHostId, serviceSid, new WindowsSecureCredentialStore(hostRoot, serviceSid)).ReconcileAsync([]).GetAwaiter().GetResult();
+                if (nativeGrantAdded) WindowsNativeTlsProvisioning.RemoveCreatePermission(serviceSid);
             });
             // A failed install may have created the uniquely named group before its failure.
             if (platform.ActivationGroupCreated)
