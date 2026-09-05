@@ -62,6 +62,10 @@ if (args.Length > 0)
 var tests = new List<(string Name, Func<Task> Run)>
 {
     ("Protocol wire/domain server identities preserve Host qualification", ProtocolTests.Identities),
+    ("Secure credential store lifecycle contract survives reopen and cancellation", SecureStoreTests.Lifecycle),
+    ("Machine credential store rejects tamper swaps plaintext and failed replacement", SecureStoreTests.NegativePaths),
+    ("Machine credential store rejects unsafe ACL and missing recovery identities", SecureStoreTests.AclRejection),
+    ("Secret-marked values redact logging JSON and diagnostics", SecureStoreTests.Redaction),
     ("Protocol negotiation gates features independently of product versions", ProtocolTests.Negotiation),
     ("Protocol unknown fields survive and unknown authority values deny", ProtocolTests.UnknownValues),
     ("Protocol schema evolution preserves fields/enums/RPCs and removed reservations", ProtocolTests.SchemaEvolution),
