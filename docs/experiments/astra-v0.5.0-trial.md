@@ -151,3 +151,55 @@ This acceptance-record update changes documentation only; code/tests remain byte
 
 PR #61 merged at ffe78fee3fd6d197308a9807e965b123a086b5de. Final PR HEAD d787a7d403f3840ae319cd77d97461d2d9852334 changes only the ledger relative to validated implementation 4fa361a; strict Docs run 33986674874 passed on that final HEAD. Pass B rechecked that exact final diff and merge base. Shadow #41 DONE; normal issue and Project untouched. Dependency refresh: #42 and #27 now satisfy their declared implementation dependencies and need readiness/impact analysis; #43 is independently in progress; #34 remains an independent design candidate. Later security/server/UI/Linux gates remain closed.
 
+
+## #43 independent readiness/preflight
+
+Canonical issue **#43 — Protocol slice — Host contracts, ServerRef identity, and version/capability negotiation**, parent #20, milestone v0.5.0. Dependencies #33/#19/#39/#40 are accepted at the frozen baseline. The bounded objective, exclusions, allowed naming/package choices, testable criteria, validation, stop conditions and review protocol are explicit in its current body. **SHADOW READY** despite canonical Backlog.
+
+#41 has passed local/remote validation on PR #61 but is awaiting its independent reviewer after two requests. #43 has no #41 dependency and does not prejudge any Windows decision. Its branch `astra/43-protocol` starts at integration `0ccc6af`, not the unmerged #41 branch.
+
+Preflight: change Contracts schemas, OS-neutral identity/compatibility helpers, SelfTest and protocol documentation only. No production reference topology change. Contracts runtime remains protobuf-only; Grpc.Tools is private build-time tooling. gRPC services are defined in schemas; endpoint/stub hosting belongs in subsequent transport composition. No credentials, authority-creation path, persistence writer, or operation executor is implemented. Grant DTOs express accepted types; they do not issue/evaluate grants. No arbitrary shell, general filesystem RPC, TLS, pairing, permission evaluator, business operation, UI, or Linux implementation.
+
+Applicable invariants: CLIENT-001, IDENT-001/002, PROTO-001, REMOTE-001, AUTH-001/005, PLATFORM-001; ARCH-001/002 and all untouched security/authority families remain negative-scope checks. Audit cross-section consequences: malformed/default protobuf identities, host-qualified equality/routing/grants, unknown authorization values, incompatible-major versus additive-minor negotiation, removed-field reservation. Allowed decisions: exact schema names/field numbers, initial protocol 1.0, Google.Protobuf 3.36.1 and private Grpc.Tools 2.83.0 (verified official package listings). No product decision identified. No field evidence required by this bounded contract-only issue. PR/review/tests/result pending.
+
+
+## #43 Review Pass A
+
+Integrated accepted #41 through experiment `9d0b8e0`; only the experiment lane was merged. Resolved overlapping SelfTest references/test registrations and combined both ledger histories without dropping either issue's evidence. Full combined suite: **174/174 PASS** (170 existing Windows/legacy checks plus four protocol groups). Standalone pre-integration suite had 165 checks; counts are not additive across reruns. Production dependency topology remains unchanged.
+
+Pass A examined every changed schema/helper/test/project/doc and its diff against the current integration branch. Findings corrected: routing assertion initially compared reference inequality instead of value equality; grant collision test varied unrelated actor fields and was made a same-grant clone differing only by Host target; schema guard needed immutable history snapshots for every added revision, and reserved fields still must not authorize removal within the same major. Strengthened negative tests cover these boundaries. Tests then found that protoc descriptor sets contain inferred JSON names and a different source-relative filename from embedded C# descriptors. Used the actual project proto path and reflection-computed JSON names to compare semantically identical full descriptors without dropping explicit JSON-name checks. A subsequent compile caught a shadowed local test variable; renamed it.
+
+| Invariant | Why affected | Evidence/check | Result |
+|---|---|---|---|
+| CLIENT-001 | Contract consumers | Contracts runtime uses protobuf only, no Core/Host/platform dependency | PASS |
+| IDENT-001 | Stable Host identity | HostId UUID contains no credential fingerprint | PASS |
+| IDENT-002 | Wire/domain/routing/grants | Both Host/profile required; same profile on different Hosts remains distinct; malformed/default input rejects | PASS |
+| PROTO-001 | Negotiation/evolution | Explicit-major comparison, immutable known-capability intersection, unknown-enum deny, product string ignored, append-only schema history with negative mutations | PASS |
+| REMOTE-001 | Route shape | Host-qualified target only; no client outbound connection or transport | PASS |
+| AUTH-001/005 | Grant wire shape | Distinct Host/server capability types and exact Host target; syntactic validation only, no grant issuer/evaluator | PASS |
+| PLATFORM-001 | Portability | No OS APIs in Contracts | PASS |
+| ARCH-001/002 | Frozen legacy | No App/Core/Lan edits or reuse | PASS |
+| HOST-001/002, PERSIST-001 | Authority/persistence | No runtime executor or persistence writer added; #41 remains unchanged | Unaffected |
+| CLIENT-002/003, LOCAL-001–004, OWNER-001/002, SEC-001 | Identity/security | No credentials, bootstrap/authentication, or protected channel implementation | Unaffected |
+| IDENT-003/004, PAIR-001–004, REMOTE-002, AUTH-002–004 | Trust/delegation | DTOs do not rotate, pair, issue grants, or evaluate provenance | Unaffected |
+| OPS-001–004, RECOVERY-001, MIG-001, PLATFORM-002, LINUX-001 | Other gates | No operations/recovery/migration/shell/Linux implementation | Unaffected |
+
+Acceptance mapping: Core independence → architecture guards; host-qualified references/routing/grants → identity collision group; explicit version+feature gate and informational product strings → negotiation group; unknown authorization enums → serialization/negative group; no field-number reuse → immutable descriptor-history comparison plus deliberate bad-schema mutations. Full build/self-test passed after corrections. Release/docs and stale-reference search are rerun before push. Pass A correction cycles: 3 (assertion/schema strengthening, descriptor normalization, compile correction). No Product Decision or field requirement; no known escaped defect. Pass B pending PR creation under the revised Astra-only review model.
+
+## #43 Review Pass B
+
+PR #62, initial HEAD `cdccadcb85f42e61983873c04bf1b0b4e5931ade`, passed remote CI `33986933232` (174/174 and retained Windows service/multi-user integration) and Docs `33986934817`. Fresh Pass B inspected the complete 10-file diff, identity equality/invalid inputs, grant-versus-authority distinction, mutable protobuf offer isolation, unknown enum values, schema history, package/runtime boundaries, field gates, and interaction with #41.
+
+Pass B found a test-coverage hole: schema evolution walked top-level messages but would not protect nested types introduced by a later additive revision. Added recursive nested-message/enum checks, reservation preservation, and an explicit nested-field reuse rejection test. Local validation after this correction: **174/174 PASS**, zero-warning Release build, strict docs. Full invariant matrix re-audited with PROTO-001's evidence strengthened; no production source change or scope expansion. Correction cycle count now 4; Pass B repeated after correction is clean, pending applicable remote validation. No escaped/after-merge defect known. No external reviewer used for #43.
+
+## #27 preflight decision packet
+
+**SHADOW PRODUCT DECISION REQUIRED** — #27 Host secure storage, parent #20. Declared dependencies now satisfied through #41. Accepted #19 section 7 describes encrypted-blob storage as readable only by the specific service account, while sections 2c/5a require privileged offline Host.Cli bootstrap/recovery to use the secure store. The exact ACL treatment of that exceptional caller is not explicit, and #27's Allowed Decisions name blob layout/key naming without authorizing a security-boundary change.
+
+Decision requested: (A, recommended) explicitly grant the dedicated service plus elevated Administrators/SYSTEM access, matching #41's Host-root identities and #19's stated privileged-machine-owner limitation; or (B) retain a service-only DACL and separately specify the exceptional privileged access mechanism used by offline recovery. A avoids inventing impersonation/ACL-takeover behavior and still excludes ordinary users/clients; B makes direct file access narrower but requires a defined privileged recovery path. Only #27's Windows store/security integration is blocked; #43 and bounded UI design can continue without prejudging this choice. No #27 implementation has begun and no canonical issue/Project has been mutated. Product Owner input requested; unanswered is not approval.
+
+## #43 acceptance record
+
+Final implementation and reviewed PR HEAD `22f21020c400a5e8ec61e049c63cec0587531df5` passed local 174/174 self-tests, zero-warning Release build, strict documentation build, remote CI `33987200947` (including retained real Windows integration) and Docs `33987202883`. Both remote runs completed successfully at that exact SHA. Repeated Pass B is clean after the recursive schema-guard correction; the full invariant matrix and scope/contradiction search remain clean. No mandatory field evidence or Product Decision applies to this contract-only slice. Four correction cycles; no known escaped defect or regression. No external reviewer used for #43.
+
+This acceptance record is documentation-only. Code and tests remain identical to the validated SHA. PR #62 targets only `experiment/astra-v0.5.0`; merge identity and refreshed dependency status will be recorded after merge. Canonical #43 and its Project state remain unchanged.

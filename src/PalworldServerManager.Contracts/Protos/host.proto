@@ -1,0 +1,78 @@
+syntax = "proto3";
+package palworld.manager.v1;
+option csharp_namespace = "PalworldServerManager.Contracts.Wire";
+
+// Field numbers are permanent. Removing a field requires reserving its name AND number.
+// Wire DTOs are untrusted input; validate identifiers and enums before use.
+message HostIdentity { string host_id = 1; }
+message ServerRef { string authoritative_host_id = 1; string server_profile_id = 2; }
+message ProtocolVersion { uint32 major = 1; uint32 minor = 2; }
+enum FeatureCapability {
+  FEATURE_CAPABILITY_UNSPECIFIED = 0;
+  FEATURE_CAPABILITY_SERVER_INVENTORY = 1;
+  FEATURE_CAPABILITY_SERVER_IDENTITY = 2;
+}
+message Handshake {
+  ProtocolVersion protocol = 1;
+  repeated FeatureCapability capabilities = 2;
+  string product_version = 3; // display only; never compatibility/authority
+}
+enum HostCapability {
+  HOST_CAPABILITY_UNSPECIFIED = 0;
+  HOST_CAPABILITY_CREATE_SERVER = 1;
+  HOST_CAPABILITY_MANAGE_HOST_SETTINGS = 2;
+  HOST_CAPABILITY_MANAGE_TRUSTED_MANAGERS = 3;
+  HOST_CAPABILITY_MANAGE_PERMISSIONS = 4;
+  HOST_CAPABILITY_MANAGE_HOST_UPDATES = 5;
+}
+enum ServerCapability {
+  SERVER_CAPABILITY_UNSPECIFIED = 0;
+  SERVER_CAPABILITY_VIEW_SERVER = 1;
+  SERVER_CAPABILITY_START_STOP_RESTART = 2;
+  SERVER_CAPABILITY_EDIT_SETTINGS = 3;
+  SERVER_CAPABILITY_MANAGE_BACKUPS = 4;
+  SERVER_CAPABILITY_TRANSFER_EXPORT = 5;
+  SERVER_CAPABILITY_DELETE_SERVER = 6;
+  SERVER_CAPABILITY_MANAGE_SERVER_SHARING = 7;
+}
+message ActorRef {
+  oneof actor {
+    string local_principal_id = 1;
+    string remote_host_id = 2;
+  }
+}
+// Separate grant types preserve capability/target kind. Authorization remains #45.
+message HostCapabilityGrant {
+  string grant_id = 1;
+  ActorRef grantee_actor = 2;
+  HostCapability capability = 3;
+  string target_host_id = 4;
+  bool can_delegate = 5;
+  bool can_delegate_onward_delegation = 6;
+  ActorRef granted_by_actor = 7;
+  optional string derived_from_grant_id = 8;
+  string granted_utc = 9;
+}
+message ServerCapabilityGrant {
+  string grant_id = 1;
+  ActorRef grantee_actor = 2;
+  ServerCapability capability = 3;
+  ServerRef server = 4;
+  bool can_delegate = 5;
+  bool can_delegate_onward_delegation = 6;
+  ActorRef granted_by_actor = 7;
+  optional string derived_from_grant_id = 8;
+  string granted_utc = 9;
+}
+message ListAuthorizedServersRequest {}
+message ServerIdentity { ServerRef server = 1; string display_name = 2; }
+message ListAuthorizedServersResponse { repeated ServerIdentity servers = 1; }
+message ServerRequest { ServerRef server = 1; }
+
+// No transport/listener or execution in this assembly. Later local/remote transports bind
+// these same logical RPCs behind authentication, authorization, and NegotiatedProtocol.
+service HostProtocol {
+  rpc Negotiate(Handshake) returns (Handshake);
+  rpc ListAuthorizedServers(ListAuthorizedServersRequest) returns (ListAuthorizedServersResponse);
+  rpc GetServerIdentity(ServerRequest) returns (ServerIdentity);
+}

@@ -21,4 +21,8 @@
     <ProjectReference Include="..\..\src\PalworldServerManager.Client.Platform.Contracts\PalworldServerManager.Client.Platform.Contracts.csproj" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Client.Platform.Windows\PalworldServerManager.Client.Platform.Windows.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PalworldServerManager.Contracts\PalworldServerManager.Contracts.csproj" />
+    <None Update="Fixtures\host-*.pb" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

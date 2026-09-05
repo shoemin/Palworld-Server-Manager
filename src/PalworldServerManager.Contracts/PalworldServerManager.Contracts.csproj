@@ -7,4 +7,9 @@
     <Version>0.3.0</Version>
     <InformationalVersion>0.3.0</InformationalVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.36.1" />
+    <PackageReference Include="Grpc.Tools" Version="2.83.0" PrivateAssets="all" />
+    <Protobuf Include="Protos\host.proto" GrpcServices="None" />
+  </ItemGroup>
 </Project>
