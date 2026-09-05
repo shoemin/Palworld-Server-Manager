@@ -237,3 +237,8 @@ Validation: seven deterministic SVG/XML/reproducibility checks PASS; text contra
 | PLATFORM-001/002, LINUX-001 | OS boundary | Static project-owned vectors, no shell execution/Avalonia/Linux production | PASS |
 
 Negative/contradictory-reference review checked remote routing, grants/trust, full identity, stale status, Files/Logs versus bounded parity, #35–#38 ownership, client mutation, private keys, import targeting, theme reuse, and final-acceptance claims. No Product Decision or mandatory field gap identified within this bounded design slice. Pass A clean; next action is PR creation into the experiment branch, then fresh Pass B.
+## #34 Review Pass B and acceptance
+
+PR #63 final design HEAD `9aba886d7f8ed23ce9c54a31483292cc5e92e0c7`. Fresh post-PR review covered the complete 11-file diff, every vector/source/token/document, all six criteria, collision/alias behavior, unavailable/remote actions, token contrast, layout/focus evidence, retained #41/#43 boundaries and all invariant families above. No additional defect found. No Product Decision and no mandatory unperformed #34 field criterion; static evidence is explicitly not live accessibility or #38 final design acceptance. No external reviewer used.
+
+Local generator/reproducibility/contrast/identity checks and strict docs PASS. Remote Docs `33988354529` PASS on the exact design SHA. No production source/tests or CI workflow changed, so the existing 174-test/real-Windows evidence remains intact and is not relabeled as a new run. Pass A and Pass B clean. One correction iteration, review-only findings as recorded; no known escaped defect or regression. This acceptance update is ledger-only; final strict docs and PR HEAD/base are rechecked before integration merge.
