@@ -152,6 +152,7 @@ public static partial class WindowsIntegration
             try { await new WindowsLocalPrincipalCredentialStore(new WindowsLocalPrincipalCryptography(), credentialPath).PrepareAsync(ClientCredentialCeremonyTests.IntegrationRotation); throw new Exception("User B retrieved user A pending key."); }
             catch (CryptographicException) { }
         }
+        else if (action == "product-client") await ProductClientProbe(serviceName, credentialPath);
         else if (action == "offline-denied") await OfflineDeniedProbe(serviceName, credentialPath, hostRoot);
         else if (action.StartsWith("handoff-", StringComparison.Ordinal)) await HandoffProbe(action, serviceName, credentialPath, hostRoot);
         else throw new ArgumentException("Unknown probe action.");
@@ -309,7 +310,7 @@ public static partial class WindowsIntegration
             }
             await HandoffSuite(tlsHostId, root, executable, userA, userB, password, sidA!, shared);
             await OfflineSuite(platform, service, group, root, executable, userA, userB, password, sidA!, sidB!, shared, serviceSid);
-            await ProductionHostSuite(binaries, sidA!);
+            await ProductionHostSuite(binaries, sidA!, userA, userB, password, sidB!, shared);
             await platform.UninstallAsync(); installed = false;
             Check(File.Exists(Path.Combine(hostRoot, "host.db")), "Uninstall removed authoritative database.");
             Check(Sid(group) == groupSid.Value, "Uninstall removed activation group.");

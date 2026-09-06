@@ -23,7 +23,7 @@ public static partial class WindowsIntegration
 {
     // This test runs the shipped executable and its fixed composition. Never adopt an installed
     // product, and never install it on a developer workstation as part of ordinary self-tests.
-    private static async Task ProductionHostSuite(string binaries, string intendedSid)
+    private static async Task ProductionHostSuite(string binaries, string intendedSid, string userA, string userB, string password, string sidB, string shared)
     {
         if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != "true" || Environment.GetEnvironmentVariable("RUNNER_OS") != "Windows")
             throw new InvalidOperationException("FIELD EVIDENCE REQUIRED: fixed-product integration requires a disposable GitHub Windows runner.");
@@ -36,7 +36,7 @@ public static partial class WindowsIntegration
             Check(existing.IsInvalid && Marshal.GetLastWin32Error() == 1060, "Product service already exists or cannot be checked; fixture refuses adoption.");
         try { _ = Sid(location.ActivationGroup); throw new Exception("Product group already exists; fixture refuses adoption."); }
         catch (IdentityNotMappedException) { }
-        var installed = false; var nativeGrantOwned = false; SecurityIdentifier? serviceSid = null; Guid hostId = Guid.Empty;
+        var installed = false; var nativeGrantOwned = false; SecurityIdentifier? serviceSid = null; Guid hostId = Guid.Empty; Guid bootstrapTicket = Guid.Empty;
         var cleanup = new List<Exception>();
         async Task<string> Offline(int expected, params string[] args)
         {
@@ -84,11 +84,7 @@ public static partial class WindowsIntegration
             await pipe.ConnectAsync(5000); Native.Check(ProductionGetPipePid(pipe.SafePipeHandle, out var pid));
             using var process = Process.GetProcessById((int)pid);
             Check(Path.GetFullPath(process.MainModule!.FileName) == Path.Combine(binaries, "PalworldServerManager.Host.exe"), "Listener is not the shipped Host executable.");
-            using var netstat = Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "netstat.exe"), "-ano")
-            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
-            var rows = await netstat.StandardOutput.ReadToEndAsync(); await netstat.WaitForExitAsync();
-            Check(netstat.ExitCode == 0 && !rows.Split('\n').Select(row => row.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
-                .Any(parts => parts.Length >= 5 && parts[0] == "TCP" && parts[^1] == pid.ToString()), "Production Host opened a TCP endpoint.");
+            await ProductionAssertNoTcp(pid);
             AssertLockDenied(location.MutexName); return (int)pid;
         }
         try
@@ -109,7 +105,7 @@ public static partial class WindowsIntegration
             await FailStartup(); // no privileged bootstrap/private credential
             nativeGrantOwned = true; // from this point any matching grant is created by our offline invocation
             using (var result = JsonDocument.Parse(await Offline(0, "bootstrap", "--owner-sid", intendedSid)))
-                hostId = result.RootElement.GetProperty("hostId").GetGuid();
+            { hostId = result.RootElement.GetProperty("hostId").GetGuid(); bootstrapTicket = result.RootElement.GetProperty("ticketId").GetGuid(); }
             var database = new HostDatabase(new HostDataRoot(location.HostRoot));
             var state = new HostCredentialStateRepository(database, hostId);
             var publisher = new WindowsLocalHostTrustPublisher(location.PublicTrustRoot, serviceSid);
@@ -175,6 +171,8 @@ public static partial class WindowsIntegration
             await Ready(); await platform.StopAsync();
             Check(!state.Read().Initialized, "Service/recovery granted Owner authority before intended-user completion.");
             Console.WriteLine("PASS integration: shipped Host/Host.Cli executables, independent SCM startup, trust reconciliation, normal/crash restart, lease ownership, unsafe root/mismatched or missing credential refusal, no TCP, unchanged activation ACL");
+            await ProductionClientSuite(binaries, userA, userB, password, intendedSid, sidB, shared, hostId, bootstrapTicket, platform, Offline);
+            Check(platform.ReadServiceSecurityDescriptor().SequenceEqual(originalAcl), "Client ceremonies changed the activation ACL.");
         }
         finally
         {
@@ -196,6 +194,14 @@ public static partial class WindowsIntegration
             });
             if (cleanup.Count != 0) throw new AggregateException("Production Host fixture cleanup failed.", cleanup);
         }
+    }
+    private static async Task ProductionAssertNoTcp(uint pid)
+    {
+            using var netstat = Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "netstat.exe"), "-ano")
+            { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
+            var rows = await netstat.StandardOutput.ReadToEndAsync(); await netstat.WaitForExitAsync();
+            Check(netstat.ExitCode == 0 && !rows.Split('\n').Select(row => row.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                .Any(parts => parts.Length >= 5 && parts[0] == "TCP" && parts[^1] == pid.ToString()), "Production Host opened a TCP endpoint.");
     }
     [DllImport("kernel32.dll", EntryPoint = "GetNamedPipeServerProcessId", SetLastError = true)]
     private static extern bool ProductionGetPipePid(SafePipeHandle pipe, out uint pid);
