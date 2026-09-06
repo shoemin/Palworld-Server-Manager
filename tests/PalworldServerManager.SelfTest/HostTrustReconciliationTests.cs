@@ -51,7 +51,7 @@ public static class HostTrustReconciliationTests
             Check(HostDatabase.QueryScalarText(c,"SELECT ActivatedUtc FROM SecureCredentialReferences;")=="created-before-upgrade" &&
                 HostDatabase.QueryScalarText(c,"SELECT CurrentCredentialRef FROM HostIdentity;")=="prior","Upgrade lost current credential/activation history.");
         }
-        Reject<InvalidDataException>(()=>HostTrustPlanning.Build(new HostCredentialStateRepository(prior,f.HostId).Read())); // no invented public metadata
+        Reject<HostTrustMetadataUnavailableException>(()=>HostTrustPlanning.Build(new HostCredentialStateRepository(prior,f.HostId).Read())); // no invented public metadata
         foreach(var state in Enum.GetValues<HostCredentialRotationState>())
         {
             using var sample=new Fixture(false); var r=Setup(sample); Plan(r,"b",B);
