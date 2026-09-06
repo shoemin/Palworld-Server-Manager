@@ -1,6 +1,7 @@
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using PalworldServerManager.Contracts;
+using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host.Persistence;
 
 namespace PalworldServerManager.Host;
@@ -69,7 +70,7 @@ public sealed class LocalPrincipalConnectionAuthentication : IDisposable
                 throw Refuse(LocalAuthenticationFailure.MissingOrExpiredChallenge);
             var record = ReadExact(_pendingPrincipal);
             if (record.PublicVerificationKey != _pendingKey) throw Refuse(LocalAuthenticationFailure.CredentialChanged);
-            if (!LocalPrincipalAuthentication.Verify(record.PublicVerificationKey, payload, signature))
+            if (!LocalPrincipalProof.Verify(record.PublicVerificationKey, payload, signature))
                 throw Refuse(LocalAuthenticationFailure.InvalidSignature);
             _authenticatedPrincipal = record.LocalPrincipalId; _authenticatedKey = record.PublicVerificationKey;
             return new(record.LocalPrincipalId, record.IsOwner);
@@ -97,7 +98,7 @@ public sealed class LocalPrincipalConnectionAuthentication : IDisposable
         var record = _repository.TryReadActive(principalId) ?? throw Refuse(LocalAuthenticationFailure.InactiveOrUnknownPrincipal);
         if (record.HostId != _hostId) throw Refuse(LocalAuthenticationFailure.HostIdentityMismatch);
         if (record.OsPrincipalRef != _nativePrincipal) throw Refuse(LocalAuthenticationFailure.NativeIdentityMismatch);
-        if (!LocalPrincipalAuthentication.IsValidPublicKey(record.PublicVerificationKey)) throw Refuse(LocalAuthenticationFailure.InvalidPublicKey);
+        if (!LocalPrincipalProof.IsValidPublicKey(record.PublicVerificationKey)) throw Refuse(LocalAuthenticationFailure.InvalidPublicKey);
         return record;
     }
     private AuthenticationException Refuse(LocalAuthenticationFailure reason)

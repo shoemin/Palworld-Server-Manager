@@ -1,11 +1,13 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace PalworldServerManager.Client.Platform.Contracts;
+using PalworldServerManager.Client.Platform.Contracts;
 
-// Shared ordinary-client primitive; BCL only, no Host-side dependency or storage access.
+namespace PalworldServerManager.Client.Platform.Windows;
+
+// Windows ordinary-client cryptographic implementation; no Host-side dependency or storage access.
 // Returned key buffers belong to the caller and must be cleared after use.
-public sealed class P256LocalPrincipalCryptography : ILocalPrincipalKeyGenerator
+public sealed class WindowsLocalPrincipalCryptography : ILocalPrincipalKeyGenerator, ILocalPrincipalChallengeSigner
 {
     public LocalPrincipalKeyPair Generate()
     {
@@ -13,7 +15,7 @@ public sealed class P256LocalPrincipalCryptography : ILocalPrincipalKeyGenerator
         return new(key.ExportSubjectPublicKeyInfo(), key.ExportPkcs8PrivateKey());
     }
 
-    public static byte[] Sign(LocalPrincipalClientCredential credential, Guid expectedHostId, ReadOnlySpan<byte> payload)
+    public byte[] Sign(LocalPrincipalClientCredential credential, Guid expectedHostId, ReadOnlySpan<byte> payload)
     {
         ArgumentNullException.ThrowIfNull(credential);
         if (expectedHostId == Guid.Empty || credential.LocalPrincipalId == Guid.Empty || payload.Length is 0 or > 256)

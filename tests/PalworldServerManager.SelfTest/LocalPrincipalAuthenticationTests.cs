@@ -5,6 +5,7 @@ using Microsoft.Data.Sqlite;
 using PalworldServerManager.Client.Platform.Contracts;
 using PalworldServerManager.Client.Platform.Windows;
 using PalworldServerManager.Contracts;
+using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Host.Persistence.Migrations;
@@ -14,6 +15,7 @@ namespace PalworldServerManager.SelfTest;
 
 public static class LocalPrincipalAuthenticationTests
 {
+    private static readonly ILocalPrincipalChallengeSigner Signer = new WindowsLocalPrincipalCryptography();
     private static void Reject<T>(Action action) where T : Exception
     { try { action(); throw new Exception("Expected rejection: " + typeof(T).Name); } catch (T) { } }
     private sealed class Clock : TimeProvider
@@ -27,8 +29,8 @@ public static class LocalPrincipalAuthenticationTests
     {
         internal readonly string Root = Path.Combine(Path.GetTempPath(), "PSMAuth" + Guid.NewGuid().ToString("N"));
         internal readonly Guid HostId = Guid.NewGuid(), OwnerId = Guid.NewGuid(), UserId = Guid.NewGuid();
-        internal readonly LocalPrincipalKeyPair OwnerKey = new P256LocalPrincipalCryptography().Generate();
-        internal readonly LocalPrincipalKeyPair UserKey = new P256LocalPrincipalCryptography().Generate();
+        internal readonly LocalPrincipalKeyPair OwnerKey = new WindowsLocalPrincipalCryptography().Generate();
+        internal readonly LocalPrincipalKeyPair UserKey = new WindowsLocalPrincipalCryptography().Generate();
         internal readonly List<LocalAuthenticationFailure> Failures = [];
         internal readonly Clock Time = new();
         internal readonly HostDatabase Database;
@@ -58,7 +60,7 @@ public static class LocalPrincipalAuthenticationTests
         internal LocalPrincipalConnectionAuthentication Connection(string native = "native-user", Guid? expectedHostId = null) =>
             new(Repository, expectedHostId ?? HostId, native, reason => { lock (Failures) Failures.Add(reason); }, Time);
         internal LocalPrincipalClientCredential Credential(bool owner = false) => new(owner ? OwnerId : UserId, owner ? OwnerKey : UserKey);
-        internal byte[] Sign(byte[] payload, bool owner = false) => P256LocalPrincipalCryptography.Sign(Credential(owner), HostId, payload);
+        internal byte[] Sign(byte[] payload, bool owner = false) => Signer.Sign(Credential(owner), HostId, payload);
         internal void ChangeUser(string? publicKey)
         {
             using var command = Writer.CreateCommand();
@@ -188,11 +190,11 @@ public static class LocalPrincipalAuthenticationTests
     {
         using var fixture = new Fixture();
         var path = Path.Combine(fixture.Root, "Client", "principal.bin");
-        var store = new WindowsLocalPrincipalCredentialStore(new P256LocalPrincipalCryptography(), path);
+        var store = new WindowsLocalPrincipalCredentialStore(new WindowsLocalPrincipalCryptography(), path);
         var original = await store.CreateAndStoreAsync();
         try
         {
-            Check(LocalPrincipalAuthentication.IsValidPublicKey(Public(original)), "Production client generated an unsupported public key.");
+            Check(LocalPrincipalProof.IsValidPublicKey(Public(original)), "Production client generated an unsupported public key.");
             Check(File.ReadAllBytes(path).AsSpan().IndexOf(original.PrivateKey) < 0, "Client key was stored without DPAPI.");
             var retry = await store.CreateAndStoreAsync();
             try { Check(retry.PrivateKey.SequenceEqual(original.PrivateKey), "Unbound retry replaced the production key."); }
@@ -202,22 +204,22 @@ public static class LocalPrincipalAuthenticationTests
             try
             {
                 var payload = LocalPrincipalAuthentication.EncodeChallenge(fixture.HostId, fixture.UserId, RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(32));
-                var signature = P256LocalPrincipalCryptography.Sign(loaded, fixture.HostId, payload);
-                Check(signature.Length == 64 && LocalPrincipalAuthentication.Verify(Public(original), payload, signature), "Client/Host crypto contract mismatch.");
+                var signature = Signer.Sign(loaded, fixture.HostId, payload);
+                Check(signature.Length == 64 && LocalPrincipalProof.Verify(Public(original), payload, signature), "Client/Host crypto contract mismatch.");
                 fixture.ChangeUser(Public(original));
                 using var connection = fixture.Connection();
-                var storedProof = P256LocalPrincipalCryptography.Sign(loaded, fixture.HostId, connection.IssueChallenge(fixture.UserId));
+                var storedProof = Signer.Sign(loaded, fixture.HostId, connection.IssueChallenge(fixture.UserId));
                 Check(connection.Authenticate(storedProof).LocalPrincipalId == loaded.LocalPrincipalId, "Reloaded DPAPI key did not authenticate against the persisted public verifier.");
                 foreach (var bad in new[] { payload.Concat(new byte[] { 10 }).ToArray(), new byte[] { 255 },
                     Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(payload).Replace("AUTH/1", "AUTH/2")), new byte[257] })
-                    Reject<CryptographicException>(() => P256LocalPrincipalCryptography.Sign(loaded, fixture.HostId, bad));
-                Reject<CryptographicException>(() => P256LocalPrincipalCryptography.Sign(loaded, Guid.NewGuid(), payload));
-                Reject<CryptographicException>(() => P256LocalPrincipalCryptography.Sign(new(Guid.NewGuid(), loaded.KeyPair), fixture.HostId, payload));
+                    Reject<CryptographicException>(() => Signer.Sign(loaded, fixture.HostId, bad));
+                Reject<CryptographicException>(() => Signer.Sign(loaded, Guid.NewGuid(), payload));
+                Reject<CryptographicException>(() => Signer.Sign(new(Guid.NewGuid(), loaded.KeyPair), fixture.HostId, payload));
                 using var otherCurve = ECDsa.Create(ECCurve.NamedCurves.nistP384);
-                Check(!LocalPrincipalAuthentication.IsValidPublicKey(Convert.ToBase64String(otherCurve.ExportSubjectPublicKeyInfo())), "Wrong public curve accepted.");
-                Check(!LocalPrincipalAuthentication.IsValidPublicKey(Convert.ToBase64String(original.PrivateKey)), "Private blob accepted as public verifier.");
-                Check(!LocalPrincipalAuthentication.IsValidPublicKey(Public(original) + "\n"), "Noncanonical public key accepted.");
-                Check(!LocalPrincipalAuthentication.IsValidPublicKey(Convert.ToBase64String(original.PublicKey.Concat(new byte[] { 0 }).ToArray())), "Trailing public-key data accepted.");
+                Check(!LocalPrincipalProof.IsValidPublicKey(Convert.ToBase64String(otherCurve.ExportSubjectPublicKeyInfo())), "Wrong public curve accepted.");
+                Check(!LocalPrincipalProof.IsValidPublicKey(Convert.ToBase64String(original.PrivateKey)), "Private blob accepted as public verifier.");
+                Check(!LocalPrincipalProof.IsValidPublicKey(Public(original) + "\n"), "Noncanonical public key accepted.");
+                Check(!LocalPrincipalProof.IsValidPublicKey(Convert.ToBase64String(original.PublicKey.Concat(new byte[] { 0 }).ToArray())), "Trailing public-key data accepted.");
                 fixture.Writer.Close(); SqliteConnection.ClearAllPools(); // inspect quiescent persisted files, never a raw live WAL snapshot
                 foreach (var hostFile in Directory.EnumerateFiles(fixture.Database.Root.RootDirectory, "*", SearchOption.AllDirectories))
                 {

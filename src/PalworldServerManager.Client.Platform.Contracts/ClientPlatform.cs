@@ -34,6 +34,10 @@ public interface ILocalPrincipalKeyGenerator
 {
     LocalPrincipalKeyPair Generate();
 }
+public interface ILocalPrincipalChallengeSigner
+{
+    byte[] Sign(LocalPrincipalClientCredential credential, Guid expectedHostId, ReadOnlySpan<byte> payload);
+}
 public sealed class LocalPrincipalClientCredential(Guid principalId, LocalPrincipalKeyPair keyPair)
 {
     public Guid LocalPrincipalId { get; } = principalId;
