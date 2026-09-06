@@ -12,6 +12,7 @@ using PalworldServerManager.SelfTest;
 if (args.Length > 0)
 {
     if (args.Length == 1 && args[0] == "--native-tls-cache-probe") { await NativeTlsCacheTests.Lifecycle(); return 0; }
+    if (args.Length == 1 && args[0] == "--local-trust-probe") { await LocalTrustTests.Schema(); await LocalTrustTests.FilesAndTls(); return 0; }
     if (args.Length == 1 && args[0] == "--local-ipc-spike") { await LocalIpcSpike.LocalProof(); return 0; }
     if (args[0].StartsWith("--windows-", StringComparison.Ordinal))
         return await WindowsIntegration.RunAsync(args);
@@ -63,6 +64,8 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Local public trust artifact rejects ambiguous and unsupported schemas", LocalTrustTests.Schema),
+    ("Local trust path and TLS verify identity pins before sensitive requests", LocalTrustTests.FilesAndTls),
     ("Local IPC spike proves named-pipe TLS native SID and pre-request pin rejection", LocalIpcSpike.LocalProof),
     ("Protocol wire/domain server identities preserve Host qualification", ProtocolTests.Identities),
     ("Secure credential store lifecycle contract survives reopen and cancellation", SecureStoreTests.Lifecycle),
