@@ -47,7 +47,8 @@ public static class HostTrustReconciliationTests
                 INSERT INTO SecureCredentialReferences (CredentialRef,Purpose,CreatedUtc) VALUES ('prior','HostTlsV1','created-before-upgrade');
                 UPDATE HostIdentity SET CurrentCredentialRef='prior';
                 """);
-            Check(HostSchemaMigrationRunner.Default().Migrate(c)==1,"Upgrade did not apply exactly the additive metadata migration.");
+            // This fixture qualifies the historical v1 -> v2 credential metadata change specifically.
+            Check(new HostSchemaMigrationRunner(HostSchema.AllMigrations().Take(2)).Migrate(c)==1,"Upgrade did not apply exactly the additive metadata migration.");
             Check(HostDatabase.QueryScalarText(c,"SELECT ActivatedUtc FROM SecureCredentialReferences;")=="created-before-upgrade" &&
                 HostDatabase.QueryScalarText(c,"SELECT CurrentCredentialRef FROM HostIdentity;")=="prior","Upgrade lost current credential/activation history.");
         }
@@ -93,8 +94,10 @@ public static class HostTrustReconciliationTests
             f.Sql("DROP TRIGGER fail_audit;"); r.ReplaceOffline("c",reason);
             var plan=HostTrustPlanning.Build(r.Read());
             Check(plan.Publication!.CurrentFingerprint==C && plan.Publication.PendingFingerprint is null && plan.Retire.Count==2,"Recovery retained stale current or pending trust.");
-            Check(f.Text("SELECT State FROM HostCredentialRotations;")=="Aborted" && f.Count("SELECT SUM(PeerRecoveryRequired) FROM TrustedManagers;")==1 &&
-                f.Count("SELECT PeerRecoveryRequired FROM TrustedManagers WHERE PeerHostId='active';")==1,"Recovery did not abort rotation or marked incorrect peers.");
+            Check(f.Text("SELECT State FROM HostCredentialRotations;")=="Aborted" && f.Count("SELECT SUM(PeerRecoveryRequired) FROM TrustedManagers;")==2 &&
+                f.Count("SELECT PeerRecoveryRequired FROM TrustedManagers WHERE PeerHostId='active';")==1 &&
+                f.Count("SELECT PeerRecoveryRequired FROM TrustedManagers WHERE PeerHostId='bound';")==1 &&
+                f.Count("SELECT PeerRecoveryRequired FROM TrustedManagers WHERE PeerHostId='revoked';")==0,"Recovery did not abort rotation or marked incorrect peers.");
             var kind=reason==MachineCredentialRecoveryReason.CredentialLoss?"HostCredentialRecoveredFromLoss":"HostCredentialRecoveredFromCompromise";
             Check(f.Count($"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='{kind}' AND IsOfflineRecovery=1;")==1,"Recovery reason not distinctly audited.");
             Check(f.Text("SELECT PublicVerificationKey FROM LocalPrincipals WHERE IsOwner=1;")==ownerKey && HostIdentityRepository.CountActiveOwners(f.Writer)==1,"Machine recovery altered Owner credential/authority.");

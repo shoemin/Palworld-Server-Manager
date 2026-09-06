@@ -103,7 +103,8 @@ public sealed class HostCredentialStateRepository(HostDatabase database, Guid ho
             UPDATE HostIdentity SET CurrentCredentialRef=$ref WHERE Id=1;
             UPDATE SecureCredentialReferences SET ActivatedUtc=$now WHERE CredentialRef=$ref;
             UPDATE HostCredentialRotations SET State='Aborted',CompletedUtc=$now WHERE State IN ('Prepared','Staging','ReadyForCutover','CutOver');
-            UPDATE TrustedManagers SET PeerRecoveryRequired=1 WHERE State='Active';
+            UPDATE TrustedManagers SET PeerRecoveryRequired=1 WHERE State IN ('PeerBound','Active');
+            UPDATE PendingCredentialReplacements SET InvalidatedUtc=$now WHERE InvalidatedUtc IS NULL;
             """,("$ref",reference),("$now",DateTimeOffset.UtcNow.ToString("O")));
         Audit(c,tx,reason==MachineCredentialRecoveryReason.CredentialLoss?"HostCredentialRecoveredFromLoss":"HostCredentialRecoveredFromCompromise"); tx.Commit();
     }
