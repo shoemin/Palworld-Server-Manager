@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PalworldServerManager.Client.Avalonia\PalworldServerManager.Client.Avalonia.csproj" />
+    <PackageReference Include="Avalonia.Headless" Version="11.1.3" />
+  </ItemGroup>
+</Project>

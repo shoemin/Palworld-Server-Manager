@@ -32,6 +32,7 @@ try {
     Invoke-DotNetStep -Name "Restore" -Arguments @("restore", ".\PalworldServerManager.sln")
     Invoke-DotNetStep -Name "Release build" -Arguments @("build", ".\PalworldServerManager.sln", "-c", "Release", "--no-restore")
     Invoke-DotNetStep -Name "Self-tests" -Arguments @("run", "--project", ".\tests\PalworldServerManager.SelfTest\PalworldServerManager.SelfTest.csproj", "-c", "Release", "--no-build")
+    Invoke-DotNetStep -Name "Avalonia rendering and input" -Arguments @("run", "--project", ".\tests\PalworldServerManager.Client.UiTest\PalworldServerManager.Client.UiTest.csproj", "-c", "Release", "--no-build")
 
     Write-Host ""
     Write-Host "Build and self-tests completed successfully." -ForegroundColor Green

@@ -30,6 +30,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Clien
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Client.Avalonia", "src\PalworldServerManager.Client.Avalonia\PalworldServerManager.Client.Avalonia.csproj", "{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{7899A4C0-1FDB-4EBA-BCD9-F9223AACA54B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PalworldServerManager.Client.UiTest", "tests\PalworldServerManager.Client.UiTest\PalworldServerManager.Client.UiTest.csproj", "{CD49DB4E-90F0-4931-8A09-860CBF2DAAF5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -92,5 +96,12 @@ Global
 		{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{578F3ABC-002F-4E9B-8D7A-B47BF9A395E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD49DB4E-90F0-4931-8A09-860CBF2DAAF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD49DB4E-90F0-4931-8A09-860CBF2DAAF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD49DB4E-90F0-4931-8A09-860CBF2DAAF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD49DB4E-90F0-4931-8A09-860CBF2DAAF5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CD49DB4E-90F0-4931-8A09-860CBF2DAAF5} = {7899A4C0-1FDB-4EBA-BCD9-F9223AACA54B}
 	EndGlobalSection
 EndGlobal
