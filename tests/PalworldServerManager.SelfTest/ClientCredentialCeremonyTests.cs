@@ -9,6 +9,7 @@ namespace PalworldServerManager.SelfTest;
 
 public static class ClientCredentialCeremonyTests
 {
+    private sealed class EmptyKeys : ILocalPrincipalKeyGenerator { public LocalPrincipalKeyPair Generate() => new([], []); }
     internal static ClientCredentialCeremony IntegrationRotation => new(Guid.Parse("b94414b3-9813-4027-8b28-fdf8a831a360"),
         Guid.Parse("f2d2d454-0db4-4a9f-8459-0f5dc5c82581"), ClientCredentialPurpose.OwnerRotation, ClientCredentialKeyUse.Fresh);
     internal static async Task IntegrationProbe(string path, bool complete)
@@ -103,6 +104,9 @@ public static class ClientCredentialCeremonyTests
     }
     public static async Task FailureAndMigration()
     {
+        using var empty = new Fixture();
+        await Reject<InvalidDataException>(() => new WindowsLocalPrincipalCredentialStore(new EmptyKeys(), empty.PathName).CreateAndStoreAsync());
+        Check(!File.Exists(empty.PathName), "Empty generator output was persisted as a credential.");
         using var f = new Fixture(); Directory.CreateDirectory(f.Root);
         var legacy = f.Keep(new WindowsLocalPrincipalCryptography().Generate());
         var plain = JsonSerializer.SerializeToUtf8Bytes(new { Version = 1, PrincipalId = f.Principal, PublicKey = legacy.PublicKey, PrivateKey = legacy.PrivateKey });

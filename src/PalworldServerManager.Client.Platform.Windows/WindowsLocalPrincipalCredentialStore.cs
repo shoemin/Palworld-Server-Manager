@@ -79,7 +79,11 @@ public sealed partial class WindowsLocalPrincipalCredentialStore : ILocalPrincip
             if (value?.Pending is not null) throw new InvalidOperationException("Complete or explicitly discard the pending ceremony first.");
             if (value?.PrivateKey.Length > 0) return Copy(value.PublicKey, value.PrivateKey);
             var pair = _generator.Generate();
-            try { Write(new Payload { PublicKey = pair.PublicKey, PrivateKey = pair.PrivateKey }); return Copy(pair.PublicKey, pair.PrivateKey); }
+            try
+            {
+                if (pair.PublicKey.Length == 0 || pair.PrivateKey.Length == 0) throw new InvalidDataException("Empty generated key material.");
+                Write(new Payload { PublicKey = pair.PublicKey, PrivateKey = pair.PrivateKey }); return Copy(pair.PublicKey, pair.PrivateKey);
+            }
             finally { CryptographicOperations.ZeroMemory(pair.PrivateKey); }
         }
         finally { Clear(value); }
