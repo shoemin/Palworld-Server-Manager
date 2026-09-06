@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args.Length == 1 && args[0] == "--local-principal-probe")
+    {
+        await LocalPrincipalAuthenticationTests.MappingAndBoundaries();
+        await LocalPrincipalAuthenticationTests.NonceAndLifetime();
+        await LocalPrincipalAuthenticationTests.RevocationAndMalformedProofs();
+        await LocalPrincipalAuthenticationTests.ClientKeyAndFrame();
+        return 0;
+    }
     if (args.Length == 1 && args[0] == "--native-tls-cache-probe") { await NativeTlsCacheTests.Lifecycle(); return 0; }
     if (args.Length == 1 && args[0] == "--local-trust-probe") { await LocalTrustTests.Schema(); await LocalTrustTests.FilesAndTls(); return 0; }
     if (args.Length == 1 && args[0] == "--local-ipc-spike") { await LocalIpcSpike.LocalProof(); return 0; }
@@ -64,6 +72,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Local principal authentication maps exact active identity and native user", LocalPrincipalAuthenticationTests.MappingAndBoundaries),
+    ("Local principal nonces reject replay cross-connection expiry and concurrent reuse", LocalPrincipalAuthenticationTests.NonceAndLifetime),
+    ("Local principal authentication rejects revoked changed and malformed proofs", LocalPrincipalAuthenticationTests.RevocationAndMalformedProofs),
+    ("Production client keys and challenge frames interoperate without private Host material", LocalPrincipalAuthenticationTests.ClientKeyAndFrame),
     ("Local public trust artifact rejects ambiguous and unsupported schemas", LocalTrustTests.Schema),
     ("Local trust path and TLS verify identity pins before sensitive requests", LocalTrustTests.FilesAndTls),
     ("Local IPC spike proves named-pipe TLS native SID and pre-request pin rejection", LocalIpcSpike.LocalProof),
