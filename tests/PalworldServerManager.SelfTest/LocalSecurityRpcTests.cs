@@ -79,11 +79,9 @@ public static class LocalSecurityRpcTests
             var runtime = new LocalSecurityRpcRuntime(State.Database, State.HostId, State.Secrets,
                 context => { Interlocked.Increment(ref Delivered); return WindowsLocalTlsEndpoint.ReadNativePrincipal(context); },
                 reason => { lock (Failures) Failures.Add(reason); }, State.Time);
-            var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] }); builder.Logging.ClearProviders();
-            builder.Services.AddSingleton(runtime);
-            builder.Services.AddGrpc(options => { options.EnableDetailedErrors = false; options.MaxReceiveMessageSize = LocalSecurityRpcService.MaximumMessageBytes; options.MaxSendMessageSize = LocalSecurityRpcService.MaximumMessageBytes; });
-            WindowsLocalTlsEndpoint.Configure(builder.WebHost, Pipe, identity.User!, identity.User!, _certificate, runtime.BindConnection);
-            _app = builder.Build(); _app.MapGrpcService<LocalSecurityRpcService>(); await _app.StartAsync();
+            _app = WindowsHostComposition.BuildLocalApplication(runtime, identity.User!, identity.User!, _certificate, Pipe);
+            Check(_app.Environment.EnvironmentName == "Production" && _app.Configuration["urls"] is null, "Production listener accepted environment configuration.");
+            await _app.StartAsync();
         }
         internal (Guid Id, byte[] Secret) BootstrapTicket()
         {
@@ -252,5 +250,22 @@ public static class LocalSecurityRpcTests
         using var malformed = f.Connect(); var hello = new Handshake { Protocol = new() { Major = 1, Minor = 1 }, ProductVersion = new string('x', 257) };
         await Refused(malformed.Call<Handshake, LocalHandshakeReply>("Negotiate", hello), StatusCode.InvalidArgument);
         await Refused(malformed.Call<LocalEmpty, LocalPrincipalIdentity>("GetIdentity", new()), StatusCode.FailedPrecondition);
+    }
+    public static async Task ProductionConfiguration()
+    {
+        var inputs = new Dictionary<string, string>
+        {
+            ["ASPNETCORE_URLS"] = "http://127.0.0.1:0", ["ASPNETCORE_ENVIRONMENT"] = "Development",
+            ["ASPNETCORE_HOSTINGSTARTUPASSEMBLIES"] = "Not.A.Real.HostingStartup.Assembly",
+            ["Kestrel__Endpoints__Injected__Url"] = "http://127.0.0.1:0"
+        };
+        var prior = inputs.Keys.ToDictionary(key => key, Environment.GetEnvironmentVariable);
+        try
+        {
+            foreach (var pair in inputs) Environment.SetEnvironmentVariable(pair.Key, pair.Value);
+            await using var fixture = new Fixture(); await fixture.Start();
+            using var client = fixture.Connect(); await client.Negotiate();
+        }
+        finally { foreach (var pair in prior) Environment.SetEnvironmentVariable(pair.Key, pair.Value); }
     }
 }

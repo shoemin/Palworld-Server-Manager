@@ -105,6 +105,8 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Host service worker releases resources and distinguishes stop from failure", HostServiceWorkerTests.Lifecycle),
+    ("Production local listener ignores external hosting and endpoint configuration", LocalSecurityRpcTests.ProductionConfiguration),
     ("Local security gRPC requires TLS negotiation and intended-user bootstrap", LocalSecurityRpcTests.NegotiationAndBootstrap),
     ("Local security gRPC binds native identity nonces and Owner authorization", LocalSecurityRpcTests.AuthenticationAndAuthority),
     ("Local security gRPC recovery preserves transactions audits and Owner identity", LocalSecurityRpcTests.RecoveryAndRollback),

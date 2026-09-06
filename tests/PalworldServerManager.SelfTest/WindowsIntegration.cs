@@ -309,6 +309,7 @@ public static partial class WindowsIntegration
             }
             await HandoffSuite(tlsHostId, root, executable, userA, userB, password, sidA!, shared);
             await OfflineSuite(platform, service, group, root, executable, userA, userB, password, sidA!, sidB!, shared, serviceSid);
+            await ProductionHostSuite(binaries, sidA!);
             await platform.UninstallAsync(); installed = false;
             Check(File.Exists(Path.Combine(hostRoot, "host.db")), "Uninstall removed authoritative database.");
             Check(Sid(group) == groupSid.Value, "Uninstall removed activation group.");
