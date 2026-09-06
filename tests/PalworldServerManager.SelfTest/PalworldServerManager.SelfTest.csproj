@@ -9,6 +9,8 @@
     <InformationalVersion>0.3.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\src\PalworldServerManager.Client.Avalonia\Shell\*.cs" Link="Shell\%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\docs\design\astra-34\tokens.json" LogicalName="PalworldServerManager.Shell.Tokens.json" />
     <PackageReference Include="Grpc.Net.Client" Version="2.83.0" />
     <Compile Include="..\..\src\PalworldServerManager.Client.Shared\*.cs" Link="ClientSecurity\%(Filename)%(Extension)" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />

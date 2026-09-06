@@ -115,6 +115,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Shell uses exact Host-qualified identity and separates focus from selection", ShellStateTests.ExactIdentityAndFocus),
+    ("Shell inventory changes preserve aliases and remove hidden targets", ShellStateTests.InventoryAndAliases),
+    ("Shell rejects stale, denied and canceled selection replies", ShellStateTests.StaleSelection),
+    ("Shell semantic themes preserve contrast, layout and reduce-motion rules", ShellStateTests.TokensAndResponsiveRules),
     ("Ordinary client bootstrap lost reply preserves prepared key", ClientSecurityCompositionTests.BootstrapLostReply),
     ("Ordinary client rotation confirms durable binding before handoff deletion", ClientSecurityCompositionTests.RotationBindingAndDeletion),
     ("Ordinary client re-home preserves persisted key choice across lost results", ClientSecurityCompositionTests.RehomeKeyChoice),
