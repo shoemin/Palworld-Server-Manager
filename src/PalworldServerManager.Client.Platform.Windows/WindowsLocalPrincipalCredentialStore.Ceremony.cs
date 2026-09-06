@@ -29,12 +29,20 @@ public sealed partial class WindowsLocalPrincipalCredentialStore
         if (value.Version is not 1 and not 2 || value.PublicKey is null || value.PrivateKey is null || value.PrincipalId == Guid.Empty || value.HostId == Guid.Empty ||
             (value.PublicKey.Length == 0) != (value.PrivateKey.Length == 0) || (value.PrincipalId is not null && value.PrivateKey.Length == 0) ||
             (value.HostId is not null && value.PrincipalId is null) ||
-            (value.Version == 1 && (value.PrivateKey.Length == 0 || value.HostId is not null || value.Pending is not null || value.Completed is not null)))
+            value.RetiredTickets is null ||
+            (value.Version == 1 && (value.PrivateKey.Length == 0 || value.HostId is not null || value.Pending is not null || value.Completed is not null || value.RetiredTickets.Count != 0)))
             throw new InvalidDataException("Invalid client credential format.");
+        var retired = new HashSet<(Guid, Guid)>();
+        foreach (var ticket in value.RetiredTickets)
+        {
+            Validate(ticket);
+            if (ticket.HostId != value.HostId || !retired.Add((ticket.HostId, ticket.TicketId)))
+                throw new InvalidDataException("Invalid retired client ticket history.");
+        }
         if (value.Pending is { } pending)
         {
             Validate(pending.Ceremony);
-            if (pending.PublicKey is not { Length: > 0 } || pending.PrivateKey is not { Length: > 0 } ||
+            if (retired.Contains((pending.Ceremony.HostId, pending.Ceremony.TicketId)) || pending.PublicKey is not { Length: > 0 } || pending.PrivateKey is not { Length: > 0 } ||
                 (value.HostId is not null && value.HostId != pending.Ceremony.HostId) ||
                 (pending.Ceremony.KeyUse == ClientCredentialKeyUse.ExistingForRehome &&
                  (value.PrincipalId is null || !pending.PublicKey.AsSpan().SequenceEqual(value.PublicKey) || !pending.PrivateKey.AsSpan().SequenceEqual(value.PrivateKey))))
@@ -43,7 +51,7 @@ public sealed partial class WindowsLocalPrincipalCredentialStore
         if (value.Completed is { } completed)
         {
             Validate(completed.Ceremony);
-            if (completed.PrincipalId == Guid.Empty || completed.PrincipalId != value.PrincipalId || completed.Ceremony.HostId != value.HostId ||
+            if (retired.Contains((completed.Ceremony.HostId, completed.Ceremony.TicketId)) || completed.PrincipalId == Guid.Empty || completed.PrincipalId != value.PrincipalId || completed.Ceremony.HostId != value.HostId ||
                 completed.PublicKey is null || !completed.PublicKey.AsSpan().SequenceEqual(value.PublicKey))
                 throw new InvalidDataException("Invalid completed client receipt.");
         }
@@ -60,6 +68,10 @@ public sealed partial class WindowsLocalPrincipalCredentialStore
         using var held = await LockAsync(ct); var value = Read() ?? new Payload { Version = 2 };
         try
         {
+            // Host consumed-ticket retries confirm identity indefinitely without re-registering
+            // the submitted key. Never generate new material for a retired completed ticket.
+            if (value.RetiredTickets.Any(t => t.HostId == ceremony.HostId && t.TicketId == ceremony.TicketId))
+                throw new InvalidOperationException("This ticket completed against an earlier client credential.");
             if (value.Pending is { } pending)
             {
                 if (pending.Ceremony != ceremony) throw new InvalidOperationException("Another client ceremony is unresolved.");
@@ -103,6 +115,7 @@ public sealed partial class WindowsLocalPrincipalCredentialStore
                 throw new InvalidOperationException("Confirmation does not match the prepared credential.");
             CryptographicOperations.ZeroMemory(value.PrivateKey);
             value.PublicKey = pending.PublicKey; value.PrivateKey = pending.PrivateKey; value.PrincipalId = principalId; value.HostId = ceremony.HostId;
+            if (value.Completed is { } completed) value.RetiredTickets.Add(completed.Ceremony);
             value.Pending = null; value.Completed = new() { Ceremony = ceremony, PrincipalId = principalId, PublicKey = pending.PublicKey };
             ct.ThrowIfCancellationRequested(); Write(value);
         }

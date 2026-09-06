@@ -30,6 +30,7 @@ public sealed partial class WindowsLocalPrincipalCredentialStore : ILocalPrincip
         public Guid? HostId { get; set; }
         public PendingCredential? Pending { get; set; }
         public CompletedCredential? Completed { get; set; }
+        public List<ClientCredentialCeremony> RetiredTickets { get; set; } = [];
     }
     private Payload? Read()
     {

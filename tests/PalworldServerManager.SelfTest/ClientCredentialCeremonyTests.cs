@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using PalworldServerManager.Client.Platform.Contracts;
 using PalworldServerManager.Client.Platform.Windows;
+using PalworldServerManager.Core.Security;
 using static PalworldServerManager.SelfTest.WindowsPlatformTests;
 using static PalworldServerManager.SelfTest.SecureStoreTests;
 
@@ -78,6 +79,8 @@ public static class ClientCredentialCeremonyTests
         await Reject<InvalidOperationException>(() => store.ConfirmAsync(rotation, Guid.NewGuid(), fresh.PublicKey));
         await store.ConfirmAsync(rotation, f.Principal, fresh.PublicKey);
         Check((await f.Load())!.KeyPair.PrivateKey.SequenceEqual(fresh.PrivateKey), "Rotation did not promote exact prepared key.");
+        await Reject<InvalidOperationException>(() => f.Store().PrepareAsync(bootstrap));
+        await Reject<InvalidOperationException>(() => f.Store().PrepareAsync(bootstrap with { Purpose = ClientCredentialPurpose.OwnerRotation }));
         await Reject<InvalidOperationException>(() => store.ConfirmAsync(bootstrap, f.Principal, first.PublicKey));
         Check((await f.Load())!.KeyPair.PrivateKey.SequenceEqual(fresh.PrivateKey), "Stale completion replaced later current key.");
         Check(File.ReadAllBytes(f.PathName).AsSpan().IndexOf(fresh.PrivateKey) < 0, "Pending/current private key persisted in plaintext.");
@@ -135,5 +138,32 @@ public static class ClientCredentialCeremonyTests
             try { await f.Store().LoadAsync(); throw new Exception("Malformed client state accepted."); }
             catch (Exception ex) when (ex is InvalidDataException or ArgumentException) { }
         }
+    }
+    public static async Task HostConsumedRetry()
+    {
+        // Real repository transactions with synthetic native identity; not multi-user field evidence.
+        using var host = new LocalEnrollmentTests.Fixture(initialized: false); using var client = new Fixture();
+        var store = client.Store(); var bootstrap = client.Ceremony() with { HostId = host.HostId };
+        using var bootstrapProof = host.Proof(bootstrap.TicketId, bootstrap: true);
+        host.Repository.PrepareOfflineBootstrap(bootstrap.TicketId, "owner", bootstrapProof, host.Time.Now.AddMinutes(15));
+        var first = client.Keep(await store.PrepareAsync(bootstrap));
+        var principal = host.Repository.CompleteBootstrap(bootstrap.TicketId, "owner", bootstrapProof, Convert.ToBase64String(first.PublicKey));
+        // Drop the result; another client process reopens and submits the same durable key.
+        var retry = client.Keep(await client.Store().PrepareAsync(bootstrap));
+        var repeated = host.Repository.CompleteBootstrap(bootstrap.TicketId, "owner", bootstrapProof, Convert.ToBase64String(retry.PublicKey));
+        await store.ConfirmAsync(bootstrap, repeated, retry.PublicKey);
+        using (var proof = host.Authenticate(principal, "owner", retry)) Check(proof.GetCurrentPrincipal().IsOwner, "Lost-result bootstrap bound the wrong client key.");
+        var rotation = client.Ceremony(ClientCredentialPurpose.OwnerRotation) with { HostId = host.HostId };
+        using var rotationProof = LocalEnrollmentVerifier.Compute(host.Key, host.HostId, LocalEnrollmentPurpose.OwnerRotation, rotation.TicketId, new byte[] { 4, 7, 2, 9 });
+        host.Repository.PrepareOfflineOwnerRotation(rotation.TicketId, rotationProof, host.Time.Now.AddMinutes(15));
+        var fresh = client.Keep(await store.PrepareAsync(rotation));
+        var rotated = host.Repository.CompleteOwnerRotation(rotation.TicketId, "owner", rotationProof, Convert.ToBase64String(fresh.PublicKey));
+        await store.ConfirmAsync(rotation, rotated, fresh.PublicKey);
+        Check(host.Repository.CompleteBootstrap(bootstrap.TicketId, "owner", bootstrapProof, "ignored-on-consumed-retry") == principal,
+            "Fixture no longer exercises Host historical confirmation semantics.");
+        await Reject<InvalidOperationException>(() => client.Store().PrepareAsync(bootstrap));
+        var current = await client.Load() ?? throw new Exception("Client credential lost after historical retry.");
+        using var authenticated = host.Authenticate(principal, "owner", current.KeyPair);
+        Check(authenticated.GetCurrentPrincipal().IsOwner, "Historical ticket displaced the current authenticated key.");
     }
 }
