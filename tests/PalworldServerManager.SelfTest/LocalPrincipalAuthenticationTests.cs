@@ -98,9 +98,38 @@ public static class LocalPrincipalAuthenticationTests
         fixture.ChangeUser(null);
         Reject<AuthenticationException>(() => user.IssueChallenge(fixture.UserId));
         using var uninitialized = new Fixture(initialized: false);
+        using (var seed = uninitialized.Writer.CreateCommand())
+        {
+            seed.CommandText = """
+                INSERT INTO LocalPrincipals (LocalPrincipalId, OsPrincipalRef, PublicVerificationKey, IsOwner, State, CreatedUtc)
+                VALUES ($id, 'native-user', $key, 0, 'Active', $now);
+                """;
+            seed.Parameters.AddWithValue("$id", uninitialized.UserId.ToString("D")); seed.Parameters.AddWithValue("$key", Public(uninitialized.UserKey));
+            seed.Parameters.AddWithValue("$now", DateTimeOffset.UtcNow.ToString("O")); seed.ExecuteNonQuery();
+        }
         using var noAuthority = uninitialized.Connection();
         Reject<AuthenticationException>(() => noAuthority.IssueChallenge(uninitialized.UserId));
+        HostDatabase.Execute(uninitialized.Writer, "UPDATE HostIdentity SET HostBootstrapState='Initialized';");
+        Reject<AuthenticationException>(() => noAuthority.IssueChallenge(uninitialized.UserId)); // malformed ownerless initialized state
         Check(HostIdentityRepository.CountActiveOwners(fixture.Writer) == 1, "Authentication changed the Owner invariant.");
+        fixture.Writer.Close(); SqliteConnection.ClearPool(fixture.Writer);
+        using (var exclusiveFile = new FileStream(fixture.Database.DatabasePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            Check(exclusiveFile.Length > 0, "Read-only authentication lookup retained a database handle after shutdown.");
+        using var roleView = new Fixture(); using var oldOwner = roleView.Connection("native-owner"); using var successor = roleView.Connection();
+        oldOwner.Authenticate(roleView.Sign(oldOwner.IssueChallenge(roleView.OwnerId), owner: true));
+        successor.Authenticate(roleView.Sign(successor.IssueChallenge(roleView.UserId)));
+        // Synthetic committed recovery state; this does not implement or claim the recovery ceremony.
+        using (var tx = roleView.Writer.BeginTransaction())
+        {
+            using var change = roleView.Writer.CreateCommand(); change.Transaction = tx;
+            change.CommandText = """
+                UPDATE LocalPrincipals SET IsOwner=0, State='Revoked', PublicVerificationKey=NULL WHERE OsPrincipalRef='native-owner';
+                UPDATE LocalPrincipals SET IsOwner=1 WHERE OsPrincipalRef='native-user';
+                """;
+            change.ExecuteNonQuery(); tx.Commit();
+        }
+        Reject<AuthenticationException>(() => oldOwner.GetCurrentPrincipal());
+        Check(successor.GetCurrentPrincipal().IsOwner && HostIdentityRepository.CountActiveOwners(roleView.Writer) == 1, "Identity hook cached the prior Owner state.");
         return Task.CompletedTask;
     }
     public static async Task NonceAndLifetime()
@@ -175,6 +204,10 @@ public static class LocalPrincipalAuthenticationTests
                 var payload = LocalPrincipalAuthentication.EncodeChallenge(fixture.HostId, fixture.UserId, RandomNumberGenerator.GetBytes(32), RandomNumberGenerator.GetBytes(32));
                 var signature = P256LocalPrincipalCryptography.Sign(loaded, fixture.HostId, payload);
                 Check(signature.Length == 64 && LocalPrincipalAuthentication.Verify(Public(original), payload, signature), "Client/Host crypto contract mismatch.");
+                fixture.ChangeUser(Public(original));
+                using var connection = fixture.Connection();
+                var storedProof = P256LocalPrincipalCryptography.Sign(loaded, fixture.HostId, connection.IssueChallenge(fixture.UserId));
+                Check(connection.Authenticate(storedProof).LocalPrincipalId == loaded.LocalPrincipalId, "Reloaded DPAPI key did not authenticate against the persisted public verifier.");
                 foreach (var bad in new[] { payload.Concat(new byte[] { 10 }).ToArray(), new byte[] { 255 },
                     Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(payload).Replace("AUTH/1", "AUTH/2")), new byte[257] })
                     Reject<CryptographicException>(() => P256LocalPrincipalCryptography.Sign(loaded, fixture.HostId, bad));

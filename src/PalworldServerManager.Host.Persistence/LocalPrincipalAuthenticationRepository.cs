@@ -16,7 +16,7 @@ public sealed class LocalPrincipalAuthenticationRepository(HostDatabase database
         using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
         {
             DataSource = _database.DatabasePath, Mode = SqliteOpenMode.ReadOnly,
-            Cache = SqliteCacheMode.Default, ForeignKeys = true
+            Cache = SqliteCacheMode.Default, ForeignKeys = true, Pooling = false
         }.ToString());
         connection.Open(); // Never create/recover a database as a side effect of authentication.
         using var command = connection.CreateCommand();
@@ -24,7 +24,8 @@ public sealed class LocalPrincipalAuthenticationRepository(HostDatabase database
             SELECT h.HostId, p.LocalPrincipalId, p.OsPrincipalRef, p.PublicVerificationKey, p.IsOwner
             FROM LocalPrincipals p CROSS JOIN HostIdentity h
             WHERE h.Id = 1 AND h.HostBootstrapState = 'Initialized'
-                AND p.LocalPrincipalId = $id AND p.State = 'Active';
+                AND p.LocalPrincipalId = $id AND p.State = 'Active'
+                AND (SELECT COUNT(*) FROM LocalPrincipals WHERE State='Active' AND IsOwner=1) = 1;
             """;
         command.Parameters.AddWithValue("$id", principalId.ToString("D"));
         using var reader = command.ExecuteReader();
