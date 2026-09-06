@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--spake2-wrapper-probe", var nativePath])
+    {
+        Spake2WrapperTests.Run(nativePath); return 0;
+    }
+    if (args is ["--spake2-wrapper-probe", var nativeProduction, var nativeFault])
+    {
+        Spake2WrapperTests.Run(nativeProduction, nativeFault); return 0;
+    }
     if (args is ["--client-security-probe"])
     {
         await ClientSecurityCompositionTests.BootstrapLostReply();

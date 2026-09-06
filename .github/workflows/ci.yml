@@ -13,6 +13,33 @@ permissions:
   contents: read
 
 jobs:
+  astra-spake2-wrapper:
+    name: Guarded Windows SPAKE2 wrapper
+    if: github.event_name == 'workflow_dispatch' && (github.ref_name == 'astra/44-guarded-spake2' || github.ref_name == 'experiment/astra-v0.5.0')
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Build and qualify native wrapper
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Rust setup failed.' }
+          $env:RUSTUP_TOOLCHAIN = '1.98.1'
+          ./scripts/build-spake2.ps1
+          ./scripts/build-spake2.ps1 -EntropyFailureFixture -OutputDirectory build-logs/spake2-fault
+          cargo test --locked --release --manifest-path native/PalworldServerManager.Spake2/Cargo.toml
+          if ($LASTEXITCODE -ne 0) { throw 'Native lifecycle tests failed.' }
+          cargo test --locked --release --manifest-path native/PalworldServerManager.Spake2/Cargo.toml --features qualification-entropy-failure
+          if ($LASTEXITCODE -ne 0) { throw 'Native entropy-failure tests failed.' }
+          dotnet build PalworldServerManager.sln -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Managed build failed.' }
+          dotnet run --project tests/PalworldServerManager.SelfTest -c Release --no-build -- --spake2-wrapper-probe "$PWD/build-logs/spake2-native/target/x86_64-pc-windows-msvc/release/palworld_spake2.dll" "$PWD/build-logs/spake2-fault/target/x86_64-pc-windows-msvc/release/palworld_spake2.dll"
+          if ($LASTEXITCODE -ne 0) { throw 'Managed/native qualification failed.' }
+
   astra-spake2-qualification:
     name: Isolated Astra SPAKE2 qualification
     if: github.event_name == 'workflow_dispatch' && (github.ref_name == 'astra/44-direct-assessment' || github.ref_name == 'experiment/astra-v0.5.0')
