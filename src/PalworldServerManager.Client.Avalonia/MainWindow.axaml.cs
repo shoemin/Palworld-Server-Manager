@@ -129,6 +129,9 @@ public partial class MainWindow : Window
     }
     public void BindState(ShellState? state)
     {
+        _bindingVersion++;
+        if (VerifiedConnection is not null) _connectionStatus.Text = "Connection view changed. Verify local access again.";
+        VerifiedConnection = null; _connectionIdentity.Text = null; _connectionIdentity.IsVisible = false;
         _selectionVersion++; _selectionStop.Cancel(); _selectionStop.Dispose(); _selectionStop = new();
         if (_state is not null) _state.PropertyChanged -= StateChanged;
         _state = state; _rows = null; _collapsedGroups.Clear(); if (state is not null) state.PropertyChanged += StateChanged;

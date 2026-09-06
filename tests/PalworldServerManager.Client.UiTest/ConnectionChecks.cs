@@ -41,6 +41,8 @@ public static partial class Program
                 Check(!window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("SECRET") == true), "UI disclosed exception detail.");
             }
             Capture(window, output, "connection-failure");
+            reply = _ => Task.FromResult(expected); Click(window, "ConnectLocal"); window.BindState(null);
+            Check(window.VerifiedConnection is null && !Find<SelectableTextBlock>(window, "LocalHostIdentity").IsVisible, "View replacement retained verified Host identity.");
             reply = _ => Task.FromResult(default(LocalConnectionInfo)); Click(window, "ConnectLocal"); Check(window.VerifiedConnection is null, "Malformed reply accepted.");
             var pending = new TaskCompletionSource<LocalConnectionInfo>(); CancellationToken captured = default;
             reply = ct => { captured = ct; return pending.Task; }; Click(window, "ConnectLocal"); var atStart = calls;
@@ -48,6 +50,8 @@ public static partial class Program
             Capture(window, output, "connection-pending"); Click(window, "CancelLocalConnection"); Check(captured.IsCancellationRequested, "Cancel did not signal the client request.");
             pending.SetResult(expected); Dispatcher.UIThread.RunJobs();
             Check(window.VerifiedConnection is null && window.State is null && !window.IsConnecting && Find<Button>(window, "ConnectLocal").IsFocused && Find<TextBlock>(window, "LocalConnectionStatus").Text!.Contains("Host may still be running"), "Canceled late success established identity, lost focus or claimed Host rollback.");
+            pending = new(); reply = _ => pending.Task; Click(window, "ConnectLocal"); window.BindState(null); pending.SetResult(expected); Dispatcher.UIThread.RunJobs();
+            Check(window.VerifiedConnection is null && window.State is null && !window.IsConnecting, "Late reply overwrote a replacement view.");
             pending = new(); reply = ct => { captured = ct; return pending.Task; }; Click(window, "ConnectLocal"); window.Close(); pending.SetResult(expected); Dispatcher.UIThread.RunJobs();
             Check(captured.IsCancellationRequested && window.VerifiedConnection is null && !window.IsConnecting, "Closed window retained late connection state.");
         }

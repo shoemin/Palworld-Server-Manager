@@ -14,6 +14,7 @@ public partial class MainWindow
 {
     private readonly Func<CancellationToken, Task<LocalConnectionInfo>>? _connectLocal;
     private CancellationTokenSource? _connectionStop;
+    private long _bindingVersion;
     private Button _connectButton = null!, _cancelConnection = null!;
     private readonly TextBlock _connectionStatus = Text("Connect to verify this PC's Host and your local access.", "muted");
     private readonly SelectableTextBlock _connectionIdentity = new() { Name = "LocalHostIdentity", TextWrapping = TextWrapping.Wrap, IsVisible = false };
@@ -36,21 +37,23 @@ public partial class MainWindow
         if (_closed || IsConnecting || _connectLocal is null) return;
         using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(60)); _connectionStop = stop;
         VerifiedConnection = null; _connectionIdentity.Text = null; _connectionIdentity.IsVisible = false; BindState(null);
+        var binding = _bindingVersion;
         _connectButton.IsEnabled = false; _cancelConnection.IsVisible = true; _connectionStatus.Text = "Verifying the local Host and your access…";
         try
         {
             var result = await _connectLocal(stop.Token); stop.Token.ThrowIfCancellationRequested();
             if (_closed) return;
+            if (binding != _bindingVersion) { _connectionStatus.Text = "Connection view changed. Verify local access again."; return; }
             if (result.HostId == Guid.Empty || result.Identity.LocalPrincipalId == Guid.Empty) throw new InvalidDataException();
-            VerifiedConnection = result;
             // No inventory protocol exists yet. Empty here means unavailable, never no servers.
             BindState(new ShellState(new HostId(result.HostId), (_, _) => Task.FromResult(false)));
+            VerifiedConnection = result; Refresh();
             _connectionIdentity.Text = "This PC · Host: " + result.HostId.ToString("D"); _connectionIdentity.IsVisible = true;
             AutomationProperties.SetName(_connectionIdentity, _connectionIdentity.Text);
             _connectionStatus.Text = "Host and local access verified for this request. Server inventory is unavailable. Verify again to check current access.";
         }
         catch (Exception failure) when (failure is not OutOfMemoryException)
-        { if (!_closed) _connectionStatus.Text = ConnectionFailure(failure); }
+        { if (!_closed) _connectionStatus.Text = binding == _bindingVersion ? ConnectionFailure(failure) : "Connection view changed. Verify local access again."; }
         finally
         {
             _connectionStop = null;
