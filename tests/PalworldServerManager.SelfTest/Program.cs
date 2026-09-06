@@ -13,11 +13,16 @@ if (args.Length > 0)
 {
     if (args is ["--spake2-wrapper-probe", var nativePath])
     {
-        Spake2WrapperTests.Run(nativePath); return 0;
+        Spake2WrapperTests.Run(nativePath); PairingAttemptTests.Native(nativePath); return 0;
     }
     if (args is ["--spake2-wrapper-probe", var nativeProduction, var nativeFault])
     {
-        Spake2WrapperTests.Run(nativeProduction, nativeFault); return 0;
+        Spake2WrapperTests.Run(nativeProduction, nativeFault); PairingAttemptTests.Native(nativeProduction); return 0;
+    }
+    if (args is ["--pairing-lifecycle-probe"])
+    {
+        await PairingAttemptTests.Lifecycle(); await PairingAttemptTests.ExpiryAndCleanup(); await PairingAttemptTests.BoundsAndCancellation();
+        Console.WriteLine("PASS Host pairing lifecycle probes."); return 0;
     }
     if (args is ["--client-security-probe"])
     {
@@ -123,6 +128,9 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
+    ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
+    ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
     ("Shell uses exact Host-qualified identity and separates focus from selection", ShellStateTests.ExactIdentityAndFocus),
     ("Shell inventory changes preserve aliases and remove hidden targets", ShellStateTests.InventoryAndAliases),
     ("Shell rejects stale, denied and canceled selection replies", ShellStateTests.StaleSelection),

@@ -3,6 +3,11 @@ namespace PalworldServerManager.Platform.Contracts;
 public enum PairingRole { Initiator = 0, Responder = 1 }
 public enum PairingExchangeState { Created, AwaitingConfirmation, Confirmed, Failed, Disposed }
 
+public interface IPairingKeyExchangeFactory
+{
+    IPairingKeyExchange Start(PairingRole role, byte[] code, byte[] sessionNonce, CancellationToken cancellationToken = default);
+}
+
 /// Host-side platform boundary. Pairing never creates management authority.
 public interface IPairingKeyExchange : IDisposable
 {

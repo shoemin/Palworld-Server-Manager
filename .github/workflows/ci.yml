@@ -15,7 +15,7 @@ permissions:
 jobs:
   astra-spake2-wrapper:
     name: Guarded Windows SPAKE2 wrapper
-    if: github.event_name == 'workflow_dispatch' && (github.ref_name == 'astra/44-guarded-spake2' || github.ref_name == 'experiment/astra-v0.5.0')
+    if: github.event_name == 'workflow_dispatch' && (startsWith(github.ref_name, 'astra/44-') || github.ref_name == 'experiment/astra-v0.5.0')
     runs-on: windows-latest
     timeout-minutes: 15
     steps:

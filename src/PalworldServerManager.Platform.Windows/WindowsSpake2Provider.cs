@@ -7,7 +7,7 @@ namespace PalworldServerManager.Platform.Windows;
 
 /// Loads only an explicitly selected, integrity-checked Host component. No global DLL search.
 /// Composition must supply a build-pinned hash and a protected installation path.
-public sealed class WindowsSpake2Provider : IDisposable
+public sealed class WindowsSpake2Provider : IPairingKeyExchangeFactory, IDisposable
 {
     private readonly object sync = new();
     private readonly nint library;
