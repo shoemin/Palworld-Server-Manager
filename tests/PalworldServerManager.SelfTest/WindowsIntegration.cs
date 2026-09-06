@@ -128,10 +128,9 @@ public static partial class WindowsIntegration
         }
         else if (action == "credential-create")
         {
-            var store = new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath);
-            await store.CreateAndStoreAsync(); await store.BindPrincipalIdAsync(Guid.NewGuid());
-            Check(await store.HasCredentialAsync(), "User A did not persist credential.");
+            await ClientCredentialCeremonyTests.IntegrationProbe(credentialPath, complete: false);
         }
+        else if (action == "credential-confirm") await ClientCredentialCeremonyTests.IntegrationProbe(credentialPath, complete: true);
         else if (action == "host-credential-denied")
         {
             foreach (var attempt in new Action[] {
@@ -149,6 +148,8 @@ public static partial class WindowsIntegration
             try { ProtectedData.Unprotect(bytes, null, DataProtectionScope.CurrentUser); throw new Exception("User B decrypted user A credential."); }
             catch (CryptographicException) { }
             try { await new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath).LoadAsync(); throw new Exception("User B retrieved user A credential."); }
+            catch (CryptographicException) { }
+            try { await new WindowsLocalPrincipalCredentialStore(new WindowsLocalPrincipalCryptography(), credentialPath).PrepareAsync(ClientCredentialCeremonyTests.IntegrationRotation); throw new Exception("User B retrieved user A pending key."); }
             catch (CryptographicException) { }
         }
         else if (action == "offline-denied") await OfflineDeniedProbe(serviceName, credentialPath, hostRoot);
@@ -290,6 +291,8 @@ public static partial class WindowsIntegration
             }
             Console.WriteLine("PASS integration: actual service native TLS, normal/crash restart, offline reopen/rebuild/retirement, nonadmin provider and file denial");
             RunUser(executable, userA, password, "credential-create", service, credential, hostRoot, shared);
+            RunUser(executable, userB, password, "credential-denied", service, credential, hostRoot, shared);
+            RunUser(executable, userA, password, "credential-confirm", service, credential, hostRoot, shared);
             RunUser(executable, userB, password, "credential-denied", service, credential, hostRoot, shared);
             RunUser(executable, userA, password, "host-credential-denied", service, hostCredential, hostRoot, shared);
             RunUser(executable, userB, password, "host-credential-denied", service, hostCredential, hostRoot, shared);

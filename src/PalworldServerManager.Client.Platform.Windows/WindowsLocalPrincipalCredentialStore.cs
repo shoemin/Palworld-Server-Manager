@@ -6,7 +6,7 @@ namespace PalworldServerManager.Client.Platform.Windows;
 
 // Only the current user's client credential. The whole versioned payload is DPAPI protected.
 // No public API accepts a Host credential reference or another user's identity.
-public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCredentialStore
+public sealed partial class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCredentialStore, ILocalPrincipalCredentialCeremonyStore
 {
     private readonly string _path;
     private readonly ILocalPrincipalKeyGenerator _generator;
@@ -27,6 +27,10 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
         public Guid? PrincipalId { get; set; }
         public byte[] PublicKey { get; set; } = [];
         public byte[] PrivateKey { get; set; } = [];
+        public Guid? HostId { get; set; }
+        public PendingCredential? Pending { get; set; }
+        public CompletedCredential? Completed { get; set; }
+        public List<ClientCredentialCeremony> RetiredTickets { get; set; } = [];
     }
     private Payload? Read()
     {
@@ -35,14 +39,16 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
         try
         {
             var value = JsonSerializer.Deserialize<Payload>(plain) ?? throw new InvalidDataException("Invalid client credential.");
-            if (value.Version != 1 || value.PublicKey.Length == 0 || value.PrivateKey.Length == 0 || value.PrincipalId == Guid.Empty)
-                throw new InvalidDataException("Invalid client credential format.");
+            try { ValidatePayload(value); }
+            catch { Clear(value); throw; }
             return value;
         }
         finally { CryptographicOperations.ZeroMemory(plain); }
     }
     private void Write(Payload value)
     {
+        value.Version = 2;
+        ValidatePayload(value);
         var plain = JsonSerializer.SerializeToUtf8Bytes(value);
         try { _atomicWrite(_path, ProtectedData.Protect(plain, null, DataProtectionScope.CurrentUser)); }
         finally { CryptographicOperations.ZeroMemory(plain); }
@@ -63,17 +69,25 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
         using var held = await LockAsync(ct);
         var value = Read();
         try { return value?.PrincipalId is not null; }
-        finally { if (value is not null) CryptographicOperations.ZeroMemory(value.PrivateKey); }
+        finally { Clear(value); }
     }
     public async Task<LocalPrincipalKeyPair> CreateAndStoreAsync(CancellationToken ct = default)
     {
         using var held = await LockAsync(ct);
         var value = Read();
-        if (value is not null) return new(value.PublicKey, value.PrivateKey);
-        var pair = _generator.Generate();
-        if (pair.PublicKey.Length == 0 || pair.PrivateKey.Length == 0) throw new InvalidDataException("Empty generated key material.");
-        Write(new Payload { PublicKey = pair.PublicKey, PrivateKey = pair.PrivateKey });
-        return pair;
+        try
+        {
+            if (value?.Pending is not null) throw new InvalidOperationException("Complete or explicitly discard the pending ceremony first.");
+            if (value?.PrivateKey.Length > 0) return Copy(value.PublicKey, value.PrivateKey);
+            var pair = _generator.Generate();
+            try
+            {
+                if (pair.PublicKey.Length == 0 || pair.PrivateKey.Length == 0) throw new InvalidDataException("Empty generated key material.");
+                Write(new Payload { PublicKey = pair.PublicKey, PrivateKey = pair.PrivateKey }); return Copy(pair.PublicKey, pair.PrivateKey);
+            }
+            finally { CryptographicOperations.ZeroMemory(pair.PrivateKey); }
+        }
+        finally { Clear(value); }
     }
     public async Task BindPrincipalIdAsync(Guid localPrincipalId, CancellationToken ct = default)
     {
@@ -82,23 +96,32 @@ public sealed class WindowsLocalPrincipalCredentialStore : ILocalPrincipalCreden
         var value = Read() ?? throw new InvalidOperationException("Create the client credential first.");
         try
         {
+            if (value.Pending is not null || value.Completed is not null || value.HostId is not null)
+                throw new InvalidOperationException("Use exact ceremony confirmation for this credential.");
             if (value.PrincipalId is not null && value.PrincipalId != localPrincipalId)
                 throw new InvalidOperationException("Delete the prior credential before rebinding another principal.");
             value.PrincipalId = localPrincipalId;
             Write(value);
         }
-        finally { CryptographicOperations.ZeroMemory(value.PrivateKey); }
+        finally { Clear(value); }
     }
     public async Task<LocalPrincipalClientCredential?> LoadAsync(CancellationToken ct = default)
     {
         using var held = await LockAsync(ct);
         var value = Read();
-        if (value?.PrincipalId is Guid id) return new(id, new(value.PublicKey, value.PrivateKey));
-        if (value is not null) CryptographicOperations.ZeroMemory(value.PrivateKey);
-        return null;
+        try { return value?.PrincipalId is Guid id ? new(id, Copy(value.PublicKey, value.PrivateKey)) : null; }
+        finally { Clear(value); }
     }
     public async Task DeleteAsync(CancellationToken ct = default)
-    { using var held = await LockAsync(ct); File.Delete(_path); }
+    {
+        using var held = await LockAsync(ct); var value = Read();
+        try
+        {
+            if (value?.Pending is not null) throw new InvalidOperationException("Do not delete a credential with an unresolved ceremony.");
+            File.Delete(_path);
+        }
+        finally { Clear(value); }
+    }
 
     public static void AtomicWrite(string path, byte[] encrypted)
     {

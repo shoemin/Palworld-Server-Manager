@@ -96,6 +96,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Client ceremony retries and rotation preserve exact durable keys", ClientCredentialCeremonyTests.RetryAndRotation),
+    ("Client re-home key choice and explicit discard preserve current binding", ClientCredentialCeremonyTests.RehomeAndDiscard),
+    ("Client ceremony failed writes cancellation and v1 migration preserve state", ClientCredentialCeremonyTests.FailureAndMigration),
+    ("Client ticket history preserves keys across Host consumed-result retries", ClientCredentialCeremonyTests.HostConsumedRetry),
     ("Offline command surface is bounded and has no online fallback", OfflineCoordinatorTests.CommandBoundary),
     ("Committed publication retry retains lease through cancellation and broken diagnostics", OfflineCoordinatorTests.PublicationBarrier),
     ("Owner handoff framing binds exact Host ticket and purpose without implicit secret export", OwnerHandoffTests.Format),
