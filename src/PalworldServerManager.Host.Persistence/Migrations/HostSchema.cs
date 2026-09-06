@@ -432,5 +432,6 @@ public static class HostSchema
     public static IReadOnlyList<IHostSchemaMigration> AllMigrations() =>
     [
         new Migration001InitialHostSchema(),
+        new Migration002HostCredentialMetadata(),
     ];
 }

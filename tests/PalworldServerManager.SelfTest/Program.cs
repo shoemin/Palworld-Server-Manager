@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args.Length == 1 && args[0] == "--host-trust-reconciliation-probe")
+    {
+        await HostTrustReconciliationTests.MigrationAndProjection();
+        await HostTrustReconciliationTests.RecoveryMetadataAndRollback();
+        await HostTrustReconciliationTests.ReconciliationFailureOrdering();
+        await HostTrustReconciliationTests.MaterialAndNoOldPrivateRead();
+        return 0;
+    }
     if (args.Length == 1 && args[0] == "--owner-recovery-probe")
     {
         await OwnerRecoveryTests.RotationAndRetry();
@@ -88,6 +96,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Host trust metadata upgrade and every rotation state project authoritative pins", HostTrustReconciliationTests.MigrationAndProjection),
+    ("Machine recovery atomically updates current rotation and peer recovery metadata", HostTrustReconciliationTests.RecoveryMetadataAndRollback),
+    ("Host trust reconciliation publishes before idempotent tracked retirement", HostTrustReconciliationTests.ReconciliationFailureOrdering),
+    ("Machine recovery never reads old private material or retires enrollment HMAC key", HostTrustReconciliationTests.MaterialAndNoOldPrivateRead),
     ("Owner rotation preserves identity and permits indefinite consumed retries", OwnerRecoveryTests.RotationAndRetry),
     ("Owner re-home revokes the old row and preserves independent grant roots", OwnerRecoveryTests.RehomeTargetsAndGrantForest),
     ("Owner recovery rejects stale snapshots and full credential and target ABA", OwnerRecoveryTests.StaleSnapshotsAndAba),

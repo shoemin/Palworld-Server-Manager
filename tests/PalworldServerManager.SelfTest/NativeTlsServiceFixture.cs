@@ -9,7 +9,8 @@ using static PalworldServerManager.SelfTest.WindowsPlatformTests;
 
 namespace PalworldServerManager.SelfTest;
 
-// Synthetic workload only. The production identity coordinator follows in #42c/d.
+// Synthetic workload using production material/cache/publication adapters. Full authoritative
+// executable composition and principal ceremonies remain #42d2c/d3.
 internal sealed class NativeTlsServiceFixture : IDisposable
 {
     internal sealed record Config(Guid HostId, string GroupSid, string PublicDirectory);
@@ -36,22 +37,20 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
                 using var identity = WindowsIdentity.GetCurrent();
                 var store = new WindowsSecureCredentialStore(root, identity.User!);
+                var material = new WindowsHostCredentialMaterial(store);
                 var existing = await store.RetrieveAsync("tls-current", stop);
                 if (existing is null)
                 {
-                    using var source = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-                    using var original = new CertificateRequest("CN=localhost", source, HashAlgorithmName.SHA256)
-                        .CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
-                    var pfx = original.Export(X509ContentType.Pfx);
-                    try { await store.StoreAsync("tls-current", pfx, stop); }
-                    finally { CryptographicOperations.ZeroMemory(pfx); }
+                    await material.CreateAsync(config.HostId, "tls-current", stop);
                 }
                 else CryptographicOperations.ZeroMemory(existing);
+                await material.EnsureEnrollmentKeyAsync(config.HostId, hasEnrollmentHistory: false, stop);
                 var cache = new WindowsHostTlsCredentialCache(config.HostId, identity.User!, store);
                 await cache.ReconcileAsync(["tls-current"], stop);
                 using var certificate = await cache.LoadAsync("tls-current", stop);
                 using var key = (ECDsaCng)certificate.GetECDsaPrivateKey()!;
                 var publicKeyPin = Convert.ToHexString(SHA256.HashData(key.ExportSubjectPublicKeyInfo()));
+                await material.ValidateAsync("tls-current", publicKeyPin, stop);
                 await new WindowsLocalHostTrustPublisher(config.PublicDirectory, identity.User!).PublishAsync(new LocalHostTrustPublication(config.HostId, publicKeyPin), stop);
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
