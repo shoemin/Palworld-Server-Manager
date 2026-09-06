@@ -30,6 +30,31 @@ public sealed class WindowsHostPlatform : IHostServiceLifecycle, IBootStartPlatf
         _service = serviceName; _group = activationGroup; _root = Path.GetFullPath(hostDataRoot);
     }
     public string GetHostDataRoot() => _root;
+    public static void RequireOfflineElevation(CancellationToken ct = default) => Privileged(ct);
+    // Read-only validation before an offline caller opens or creates any authoritative file.
+    public void ValidateOfflineDataRoot(SecurityIdentifier serviceSid, CancellationToken ct = default)
+    {
+        Privileged(ct);
+        var root = new DirectoryInfo(_root);
+        new PublicTrustFileSecurity(serviceSid).Ancestors(root.Parent);
+        void Validate(FileSystemInfo item)
+        {
+            if ((File.GetAttributes(item.FullName) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException("Offline Host state traverses a reparse point.");
+            FileSystemSecurity acl = item is DirectoryInfo directory ? directory.GetAccessControl() : new FileInfo(item.FullName).GetAccessControl();
+            ValidateExistingStateAcl(acl, serviceSid);
+            var raw = new RawSecurityDescriptor(acl.GetSecurityDescriptorBinaryForm(), 0);
+            if (raw.DiscretionaryAcl is null) throw new UnauthorizedAccessException("Offline Host state requires an explicit DACL.");
+            foreach (GenericAce ace in raw.DiscretionaryAcl)
+                if (ace is not CommonAce common || common.IsCallback || common.AceQualifier != AceQualifier.AccessAllowed ||
+                    (common.SecurityIdentifier != serviceSid && !common.SecurityIdentifier.IsWellKnown(WellKnownSidType.BuiltinAdministratorsSid) &&
+                     !common.SecurityIdentifier.IsWellKnown(WellKnownSidType.LocalSystemSid)))
+                    throw new UnauthorizedAccessException("Offline Host state grants access outside the privileged boundary.");
+            if (item is DirectoryInfo container) foreach (var child in container.EnumerateFileSystemInfos()) Validate(child);
+        }
+        if (!root.GetAccessControl().AreAccessRulesProtected) throw new UnauthorizedAccessException("Offline Host root must be protected from inheritance.");
+        Validate(root);
+    }
     public static string QuoteExecutable(string executablePath)
     {
         if (!Path.IsPathFullyQualified(executablePath) || executablePath.StartsWith(@"\\") || executablePath.Contains('"') || executablePath.Contains('\0'))

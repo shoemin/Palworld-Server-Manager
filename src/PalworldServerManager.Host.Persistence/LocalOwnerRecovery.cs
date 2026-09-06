@@ -5,6 +5,13 @@ namespace PalworldServerManager.Host.Persistence;
 
 public sealed partial class LocalEnrollmentRepository
 {
+    // Public identity only, for the privileged offline caller's intended-user rotation handoff.
+    // Preparation still captures/rechecks the actual Owner inside its own writer transaction.
+    public (Guid LocalPrincipalId, string OsPrincipalRef) ReadOfflineOwnerIdentity()
+    {
+        using var c = Open(); using var tx = c.BeginTransaction(deferred: true); RequireState(c, tx, true);
+        var owner = ReadOwner(c, tx); return (Guid.Parse(owner.Id), owner.Native);
+    }
     // Both preparation methods are trusted OFFLINE persistence seams. Their executable caller
     // must enforce actual Administrator privilege, stopped Host and the machine lease (42d2).
     // Neither is exposed by LocalEnrollmentService or ordinary/remote RPC.

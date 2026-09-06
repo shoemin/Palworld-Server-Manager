@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PalworldServerManager.Host.Persistence\PalworldServerManager.Host.Persistence.csproj" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Host\PalworldServerManager.Host.csproj" />
+    <ProjectReference Include="..\..\src\PalworldServerManager.Host.Cli\PalworldServerManager.Host.Cli.csproj" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Platform.Contracts\PalworldServerManager.Platform.Contracts.csproj" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Platform.Windows\PalworldServerManager.Platform.Windows.csproj" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Client.Platform.Contracts\PalworldServerManager.Client.Platform.Contracts.csproj" />

@@ -151,6 +151,7 @@ public static partial class WindowsIntegration
             try { await new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath).LoadAsync(); throw new Exception("User B retrieved user A credential."); }
             catch (CryptographicException) { }
         }
+        else if (action == "offline-denied") await OfflineDeniedProbe(serviceName, credentialPath, hostRoot);
         else if (action.StartsWith("handoff-", StringComparison.Ordinal)) await HandoffProbe(action, serviceName, credentialPath, hostRoot);
         else throw new ArgumentException("Unknown probe action.");
     }
@@ -304,6 +305,7 @@ public static partial class WindowsIntegration
                 Console.WriteLine("PASS integration: Kestrel named-pipe TLS, group denial, two distinct native SIDs, wrong-pin requests never delivered");
             }
             await HandoffSuite(tlsHostId, root, executable, userA, userB, password, sidA!, shared);
+            await OfflineSuite(platform, service, group, root, executable, userA, userB, password, sidA!, sidB!, shared, serviceSid);
             await platform.UninstallAsync(); installed = false;
             Check(File.Exists(Path.Combine(hostRoot, "host.db")), "Uninstall removed authoritative database.");
             Check(Sid(group) == groupSid.Value, "Uninstall removed activation group.");

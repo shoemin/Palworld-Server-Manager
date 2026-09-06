@@ -31,7 +31,7 @@ public static partial class WindowsIntegration
         try
         {
             using var value = OwnerHandoff.Parse(bytes, host, ticket); var secret = value.ExportSecretForTransport();
-            try { Check(secret.All(b => b == 0xA5), "Handoff content changed."); }
+            try { Check(action == "handoff-prepared" ? secret.Length == 32 : secret.All(b => b == 0xA5), "Handoff content changed."); }
             finally { CryptographicOperations.ZeroMemory(secret); }
         }
         finally { CryptographicOperations.ZeroMemory(bytes); }
@@ -39,7 +39,7 @@ public static partial class WindowsIntegration
         { try { attempt(); throw new Exception("Recipient can modify or replace handoff content."); } catch (UnauthorizedAccessException) { } }
         using var identity = WindowsIdentity.GetCurrent();
         await SecureStoreTests.Reject<UnauthorizedAccessException>(() => new WindowsOwnerHandoffWriter(root).WriteAsync(host, Guid.NewGuid(), LocalEnrollmentPurpose.InitialOwner, identity.User!, new byte[32]));
-        if (action == "handoff-peek") return;
+        if (action is "handoff-peek" or "handoff-prepared") return;
         await reader.DeleteAsync(); await reader.DeleteAsync(); Check(await reader.ReadAsync() is null, "Consumed handoff was not deleted.");
     }
     private static async Task HandoffSuite(Guid host, string baseRoot, string executable, string userA, string userB, string password, string sidA, string shared)

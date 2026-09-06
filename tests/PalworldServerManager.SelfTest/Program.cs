@@ -96,6 +96,8 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Offline command surface is bounded and has no online fallback", OfflineCoordinatorTests.CommandBoundary),
+    ("Committed publication retry retains lease through cancellation and broken diagnostics", OfflineCoordinatorTests.PublicationBarrier),
     ("Owner handoff framing binds exact Host ticket and purpose without implicit secret export", OwnerHandoffTests.Format),
     ("Host trust metadata upgrade and every rotation state project authoritative pins", HostTrustReconciliationTests.MigrationAndProjection),
     ("Machine recovery atomically updates current rotation and peer recovery metadata", HostTrustReconciliationTests.RecoveryMetadataAndRollback),

@@ -30,6 +30,7 @@ public sealed class WindowsOwnerHandoffWriter(string handoffDirectory)
         if (type != 1 || sid == OwnerHandoffFileSecurity.Admin || sid == OwnerHandoffFileSecurity.System)
             throw new ArgumentException("The intended principal must be an exact Windows user account.");
     }
+    public static void ValidateRecipient(SecurityIdentifier recipient) { Elevated(); RequireUser(recipient); }
     private string Prepare(SecurityIdentifier recipient)
     {
         Elevated(); RequireUser(recipient);

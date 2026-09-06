@@ -8,6 +8,9 @@ public sealed record HostCredentialSnapshot(Guid HostId, bool Initialized, strin
     IReadOnlyList<HostCredentialMetadata> Credentials, IReadOnlyList<HostRotationMetadata> Rotations);
 public sealed record HostTrustProjection(Guid HostId, string CurrentFingerprint, string? PendingFingerprint, Guid? PendingRotationId);
 public sealed record HostTrustPlan(HostTrustProjection? Publication, IReadOnlyCollection<string> Retained, IReadOnlyCollection<string> Retire);
+// Only an explicitly selected offline fresh-credential recovery may resolve this condition.
+// Unknown references, retired authoritative material and malformed identity remain distinct failures.
+public sealed class HostTrustMetadataUnavailableException() : IOException("Authoritative credential public metadata is unavailable.");
 
 public static class HostTrustPlanning
 {
@@ -19,8 +22,9 @@ public static class HostTrustPlanning
         var retained = new HashSet<string>(StringComparer.Ordinal);
         string Require(string? reference)
         {
-            if (reference is null || !references.TryGetValue(reference, out var row) || row.Retired || !Fingerprint(row.PublicKeyFingerprint))
-                throw new InvalidDataException("Authoritative credential public metadata is unavailable.");
+            if (reference is null || !references.TryGetValue(reference, out var row) || row.Retired)
+                throw new InvalidDataException("Authoritative credential reference is invalid.");
+            if (!Fingerprint(row.PublicKeyFingerprint)) throw new HostTrustMetadataUnavailableException();
             retained.Add(reference); return row.PublicKeyFingerprint!;
         }
         var active = state.Rotations.Where(r => r.State is not HostCredentialRotationState.Completed and not HostCredentialRotationState.Aborted).ToArray();
