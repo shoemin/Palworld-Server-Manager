@@ -16,6 +16,12 @@ public sealed record OfflineCommand(string Kind, string? IntendedSid, string? Re
 // the stale-publication window by releasing exclusivity. Hard process termination is separate.
 public static class OfflinePublicationBarrier
 {
+    public static async Task CommitAndCompleteAsync(Action commit, Func<Task> reconcile, Action reportPending, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested(); // cancellation before selection commit remains a refusal
+        commit();
+        await CompleteAsync(reconcile, reportPending).ConfigureAwait(false); // cancellation after it cannot abandon publication
+    }
     public static async Task CompleteAsync(Func<Task> reconcile, Action reportPending, Func<Task>? retryDelay = null)
     {
         var reported = false;

@@ -33,5 +33,17 @@ public static class OfflineCoordinatorTests
         }, () => { reports++; throw new IOException("Synthetic broken diagnostic pipe."); },
         () => { delays++; stop.Cancel(); return Task.CompletedTask; });
         Check(attempts == 4 && delays == 3 && reports == 1, "Publication barrier did not retry every failure through durable completion.");
+        var committed = false; var published = false;
+        try
+        {
+            await OfflinePublicationBarrier.CommitAndCompleteAsync(() => committed = true, () => { published = true; return Task.CompletedTask; }, () => { }, stop.Token);
+            throw new Exception("Canceled selection commit was accepted.");
+        }
+        catch (OperationCanceledException) { }
+        Check(!committed && !published, "Pre-commit cancellation selected a credential or published it.");
+        using var duringCommit = new CancellationTokenSource();
+        await OfflinePublicationBarrier.CommitAndCompleteAsync(() => { committed = true; duringCommit.Cancel(); },
+            () => { published = true; return Task.CompletedTask; }, () => { }, duringCommit.Token);
+        Check(committed && published, "Cancellation at commit abandoned the required publication.");
     }
 }

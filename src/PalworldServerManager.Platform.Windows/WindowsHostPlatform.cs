@@ -39,6 +39,7 @@ public sealed class WindowsHostPlatform : IHostServiceLifecycle, IBootStartPlatf
         new PublicTrustFileSecurity(serviceSid).Ancestors(root.Parent);
         void Validate(FileSystemInfo item)
         {
+            ct.ThrowIfCancellationRequested();
             if ((File.GetAttributes(item.FullName) & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("Offline Host state traverses a reparse point.");
             FileSystemSecurity acl = item is DirectoryInfo directory ? directory.GetAccessControl() : new FileInfo(item.FullName).GetAccessControl();

@@ -49,6 +49,7 @@ public static class OfflineHostCli
             await Stopped().ConfigureAwait(false); // concurrent service startup still cannot obtain our lease
             var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", location.ServiceName).Translate(typeof(SecurityIdentifier));
             platform.ValidateOfflineDataRoot(serviceSid, ct);
+            ct.ThrowIfCancellationRequested();
             var database = new HostDatabase(new HostDataRoot(location.HostRoot));
             HostIdentityRecord identity;
             using (var connection = database.OpenConnection())
@@ -56,6 +57,7 @@ public static class OfflineHostCli
                 try
                 {
                     HostSchemaMigrationRunner.Default().Migrate(connection);
+                    ct.ThrowIfCancellationRequested();
                     identity = new HostIdentityRepository(database).EnsureHostIdentity(connection);
                 }
                 finally { SqliteConnection.ClearPool(connection); }
@@ -85,23 +87,22 @@ public static class OfflineHostCli
                 var fingerprint = await material.CreateAsync(hostId, reference, ct).ConfigureAwait(false);
                 state.RecordCreated(reference, fingerprint); return reference;
             }
-            Task PublicationComplete() => OfflinePublicationBarrier.CompleteAsync(
+            Task CommitCredential(Action commit) => OfflinePublicationBarrier.CommitAndCompleteAsync(commit,
                 () => reconciler.ReconcileAsync(CancellationToken.None),
-                () => error.WriteLine("Credential metadata committed. Retaining the machine lease while publication/cleanup is retried."));
+                () => error.WriteLine("Credential metadata committed. Retaining the machine lease while publication/cleanup is retried."), ct);
 
             if (command.Kind == "recover-machine")
             {
                 var reference = await CreateCredential().ConfigureAwait(false);
-                state.ReplaceOffline(reference, command.RecoveryReason == "loss" ? MachineCredentialRecoveryReason.CredentialLoss : MachineCredentialRecoveryReason.SuspectedCompromise);
-                await PublicationComplete().ConfigureAwait(false);
+                await CommitCredential(() => state.ReplaceOffline(reference, command.RecoveryReason == "loss" ? MachineCredentialRecoveryReason.CredentialLoss : MachineCredentialRecoveryReason.SuspectedCompromise)).ConfigureAwait(false);
                 await output.WriteLineAsync(JsonSerializer.Serialize(new { hostId, result = "MachineCredentialRecovered", reason = command.RecoveryReason })).ConfigureAwait(false);
                 return 0;
             }
             if (state.Read().CurrentReference is null)
             {
                 if (command.Kind != "bootstrap") throw new InvalidOperationException("Initial machine bootstrap is required.");
-                var reference = await CreateCredential().ConfigureAwait(false); state.InstallInitial(reference);
-                await PublicationComplete().ConfigureAwait(false);
+                var reference = await CreateCredential().ConfigureAwait(false);
+                await CommitCredential(() => state.InstallInitial(reference)).ConfigureAwait(false);
             }
             var current = HostTrustPlanning.Build(state.Read()).Publication!;
             await material.ValidateAsync(state.Read().CurrentReference!, current.CurrentFingerprint, ct).ConfigureAwait(false);
