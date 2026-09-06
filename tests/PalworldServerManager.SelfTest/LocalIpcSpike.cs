@@ -66,7 +66,7 @@ public sealed class LocalIpcSpike : IAsyncDisposable
         catch { await spike.DisposeAsync(); throw; }
     }
 
-    private static X509Certificate2 CreateTestCertificate()
+    internal static X509Certificate2 CreateTestCertificate()
     {
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         using var generated = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256)

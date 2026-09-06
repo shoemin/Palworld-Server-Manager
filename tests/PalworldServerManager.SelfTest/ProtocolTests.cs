@@ -75,18 +75,9 @@ public static class ProtocolTests
     public static Task SchemaEvolution()
     {
         var baseline = FileDescriptorSet.Parser.ParseFrom(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fixtures", "host-v1.pb"))).File.Single();
-        var current = Wire.HostReflection.Descriptor.ToProto();
-        // C# codegen omits inferred json_name fields to shrink its embedded descriptor;
-        // protoc descriptor-set output includes them. Restore the reflection-computed names
-        // before comparing full snapshots; explicit JSON-name changes remain detectable.
-        foreach (var reflectedMessage in Wire.HostReflection.Descriptor.MessageTypes)
-            foreach (var field in reflectedMessage.Fields.InDeclarationOrder())
-                current.MessageType.Single(m => m.Name == reflectedMessage.Name).Field.Single(f => f.Number == field.FieldNumber).JsonName = field.JsonName;
+        var current = CheckHistory(Wire.HostReflection.Descriptor, "host-*.pb");
+        CheckHistory(Wire.LocalSecurityReflection.Descriptor, "local-security-*.pb");
         AssertAdditive(baseline, current);
-        var snapshots = Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Fixtures"), "host-*.pb")
-            .Select(path => FileDescriptorSet.Parser.ParseFrom(File.ReadAllBytes(path)).File.Single()).ToArray();
-        foreach (var snapshot in snapshots) AssertAdditive(snapshot, current);
-        Check(snapshots.Any(snapshot => snapshot.Equals(current)), "Schema changes require a new immutable history snapshot; retain all earlier snapshots.");
         var reused = current.Clone(); reused.MessageType.Single(m => m.Name == "ServerRef").Field[0].Name = "other_host";
         Reject<InvalidDataException>(() => AssertAdditive(baseline, reused));
         var removed = current.Clone(); var message = removed.MessageType.Single(m => m.Name == "ServerRef"); message.Field.RemoveAt(0);
@@ -102,6 +93,22 @@ public static class ProtocolTests
         var nestedChanged = nestedBaseline.Clone(); nestedChanged.MessageType[0].NestedType[0].Field[0].Name = "reused";
         Reject<InvalidDataException>(() => AssertAdditive(nestedBaseline, nestedChanged));
         return Task.CompletedTask;
+    }
+    private static FileDescriptorProto CheckHistory(FileDescriptor descriptor, string pattern)
+    {
+        var current = descriptor.ToProto();
+        Check(current.Dependency.SequenceEqual(descriptor.Dependencies.Select(dependency => dependency.Name)), "Schema import names do not match their reflected descriptors.");
+        // C# codegen omits inferred json_name fields to shrink its embedded descriptor;
+        // protoc descriptor-set output includes them. Restore the reflection-computed names
+        // before comparing full snapshots; explicit JSON-name changes remain detectable.
+        foreach (var reflectedMessage in descriptor.MessageTypes)
+            foreach (var field in reflectedMessage.Fields.InDeclarationOrder())
+                current.MessageType.Single(m => m.Name == reflectedMessage.Name).Field.Single(f => f.Number == field.FieldNumber).JsonName = field.JsonName;
+        var snapshots = Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Fixtures"), pattern)
+            .Select(path => FileDescriptorSet.Parser.ParseFrom(File.ReadAllBytes(path)).File.Single()).ToArray();
+        foreach (var snapshot in snapshots) AssertAdditive(snapshot, current);
+        Check(snapshots.Any(snapshot => snapshot.Equals(current)), "Schema changes require a new immutable history snapshot; retain all earlier snapshots.");
+        return current;
     }
     private static void AssertAdditive(FileDescriptorProto baseline, FileDescriptorProto current)
     {

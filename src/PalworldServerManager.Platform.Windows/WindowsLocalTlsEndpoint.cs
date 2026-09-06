@@ -4,6 +4,7 @@ using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using Microsoft.AspNetCore.Connections.Features;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -15,7 +16,7 @@ namespace PalworldServerManager.Platform.Windows;
 public static class WindowsLocalTlsEndpoint
 {
     public static void Configure(IWebHostBuilder builder, string pipeName, SecurityIdentifier serviceSid,
-        SecurityIdentifier activationGroupSid, X509Certificate2 certificate)
+        SecurityIdentifier activationGroupSid, X509Certificate2 certificate, Func<ConnectionDelegate, ConnectionDelegate>? applicationMiddleware = null)
     {
         if (string.IsNullOrEmpty(pipeName) || pipeName.Length > 128 || pipeName.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '.' and not '_' and not '-'))
             throw new ArgumentException("A bounded local pipe name is required.");
@@ -34,6 +35,7 @@ public static class WindowsLocalTlsEndpoint
         {
             listen.Protocols = HttpProtocols.Http2;
             listen.UseHttps(certificate, tls => tls.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13);
+            if (applicationMiddleware is not null) listen.Use(applicationMiddleware);
         }));
     }
     public static string ReadNativePrincipal(HttpContext context)
