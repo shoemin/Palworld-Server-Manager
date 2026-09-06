@@ -31,6 +31,11 @@ if (args.Length > 0)
         await PeerTrustTests.OfflineRecoveryBlocksPendingTrust();
         Console.WriteLine("PASS durable PeerBound storage probes."); return 0;
     }
+    if (args is ["--peer-tls-probe"])
+    {
+        await PeerTlsTests.MutualProof(); await PeerTlsTests.RefusalsAndCleanup(); await PeerTlsTests.TrustPurposes();
+        Console.WriteLine("PASS actual mutual peer TLS and trust-purpose probes."); return 0;
+    }
     if (args is ["--client-security-probe"])
     {
         await ClientSecurityCompositionTests.BootstrapLostReply();
@@ -135,6 +140,9 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Peer TLS proves mutual private-key possession over pinned HTTP/2 connections", PeerTlsTests.MutualProof),
+    ("Peer TLS rejects wrong pins missing private proof protocol mismatch and cancellation", PeerTlsTests.RefusalsAndCleanup),
+    ("Peer TLS identity is rechecked against trust state and never grants authority", PeerTlsTests.TrustPurposes),
     ("PeerBound persists with zero grants and idempotent concurrent retries", PeerTrustTests.DurableAndIdempotent),
     ("Expired PeerBound retains a tombstone and blocks implicit credential replacement", PeerTrustTests.ExpiryAndExistingIdentity),
     ("Peer binding and expiry roll back atomically with audit and credential races", PeerTrustTests.RollbackAndCredentialRaces),
