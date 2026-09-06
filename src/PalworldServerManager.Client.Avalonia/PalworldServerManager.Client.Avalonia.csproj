@@ -12,6 +12,7 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\design\astra-34\tokens.json" LogicalName="PalworldServerManager.Shell.Tokens.json" />
     <PackageReference Include="Grpc.Net.Client" Version="2.83.0" />
     <Compile Include="..\PalworldServerManager.Client.Shared\*.cs" Link="Security\%(Filename)%(Extension)" />
     <PackageReference Include="Avalonia" Version="11.1.3" />
