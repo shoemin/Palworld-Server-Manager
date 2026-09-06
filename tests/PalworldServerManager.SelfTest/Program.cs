@@ -96,6 +96,7 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Owner handoff framing binds exact Host ticket and purpose without implicit secret export", OwnerHandoffTests.Format),
     ("Host trust metadata upgrade and every rotation state project authoritative pins", HostTrustReconciliationTests.MigrationAndProjection),
     ("Machine recovery atomically updates current rotation and peer recovery metadata", HostTrustReconciliationTests.RecoveryMetadataAndRollback),
     ("Host trust reconciliation publishes before idempotent tracked retirement", HostTrustReconciliationTests.ReconciliationFailureOrdering),

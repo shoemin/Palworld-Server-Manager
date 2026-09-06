@@ -19,7 +19,7 @@ namespace PalworldServerManager.SelfTest;
 
 // Explicit opt-in only. Real SCM service, real virtual account, real non-admin logons and DPAPI.
 // Every OS object has a fresh trial prefix; cleanup failure fails the invocation.
-public static class WindowsIntegration
+public static partial class WindowsIntegration
 {
     public static async Task<int> RunAsync(string[] args)
     {
@@ -151,6 +151,7 @@ public static class WindowsIntegration
             try { await new WindowsLocalPrincipalCredentialStore(new FakeKeys(), credentialPath).LoadAsync(); throw new Exception("User B retrieved user A credential."); }
             catch (CryptographicException) { }
         }
+        else if (action.StartsWith("handoff-", StringComparison.Ordinal)) await HandoffProbe(action, serviceName, credentialPath, hostRoot);
         else throw new ArgumentException("Unknown probe action.");
     }
     private static async Task Suite()
@@ -302,6 +303,7 @@ public static class WindowsIntegration
                 Check(spike.ObservedSids.Count == 2 && spike.ObservedSids.Contains(sidA!) && spike.ObservedSids.Contains(sidB!), "Two native users did not remain distinct, or rejected TLS delivered a request.");
                 Console.WriteLine("PASS integration: Kestrel named-pipe TLS, group denial, two distinct native SIDs, wrong-pin requests never delivered");
             }
+            await HandoffSuite(tlsHostId, root, executable, userA, userB, password, sidA!, shared);
             await platform.UninstallAsync(); installed = false;
             Check(File.Exists(Path.Combine(hostRoot, "host.db")), "Uninstall removed authoritative database.");
             Check(Sid(group) == groupSid.Value, "Uninstall removed activation group.");
