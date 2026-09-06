@@ -105,6 +105,16 @@ public static class LocalTrustTests
             }));
             await Task.WhenAll(readers.Append(writers));
             await publisher.PublishAsync(good);
+            var originalBytes = File.ReadAllBytes(file.FullName);
+            using (var blocker = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                await SecureStoreTests.Reject<System.ComponentModel.Win32Exception>(() => publisher.PublishAsync(overlap));
+                Check(File.ReadAllBytes(file.FullName).SequenceEqual(originalBytes), "Exhausted replacement changed the prior descriptor.");
+                using var retryCancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+                await SecureStoreTests.Reject<OperationCanceledException>(() => publisher.PublishAsync(overlap, retryCancellation.Token));
+                Check(!Directory.EnumerateFiles(root, "trust-*.tmp").Any(), "Failed/canceled replacement leaked a temporary publication.");
+            }
+            await publisher.PublishAsync(good);
             await RejectPlainEndpoint(reader, id);
             await RejectPlainEndpoint(reader, id, stall: true);
             using var canceled = new CancellationTokenSource(); canceled.Cancel();

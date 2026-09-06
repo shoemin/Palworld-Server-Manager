@@ -57,7 +57,19 @@ public sealed class WindowsLocalHostTrustPublisher : ILocalHostTrustPublisher
             }
             ct.ThrowIfCancellationRequested();
             // Same-directory replacement; write-through also waits for the move to reach disk.
-            if (!MoveFileEx(temp.FullName, target, 1 | 8)) throw new Win32Exception(Marshal.GetLastWin32Error());
+            for (var attempt = 0; ; attempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (MoveFileEx(temp.FullName, target, 1 | 8)) break;
+                var error = Marshal.GetLastWin32Error();
+                // Windows can retain the replaced name briefly while public readers close
+                // their prior handles. Retry only bounded sharing/access failures; never
+                // relax permissions, delete the target first, or expose partial contents.
+                if (error is not 5 and not 32 || attempt == 10) throw new Win32Exception(error);
+                await Task.Delay(TimeSpan.FromMilliseconds(Math.Min(10 << attempt, 200)), ct);
+                _security.Root(_root);
+                ValidateFile(target);
+            }
             ownedTemporary = null;
             ValidateFile(target);
         }
