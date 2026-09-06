@@ -56,7 +56,7 @@ public static class LocalSecurityRpcTests
         }
         public void Dispose() => _channel.Dispose();
     }
-    private sealed class Fixture(bool initialized = false) : IAsyncDisposable
+    internal sealed class Fixture(bool initialized = false) : IAsyncDisposable
     {
         internal readonly LocalEnrollmentTests.Fixture State = new(initialized);
         internal readonly string Pipe = "PSMAstraRpc" + Guid.NewGuid().ToString("N");

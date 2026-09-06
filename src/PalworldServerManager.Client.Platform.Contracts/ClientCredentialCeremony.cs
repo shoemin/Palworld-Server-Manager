@@ -8,6 +8,8 @@ public sealed record ClientCredentialCeremony(Guid HostId, Guid TicketId, Client
 
 public interface ILocalPrincipalCredentialCeremonyStore
 {
+    // Resume the durable key choice after a lost result; never infer it from stale current keys.
+    Task<ClientCredentialCeremony?> ReadPreparedAsync(Guid hostId, Guid ticketId, ClientCredentialPurpose purpose, CancellationToken ct = default);
     // Persist before sending the public key. Caller owns and clears returned private material.
     Task<LocalPrincipalKeyPair> PrepareAsync(ClientCredentialCeremony ceremony, CancellationToken ct = default);
     // Call only after authenticated Host confirmation AND proof that this prepared key

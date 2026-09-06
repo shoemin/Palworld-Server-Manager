@@ -62,6 +62,31 @@ public sealed partial class WindowsLocalPrincipalCredentialStore
         if (value?.PrivateKey is not null) CryptographicOperations.ZeroMemory(value.PrivateKey);
         if (value?.Pending?.PrivateKey is not null) CryptographicOperations.ZeroMemory(value.Pending.PrivateKey);
     }
+    public async Task<ClientCredentialCeremony?> ReadPreparedAsync(Guid hostId, Guid ticketId, ClientCredentialPurpose purpose, CancellationToken ct = default)
+    {
+        Validate(new(hostId, ticketId, purpose, ClientCredentialKeyUse.Fresh));
+        using var held = await LockAsync(ct); var value = Read();
+        try
+        {
+            if (value is null) return null;
+            if (value.HostId is not null && value.HostId != hostId) throw new InvalidOperationException("The current credential belongs to another Host.");
+            if (value.RetiredTickets.Any(ticket => ticket.HostId == hostId && ticket.TicketId == ticketId))
+                throw new InvalidOperationException("This ticket completed against an earlier client credential.");
+            if (value.Pending?.Ceremony is { } pending)
+            {
+                if (pending.HostId != hostId || pending.TicketId != ticketId || pending.Purpose != purpose)
+                    throw new InvalidOperationException("Another client ceremony is unresolved.");
+                return pending;
+            }
+            if (value.Completed?.Ceremony is { } completed && completed.HostId == hostId && completed.TicketId == ticketId)
+            {
+                if (completed.Purpose != purpose) throw new InvalidOperationException("A completed ticket cannot change purpose.");
+                return completed;
+            }
+            return null;
+        }
+        finally { Clear(value); }
+    }
     public async Task<LocalPrincipalKeyPair> PrepareAsync(ClientCredentialCeremony ceremony, CancellationToken ct = default)
     {
         Validate(ceremony);

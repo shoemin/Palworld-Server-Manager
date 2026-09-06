@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Grpc.Net.Client" Version="2.83.0" />
+    <Compile Include="..\..\src\PalworldServerManager.Client.Shared\*.cs" Link="ClientSecurity\%(Filename)%(Extension)" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
     <ProjectReference Include="..\..\src\PalworldServerManager.Lan\PalworldServerManager.Lan.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
