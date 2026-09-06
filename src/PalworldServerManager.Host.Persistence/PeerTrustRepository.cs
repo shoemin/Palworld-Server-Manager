@@ -160,6 +160,9 @@ public sealed class PeerTrustRepository(HostDatabase database, Guid hostId, Time
     private void Audit(SqliteConnection c, SqliteTransaction tx, Guid peer, string kind, DateTimeOffset now)
         => Execute(c, tx, """
             INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorPeerHostId,AffectedHostId,Summary)
-            VALUES ($id,$now,$kind,'RemoteManager',$peer,$host,$kind);
-            """, ("$id", Id(Guid.NewGuid())), ("$now", Stamp(now)), ("$kind", kind), ("$peer", Id(peer)), ("$host", Id(hostId)));
+            VALUES ($id,$now,$kind,$actorKind,$actorPeer,$host,$summary);
+            """, ("$id", Id(Guid.NewGuid())), ("$now", Stamp(now)), ("$kind", kind),
+            ("$actorKind", kind == "PeerBoundExpired" ? null : "RemoteManager"),
+            ("$actorPeer", kind == "PeerBoundExpired" ? null : Id(peer)), ("$host", Id(hostId)),
+            ("$summary", $"{kind}: peer {Id(peer)}."));
 }

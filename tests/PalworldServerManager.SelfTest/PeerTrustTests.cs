@@ -77,6 +77,9 @@ internal static class PeerTrustTests
         Check(f.Count("TrustedManagers") == 1 && f.Count("HostCapabilityGrants") == 0);
         Check(HostDatabase.QueryScalarLong(f.Writer, "SELECT COUNT(*) FROM PendingCredentialReplacements WHERE InvalidatedUtc IS NOT NULL;") == 1);
         Check(HostDatabase.QueryScalarLong(f.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerBoundExpired';") == 1);
+        Check(HostDatabase.QueryScalarLong(f.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerBoundExpired' AND ActorKind IS NULL AND ActorPeerHostId IS NULL;") == 1);
+        var expiryAudit = HostDatabase.QueryScalarText(f.Writer, "SELECT Summary FROM AuditEvents WHERE EventKind='PeerBoundExpired';")!;
+        Check(expiryAudit.Contains(f.PeerId.ToString("D")) && !expiryAudit.Contains(Peer) && !expiryAudit.Contains(Local));
         Check(repo.RecordVerifiedBinding(f.PeerId, Peer, Local).Disposition == PeerBindingDisposition.ReplacementRequired);
         Check(repo.Read(f.PeerId)!.State == "Revoked");
         // Fixture establishes existing Active trust; this repository has no activation operation.
