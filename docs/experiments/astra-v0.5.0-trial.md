@@ -1314,3 +1314,27 @@ All registry families re-audited: ARCH-001/002, HOST-001/002, PERSIST-001, CLIEN
 ## #52c1 integration checkpoint
 
 PR #86 final HEAD 2261d0beaac719b2de81cf703ed05bd578372bfd merged as 87cf3a91874778262e93b6b04c6e73560463203b after exact unchanged base/HEAD checks. Code 4d2581d6b812a0c9b64cbf79bbf51d3273d5a314, CI 34016893987 and final Docs 34017115203 PASS. #52c1 SHADOW DONE, full #52 IN PROGRESS. A6/B0, six corrections; twenty-six PRs #61-#86 merged, nine canonical children, fourteen #42 units, three #52 units and separate #34 correction. Total correction cycles 89; 222 ordinary tests plus actual UI and Windows integration. Three historical escaped defects remain corrected. No new external reviewer/canonical mutation. Continue c2a actual UI/service/two-user qualification, then assess c2b native accessibility field evidence; #44 approved qualified-dependency hold remains.
+
+## #52c2a actual UI/service qualification preflight
+
+Base f0e98ce179ec5960e73c51b082bb28e4a6cae1b9; branch astra/52-windows-ui-qualification. Read-only #52 contract/dependencies unchanged. Extend the existing explicit Windows CI fixture to run the actual Avalonia App-created window/connection button in the two existing real non-admin user processes. Use the real WindowsClientSecurity composition, DPAPI credentials, pinned named pipe and installed production Host service. The UI harness may use headless windowing/input for this service test, but must inject no connection reply or authority. Exercise unregistered refusal, exact Host/principal success for both users, revoked refusal, re-enrollment/recovery and dormant-service activation. Existing protected per-user delivery and cleanup remain; only public results/fixed diagnostics cross the helper. No new product command/flag, library, protocol, authority or canonical mutation.
+
+Actual acceptance requires successful Windows CI logs, not local synthetic execution. Local token is not elevated, so do not install a product service here. Full ordinary/UI tests, complete diff/invariant/stale-reference audits and two clean reviews remain required. Native screen-reader/high-contrast/window-decoration acceptance is separate c2b FIELD EVIDENCE REQUIRED until genuinely executed; this subunit cannot complete full #52 or #55. All invariant families apply by retained production boundaries and fixture evidence, particularly CLIENT-001-003, LOCAL-001-004, IDENT-001/002, HOST-001/002, PERSIST-001, OWNER-001/002, SEC-001 and PLATFORM-001/002.
+
+## #52c2a Review Pass A candidate
+
+A1 source review caught that inserting UI activation checks before existing CLI checks would replace two prior dormant-CLI scenarios. Restored the original CLI cases and added separate stops for UI activation, preserving both clients' actual coverage. One review-only correction; no compiler/test failure to date. Local zero-warning build, ordinary actual-rendered/input UI suite and strict docs PASS. Full ordinary suite and actual Windows run pending. Production code and reference graph unchanged.
+
+Complete fixture audit: new mode exists only in the test executable, uses the real App factory without reply/transport injection, and reports public identity through existing protected user delivery. Failed UI cannot emit success JSON or retain rendered identity. Unexpected fixture exception uses fixed text. The thirty-second UI fixture deadline, forty-five-second child deadline and existing outer cleanup remain bounded. Existing enrollment/revocation/recovery ceremonies still create all authority explicitly; added checks only authenticate. No database fixture writes or service permission changes added.
+
+| Invariants | Whole-result evidence | Result |
+|---|---|---|
+| ARCH-001/002, CLIENT-001 | Test/docs only, no new product/package edge or frozen source change | PASS code; guards pending |
+| CLIENT-002/003, LOCAL-001-004, OWNER-001/002, SEC-001 | Real App/shared production IPC, actual per-user DPAPI and refusal; protected result paths and fixed diagnostics | PASS code; actual pending |
+| HOST-001/002, PERSIST-001 | Existing installed service/exclusivity and offline ceremony fixture; UI only invokes accepted activation/IPC | PASS boundary; actual pending |
+| IDENT-001-004 | Exact HostId/principal compared with actual fixture, repeated across recovery; no credential-policy edits | PASS code; actual pending |
+| REMOTE-001/002, PAIR-001-004, AUTH-001-005, PROTO-001 | No remote traffic, grants or new wire method; unchanged negotiated authenticated path | PASS |
+| OPS-001-004, RECOVERY-001 | No server operation/rollback claim; actual Host stop/restart remains fixture-owned | PASS |
+| MIG-001, PLATFORM-001/002, LINUX-001 | Existing isolated Windows-only test; no Host UI, Linux, migration or release | PASS |
+
+Native accessibility remains c2b FIELD EVIDENCE REQUIRED, explicitly documented with observations/build identifiers needed. Actual Windows CI must pass before A is clean, PR creation or c2a acceptance. No unresolved Product Decision; #44 stays on its approved qualified-dependency hold.

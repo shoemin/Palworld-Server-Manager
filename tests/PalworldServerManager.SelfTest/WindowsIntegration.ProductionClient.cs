@@ -65,6 +65,10 @@ public static partial class WindowsIntegration
         Check(File.Exists(Path.Combine(source, "PalworldServerManager.Client.Cli.exe")), "Shipped ordinary client build output is required; no test-client substitution.");
         var clientBinaries = Path.Combine(root, "Ordinary Client Binaries"); CopyDirectory(source, clientBinaries);
         var client = Path.Combine(clientBinaries, "PalworldServerManager.Client.Cli.exe");
+        var uiSource = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "tests", "PalworldServerManager.Client.UiTest", "bin", "Release", "net8.0-windows"));
+        Check(File.Exists(Path.Combine(uiSource, "PalworldServerManager.Client.UiTest.exe")), "Actual Avalonia UI harness output is required.");
+        var uiBinaries = Path.Combine(root, "Avalonia UI Binaries"); CopyDirectory(uiSource, uiBinaries);
+        var uiClient = Path.Combine(uiBinaries, "PalworldServerManager.Client.UiTest.exe");
         var helper = Path.Combine(binaries, "PalworldServerManager.SelfTest.exe");
         string Delivery(string name, string sid)
         {
@@ -78,26 +82,34 @@ public static partial class WindowsIntegration
         }
         var deliveryA = Delivery("Client A Delivery", sidA); var deliveryB = Delivery("Client B Delivery", sidB);
         Native.AddMember(location.ActivationGroup, userA); Native.AddMember(location.ActivationGroup, userB);
-        ProductResult Invoke(bool a, string[] args, int expected = 0, string? input = null, string? error = null)
+        ProductResult Invoke(bool a, string[] args, int expected = 0, string? input = null, string? error = null, bool ui = false)
         {
             var path = Path.Combine(a ? deliveryA : deliveryB, Guid.NewGuid().ToString("N") + ".json");
             File.WriteAllText(path, JsonSerializer.Serialize(new ProductRequest(args, input, expected, error,
                 Path.Combine(a ? deliveryB : deliveryA, "recipient-only.txt"))));
             try
             {
-                RunUser(helper, a ? userA : userB, password, "product-client", client, path, location.HostRoot, shared);
+                RunUser(helper, a ? userA : userB, password, "product-client", ui ? uiClient : client, path, location.HostRoot, shared);
                 return JsonSerializer.Deserialize<ProductResult>(File.ReadAllText(path + ".result"))!;
             }
             finally { File.Delete(path + ".result"); File.Delete(path); }
         }
         const string refused = "Local request refused or failed: Unauthenticated.";
         const string unenrolled = "Local principal or ceremony authentication failed.";
+        const string uiRefused = "Local access was not verified. An authorized Owner may need to enroll or reauthorize this OS user.";
         (Guid Id, bool Owner) Identity(ProductResult result)
         {
             using var json = JsonDocument.Parse(result.Output);
             var id = json.RootElement.GetProperty("localPrincipalId").GetGuid();
             Check(result.Principal == id && result.PublicKey is not null, "Shipped client result preceded durable per-user binding.");
             return (id, json.RootElement.GetProperty("isOwner").GetBoolean());
+        }
+        void VerifyUi(bool a, (Guid Id, bool Owner) expected)
+        {
+            var result = Invoke(a, ["--actual-local-connect"], ui: true);
+            using var json = JsonDocument.Parse(result.Output);
+            Check(json.RootElement.GetProperty("hostId").GetGuid() == hostId && Identity(result) == expected,
+                "Actual Avalonia connection returned wrong semantic Host or OS-user identity.");
         }
         List<(Guid Id, string Sid, string? Key, bool Owner, string State)> Principals()
         {
@@ -123,11 +135,13 @@ public static partial class WindowsIntegration
 
         // SCM is stopped at entry. A group member activates the real executable but gains no identity.
         Invoke(false, ["identity"], 1, error: unenrolled);
+        Invoke(false, ["--actual-local-connect"], 1, error: uiRefused, ui: true);
         Check(Principals().Count == 0, "Transport eligibility created a principal.");
         Invoke(false, ["complete-handoff", "--ticket", bootstrapTicket.ToString("D")], 1, error: "Invalid local command or security data.");
         var ownerA = Invoke(true, ["complete-handoff", "--ticket", bootstrapTicket.ToString("D")]); var aIdentity = Identity(ownerA);
         Check(aIdentity.Owner, "Intended user did not become Owner."); Owner(aIdentity.Id); HandoffDeleted(bootstrapTicket, sidA);
         Check(Identity(Invoke(true, ["identity"])) == aIdentity, "Fresh ordinary-client process did not retain Owner.");
+        VerifyUi(true, aIdentity);
         Invoke(false, ["identity"], 1, error: unenrolled);
         await offline(1, ["rotate-owner"]); // live Host owns the lease
         Invoke(true, ["revoke", "--principal", aIdentity.Id.ToString("D")], 1, error: refused); Owner(aIdentity.Id);
@@ -143,6 +157,7 @@ public static partial class WindowsIntegration
         }
         var principalB = EnrollB(); var bIdentity = Identity(principalB);
         Check(!bIdentity.Owner && bIdentity.Id != aIdentity.Id && principalB.PublicKey != ownerA.PublicKey, "Two actual users did not receive distinct credentials/identities.");
+        VerifyUi(false, bIdentity);
         var rows = Principals();
         Check(rows.Single(row => row.Sid == sidA).Key == ownerA.PublicKey && rows.Single(row => row.Sid == sidB).Key == principalB.PublicKey, "Host did not persist exact client public verifiers.");
         Invoke(false, ["invite", "--user-sid", sidA], 1, error: refused);
@@ -150,14 +165,17 @@ public static partial class WindowsIntegration
         Invoke(true, ["revoke", "--principal", bIdentity.Id.ToString("D")]);
         await platform.StopAsync();
         Invoke(false, ["identity"], 1, error: refused); // actual restart through group-eligible revoked client
+        await platform.StopAsync(); Invoke(false, ["--actual-local-connect"], 1, error: uiRefused, ui: true);
         Check(Principals().Single(row => row.Id == bIdentity.Id) is { State: "Revoked", Key: null }, "Revocation did not survive restart.");
         var reenrolledB = EnrollB(); Check(Identity(reenrolledB) == bIdentity && reenrolledB.PublicKey != principalB.PublicKey, "Explicit re-enrollment did not preserve identity and refresh key.");
+        VerifyUi(false, bIdentity);
         Console.WriteLine("PASS integration: shipped ordinary CLI, two real user credentials, unregistered refusal, intended-user bootstrap, Owner-only enrollment/removal and durable re-enrollment");
 
         var rotation = await Prepare("rotate-owner");
         var rotatedA = Invoke(true, ["complete-handoff", "--ticket", rotation.ToString("D")]);
         Check(Identity(rotatedA) == aIdentity && rotatedA.PublicKey != ownerA.PublicKey, "Owner rotation failed to replace key while preserving identity.");
         Owner(aIdentity.Id); HandoffDeleted(rotation, sidA);
+        VerifyUi(true, aIdentity);
         var rehome = await Prepare("rehome-owner", "--owner-sid", sidB);
         var rehomedB = Invoke(false, ["complete-handoff", "--ticket", rehome.ToString("D")]);
         Check(Identity(rehomedB) == (bIdentity.Id, true) && rehomedB.PublicKey == reenrolledB.PublicKey, "Active-target re-home failed to preserve existing key/identity.");
@@ -168,6 +186,9 @@ public static partial class WindowsIntegration
         Check(Identity(returnedA) == aIdentity && returnedA.PublicKey != rotatedA.PublicKey, "Revoked-target re-home failed to refresh key and preserve identity.");
         Owner(aIdentity.Id); HandoffDeleted(returnHome, sidA); Invoke(false, ["identity"], 1, error: refused);
         await platform.StopAsync(); Invoke(true, ["identity"]); Owner(aIdentity.Id);
+        await platform.StopAsync(); VerifyUi(true, aIdentity);
+        Invoke(false, ["--actual-local-connect"], 1, error: uiRefused, ui: true);
+        Console.WriteLine("PASS integration: actual Avalonia App connection control, production local IPC and DPAPI under two non-admin users, semantic Host identity, unregistered/revoked refusal, re-enrollment/recovery and dormant-service activation");
 
         using (var connection = new SqliteConnection(new SqliteConnectionStringBuilder
         { DataSource = Path.Combine(location.HostRoot, "host.db"), Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString()))

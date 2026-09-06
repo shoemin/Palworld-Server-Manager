@@ -21,10 +21,16 @@ public static partial class Program
     public static async Task<int> Main(string[] args)
     {
         using var deadline = new Timer(_ => { Console.Error.WriteLine("UI test process deadline exceeded."); Environment.Exit(2); }, null, TimeSpan.FromMinutes(2), Timeout.InfiniteTimeSpan);
-        var output = args.Length == 0 ? Path.Combine("build-logs", "shell-renders") : args[0]; Directory.CreateDirectory(output);
+        var actual = args is ["--actual-local-connect"];
         using var session = HeadlessUnitTestSession.StartNew(typeof(Program));
-        try { await session.Dispatch(() => { Run(output); ConnectionChecks(output); }, CancellationToken.None); Console.WriteLine("PASS actual Avalonia shell rendering/input and connection checks"); return 0; }
-        catch (Exception failure) { Console.Error.WriteLine(failure); Environment.Exit(1); return 1; }
+        try
+        {
+            if (actual) return await session.Dispatch(ActualLocalConnection, CancellationToken.None);
+            var output = args.Length == 0 ? Path.Combine("build-logs", "shell-renders") : args[0]; Directory.CreateDirectory(output);
+            await session.Dispatch(() => { Run(output); ConnectionChecks(output); }, CancellationToken.None);
+            Console.WriteLine("PASS actual Avalonia shell rendering/input and connection checks"); return 0;
+        }
+        catch (Exception failure) { Console.Error.WriteLine(actual ? "Actual UI connection fixture failed." : failure.ToString()); Environment.Exit(1); return 1; }
     }
     private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
     private static T Find<T>(MainWindow window, string name) where T : Control => window.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
