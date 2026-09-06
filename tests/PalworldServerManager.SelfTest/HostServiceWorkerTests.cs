@@ -20,12 +20,17 @@ public static class HostServiceWorkerTests
             Check(!released, "SCM callback waited for asynchronous lifetime or worker ended early.");
         }
         Check(released && failures == 0, "Normal worker stop did not finish resource cleanup.");
-        foreach (var throws in new[] { true, false })
+        foreach (var failureKind in new[] { "io", "out-of-memory", "unexpected-return" })
         {
             var failed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously); released = false;
             using var worker = new HostServiceWorker(_ =>
             {
-                try { if (throws) throw new IOException("synthetic private diagnostic"); return Task.CompletedTask; }
+                try
+                {
+                    if (failureKind == "io") throw new IOException("synthetic private diagnostic");
+                    if (failureKind == "out-of-memory") throw new OutOfMemoryException("synthetic worker failure");
+                    return Task.CompletedTask;
+                }
                 finally { released = true; }
             }, () => { if (released) failed.TrySetResult(); }, default);
             await failed.Task.WaitAsync(TimeSpan.FromSeconds(5));

@@ -19,7 +19,9 @@ public sealed class HostServiceWorker : IDisposable
                 if (!_stop.IsCancellationRequested) failed(); // unexpected listener exit is fatal
             }
             catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
-            catch (Exception ex) when (ex is not OutOfMemoryException) { failed(); }
+            // A faulted background Task does not terminate the service by itself. Even a
+            // resource-exhaustion failure must reach the minimal fatal exit callback.
+            catch (Exception) { failed(); }
         });
     }
     public void Dispose()
