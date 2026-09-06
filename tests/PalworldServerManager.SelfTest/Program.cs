@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args.Length == 1 && args[0] == "--local-enrollment-probe")
+    {
+        await LocalEnrollmentTests.BootstrapAndRetries();
+        await LocalEnrollmentTests.EnrollmentAttemptsAndConcurrency();
+        await LocalEnrollmentTests.RevocationAndAba();
+        await LocalEnrollmentTests.HostBoundaryAndRedaction();
+        return 0;
+    }
     if (args.Length == 1 && args[0] == "--local-principal-probe")
     {
         await LocalPrincipalAuthenticationTests.MappingAndBoundaries();
@@ -72,6 +80,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Owner bootstrap transactions roll back and concurrent consumed retries preserve identity", LocalEnrollmentTests.BootstrapAndRetries),
+    ("Enrollment retries and concurrent wrong-code attempts preserve bounded authority", LocalEnrollmentTests.EnrollmentAttemptsAndConcurrency),
+    ("Local revocation and reactivation invalidate stale tickets and grant descendants", LocalEnrollmentTests.RevocationAndAba),
+    ("Host enrollment requires current Owner and redacts bearer and verifier material", LocalEnrollmentTests.HostBoundaryAndRedaction),
     ("Local principal authentication maps exact active identity and native user", LocalPrincipalAuthenticationTests.MappingAndBoundaries),
     ("Local principal nonces reject replay cross-connection expiry and concurrent reuse", LocalPrincipalAuthenticationTests.NonceAndLifetime),
     ("Local principal authentication rejects revoked changed and malformed proofs", LocalPrincipalAuthenticationTests.RevocationAndMalformedProofs),

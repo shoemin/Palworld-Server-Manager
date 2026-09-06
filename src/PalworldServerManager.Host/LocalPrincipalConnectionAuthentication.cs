@@ -17,7 +17,12 @@ public sealed class AuthenticatedLocalPrincipal
 {
     public Guid LocalPrincipalId { get; }
     public bool IsOwner { get; }
-    internal AuthenticatedLocalPrincipal(Guid id, bool owner) { LocalPrincipalId = id; IsOwner = owner; }
+    internal LocalPrincipalMutationActor MutationActor { get; }
+    internal AuthenticatedLocalPrincipal(LocalPrincipalAuthenticationRecord record)
+    {
+        LocalPrincipalId = record.LocalPrincipalId; IsOwner = record.IsOwner;
+        MutationActor = new(record.HostId, record.LocalPrincipalId, record.OsPrincipalRef, record.PublicVerificationKey);
+    }
 }
 
 // Exactly one instance per authenticated TLS connection. Only the trusted platform composition
@@ -73,7 +78,7 @@ public sealed class LocalPrincipalConnectionAuthentication : IDisposable
             if (!LocalPrincipalProof.Verify(record.PublicVerificationKey, payload, signature))
                 throw Refuse(LocalAuthenticationFailure.InvalidSignature);
             _authenticatedPrincipal = record.LocalPrincipalId; _authenticatedKey = record.PublicVerificationKey;
-            return new(record.LocalPrincipalId, record.IsOwner);
+            return new(record);
         }
     }
     // Fresh read on every use: an existing connection is not a stale authority cache.
@@ -88,7 +93,7 @@ public sealed class LocalPrincipalConnectionAuthentication : IDisposable
                 if (_authenticatedKey is null) throw Refuse(LocalAuthenticationFailure.MissingOrExpiredChallenge);
                 var record = ReadExact(_authenticatedPrincipal);
                 if (record.PublicVerificationKey != _authenticatedKey) throw Refuse(LocalAuthenticationFailure.CredentialChanged);
-                return new(record.LocalPrincipalId, record.IsOwner);
+                return new(record);
             }
             catch { ClearAuthentication(); throw; }
         }
