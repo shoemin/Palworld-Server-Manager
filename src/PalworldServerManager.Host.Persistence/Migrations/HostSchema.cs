@@ -433,5 +433,6 @@ public static class HostSchema
     [
         new Migration001InitialHostSchema(),
         new Migration002HostCredentialMetadata(),
+        new Migration003PeerBindingMetadata(),
     ];
 }

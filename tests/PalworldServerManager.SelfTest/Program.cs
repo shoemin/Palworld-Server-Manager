@@ -24,6 +24,13 @@ if (args.Length > 0)
         await PairingAttemptTests.Lifecycle(); await PairingAttemptTests.ExpiryAndCleanup(); await PairingAttemptTests.BoundsAndCancellation();
         Console.WriteLine("PASS Host pairing lifecycle probes."); return 0;
     }
+    if (args is ["--peer-trust-probe"])
+    {
+        await PeerTrustTests.DurableAndIdempotent(); await PeerTrustTests.ExpiryAndExistingIdentity();
+        await PeerTrustTests.RollbackAndCredentialRaces(); await PeerTrustTests.PriorSchemaDoesNotInventProof();
+        await PeerTrustTests.OfflineRecoveryBlocksPendingTrust();
+        Console.WriteLine("PASS durable PeerBound storage probes."); return 0;
+    }
     if (args is ["--client-security-probe"])
     {
         await ClientSecurityCompositionTests.BootstrapLostReply();
@@ -128,6 +135,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("PeerBound persists with zero grants and idempotent concurrent retries", PeerTrustTests.DurableAndIdempotent),
+    ("Expired PeerBound retains a tombstone and blocks implicit credential replacement", PeerTrustTests.ExpiryAndExistingIdentity),
+    ("Peer binding and expiry roll back atomically with audit and credential races", PeerTrustTests.RollbackAndCredentialRaces),
+    ("Prior schema PeerBound metadata never fabricates local identity proof", PeerTrustTests.PriorSchemaDoesNotInventProof),
+    ("Offline Host credential recovery blocks pending peers and stale replacement candidates", PeerTrustTests.OfflineRecoveryBlocksPendingTrust),
     ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
     ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
     ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
