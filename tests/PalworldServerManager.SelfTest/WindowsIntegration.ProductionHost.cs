@@ -55,6 +55,7 @@ public static partial class WindowsIntegration
         {
             using var controller = new System.ServiceProcess.ServiceController(location.ServiceName, ".");
             try { controller.Start(); } catch (Win32Exception ex) when (ex.NativeErrorCode is 1053 or 1067) { }
+            catch (InvalidOperationException ex) when (ex.InnerException is Win32Exception { NativeErrorCode: 1053 or 1067 }) { }
             var deadline = DateTime.UtcNow.AddSeconds(30);
             while (await platform.GetStateAsync() != HostServiceState.Stopped && DateTime.UtcNow < deadline) await Task.Delay(100);
             Check(await platform.GetStateAsync() == HostServiceState.Stopped, "Failed production startup left a running service.");
@@ -118,6 +119,34 @@ public static partial class WindowsIntegration
             var third = await Ready(); Check(third != second, "Crash restart did not replace the terminated process.");
             Check(platform.ReadServiceSecurityDescriptor().SequenceEqual(originalAcl), "Service startup changed the activation ACL.");
             await platform.StopAsync(); AssertLockAvailable(location.MutexName);
+            using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero))
+            {
+                Check(lease is not null, "Mismatched-public-metadata fixture lacks offline lease.");
+                using var connection = database.OpenConnection();
+                try { HostDatabase.Execute(connection, "UPDATE SecureCredentialReferences SET PublicKeyFingerprint='" + new string('B', 64) + "' WHERE CredentialRef=(SELECT CurrentCredentialRef FROM HostIdentity);"); }
+                finally { Microsoft.Data.Sqlite.SqliteConnection.ClearPool(connection); }
+            }
+            await FailStartup(); // valid-looking public metadata cannot override the actual private key
+            using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero))
+            {
+                Check(lease is not null, "Metadata restoration lacks offline lease.");
+                using var connection = database.OpenConnection();
+                try { using var command = connection.CreateCommand(); command.CommandText = "UPDATE SecureCredentialReferences SET PublicKeyFingerprint=$pin WHERE CredentialRef=(SELECT CurrentCredentialRef FROM HostIdentity);"; command.Parameters.AddWithValue("$pin", expected); command.ExecuteNonQuery(); }
+                finally { Microsoft.Data.Sqlite.SqliteConnection.ClearPool(connection); }
+            }
+            var databaseFile = new FileInfo(database.DatabasePath); var originalFileAcl = databaseFile.GetAccessControl();
+            var unsafeAcl = databaseFile.GetAccessControl();
+            unsafeAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.Read, AccessControlType.Allow));
+            using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero))
+            { Check(lease is not null, "ACL fixture lacks offline lease."); databaseFile.SetAccessControl(unsafeAcl); }
+            try { await FailStartup(); }
+            finally
+            {
+                await platform.StopAsync();
+                using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero);
+                Check(lease is not null, "ACL restoration lacks offline lease."); databaseFile.SetAccessControl(originalFileAcl);
+            }
+            await Ready(); await platform.StopAsync();
             var current = state.Read().CurrentReference!;
             using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero))
             {
@@ -128,7 +157,7 @@ public static partial class WindowsIntegration
             await Offline(0, "recover-machine", "--reason", "loss");
             await Ready(); await platform.StopAsync();
             Check(!state.Read().Initialized, "Service/recovery granted Owner authority before intended-user completion.");
-            Console.WriteLine("PASS integration: shipped Host/Host.Cli executables, independent SCM startup, trust reconciliation, normal/crash restart, lease ownership, missing authoritative credential refusal, no TCP, unchanged activation ACL");
+            Console.WriteLine("PASS integration: shipped Host/Host.Cli executables, independent SCM startup, trust reconciliation, normal/crash restart, lease ownership, unsafe root/mismatched or missing credential refusal, no TCP, unchanged activation ACL");
         }
         finally
         {
