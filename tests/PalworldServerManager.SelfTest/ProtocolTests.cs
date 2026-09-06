@@ -78,6 +78,7 @@ public static class ProtocolTests
         var current = CheckHistory(Wire.HostReflection.Descriptor, "host-*.pb");
         CheckHistory(Wire.LocalSecurityReflection.Descriptor, "local-security-*.pb");
         CheckHistory(Wire.PeerSecurityReflection.Descriptor, "peer-security-*.pb");
+        CheckHistory(Wire.PeerPairingReflection.Descriptor, "peer-pairing-*.pb");
         AssertAdditive(baseline, current);
         var reused = current.Clone(); reused.MessageType.Single(m => m.Name == "ServerRef").Field[0].Name = "other_host";
         Reject<InvalidDataException>(() => AssertAdditive(baseline, reused));

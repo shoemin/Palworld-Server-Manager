@@ -89,6 +89,25 @@ public static class WindowsHostComposition
     }
     internal static PeerActivationRpcClient CreatePeerActivationClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
+    public static WebApplication BuildPairingApplication(PeerPairingRpcRuntime rpc, X509Certificate2 certificate, System.Net.IPEndPoint endpoint)
+    {
+        var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
+        { Args = [], ApplicationName = typeof(WindowsHostComposition).Assembly.FullName, ContentRootPath = AppContext.BaseDirectory, EnvironmentName = Environments.Production });
+        builder.WebHost.UseKestrel(); builder.Services.AddRouting(); builder.Logging.ClearProviders(); builder.Services.AddSingleton(rpc);
+        builder.Services.AddGrpc(options =>
+        {
+            options.EnableDetailedErrors = false;
+            options.MaxReceiveMessageSize = PeerPairingRpcService.MaximumMessageBytes;
+            options.MaxSendMessageSize = PeerPairingRpcService.MaximumMessageBytes;
+        });
+        // This separate first-contact endpoint maps ONLY the bounded PAKE stream. Accepting
+        // a usable TLS key here is not trust; the MAC must bind that exact key before storage.
+        WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate, _ => true,
+            rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint, WindowsPeerEndpoint.ReadSourceAddress));
+        var app = builder.Build(); app.MapGrpcService<PeerPairingRpcService>(); return app;
+    }
+    internal static PeerPairingRpcClient CreatePeerPairingClient(PeerPairingRpcRuntime rpc, X509Certificate2 certificate)
+        => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
 
     public static WebApplication BuildLocalApplication(LocalSecurityRpcRuntime rpc, SecurityIdentifier serviceSid,
         SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe)

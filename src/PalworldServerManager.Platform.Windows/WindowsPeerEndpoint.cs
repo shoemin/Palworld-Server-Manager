@@ -14,6 +14,8 @@ namespace PalworldServerManager.Platform.Windows;
 
 public static class WindowsPeerEndpoint
 {
+    public static IPAddress ReadSourceAddress(ConnectionContext connection)
+        => (connection.RemoteEndPoint as IPEndPoint)?.Address ?? throw new AuthenticationException("Peer source unavailable.");
     public static void Configure(IWebHostBuilder builder, IPEndPoint endpoint, X509Certificate2 certificate,
         Func<string, bool> acceptsPin, Func<ConnectionDelegate, ConnectionDelegate> applicationMiddleware)
     {
