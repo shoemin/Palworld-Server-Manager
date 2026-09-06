@@ -12,8 +12,9 @@ public sealed record PeerTrustRecord(Guid PeerHostId, string State, string? Curr
 
 // Trusted online Host persistence primitive; the caller retains the machine lease. Public
 // fingerprints here must come from verified PAKE/mTLS, never unchecked request fields.
-// No private material, remote transaction, activation or grant creation is implemented here.
-public sealed class PeerTrustRepository(HostDatabase database, Guid hostId, TimeProvider? timeProvider = null)
+// No private material or cross-Host transaction. Activation is in the sibling partial;
+// canonical grant issuance remains the required #45 hook's responsibility.
+public sealed partial class PeerTrustRepository(HostDatabase database, Guid hostId, TimeProvider? timeProvider = null)
 {
     private readonly HostDatabase database = database ?? throw new ArgumentNullException(nameof(database));
     private readonly Guid hostId = hostId != Guid.Empty ? hostId : throw new ArgumentException("Host identity required.");

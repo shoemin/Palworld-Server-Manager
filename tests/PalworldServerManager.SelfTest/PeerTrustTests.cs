@@ -82,7 +82,7 @@ internal static class PeerTrustTests
         Check(expiryAudit.Contains(f.PeerId.ToString("D")) && !expiryAudit.Contains(Peer) && !expiryAudit.Contains(Local));
         Check(repo.RecordVerifiedBinding(f.PeerId, Peer, Local).Disposition == PeerBindingDisposition.ReplacementRequired);
         Check(repo.Read(f.PeerId)!.State == "Revoked");
-        // Fixture establishes existing Active trust; this repository has no activation operation.
+        // Fixture establishes historical Active trust independently of activation's own tests.
         f.Execute($"UPDATE TrustedManagers SET State='Active',CurrentTrustedPublicKeyFingerprint='{Peer}',RevokedUtc=NULL WHERE PeerHostId='{f.PeerId:D}';");
         // An existing authority fixture must survive reconfirmation without rewrite or reissuance.
         f.Execute($"""
