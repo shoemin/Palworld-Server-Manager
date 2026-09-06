@@ -43,7 +43,8 @@ public sealed class ShellState(HostId localHost, Func<ServerRef, CancellationTok
         if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("A display label is required.");
         var result = new StringBuilder(value.Length);
         foreach (var rune in value.EnumerateRunes())
-            result.Append(Rune.GetUnicodeCategory(rune) is UnicodeCategory.Control or UnicodeCategory.Format ? "\uFFFD" : rune.ToString());
+            result.Append(Rune.GetUnicodeCategory(rune) is UnicodeCategory.Control or UnicodeCategory.Format or
+                UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator ? "\uFFFD" : rune.ToString());
         return result.ToString();
     }
     public void ReplaceAuthorizedInventory(IReadOnlyList<ShellServer> inventory)

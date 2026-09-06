@@ -46,8 +46,8 @@ public static class ShellStateTests
         Reject(() => state.ReplaceAuthorizedInventory([original, original]));
         Reject(() => state.ReplaceAuthorizedInventory([original, new(new(RemoteA, Guid.NewGuid()), "Other", "Conflicting PC")]));
         Check(ReferenceEquals(before, state.Rows), "Rejected inventory partially mutated state.");
-        state.ReplaceAuthorizedInventory([Row(Local, "Main\u202e\nServer")]);
-        Check(!state.Rows[0].Name.Contains('\u202e') && !state.Rows[0].Name.Contains('\n'), "Display controls could forge identity layout.");
+        state.ReplaceAuthorizedInventory([Row(Local, "Main\u202e\n\u2028\u2029Server")]);
+        Check(state.Rows[0].Name == "Main\uFFFD\uFFFD\uFFFD\uFFFDServer", "Display controls or Unicode separators could forge identity layout.");
         state.Show(Local); state.Disconnect(); Check(state.Rows.Count == 0 && state.Selected is null && !state.IsSelectionPending, "Disconnect retained selectable cached authority.");
     }
     public static async Task StaleSelection()
