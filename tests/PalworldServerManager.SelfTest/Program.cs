@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args.Length == 1 && args[0] == "--owner-recovery-probe")
+    {
+        await OwnerRecoveryTests.RotationAndRetry();
+        await OwnerRecoveryTests.RehomeTargetsAndGrantForest();
+        await OwnerRecoveryTests.StaleSnapshotsAndAba();
+        await OwnerRecoveryTests.OnlineCompletionBoundary();
+        return 0;
+    }
     if (args.Length == 1 && args[0] == "--local-enrollment-probe")
     {
         await LocalEnrollmentTests.BootstrapAndRetries();
@@ -80,6 +88,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Owner rotation preserves identity and permits indefinite consumed retries", OwnerRecoveryTests.RotationAndRetry),
+    ("Owner re-home revokes the old row and preserves independent grant roots", OwnerRecoveryTests.RehomeTargetsAndGrantForest),
+    ("Owner recovery rejects stale snapshots and full credential and target ABA", OwnerRecoveryTests.StaleSnapshotsAndAba),
+    ("Online recovery completion uses protected verifier and distinct audit events", OwnerRecoveryTests.OnlineCompletionBoundary),
     ("Owner bootstrap transactions roll back and concurrent consumed retries preserve identity", LocalEnrollmentTests.BootstrapAndRetries),
     ("Enrollment retries and concurrent wrong-code attempts preserve bounded authority", LocalEnrollmentTests.EnrollmentAttemptsAndConcurrency),
     ("Local revocation and reactivation invalidate stale tickets and grant descendants", LocalEnrollmentTests.RevocationAndAba),

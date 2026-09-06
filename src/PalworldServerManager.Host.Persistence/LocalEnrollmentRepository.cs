@@ -7,7 +7,7 @@ namespace PalworldServerManager.Host.Persistence;
 
 // Caller retains the machine-wide Host/offline lease. Each operation owns an immediate writer
 // transaction and a non-pooled connection. Raw bearer material never crosses this API.
-public sealed class LocalEnrollmentRepository(HostDatabase database, Guid hostId, TimeProvider? timeProvider = null)
+public sealed partial class LocalEnrollmentRepository(HostDatabase database, Guid hostId, TimeProvider? timeProvider = null)
 {
     private readonly HostDatabase _database = database ?? throw new ArgumentNullException(nameof(database));
     private readonly Guid _hostId = hostId != Guid.Empty ? hostId : throw new ArgumentException("Host identity required.");
@@ -196,7 +196,7 @@ public sealed class LocalEnrollmentRepository(HostDatabase database, Guid hostId
         foreach (var table in new[] { "HostCapabilityGrants", "ServerCapabilityGrants" })
             Execute(c, tx, $"""
                 WITH RECURSIVE affected(GrantId) AS (
-                    SELECT GrantId FROM {table} WHERE GranteeLocalPrincipalId=$id OR GrantedByLocalPrincipalId=$id
+                    SELECT GrantId FROM {table} WHERE GranteeLocalPrincipalId=$id
                     UNION SELECT g.GrantId FROM {table} g JOIN affected a ON g.DerivedFromGrantId=a.GrantId
                 ) UPDATE {table} SET InvalidatedUtc=COALESCE(InvalidatedUtc,$now) WHERE GrantId IN (SELECT GrantId FROM affected);
                 """, ("$id", Id(principalId)), ("$now", Stamp(now)));
