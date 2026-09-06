@@ -12,10 +12,13 @@
     <InternalsVisibleTo Include="PalworldServerManager.SelfTest" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.83.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.83.0" />
     <PackageReference Include="Grpc.Tools" Version="2.83.0" PrivateAssets="all" />
     <!-- Messages remain in Contracts. Compile only this executable's generated server stub. -->
     <Protobuf Include="..\PalworldServerManager.Contracts\Protos\local_security.proto" ProtoRoot="..\PalworldServerManager.Contracts" GrpcServices="Server" CompileOutputs="false" OutputDir="$(IntermediateOutputPath)LocalRpc" />
     <Compile Include="$(IntermediateOutputPath)LocalRpc\Protos\LocalSecurityGrpc.cs" />
+    <Protobuf Include="..\PalworldServerManager.Contracts\Protos\peer_security.proto" ProtoRoot="..\PalworldServerManager.Contracts" GrpcServices="Both" CompileOutputs="false" OutputDir="$(IntermediateOutputPath)PeerRpc" />
+    <Compile Include="$(IntermediateOutputPath)PeerRpc\Protos\PeerSecurityGrpc.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />

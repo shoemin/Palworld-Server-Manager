@@ -14,7 +14,7 @@ internal static class PeerTlsTests
     private static void Check(bool value) { if (!value) throw new Exception("Peer TLS assertion failed."); }
     private static void Reject(Action action)
     { try { action(); } catch (AuthenticationException) { return; } throw new Exception("Expected peer authentication refusal."); }
-    private sealed class Certificate : IDisposable
+    internal sealed class Certificate : IDisposable
     {
         internal readonly X509Certificate2 Value = LocalIpcSpike.CreateTestCertificate();
         private readonly string name;

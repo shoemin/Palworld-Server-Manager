@@ -71,6 +71,22 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
     {
         Id(peer); using var c = Open(); using var tx = c.BeginTransaction(deferred: true); RequireHost(c, tx); return Read(c, tx, peer);
     }
+    // Handshake admission only. A later RPC must additionally bind the claimed Host UUID
+    // to this actual fingerprint and recheck state; a key alone is not peer authority.
+    public bool RecognizesTransportFingerprint(string fingerprint)
+    {
+        Fingerprint(fingerprint); using var c = Open(); using var tx = c.BeginTransaction(deferred: true); RequireHost(c, tx);
+        using var command = Command(c, tx, """
+            SELECT t.State,p.LocalBoundPublicKeyFingerprint,p.ExpiresUtc FROM TrustedManagers t
+            LEFT JOIN TrustedManagerPairings p ON p.PeerHostId=t.PeerHostId
+            WHERE t.State IN ('PeerBound','Active') AND t.PeerRecoveryRequired=0 AND
+                (t.CurrentTrustedPublicKeyFingerprint=$fp OR t.PendingTrustedPublicKeyFingerprint=$fp);
+            """, ("$fp", fingerprint));
+        using var reader = command.ExecuteReader(); var now = time.GetUtcNow();
+        while (reader.Read())
+            if (reader.GetString(0) == "Active" || (!reader.IsDBNull(1) && !reader.IsDBNull(2) && Date(reader.GetString(2)) > now)) return true;
+        return false;
+    }
     public PeerBindingResult RecordVerifiedBinding(Guid peer, string peerFingerprint, string verifiedLocalFingerprint)
     {
         Id(peer); Fingerprint(peerFingerprint); Fingerprint(verifiedLocalFingerprint);
