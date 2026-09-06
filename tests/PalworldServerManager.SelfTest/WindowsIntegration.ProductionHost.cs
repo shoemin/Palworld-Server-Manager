@@ -48,7 +48,14 @@ public static partial class WindowsIntegration
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(40));
             try { await process.WaitForExitAsync(deadline.Token); }
             catch { process.Kill(true); await process.WaitForExitAsync(); throw; }
-            Check(process.ExitCode == expected, "Production offline executable failed: " + await error);
+            if (process.ExitCode != expected)
+            {
+                // Fixture-only public ACL evidence; never read credential/handoff/database contents.
+                foreach (var item in new[] { new DirectoryInfo(productRoot), new DirectoryInfo(location.HostRoot) })
+                    if (item.Exists) Console.WriteLine("Product fixture ACL " + item.Name + ": " + item.GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access));
+                if (serviceSid is not null) platform.ValidateOfflineDataRoot(serviceSid);
+                throw new Exception("Production offline executable failed: " + await error);
+            }
             return await output;
         }
         async Task FailStartup()
