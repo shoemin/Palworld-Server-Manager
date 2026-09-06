@@ -123,7 +123,8 @@ public static class Program
             window.BindState(pendingState); window.UpdateLayout(); tree = Find<ServerTree>(window, "ServerTree");
             ((TreeViewItem)((TreeViewItem)tree.Items[0]!).Items[0]!).Focus(); Key(window, PhysicalKey.Enter);
             window.BindState(null); late.SetException(new IOException("Old connection failed")); Dispatcher.UIThread.RunJobs();
-            Check(window.State is null && !window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("could not be verified") == true), "Stale view failure replaced disconnected status.");
+            Check(window.State is null && tree.Items.Count == 0 && tree.SelectedItem is null && !Find<Border>(window, "IdentityPanel").IsVisible &&
+                !window.GetVisualDescendants().OfType<TextBlock>().Any(text => text.Text?.Contains("could not be verified") == true), "Disconnected view retained rows, selection, identity or stale failure status.");
         }
         finally { window.Close(); }
     }

@@ -128,7 +128,7 @@ public partial class MainWindow : Window
         _selectionVersion++; _selectionStop.Cancel(); _selectionStop.Dispose(); _selectionStop = new();
         if (_state is not null) _state.PropertyChanged -= StateChanged;
         _state = state; _rows = null; _collapsedGroups.Clear(); if (state is not null) state.PropertyChanged += StateChanged;
-        CloseIdentity(); Refresh();
+        RebuildTree(); Refresh();
     }
     private void StateChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => Refresh();
     private void Refresh()
@@ -156,7 +156,7 @@ public partial class MainWindow : Window
         var focus = _tree.Inspected?.Tag; var hadFocus = _tree.IsKeyboardFocusWithin;
         _syncSelection = true; _tree.Items.Clear(); _nodes.Clear(); _syncSelection = false;
         _rows = _state?.Rows; _scope = _state?.Scope; CloseIdentity();
-        if (_state is null) return;
+        if (_state is null) { if (hadFocus) _all.Focus(); return; }
         var small = _compact && !_railOpen;
         foreach (var group in _state.VisibleRows.GroupBy(row => row.Reference.AuthoritativeHostId))
         {
