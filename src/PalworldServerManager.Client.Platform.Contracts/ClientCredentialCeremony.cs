@@ -10,7 +10,8 @@ public interface ILocalPrincipalCredentialCeremonyStore
 {
     // Persist before sending the public key. Caller owns and clears returned private material.
     Task<LocalPrincipalKeyPair> PrepareAsync(ClientCredentialCeremony ceremony, CancellationToken ct = default);
-    // Call only after authenticated Host confirmation of this exact submitted public key.
+    // Call only after authenticated Host confirmation AND proof that this prepared key
+    // authenticates the returned principal. A historical consumed-ticket ID alone is insufficient.
     Task ConfirmAsync(ClientCredentialCeremony ceremony, Guid principalId, ReadOnlyMemory<byte> publicKey, CancellationToken ct = default);
     // Explicit recovery after authoritative terminal refusal, never on timeout or lost reply.
     Task DiscardPendingAsync(ClientCredentialCeremony ceremony, CancellationToken ct = default);
