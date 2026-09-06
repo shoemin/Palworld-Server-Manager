@@ -52,7 +52,7 @@ public interface ILocalPrincipalCredentialStore
     Task DeleteAsync(CancellationToken ct = default);
 }
 
-// Contract only: #42 owns protected handoff consumption and Host authentication.
+// Current-user protected handoff. Caller deletes only after Host consumption and durable client binding.
 public interface IOwnerBootstrapHandoffReader
 {
     Task<byte[]?> ReadAsync(CancellationToken ct = default);
