@@ -11,6 +11,12 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--peer-activation-probe"])
+    {
+        await PeerActivationTests.ReciprocalReopenAndLostReply(); await PeerActivationTests.ConcurrentAndRollback();
+        await PeerActivationTests.IdentityExpiryAndRecovery(); await PeerActivationTests.DeadlineAndMissingProof();
+        Console.WriteLine("PASS durable reciprocal activation probes."); return 0;
+    }
     if (args is ["--spake2-wrapper-probe", var nativePath])
     {
         Spake2WrapperTests.Run(nativePath); PairingAttemptTests.Native(nativePath); return 0;
@@ -140,6 +146,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Peer activation requires reciprocal durable identity and retries after a lost reply", PeerActivationTests.ReciprocalReopenAndLostReply),
+    ("Peer activation hook and audit commit once with concurrent retries and rollback", PeerActivationTests.ConcurrentAndRollback),
+    ("Peer activation rejects identity expiry recovery and credential replacement shortcuts", PeerActivationTests.IdentityExpiryAndRecovery),
+    ("Peer activation cannot invent old binding proof or extend its deadline during a slow hook", PeerActivationTests.DeadlineAndMissingProof),
     ("Peer TLS proves mutual private-key possession over pinned HTTP/2 connections", PeerTlsTests.MutualProof),
     ("Peer TLS rejects wrong pins missing private proof protocol mismatch and cancellation", PeerTlsTests.RefusalsAndCleanup),
     ("Peer TLS identity is rechecked against trust state and never grants authority", PeerTlsTests.TrustPurposes),
