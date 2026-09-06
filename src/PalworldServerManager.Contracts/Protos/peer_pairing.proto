@@ -1,0 +1,29 @@
+syntax = "proto3";
+package palworld.manager.v1;
+option csharp_namespace = "PalworldServerManager.Contracts.Wire";
+import "Protos/host.proto";
+
+// No code or private credential is transmitted. Frame order is enforced by the Host.
+message PeerPairingStart { Handshake handshake = 1; string invitation_id = 2; }
+message PeerPairingChallenge { Handshake handshake = 1; bytes nonce = 2; bytes share = 3; }
+enum PeerPairingResult {
+  PEER_PAIRING_RESULT_UNSPECIFIED = 0;
+  PEER_PAIRING_RESULT_PEER_BOUND = 1;
+  PEER_PAIRING_RESULT_RESUMED = 2;
+  PEER_PAIRING_RESULT_RECONFIRMED = 3;
+  PEER_PAIRING_RESULT_REPLACEMENT_REQUIRED = 4;
+  PEER_PAIRING_RESULT_RECOVERY_REQUIRED = 5;
+}
+message PeerPairingFrame {
+  oneof frame {
+    PeerPairingStart start = 1;
+    PeerPairingChallenge challenge = 2;
+    bytes share = 3;
+    bytes confirmation = 4;
+    bytes binding = 5;
+    PeerPairingResult result = 6;
+  }
+}
+service PeerPairingProtocol {
+  rpc Pair(stream PeerPairingFrame) returns (stream PeerPairingFrame);
+}

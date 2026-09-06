@@ -11,6 +11,13 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--peer-pairing-probe"])
+    {
+        await ProtocolTests.SchemaEvolution(); await PeerPairingRpcTests.AdmissionAndFrameOrder(); await PeerPairingRpcTests.DisconnectAndSingleConnection();
+        Console.WriteLine("PASS first-contact protocol admission and connection cleanup (synthetic lifecycle provider only)."); return 0;
+    }
+    if (args is ["--peer-pairing-native-probe", var nativePairingPath])
+    { await PeerPairingRpcTests.Native(nativePairingPath); return 0; }
     if (args is ["--peer-grpc-probe"])
     {
         await ProtocolTests.SchemaEvolution();
@@ -27,11 +34,11 @@ if (args.Length > 0)
     }
     if (args is ["--spake2-wrapper-probe", var nativePath])
     {
-        Spake2WrapperTests.Run(nativePath); PairingAttemptTests.Native(nativePath); return 0;
+        Spake2WrapperTests.Run(nativePath); PairingAttemptTests.Native(nativePath); await PeerPairingRpcTests.Native(nativePath); return 0;
     }
     if (args is ["--spake2-wrapper-probe", var nativeProduction, var nativeFault])
     {
-        Spake2WrapperTests.Run(nativeProduction, nativeFault); PairingAttemptTests.Native(nativeProduction); return 0;
+        Spake2WrapperTests.Run(nativeProduction, nativeFault); PairingAttemptTests.Native(nativeProduction); await PeerPairingRpcTests.Native(nativeProduction); return 0;
     }
     if (args is ["--pairing-lifecycle-probe"])
     {
@@ -154,6 +161,8 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("First-contact pairing rejects invalid protocol frames and exposes no activation RPC", PeerPairingRpcTests.AdmissionAndFrameOrder),
+    ("First-contact pairing cleans disconnected exchanges and permits one attempt per TLS connection", PeerPairingRpcTests.DisconnectAndSingleConnection),
     ("Host peer gRPC resumes durable activation after listener restart and discarded reply", PeerSecurityRpcTests.ActualActivationAndLostReply),
     ("Host peer gRPC binds negotiation and live trust to the actual TLS connection", PeerSecurityRpcTests.ProtocolAndConnectionIdentity),
     ("Host peer gRPC rejects wrong TLS pins expired trust oversized messages and cancellation", PeerSecurityRpcTests.TlsRefusalsAndLimits),
