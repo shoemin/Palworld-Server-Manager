@@ -26,13 +26,13 @@ public static class LocalSecurityRpcTests
     internal sealed class Client : IDisposable
     {
         private readonly GrpcChannel _channel;
-        public Client(Guid host, string pipe, ILocalHostTrustReader reader)
+        public Client(Guid host, string pipe, ILocalHostTrustReader reader, bool unboundedSend = false)
         {
             _channel = GrpcChannel.ForAddress("https://localhost", new GrpcChannelOptions
             {
                 HttpHandler = new WindowsLocalHostHttpTransportFactory(reader, pipe).CreateHandler(host), DisposeHttpClient = true,
                 HttpVersion = HttpVersion.Version20, HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                MaxReceiveMessageSize = LocalSecurityRpcService.MaximumMessageBytes, MaxSendMessageSize = LocalSecurityRpcService.MaximumMessageBytes
+                MaxReceiveMessageSize = LocalSecurityRpcService.MaximumMessageBytes, MaxSendMessageSize = unboundedSend ? null : LocalSecurityRpcService.MaximumMessageBytes
             });
         }
         private static Marshaller<T> Codec<T>() where T : class, IMessage<T>, new() => Marshallers.Create<T>(value => value.ToByteArray(), bytes => { var value = new T(); value.MergeFrom(bytes); return value; });
@@ -233,5 +233,24 @@ public static class LocalSecurityRpcTests
             Check(f.State.Count("SELECT COUNT(*) FROM LocalPrincipals WHERE IsOwner=1 AND State='Active';") == 1, "RPC recovery broke Owner cardinality.");
         }
         finally { CryptographicOperations.ZeroMemory(secret); }
+    }
+    public static async Task LimitsAndScope()
+    {
+        await using var f = new Fixture(); await f.Start();
+        using var client = new Client(f.State.HostId, f.Pipe, f.Trust(), unboundedSend: true); await client.Negotiate();
+        var request = new LocalCredentialCompletion { TicketId = Guid.NewGuid().ToString("D"), Secret = ByteString.CopyFrom(new byte[32]), PublicKey = ByteString.CopyFrom(f.State.OwnerKey.PublicKey) };
+        foreach (var method in new[] { "CompleteEnrollment", "CompleteOwnerRotation", "CompleteOwnerRehome" })
+            await Refused(client.Call<LocalCredentialCompletion, LocalCredentialResult>(method, request), StatusCode.Unauthenticated);
+        foreach (var method in new[] { "PrepareBootstrap", "RecoverMachine", "SetOwner" })
+            await Refused(client.Call<LocalEmpty, LocalEmpty>(method, new()), StatusCode.Unimplemented);
+        request.Secret = ByteString.CopyFrom(new byte[33]);
+        await Refused(client.Call<LocalCredentialCompletion, LocalCredentialResult>("CompleteBootstrap", request), StatusCode.InvalidArgument);
+        request.Secret = ByteString.CopyFrom(new byte[LocalSecurityRpcService.MaximumMessageBytes + 1]);
+        var delivered = f.Delivered;
+        await Refused(client.Call<LocalCredentialCompletion, LocalCredentialResult>("CompleteBootstrap", request), StatusCode.ResourceExhausted);
+        Check(f.Delivered == delivered && f.State.Count("SELECT COUNT(*) FROM LocalPrincipals;") == 0, "Oversized RPC reached authority handler or created a principal.");
+        using var malformed = f.Connect(); var hello = new Handshake { Protocol = new() { Major = 1, Minor = 1 }, ProductVersion = new string('x', 257) };
+        await Refused(malformed.Call<Handshake, LocalHandshakeReply>("Negotiate", hello), StatusCode.InvalidArgument);
+        await Refused(malformed.Call<LocalEmpty, LocalPrincipalIdentity>("GetIdentity", new()), StatusCode.FailedPrecondition);
     }
 }

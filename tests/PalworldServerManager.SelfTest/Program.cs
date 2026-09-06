@@ -17,6 +17,7 @@ if (args.Length > 0)
         await LocalSecurityRpcTests.NegotiationAndBootstrap();
         await LocalSecurityRpcTests.AuthenticationAndAuthority();
         await LocalSecurityRpcTests.RecoveryAndRollback();
+        await LocalSecurityRpcTests.LimitsAndScope();
         Console.WriteLine("PASS local security RPC probe"); return 0;
     }
     if (args.Length == 1 && args[0] == "--host-trust-reconciliation-probe")
@@ -107,6 +108,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Local security gRPC requires TLS negotiation and intended-user bootstrap", LocalSecurityRpcTests.NegotiationAndBootstrap),
     ("Local security gRPC binds native identity nonces and Owner authorization", LocalSecurityRpcTests.AuthenticationAndAuthority),
     ("Local security gRPC recovery preserves transactions audits and Owner identity", LocalSecurityRpcTests.RecoveryAndRollback),
+    ("Local security gRPC limits payloads and exposes no privileged preparation RPC", LocalSecurityRpcTests.LimitsAndScope),
     ("Client ceremony retries and rotation preserve exact durable keys", ClientCredentialCeremonyTests.RetryAndRotation),
     ("Client re-home key choice and explicit discard preserve current binding", ClientCredentialCeremonyTests.RehomeAndDiscard),
     ("Client ceremony failed writes cancellation and v1 migration preserve state", ClientCredentialCeremonyTests.FailureAndMigration),
