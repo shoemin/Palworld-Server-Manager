@@ -146,10 +146,15 @@ public static class ClientCredentialCeremonyTests
         var store = client.Store(); var bootstrap = client.Ceremony() with { HostId = host.HostId };
         using var bootstrapProof = host.Proof(bootstrap.TicketId, bootstrap: true);
         host.Repository.PrepareOfflineBootstrap(bootstrap.TicketId, "owner", bootstrapProof, host.Time.Now.AddMinutes(15));
-        var first = client.Keep(await store.PrepareAsync(bootstrap));
+        var first = client.Keep(new WindowsLocalPrincipalCryptography().Generate());
+        Directory.CreateDirectory(client.Root);
+        var oldPayload = JsonSerializer.SerializeToUtf8Bytes(new { Version = 1, PrincipalId = (Guid?)null, PublicKey = first.PublicKey, PrivateKey = first.PrivateKey });
+        try { File.WriteAllBytes(client.PathName, ProtectedData.Protect(oldPayload, null, DataProtectionScope.CurrentUser)); }
+        finally { CryptographicOperations.ZeroMemory(oldPayload); }
         var principal = host.Repository.CompleteBootstrap(bootstrap.TicketId, "owner", bootstrapProof, Convert.ToBase64String(first.PublicKey));
-        // Drop the result; another client process reopens and submits the same durable key.
+        // Drop the result; an upgraded client reopens the v1 unbound key and preserves it.
         var retry = client.Keep(await client.Store().PrepareAsync(bootstrap));
+        Check(retry.PrivateKey.SequenceEqual(first.PrivateKey), "Upgrade replaced a submitted unbound v1 key.");
         var repeated = host.Repository.CompleteBootstrap(bootstrap.TicketId, "owner", bootstrapProof, Convert.ToBase64String(retry.PublicKey));
         await store.ConfirmAsync(bootstrap, repeated, retry.PublicKey);
         using (var proof = host.Authenticate(principal, "owner", retry)) Check(proof.GetCurrentPrincipal().IsOwner, "Lost-result bootstrap bound the wrong client key.");

@@ -87,9 +87,12 @@ public sealed partial class WindowsLocalPrincipalCredentialStore
                 if (value.PrincipalId is null) throw new InvalidOperationException("Re-home reuse requires an existing bound client credential.");
                 pair = Copy(value.PublicKey, value.PrivateKey);
             }
+            // A v1 unbound key may already have been submitted before a lost completion
+            // reply. Preserve it; the later client must prove the returned principal with it.
+            else if (value.PrincipalId is null && value.PrivateKey.Length > 0) pair = Copy(value.PublicKey, value.PrivateKey);
             else pair = _generator.Generate();
             value.Pending = new() { Ceremony = ceremony, PublicKey = pair.PublicKey, PrivateKey = pair.PrivateKey };
-            if (ceremony.KeyUse == ClientCredentialKeyUse.Fresh && pair.PublicKey.AsSpan().SequenceEqual(value.PublicKey))
+            if (ceremony.KeyUse == ClientCredentialKeyUse.Fresh && value.PrincipalId is not null && pair.PublicKey.AsSpan().SequenceEqual(value.PublicKey))
                 throw new CryptographicException("Fresh preparation cannot reuse the current key.");
             ct.ThrowIfCancellationRequested(); Write(value);
             return Copy(pair.PublicKey, pair.PrivateKey);
