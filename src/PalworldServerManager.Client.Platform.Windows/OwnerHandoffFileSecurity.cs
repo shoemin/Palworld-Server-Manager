@@ -76,11 +76,4 @@ internal static class OwnerHandoffFileSecurity
         if ((global::System.IO.File.GetAttributes(path) & (FileAttributes.ReparsePoint | FileAttributes.Directory)) != 0) throw new IOException("Unsafe handoff file.");
         Exact(new FileInfo(path).GetAccessControl(), recipient, true);
     }
-    internal static FileSystemSecurity New(SecurityIdentifier? recipient, bool file)
-    {
-        FileSystemSecurity security = file ? new FileSecurity() : new DirectorySecurity();
-        security.SetAccessRuleProtection(true, false); security.SetOwner(Admin);
-        foreach (var (sid, rights) in Policy(recipient, file)) security.AddAccessRule(new FileSystemAccessRule(sid, rights, AccessControlType.Allow));
-        return security;
-    }
 }
