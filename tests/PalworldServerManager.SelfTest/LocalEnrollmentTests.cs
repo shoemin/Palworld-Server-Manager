@@ -20,12 +20,12 @@ public static class LocalEnrollmentTests
     { try { action(); throw new Exception("Expected " + typeof(T).Name); } catch (T) { } }
     private static async Task RejectAsync<T>(Func<Task> action) where T : Exception
     { try { await action(); throw new Exception("Expected " + typeof(T).Name); } catch (T) { } }
-    private sealed class Clock : TimeProvider
+    internal sealed class Clock : TimeProvider
     {
         internal DateTimeOffset Now = new(2026, 9, 6, 1, 0, 0, TimeSpan.Zero);
         public override DateTimeOffset GetUtcNow() => Now;
     }
-    private sealed class Store(byte[] key) : ISecureCredentialStore
+    internal sealed class Store(byte[] key) : ISecureCredentialStore
     {
         internal byte[]? Key = key.ToArray(); internal byte[]? LastRead; internal int Writes; internal Action? OnRead;
         public Task<byte[]?> RetrieveAsync(string name, CancellationToken ct = default)
@@ -34,7 +34,7 @@ public static class LocalEnrollmentTests
         { Writes++; throw new Exception("Online enrollment wrote a secure-store key."); }
         public Task DeleteAsync(string name, CancellationToken ct = default) => throw new Exception("Online enrollment deleted a secure-store key.");
     }
-    private sealed class Fixture : IDisposable
+    internal sealed class Fixture : IDisposable
     {
         internal readonly string Root = Path.Combine(Path.GetTempPath(), "PSMEnroll" + Guid.NewGuid().ToString("N"));
         internal readonly Guid HostId = Guid.NewGuid();
@@ -81,7 +81,7 @@ public static class LocalEnrollmentTests
             if (Secrets.Key is { } k) CryptographicOperations.ZeroMemory(k);
         }
     }
-    private static string Public(LocalPrincipalKeyPair key) => Convert.ToBase64String(key.PublicKey);
+    internal static string Public(LocalPrincipalKeyPair key) => Convert.ToBase64String(key.PublicKey);
 
     public static async Task BootstrapAndRetries()
     {

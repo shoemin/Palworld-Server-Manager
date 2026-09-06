@@ -52,6 +52,21 @@ public sealed class LocalEnrollmentService(LocalEnrollmentRepository repository,
     public void RevokePrincipal(LocalPrincipalConnectionAuthentication connection, Guid targetId)
         => _repository.RevokePrincipal(connection.GetCurrentPrincipal().MutationActor, targetId);
 
+    // Completion is available only for tickets prepared through privileged offline recovery.
+    // The old principal credential is intentionally not required; the intended-user secret is.
+    public async Task<Guid> CompleteOwnerRotationAsync(Guid ticketId, string nativePrincipal, ReadOnlyMemory<byte> secret,
+        string publicKey, CancellationToken ct = default)
+    {
+        using var verifier = await ComputeAsync(LocalEnrollmentPurpose.OwnerRotation, ticketId, secret, ct).ConfigureAwait(false);
+        ct.ThrowIfCancellationRequested(); return _repository.CompleteOwnerRotation(ticketId, nativePrincipal, verifier, publicKey);
+    }
+    public async Task<Guid> CompleteOwnerRehomeAsync(Guid ticketId, string nativePrincipal, ReadOnlyMemory<byte> secret,
+        string publicKey, CancellationToken ct = default)
+    {
+        using var verifier = await ComputeAsync(LocalEnrollmentPurpose.OwnerRehome, ticketId, secret, ct).ConfigureAwait(false);
+        ct.ThrowIfCancellationRequested(); return _repository.CompleteOwnerRehome(ticketId, nativePrincipal, verifier, publicKey);
+    }
+
     private async Task<LocalEnrollmentVerifier> ComputeAsync(LocalEnrollmentPurpose purpose, Guid ticketId,
         ReadOnlyMemory<byte> secret, CancellationToken ct)
     {
