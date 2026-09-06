@@ -1,0 +1,16 @@
+[package]
+name = "astra-spake2-qualification"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pakery-core = { git = "https://github.com/djx-y-z/pakery", rev = "4fa353417ddddfcaaf29f990404e1f48127167e3", default-features = false }
+pakery-spake2 = { git = "https://github.com/djx-y-z/pakery", rev = "4fa353417ddddfcaaf29f990404e1f48127167e3", features = ["test-utils"] }
+pakery-crypto = { git = "https://github.com/djx-y-z/pakery", rev = "4fa353417ddddfcaaf29f990404e1f48127167e3", default-features = false, features = ["std", "spake2", "p256"] }
+zeroize = "1.8"
+
+[workspace]
