@@ -133,6 +133,7 @@ public static partial class WindowsIntegration
             var third = await Ready(); Check(third != second, "Crash restart did not replace the terminated process.");
             Check(platform.ReadServiceSecurityDescriptor().SequenceEqual(originalAcl), "Service startup changed the activation ACL.");
             await platform.StopAsync(); AssertLockAvailable(location.MutexName);
+            Console.WriteLine("PASS integration: fixed product bootstrap and Host RPC, trust repair, normal/crash restart, no TCP and unchanged activation ACL");
             using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero))
             {
                 Check(lease is not null, "Mismatched-public-metadata fixture lacks offline lease.");
@@ -148,7 +149,7 @@ public static partial class WindowsIntegration
                 try { using var command = connection.CreateCommand(); command.CommandText = "UPDATE SecureCredentialReferences SET PublicKeyFingerprint=$pin WHERE CredentialRef=(SELECT CurrentCredentialRef FROM HostIdentity);"; command.Parameters.AddWithValue("$pin", expected); command.ExecuteNonQuery(); }
                 finally { Microsoft.Data.Sqlite.SqliteConnection.ClearPool(connection); }
             }
-            var databaseFile = new FileInfo(database.DatabasePath); var originalFileAcl = databaseFile.GetAccessControl();
+            var databaseFile = new FileInfo(database.DatabasePath); var originalFileAcl = databaseFile.GetAccessControl().GetSecurityDescriptorBinaryForm();
             var unsafeAcl = databaseFile.GetAccessControl();
             unsafeAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.Read, AccessControlType.Allow));
             using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero))
@@ -158,7 +159,9 @@ public static partial class WindowsIntegration
             {
                 await platform.StopAsync();
                 using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero);
-                Check(lease is not null, "ACL restoration lacks offline lease."); databaseFile.SetAccessControl(originalFileAcl);
+                Check(lease is not null, "ACL restoration lacks offline lease.");
+                var restored = new FileSecurity(); restored.SetSecurityDescriptorBinaryForm(originalFileAcl, AccessControlSections.Access);
+                databaseFile.SetAccessControl(restored); platform.ValidateOfflineDataRoot(serviceSid);
             }
             await Ready(); await platform.StopAsync();
             var current = state.Read().CurrentReference!;
