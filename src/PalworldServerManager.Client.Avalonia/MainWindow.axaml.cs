@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using PalworldServerManager.Client.Avalonia.Shell;
 using PalworldServerManager.Client.Avalonia.Views;
 using PalworldServerManager.Contracts;
+using PalworldServerManager.Client.Security;
 
 namespace PalworldServerManager.Client.Avalonia;
 
@@ -49,8 +50,10 @@ public partial class MainWindow : Window
     }
     private static Border Card(Control child, double padding = 16)
     { var border = new Border { Child = child, Padding = new(padding) }; border.Classes.Add("card"); return border; }
-    public MainWindow()
+    public MainWindow() : this(null) { }
+    public MainWindow(Func<CancellationToken, Task<LocalConnectionInfo>>? connectLocal)
     {
+        _connectLocal = connectLocal;
         InitializeComponent(); Resources["BodySize"] = 14d; SetTheme(ShellTheme.Refined);
         _chrome.Margin = new(16, 8); _brand.Margin = new(4, 12, 24, 12); _chrome.Children.Add(_brand); _chrome.Children.Add(_globalActions);
         foreach (var label in new[] { "Activity", "Alerts", "Manager Settings" })
@@ -86,6 +89,7 @@ public partial class MainWindow : Window
         tabScroll.PropertyChanged += (_, change) => { if (change.Property == ScrollViewer.ExtentProperty || change.Property == ScrollViewer.ViewportProperty)
             left.IsVisible = right.IsVisible = tabScroll.Extent.Width > tabScroll.Viewport.Width + 1; };
         _workspace.Children.Add(tabRegion);
+        _workspace.Children.Add(CreateConnectionControls());
         _workspace.Children.Add(Card(Text("Server details, creation, import and other actions are unavailable until the Host supplies supported, authorized data.", "muted"), 24));
         _drawer.Name = "GlobalPanel"; _drawer.Classes.Add("card"); _drawer.Child = new ScrollViewer { Content = _panel }; _drawer.Padding = new(16); _drawer.Margin = new(8, 16, 16, 16); _drawer.IsVisible = false;
         _body.Children.Add(_drawer);
@@ -110,7 +114,7 @@ public partial class MainWindow : Window
         // Keep this shell static, including newly materialized template parts, before rendering.
         LayoutUpdated += (_, _) => { foreach (var control in this.GetVisualDescendants().OfType<Control>()) if (control.Transitions is not null) control.Transitions = null; };
         KeyDown += (_, e) => { if (e.Key == Key.Escape) { if (_identity.IsVisible) CloseIdentity(); else if (_panelKind is not null) ClosePanel(); else if (_railOpen) ToggleRail(); else return; e.Handled = true; } };
-        Closed += (_, _) => { _closed = true; _selectionVersion++; _selectionStop.Cancel(); _selectionStop.Dispose(); if (_state is not null) _state.PropertyChanged -= StateChanged; };
+        Closed += (_, _) => { _closed = true; _connectionStop?.Cancel(); _selectionVersion++; _selectionStop.Cancel(); _selectionStop.Dispose(); if (_state is not null) _state.PropertyChanged -= StateChanged; };
         LayoutShell(); Refresh();
     }
     public void SetTheme(ShellTheme theme)
@@ -135,10 +139,10 @@ public partial class MainWindow : Window
     {
         if (!ReferenceEquals(_rows, _state?.Rows) || _scope != _state?.Scope) RebuildTree();
         _title.Text = _state?.SelectedRow?.Name ?? (_state?.Scope is null ? "All Servers" : _state.Scope == _state.LocalHost ? "This PC" : "Remote Host");
-        _host.Text = _state?.SelectedRow?.HostLabel ?? (_state is null ? "Local Host disconnected" : "Only authorized servers are shown");
+        _host.Text = _state?.SelectedRow?.HostLabel ?? (VerifiedConnection is not null ? "This PC · identity verified; inventory unavailable" : _state is null ? "Local Host disconnected" : "Only authorized servers are shown");
         _details.IsVisible = _state?.SelectedRow is not null;
         _thisPc.IsEnabled = _state is not null;
-        _status.Text = _state?.IsSelectionPending == true ? "Checking server access…" : _state is null ? "Local Host disconnected" : "Authorized inventory · exact Host and server identity";
+        _status.Text = _state?.IsSelectionPending == true ? "Checking server access…" : VerifiedConnection is not null ? "Host verified on this request · inventory unavailable" : _state is null ? "Local Host disconnected" : "Authorized inventory · exact Host and server identity";
         RefreshSelection();
     }
     private void RefreshSelection()

@@ -11,6 +11,7 @@ using PalworldServerManager.Contracts.Wire;
 namespace PalworldServerManager.Client.Security;
 
 public readonly record struct LocalIdentity(Guid LocalPrincipalId, bool IsOwner);
+public readonly record struct LocalConnectionInfo(Guid HostId, LocalIdentity Identity);
 public sealed class ClientActivationException(HostActivationStatus status) : Exception("Local Host activation failed.")
 { public HostActivationStatus Status { get; } = status; }
 
@@ -116,6 +117,12 @@ public sealed class LocalSecurityClient(ILocalHostTrustReader trust, ILocalHostH
     }
     public async Task<LocalIdentity> GetIdentityAsync(CancellationToken ct = default)
     { using var session = await Open(ct).ConfigureAwait(false); return await AuthenticateCurrent(session, ct).ConfigureAwait(false); }
+    public async Task<LocalConnectionInfo> ConnectAsync(CancellationToken ct = default)
+    {
+        using var session = await Open(ct).ConfigureAwait(false);
+        var identity = await AuthenticateCurrent(session, ct).ConfigureAwait(false);
+        return new(session.HostId, identity);
+    }
     public async Task<EnrollmentInvitation> CreateEnrollmentAsync(string intendedOsPrincipal, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(intendedOsPrincipal) || intendedOsPrincipal.Length > 256) throw new ArgumentException("An intended OS principal is required.");

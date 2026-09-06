@@ -234,6 +234,17 @@ public static class ClientSecurityCompositionTests
         Check(factories == 0, "Malformed command opened a client.");
         Check(await LocalSecurityCommands.RunAsync(["identity"], InvalidFactory, TextReader.Null, output, error) == 1 && !error.ToString().Contains("SENSITIVE"), "CLI leaked exception detail.");
     }
+    public static async Task ConnectionIdentity()
+    {
+        await using var f = new Fixture(); await f.Host.Start();
+        await Reject<AuthenticationException>(() => f.Client().ConnectAsync());
+        var ticket = f.Ticket(LocalEnrollmentPurpose.InitialOwner); var owner = await f.Client().CompleteHandoffAsync(ticket);
+        var result = await f.Client().ConnectAsync();
+        Check(result.HostId == f.Host.State.HostId && result.Identity == owner, "Connect did not return the authenticated semantic Host/principal pair.");
+        var wrong = new WindowsLocalHostHttpTransportFactory(f.Host.Trust(new string('0', 64)), f.Host.Pipe);
+        await Reject<RpcException>(() => f.Client(wrong).ConnectAsync());
+        Check(f.Activation.Calls == 0, "Connect classified authentication failure as service dormancy.");
+    }
     public static async Task NegotiationAndProofBoundaries()
     {
         await using var f = new Fixture();

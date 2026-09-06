@@ -124,6 +124,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Ordinary client re-home preserves persisted key choice across lost results", ClientSecurityCompositionTests.RehomeKeyChoice),
     ("Ordinary client enrollment CLI and Owner authority use real local RPC", ClientSecurityCompositionTests.EnrollmentAndAuthority),
     ("Ordinary client activation and errors preserve security classifications", ClientSecurityCompositionTests.ActivationAndErrors),
+    ("Local connect exposes only authenticated semantic Host and principal identity", ClientSecurityCompositionTests.ConnectionIdentity),
     ("Ordinary client negotiation and prepared-key proof fail closed", ClientSecurityCompositionTests.NegotiationAndProofBoundaries),
     ("Host service worker releases resources and distinguishes stop from failure", HostServiceWorkerTests.Lifecycle),
     ("Production local listener ignores external hosting and endpoint configuration", LocalSecurityRpcTests.ProductionConfiguration),

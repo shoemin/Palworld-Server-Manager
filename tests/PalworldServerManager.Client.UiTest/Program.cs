@@ -14,7 +14,7 @@ using PalworldServerManager.Contracts;
 
 namespace PalworldServerManager.Client.UiTest;
 
-public static class Program
+public static partial class Program
 {
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>().UseSkia()
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
@@ -23,7 +23,7 @@ public static class Program
         using var deadline = new Timer(_ => { Console.Error.WriteLine("UI test process deadline exceeded."); Environment.Exit(2); }, null, TimeSpan.FromMinutes(2), Timeout.InfiniteTimeSpan);
         var output = args.Length == 0 ? Path.Combine("build-logs", "shell-renders") : args[0]; Directory.CreateDirectory(output);
         using var session = HeadlessUnitTestSession.StartNew(typeof(Program));
-        try { await session.Dispatch(() => Run(output), CancellationToken.None); Console.WriteLine("PASS actual Avalonia shell rendering/input checks"); return 0; }
+        try { await session.Dispatch(() => { Run(output); ConnectionChecks(output); }, CancellationToken.None); Console.WriteLine("PASS actual Avalonia shell rendering/input and connection checks"); return 0; }
         catch (Exception failure) { Console.Error.WriteLine(failure); Environment.Exit(1); return 1; }
     }
     private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
@@ -52,11 +52,11 @@ public static class Program
         var state = new ShellState(local, (target, _) => { requested = target; return Task.FromResult(true); });
         var rows = new[] { local, remoteA, remoteB }.Select(host => new ShellServer(new(host, profile), "Main Server", "Family PC")).ToArray();
         state.ReplaceAuthorizedInventory(rows);
-        var window = new MainWindow();
+        var window = ((App)Application.Current!).CreateMainWindow();
         try
         {
             window.Show(); Capture(window, output, "disconnected");
-            Check(window.State is null && Find<ServerTree>(window, "ServerTree").Items.Count == 0, "Production shell shipped synthetic inventory.");
+            Check(window.State is null && Find<ServerTree>(window, "ServerTree").Items.Count == 0 && Find<Button>(window, "ConnectLocal").IsEnabled, "Production shell shipped synthetic inventory or lost connection wiring.");
             window.BindState(state); Dispatcher.UIThread.RunJobs();
             var tree = Find<ServerTree>(window, "ServerTree"); var groups = tree.Items.Cast<TreeViewItem>().ToArray();
             var first = (TreeViewItem)groups[0].Items[0]!; first.Focus(); Key(window, PhysicalKey.ArrowDown); Key(window, PhysicalKey.ArrowDown);
