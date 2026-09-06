@@ -145,6 +145,24 @@ public sealed class WindowsHostPlatform : IHostServiceLifecycle, IBootStartPlatf
             if (cursor.Exists && (cursor.Attributes & FileAttributes.ReparsePoint) != 0)
                 throw new IOException("Host root cannot traverse a reparse point.");
         var directory = new DirectoryInfo(_root);
+        // DirectoryInfo.Create(acl) applies that ACL to every missing parent too. The
+        // product parent also contains public trust and privileged Owner handoffs, so
+        // it must never acquire the Host service's directory replacement authority.
+        var missingParents = new Stack<DirectoryInfo>();
+        var parent = directory.Parent;
+        while (parent is not null && !parent.Exists) { missingParents.Push(parent); parent = parent.Parent; }
+        OwnerHandoffFileSecurity.Ancestors(parent);
+        while (missingParents.TryPop(out var missing))
+        {
+            var parentAcl = new DirectorySecurity(); parentAcl.SetAccessRuleProtection(true, false);
+            parentAcl.SetOwner(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));
+            foreach (var sid in new[] { WellKnownSidType.BuiltinAdministratorsSid, WellKnownSidType.LocalSystemSid })
+                parentAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(sid, null), FileSystemRights.FullControl,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+            parentAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.ReadAndExecute, AccessControlType.Allow));
+            missing.Create(parentAcl);
+            OwnerHandoffFileSecurity.Ancestors(missing); // also rejects a raced, unsafe pre-existing path
+        }
         if (directory.Exists)
         {
             // Existing state may originate in #40. Do not silently recurse through or take

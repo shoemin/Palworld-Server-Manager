@@ -95,6 +95,13 @@ public static partial class WindowsIntegration
         {
             await platform.InstallAsync(Path.Combine(binaries, "PalworldServerManager.Host.exe")); installed = true;
             serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", location.ServiceName).Translate(typeof(SecurityIdentifier));
+            var parentAcl = new DirectoryInfo(productRoot).GetAccessControl();
+            Check(parentAcl.GetOwner(typeof(SecurityIdentifier))?.Equals(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null)) == true &&
+                !parentAcl.GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().Any(rule => rule.IdentityReference == serviceSid),
+                "Host installation spread service authority into the product parent/handoff ancestry.");
+            Check(parentAcl.GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>().Any(rule =>
+                rule.IdentityReference.Equals(new SecurityIdentifier(WellKnownSidType.WorldSid, null)) && rule.AccessControlType == AccessControlType.Allow &&
+                (rule.FileSystemRights & FileSystemRights.ReadAndExecute) == FileSystemRights.ReadAndExecute), "Product parent lacks ordinary-client public traversal.");
             var keyDirectory = new DirectoryInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys"));
             Check(!keyDirectory.GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>()
                 .Any(rule => rule.IdentityReference == serviceSid), "Product native grant already exists; fixture refuses adoption.");
