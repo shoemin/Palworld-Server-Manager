@@ -8,6 +8,7 @@ public interface IPairingKeyExchange : IDisposable
 {
     PairingExchangeState State { get; }
     byte[] InitialMessage { get; }
+    // Initiator returns its confirmation; responder returns empty until ConfirmPeer succeeds.
     byte[] ReceivePeerMessage(byte[] message, CancellationToken cancellationToken = default);
     // Responder releases its confirmation only after verifying the initiator. Initiator returns empty.
     byte[] ConfirmPeer(byte[] confirmation, CancellationToken cancellationToken = default);
