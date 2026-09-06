@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text.Json;
 using PalworldServerManager.Client.Platform.Windows;
@@ -62,6 +63,15 @@ public static partial class WindowsIntegration
         try
         {
             Check(HostIdentityRepository.CountActiveOwners(connection) == 0 && !state.Read().Initialized, "Offline bootstrap prematurely created Owner authority.");
+            var databaseFile = new FileInfo(database.DatabasePath); var savedDatabaseAcl = databaseFile.GetAccessControl().GetSecurityDescriptorBinaryForm();
+            var beforeUnsafeAttempt = state.Read().CurrentReference;
+            var unsafeDatabaseAcl = databaseFile.GetAccessControl();
+            unsafeDatabaseAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.Read, AccessControlType.Allow));
+            databaseFile.SetAccessControl(unsafeDatabaseAcl);
+            await Run(1, "recover-machine", "--reason", "loss");
+            Check(state.Read().CurrentReference == beforeUnsafeAttempt, "Unsafe database ACL refusal changed machine authority.");
+            var restoredDatabaseAcl = new FileSecurity(); restoredDatabaseAcl.SetSecurityDescriptorBinaryForm(savedDatabaseAcl, AccessControlSections.Access);
+            databaseFile.SetAccessControl(restoredDatabaseAcl);
             var count = Directory.GetFiles(location.HandoffRoot, "*.bin", SearchOption.AllDirectories).Length;
             await Run(1, "bootstrap", "--owner-sid", sidB);
             Check(Directory.GetFiles(location.HandoffRoot, "*.bin", SearchOption.AllDirectories).Length == count &&
