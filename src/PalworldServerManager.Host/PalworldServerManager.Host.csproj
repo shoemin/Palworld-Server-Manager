@@ -9,6 +9,14 @@
     <InformationalVersion>0.3.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.83.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.83.0" PrivateAssets="all" />
+    <!-- Messages remain in Contracts. Compile only this executable's generated server stub. -->
+    <Protobuf Include="..\PalworldServerManager.Contracts\Protos\local_security.proto" ProtoRoot="..\PalworldServerManager.Contracts" GrpcServices="Server" CompileOutputs="false" OutputDir="$(IntermediateOutputPath)LocalRpc" />
+    <Compile Include="$(IntermediateOutputPath)LocalRpc\Protos\LocalSecurityGrpc.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />
     <ProjectReference Include="..\PalworldServerManager.Contracts\PalworldServerManager.Contracts.csproj" />
     <ProjectReference Include="..\PalworldServerManager.Platform.Contracts\PalworldServerManager.Platform.Contracts.csproj" />

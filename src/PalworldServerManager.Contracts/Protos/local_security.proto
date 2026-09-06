@@ -1,0 +1,32 @@
+syntax = "proto3";
+package palworld.manager.v1;
+option csharp_namespace = "PalworldServerManager.Contracts.Wire";
+import "Protos/host.proto";
+
+// No native caller identity, actor/Owner setter or private key is accepted from a request.
+// Field numbers are permanent. Secrets must never be formatted as diagnostic messages.
+message LocalEmpty {}
+message LocalHandshakeReply { Handshake handshake = 1; HostIdentity host = 2; bool initialized = 3; }
+message LocalPrincipalRequest { string local_principal_id = 1; }
+message LocalChallenge { bytes payload = 1; }
+message LocalProof { bytes signature = 1; }
+// Identity evidence only; no capability grants are implied by authentication.
+message LocalPrincipalIdentity { string local_principal_id = 1; bool is_owner = 2; }
+message LocalEnrollmentTarget { string intended_os_principal = 1; }
+message LocalEnrollmentInvitation { string ticket_id = 1; string expires_utc = 2; bytes code = 3; }
+message LocalCredentialCompletion { string ticket_id = 1; bytes secret = 2; bytes public_key = 3; }
+// A consumed-ticket retry returns the recorded identity, not proof of current key registration.
+message LocalCredentialResult { string local_principal_id = 1; }
+
+service LocalSecurityProtocol {
+  rpc Negotiate(Handshake) returns (LocalHandshakeReply);
+  rpc IssueChallenge(LocalPrincipalRequest) returns (LocalChallenge);
+  rpc Authenticate(LocalProof) returns (LocalPrincipalIdentity);
+  rpc GetIdentity(LocalEmpty) returns (LocalPrincipalIdentity);
+  rpc CreateEnrollment(LocalEnrollmentTarget) returns (LocalEnrollmentInvitation);
+  rpc RevokePrincipal(LocalPrincipalRequest) returns (LocalEmpty);
+  rpc CompleteBootstrap(LocalCredentialCompletion) returns (LocalCredentialResult);
+  rpc CompleteEnrollment(LocalCredentialCompletion) returns (LocalCredentialResult);
+  rpc CompleteOwnerRotation(LocalCredentialCompletion) returns (LocalCredentialResult);
+  rpc CompleteOwnerRehome(LocalCredentialCompletion) returns (LocalCredentialResult);
+}
