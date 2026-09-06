@@ -1,4 +1,5 @@
-// Composition-root scaffold only (#39). Ordinary command-line management behavior, routed
-// through server-authenticated local IPC -> LocalPrincipal authentication -> Host authorization,
-// is implemented in later v0.5 Host foundation issues.
-return 0;
+using PalworldServerManager.Client.Security;
+
+using var stop = new CancellationTokenSource();
+Console.CancelKeyPress += (_, signal) => { signal.Cancel = true; stop.Cancel(); };
+return await LocalSecurityCommands.RunAsync(args, WindowsClientSecurity.Create, Console.In, Console.Out, Console.Error, stop.Token);

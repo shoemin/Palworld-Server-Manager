@@ -9,6 +9,8 @@
     <InformationalVersion>0.3.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Grpc.Net.Client" Version="2.83.0" />
+    <Compile Include="..\PalworldServerManager.Client.Shared\*.cs" Link="Security\%(Filename)%(Extension)" />
     <ProjectReference Include="..\PalworldServerManager.Contracts\PalworldServerManager.Contracts.csproj" />
     <ProjectReference Include="..\PalworldServerManager.Client.Platform.Contracts\PalworldServerManager.Client.Platform.Contracts.csproj" />
     <!-- Single Windows composition root (#19 SS1), same pattern as Client.Avalonia's own. -->

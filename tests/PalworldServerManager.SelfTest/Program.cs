@@ -11,6 +11,16 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--client-security-probe"])
+    {
+        await ClientSecurityCompositionTests.BootstrapLostReply();
+        await ClientSecurityCompositionTests.RotationBindingAndDeletion();
+        await ClientSecurityCompositionTests.RehomeKeyChoice();
+        await ClientSecurityCompositionTests.EnrollmentAndAuthority();
+        await ClientSecurityCompositionTests.ActivationAndErrors();
+        await ClientSecurityCompositionTests.NegotiationAndProofBoundaries();
+        Console.WriteLine("PASS client security composition probe"); return 0;
+    }
     if (args is ["--local-security-rpc-probe"])
     {
         await ProtocolTests.SchemaEvolution();
@@ -105,6 +115,12 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Ordinary client bootstrap lost reply preserves prepared key", ClientSecurityCompositionTests.BootstrapLostReply),
+    ("Ordinary client rotation confirms durable binding before handoff deletion", ClientSecurityCompositionTests.RotationBindingAndDeletion),
+    ("Ordinary client re-home preserves persisted key choice across lost results", ClientSecurityCompositionTests.RehomeKeyChoice),
+    ("Ordinary client enrollment CLI and Owner authority use real local RPC", ClientSecurityCompositionTests.EnrollmentAndAuthority),
+    ("Ordinary client activation and errors preserve security classifications", ClientSecurityCompositionTests.ActivationAndErrors),
+    ("Ordinary client negotiation and prepared-key proof fail closed", ClientSecurityCompositionTests.NegotiationAndProofBoundaries),
     ("Host service worker releases resources and distinguishes stop from failure", HostServiceWorkerTests.Lifecycle),
     ("Production local listener ignores external hosting and endpoint configuration", LocalSecurityRpcTests.ProductionConfiguration),
     ("Local security gRPC requires TLS negotiation and intended-user bootstrap", LocalSecurityRpcTests.NegotiationAndBootstrap),

@@ -1,4 +1,5 @@
 using Avalonia;
+using PalworldServerManager.Client.Security;
 
 namespace PalworldServerManager.Client.Avalonia;
 
@@ -6,6 +7,7 @@ namespace PalworldServerManager.Client.Avalonia;
 // (#52-#54) is out of scope here.
 internal static class Program
 {
+    internal static LocalSecurityClient CreateSecurityClient() => WindowsClientSecurity.Create();
     [STAThread]
     public static void Main(string[] args) => BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
