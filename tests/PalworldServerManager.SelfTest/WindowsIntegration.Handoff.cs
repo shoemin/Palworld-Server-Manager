@@ -61,18 +61,20 @@ public static partial class WindowsIntegration
                 void Restore()
                 {
                     // SetAccessControl persists only modified sections, not a clean previously-read object.
-                    var restored = new FileSecurity(); restored.SetSecurityDescriptorBinaryForm(savedAcl.GetSecurityDescriptorBinaryForm(), AccessControlSections.Access | AccessControlSections.Owner);
+                    var restored = new FileSecurity(); restored.SetSecurityDescriptorBinaryForm(savedAcl.GetSecurityDescriptorBinaryForm(), AccessControlSections.Access);
                     new FileInfo(path).SetAccessControl(restored);
-                    Check(new FileInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access | AccessControlSections.Owner) ==
-                        savedAcl.GetSecurityDescriptorSddlForm(AccessControlSections.Access | AccessControlSections.Owner), "Fixture failed to restore original handoff ACL.");
+                    var actual = new FileInfo(path).GetAccessControl();
+                    var actualRaw = new RawSecurityDescriptor(actual.GetSecurityDescriptorBinaryForm(), 0);
+                    var expectedRaw = new RawSecurityDescriptor(savedAcl.GetSecurityDescriptorBinaryForm(), 0);
+                    var actualDacl = new byte[actualRaw.DiscretionaryAcl!.BinaryLength]; actualRaw.DiscretionaryAcl.GetBinaryForm(actualDacl, 0);
+                    var expectedDacl = new byte[expectedRaw.DiscretionaryAcl!.BinaryLength]; expectedRaw.DiscretionaryAcl.GetBinaryForm(expectedDacl, 0);
+                    // Windows may add the informational AutoInherited flag even to a protected ACL.
+                    Check(actual.AreAccessRulesProtected && actualRaw.Owner == expectedRaw.Owner && actualDacl.SequenceEqual(expectedDacl),
+                        "Fixture failed to restore original handoff owner/protection/ACEs.");
                 }
                 var unsafeAcl = new FileInfo(path).GetAccessControl();
                 unsafeAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.Read, AccessControlType.Allow));
                 new FileInfo(path).SetAccessControl(unsafeAcl);
-                RunUser(executable, userA, password, "handoff-unsafe", ids, path, root, shared);
-                Restore();
-                var wrongOwner = new FileInfo(path).GetAccessControl(); wrongOwner.SetOwner(recipient);
-                new FileInfo(path).SetAccessControl(wrongOwner);
                 RunUser(executable, userA, password, "handoff-unsafe", ids, path, root, shared);
                 Restore();
                 RunUser(executable, userA, password, "handoff-read", ids, path, root, shared);
@@ -80,6 +82,12 @@ public static partial class WindowsIntegration
             }
             var malformed = Guid.NewGuid(); await writer.WriteAsync(host, malformed, LocalEnrollmentPurpose.InitialOwner, recipient, secret);
             var malformedPath = Path.Combine(root, sidA, malformed.ToString("N") + ".bin");
+            var wrongOwner = new FileSecurity(); wrongOwner.SetSecurityDescriptorBinaryForm(new FileInfo(malformedPath).GetAccessControl().GetSecurityDescriptorBinaryForm(), AccessControlSections.Access);
+            using (var creator = WindowsIdentity.GetCurrent()) wrongOwner.SetOwner(creator.User!);
+            var wrongOwnerTicket = Guid.NewGuid(); var wrongOwnerPath = Path.Combine(root, sidA, wrongOwnerTicket.ToString("N") + ".bin");
+            using (var fixture = new FileInfo(wrongOwnerPath).Create(FileMode.CreateNew, FileSystemRights.Write, FileShare.None, 4096, FileOptions.None, wrongOwner)) fixture.WriteByte(1);
+            RunUser(executable, userA, password, "handoff-unsafe", host.ToString("D") + ":" + wrongOwnerTicket.ToString("D"), wrongOwnerPath, root, shared);
+            File.Delete(wrongOwnerPath); // fixture-only malformed owner cleanup, never production adoption
             File.WriteAllBytes(malformedPath, [1]);
             RunUser(executable, userA, password, "handoff-malformed", host.ToString("D") + ":" + malformed.ToString("D"), malformedPath, root, shared);
             writer.DeletePrepared(malformed, recipient); writer.DeletePrepared(malformed, recipient);
