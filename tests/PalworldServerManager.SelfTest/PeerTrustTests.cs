@@ -11,12 +11,12 @@ internal static class PeerTrustTests
     private static void Check(bool value) { if (!value) throw new Exception("Peer trust assertion failed."); }
     private static void Reject<T>(Action action) where T : Exception
     { try { action(); } catch (T) { return; } throw new Exception("Expected peer trust refusal."); }
-    private sealed class Clock : TimeProvider
+    internal sealed class Clock : TimeProvider
     {
         internal DateTimeOffset Now = new(2026, 9, 6, 12, 0, 0, TimeSpan.Zero);
         public override DateTimeOffset GetUtcNow() => Now;
     }
-    private sealed class Fixture : IDisposable
+    internal sealed class Fixture : IDisposable
     {
         private readonly string root = Path.Combine(Path.GetTempPath(), "PSMPeerTrust" + Guid.NewGuid().ToString("N"));
         internal readonly Guid HostId = Guid.NewGuid(), PeerId = Guid.NewGuid(), OwnerId = Guid.NewGuid();

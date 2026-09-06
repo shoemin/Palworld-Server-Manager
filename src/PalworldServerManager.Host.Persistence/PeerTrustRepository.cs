@@ -7,7 +7,8 @@ namespace PalworldServerManager.Host.Persistence;
 public enum PeerBindingDisposition { PeerBoundCreated, ResumePeerBound, ActiveReconfirmed, ReplacementRequired, RecoveryRequired }
 public sealed record PeerBindingResult(PeerBindingDisposition Disposition, Guid PeerHostId, DateTimeOffset? ExpiresUtc, Guid? ReplacementId = null);
 public sealed record PeerTrustRecord(Guid PeerHostId, string State, string? CurrentFingerprint,
-    bool RecoveryRequired, string? LocalBoundFingerprint, DateTimeOffset? ExpiresUtc);
+    bool RecoveryRequired, string? LocalBoundFingerprint, DateTimeOffset? ExpiresUtc,
+    string? PendingFingerprint = null, bool PendingReconfirmationRequired = false);
 
 // Trusted online Host persistence primitive; the caller retains the machine lease. Public
 // fingerprints here must come from verified PAKE/mTLS, never unchecked request fields.
@@ -54,14 +55,16 @@ public sealed class PeerTrustRepository(HostDatabase database, Guid hostId, Time
     private static PeerTrustRecord? Read(SqliteConnection c, SqliteTransaction tx, Guid peer)
     {
         using var command = Command(c, tx, """
-            SELECT t.State,t.CurrentTrustedPublicKeyFingerprint,t.PeerRecoveryRequired,p.LocalBoundPublicKeyFingerprint,p.ExpiresUtc
+            SELECT t.State,t.CurrentTrustedPublicKeyFingerprint,t.PeerRecoveryRequired,p.LocalBoundPublicKeyFingerprint,p.ExpiresUtc,
+                t.PendingTrustedPublicKeyFingerprint,t.PendingReconfirmationRequired
             FROM TrustedManagers t LEFT JOIN TrustedManagerPairings p ON p.PeerHostId=t.PeerHostId WHERE t.PeerHostId=$peer;
             """, ("$peer", Id(peer)));
         using var reader = command.ExecuteReader(); if (!reader.Read()) return null;
         var state = reader.GetString(0);
         if (state is not ("PeerBound" or "Active" or "Revoked")) throw new InvalidDataException("Unknown peer trust state.");
         return new(peer, state, reader.IsDBNull(1) ? null : Fingerprint(reader.GetString(1)), reader.GetInt32(2) != 0,
-            reader.IsDBNull(3) ? null : Fingerprint(reader.GetString(3)), reader.IsDBNull(4) ? null : Date(reader.GetString(4)));
+            reader.IsDBNull(3) ? null : Fingerprint(reader.GetString(3)), reader.IsDBNull(4) ? null : Date(reader.GetString(4)),
+            reader.IsDBNull(5) ? null : Fingerprint(reader.GetString(5)), reader.GetInt32(6) != 0);
     }
     public PeerTrustRecord? Read(Guid peer)
     {
