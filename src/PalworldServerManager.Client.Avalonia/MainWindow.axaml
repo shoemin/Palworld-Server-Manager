@@ -1,7 +1,50 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="PalworldServerManager.Client.Avalonia.MainWindow"
-        Title="Palworld Server Manager"
-        Width="800" Height="500">
-  <TextBlock Margin="20" Text="Scaffold only (#39) - shell content lands in #52." />
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="PalworldServerManager.Client.Avalonia.MainWindow" Title="Palworld Server Manager"
+        Width="1600" Height="900" FontFamily="Segoe UI, Arial" FontSize="14"
+        Background="{DynamicResource canvas}" Foreground="{DynamicResource text}">
+  <Window.Resources>
+    <ControlTheme x:Key="ServerNodeTheme" TargetType="TreeViewItem">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <StackPanel>
+            <Border Name="PART_LayoutRoot" MinHeight="40" BorderThickness="1" BorderBrush="Transparent"
+                    TemplatedControl.IsTemplateFocusTarget="True" Focusable="True">
+              <ContentPresenter Name="PART_HeaderPresenter" Content="{TemplateBinding Header}"
+                                ContentTemplate="{TemplateBinding HeaderTemplate}" HorizontalAlignment="Stretch" />
+            </Border>
+            <ItemsPresenter Name="PART_ItemsPresenter" IsVisible="{TemplateBinding IsExpanded}" ItemsPanel="{TemplateBinding ItemsPanel}" />
+          </StackPanel>
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:selected /template/ Border#PART_LayoutRoot"><Setter Property="BorderBrush" Value="{DynamicResource accent}" /></Style>
+      <Style Selector="^:focus-visible /template/ Border#PART_LayoutRoot"><Setter Property="BorderBrush" Value="{DynamicResource accent}" /><Setter Property="BorderThickness" Value="2" /></Style>
+    </ControlTheme>
+  </Window.Resources>
+  <Window.Styles>
+    <Style Selector=":is(Control)"><Setter Property="Transitions" Value="{x:Null}" /></Style>
+    <Style Selector=":is(Control)">
+      <Setter Property="FocusAdorner">
+        <Template><Border BorderBrush="{DynamicResource accent}" BorderThickness="2" /></Template>
+      </Setter>
+    </Style>
+    <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="FontSize" Value="{DynamicResource BodySize}" /></Style>
+    <Style Selector="SelectableTextBlock"><Setter Property="FontSize" Value="{DynamicResource BodySize}" /></Style>
+    <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource muted}" /></Style>
+    <Style Selector="TextBlock.accent"><Setter Property="Foreground" Value="{DynamicResource accent}" /></Style>
+    <Style Selector="Border.card"><Setter Property="Background" Value="{DynamicResource surface}" /><Setter Property="CornerRadius" Value="3" /></Style>
+    <Style Selector="Border.frame"><Setter Property="BorderBrush" Value="{DynamicResource accent}" /><Setter Property="BorderThickness" Value="1" /></Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="40" /><Setter Property="MinWidth" Value="40" />
+      <Setter Property="Padding" Value="12,8" /><Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Background" Value="{DynamicResource surface}" /><Setter Property="Foreground" Value="{DynamicResource text}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource border}" /><Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource raised}" /><Setter Property="Foreground" Value="{DynamicResource text}" /></Style>
+    <Style Selector="Button:focus-visible"><Setter Property="BorderBrush" Value="{DynamicResource accent}" /><Setter Property="BorderThickness" Value="2" /></Style>
+    <Style Selector="Border.row"><Setter Property="Padding" Value="8" /><Setter Property="MinHeight" Value="64" /><Setter Property="BorderThickness" Value="2" /><Setter Property="BorderBrush" Value="Transparent" /></Style>
+    <Style Selector="Border.row.chosen"><Setter Property="Background" Value="{DynamicResource selected}" /></Style>
+    <Style Selector="Border.row.inspected"><Setter Property="BorderBrush" Value="{DynamicResource accent}" /></Style>
+    <Style Selector="TreeViewItem"><Setter Property="MinHeight" Value="40" /><Setter Property="HorizontalAlignment" Value="Stretch" /></Style>
+  </Window.Styles>
+  <Grid x:Name="Root" RowDefinitions="Auto,*,Auto" />
 </Window>

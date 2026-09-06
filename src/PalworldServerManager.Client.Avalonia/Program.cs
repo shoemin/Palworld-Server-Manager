@@ -3,8 +3,7 @@ using PalworldServerManager.Client.Security;
 
 namespace PalworldServerManager.Client.Avalonia;
 
-// Composition-root scaffold only (#39). Shell/theming/server-management UI content
-// (#52-#54) is out of scope here.
+// Single interactive Windows composition root. Server feature screens remain separate.
 internal static class Program
 {
     internal static LocalSecurityClient CreateSecurityClient() => WindowsClientSecurity.Create();
@@ -14,6 +13,5 @@ internal static class Program
 
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<App>()
         .UsePlatformDetect()
-        .WithInterFont()
         .LogToTrace();
 }
