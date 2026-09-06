@@ -180,4 +180,29 @@ internal static class PeerSecurityRpcTests
         Check(reply.Result == PeerActivationResult.AlreadyActive && reply.Acknowledgement.RecordedFingerprint == rotated.Pin);
         Check(b.State.Count("ActivationRpcEffects") == 0);
     }
+    public static async Task ReconnectRequiresFreshTransport()
+    {
+        await using var a = new Fixture(); await using var b = new Fixture(); a.Bind(b); b.Bind(a); await b.Start();
+        using var transport = new WindowsPeerHttpTransportFactory(a.Certificate.Value).Create(pin => pin == b.Pin);
+        try { _ = transport.Identity; throw new Exception("Identity available before TLS"); }
+        catch (System.Security.Authentication.AuthenticationException) { }
+        GrpcChannel Channel(Uri address) => GrpcChannel.ForAddress(address, new GrpcChannelOptions
+        { HttpHandler = transport.Handler, HttpVersion = HttpVersion.Version20, HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact });
+        using var first = Channel(b.Address);
+        await new PeerSecurityProtocol.PeerSecurityProtocolClient(first).NegotiateAsync(PeerSecurityRpcRuntime.Hello(a.State.HostId), deadline: DateTime.UtcNow.AddSeconds(5));
+        Check(transport.Identity.LocalFingerprint == a.Pin && transport.Identity.PeerFingerprint == b.Pin);
+        await b.Stop(); await b.Start();
+        using var second = Channel(b.Address);
+        try
+        {
+            await new PeerSecurityProtocol.PeerSecurityProtocolClient(second).NegotiateAsync(PeerSecurityRpcRuntime.Hello(a.State.HostId), deadline: DateTime.UtcNow.AddSeconds(5));
+        }
+        catch (RpcException ex)
+        {
+            for (Exception? cause = ex.InnerException; cause is not null; cause = cause.InnerException)
+                if (cause is System.Security.Authentication.AuthenticationException && cause.Message == "Retry with a fresh peer connection.") return;
+            throw;
+        }
+        throw new Exception("A second TLS connection reused the transport's negotiation identity.");
+    }
 }
