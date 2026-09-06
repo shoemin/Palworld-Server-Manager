@@ -71,6 +71,25 @@ public static class WindowsHostComposition
 
     // Trusted composition/test seam only. Empty hosting avoids loading environment/appsettings
     // before configuration can be constrained; it never enables development exception pages.
+    public static WebApplication BuildPeerApplication(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate, System.Net.IPEndPoint endpoint)
+    {
+        var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
+        { Args = [], ApplicationName = typeof(WindowsHostComposition).Assembly.FullName, ContentRootPath = AppContext.BaseDirectory, EnvironmentName = Environments.Production });
+        builder.WebHost.UseKestrel(); builder.Services.AddRouting(); builder.Logging.ClearProviders();
+        builder.Services.AddSingleton(rpc);
+        builder.Services.AddGrpc(options =>
+        {
+            options.EnableDetailedErrors = false;
+            options.MaxReceiveMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
+            options.MaxSendMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
+        });
+        WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate, rpc.Repository.RecognizesTransportFingerprint,
+            rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint));
+        var app = builder.Build(); app.MapGrpcService<PeerSecurityRpcService>(); return app;
+    }
+    internal static PeerActivationRpcClient CreatePeerActivationClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
+        => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
+
     public static WebApplication BuildLocalApplication(LocalSecurityRpcRuntime rpc, SecurityIdentifier serviceSid,
         SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe)
     {

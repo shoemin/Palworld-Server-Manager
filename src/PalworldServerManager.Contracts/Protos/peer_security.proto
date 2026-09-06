@@ -1,0 +1,19 @@
+syntax = "proto3";
+package palworld.manager.v1;
+option csharp_namespace = "PalworldServerManager.Contracts.Wire";
+import "Protos/host.proto";
+
+// Public DTOs only. Claimed UUIDs and fingerprints are checked against the actual TLS
+// connection and durable trust. Never transport a Host private key or pairing code here.
+message PeerHello { Handshake handshake = 1; HostIdentity host = 2; }
+message PeerActivationAck { string from_host_id = 1; string recorded_host_id = 2; string recorded_fingerprint = 3; }
+enum PeerActivationResult {
+  PEER_ACTIVATION_RESULT_UNSPECIFIED = 0;
+  PEER_ACTIVATION_RESULT_ACTIVATED = 1;
+  PEER_ACTIVATION_RESULT_ALREADY_ACTIVE = 2;
+}
+message PeerActivationReply { PeerActivationAck acknowledgement = 1; PeerActivationResult result = 2; }
+service PeerSecurityProtocol {
+  rpc Negotiate(PeerHello) returns (PeerHello);
+  rpc Activate(PeerActivationAck) returns (PeerActivationReply);
+}

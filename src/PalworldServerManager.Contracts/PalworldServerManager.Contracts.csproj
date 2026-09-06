@@ -12,5 +12,6 @@
     <PackageReference Include="Grpc.Tools" Version="2.83.0" PrivateAssets="all" />
     <Protobuf Include="Protos\host.proto" GrpcServices="None" />
     <Protobuf Include="Protos\local_security.proto" GrpcServices="None" />
+    <Protobuf Include="Protos\peer_security.proto" GrpcServices="None" />
   </ItemGroup>
 </Project>
