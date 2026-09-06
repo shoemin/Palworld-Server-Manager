@@ -1350,3 +1350,37 @@ Fresh PR #87 exact HEAD ec22f11f25870d0ee8bbc8d314dd01eb2d7180b3 reviewed agains
 Complete registry re-audit: ARCH-001/002 and CLIENT-001 retain unchanged production edges/frozen code and passing guards; HOST-001/002 and PERSIST-001 retain sole service authority/offline exclusivity; CLIENT-002/003, LOCAL-001-004, OWNER-001/002 and SEC-001 pass actual production IPC/DPAPI and refusal/protected-output checks; IDENT-001-004 retain exact semantic identity and unchanged credential policies; REMOTE-001/002, PAIR-001-004, AUTH-001-005 and PROTO-001 introduce no remote authority or wire changes; OPS-001-004 and RECOVERY-001 introduce no operation or rollback claim; MIG-001, PLATFORM-001/002 and LINUX-001 retain all migration/platform/Windows-first boundaries. Full Pass A classifications remain PASS for this unit. Stale-reference search and diff checks clean.
 
 A2/B0, two review-only correction cycles; no test-discovered defect or newly escaped defect in this unit. Both reviews clean. Local zero-warning build, 222/222 ordinary tests, actual rendered/input suite and strict docs PASS; CI 34017342678 at executable commit f327af773d3195ebef148f960bc5b069a3ea3b0f PASS in both jobs, including actual Windows UI/service/two-user scenarios and cleanup. Docs 34017547227 PASS at reviewed HEAD. Final ledger Docs and exact unchanged base/HEAD verification remain before merge. Full #52 native field evidence and the approved #44 qualified-dependency hold remain unresolved gates; neither is waived by accepting c2a.
+
+## #52c2a integration checkpoint and final stopping state
+
+PR #87 final HEAD c9e942f5efa748709c0ba970ad2f45243d384473 merged as a443a0f28ae61b4a235a66abf957e4919bcb2bfa after exact unchanged base/HEAD verification. Fresh Review B also inspected the final ledger-only delta. Executable commit f327af773d3195ebef148f960bc5b069a3ea3b0f, CI 34017342678 and final Docs 34017795434 PASS. #52c2a SHADOW DONE. A2/B0, two review-only corrections; both reviews clean. Twenty-seven PRs #61-#87 merged, nine canonical children complete, fourteen #42 units, four #52 units and the separate #34 correction. Total recorded correction/verification cycles: 91. Final ordinary suite: 222/222, plus actual rendered/input UI and actual Windows service/multi-user suites. Three historical escaped defects remain corrected; none known open in accepted scope.
+
+Canonical milestone bodies and Project were refreshed read-only at this stopping point. No independent, dependency-satisfied implementation remains executable: #44 requires a qualified dependency under the already-approved RFC 9382 hold, while #52c2b requires actual native desktop assistive-technology/high-contrast/window-decoration evidence. The available headless renderer and Windows service CI cannot supply native screen-reader observations. No such evidence has been obtained; no native field PASS or full #52 completion is claimed. Source automation names/focus tests do not prove announcements, and native status/failure announcement behavior remains specifically unverified. Native qualification may identify implementation corrections; those must be reviewed/tested before full #52 acceptance.
+
+| Canonical items / trial units | Final shadow classification | Reason / next required input |
+|---|---|---|
+| #17, #19, #33, #39, #40 | SHADOW DONE (inherited) | Exact frozen-baseline accepted inputs |
+| #27, #34-#38, #41-#43 | SHADOW DONE | Nine completed canonical children in this lane; later feature/platform obligations retain their own gates |
+| #18 | SHADOW DONE (container) | Accepted design children; does not certify production parity |
+| #42a/b1/b2/c1/c2/d1/d2a/d2b/d2c/d3a/d3b/d3c1/d3c2/d3c3 | SHADOW DONE | Full local-security implementation and actual final Windows qualification |
+| #52a/b/c1/c2a | SHADOW DONE (bounded units) | Shell state, actual controls, local connection, actual Windows UI/service qualification |
+| #52 / #52c2b | FIELD EVIDENCE REQUIRED | Native accessibility/high-contrast/window controls; exact OS/tool/build/actions/results required |
+| #44 | SHADOW BLOCKED — QUALIFIED DEPENDENCY REQUIRED | Approved direction is preserve RFC 9382; reviewed dependency plus integration qualification must be supplied or commissioned |
+| #45 | SHADOW BLOCKED | #44 |
+| #28 | SHADOW BLOCKED | #44 and #45 |
+| #46 | SHADOW BLOCKED | #45 |
+| #47, #48 | SHADOW BLOCKED | #46 |
+| #49, #50 | SHADOW BLOCKED | #48; #49 also #46 |
+| #51 | SHADOW BLOCKED | #45 and #28 |
+| #53 | SHADOW BLOCKED | #47-#50 and complete #52 |
+| #54 | SHADOW BLOCKED | #44/#45/#28/#46 and complete #52 |
+| #55 | SHADOW BLOCKED; FIELD EVIDENCE REQUIRED | Incomplete Windows children, then actual parity/security/remote qualification |
+| #20, #16 | SHADOW BLOCKED (containers) | Required child/gate completion outstanding |
+| #21 | SHADOW BLOCKED (container) | Hard #55 / LINUX-001 gate; Linux production/decomposition not started |
+| #22 | SHADOW BLOCKED | #20 and #21 packaging prerequisites |
+| #23 | SHADOW BLOCKED; FIELD EVIDENCE REQUIRED | Complete platform/features/artifacts needed for final validation |
+| #24 | SHADOW BLOCKED | Final production UI and #23 |
+| #25 | SHADOW BLOCKED | Final release qualification inputs; actual publication remains outside this experiment |
+| #26, #29-#31 | NOT REACHED | Unscheduled related work; no invented executable scope |
+
+No unresolved Product Decision is silently decided: the prior #44 decision packet is historical, and the approved dependency hold supersedes its pending-direction wording. No expert outreach, procurement, alternate PAKE, external reviewer after override, canonical planning mutation, newer-main import, Linux implementation, release/tag/publication or normal-lane comparison occurred. The historical pre-override #41 external finding remains disclosed separately. Stop at these genuine dependency/field gates; final standalone report records exact integration SHA, PR history, review findings and validation for later comparison.
