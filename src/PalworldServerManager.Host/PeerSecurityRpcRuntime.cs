@@ -1,9 +1,7 @@
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Connections;
 using PalworldServerManager.Contracts;
 using PalworldServerManager.Contracts.Wire;
 using PalworldServerManager.Host.Persistence;
-using PalworldServerManager.Platform.Windows;
 
 namespace PalworldServerManager.Host;
 
@@ -26,12 +24,11 @@ public sealed class PeerSecurityRpcRuntime
             Handshake = new() { Protocol = new() { Major = 1, Minor = 2 }, ProductVersion = "0.5.0-astra" } };
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustActivation); return hello;
     }
-    internal Func<ConnectionDelegate, ConnectionDelegate> BindConnection(X509Certificate2 certificate)
+    internal Func<ConnectionDelegate, ConnectionDelegate> BindConnection(string local, Func<ConnectionContext, string> readRemoteFingerprint)
     {
-        var local = WindowsPeerTls.PublicFingerprint(certificate);
         return next => async connection =>
         {
-            var peer = WindowsPeerEndpoint.ReadRemoteFingerprint(connection);
+            var peer = readRemoteFingerprint(connection);
             await using var state = new PeerSecurityRpcConnection(local, peer);
             connection.Features.Set(state); await next(connection).ConfigureAwait(false);
         };

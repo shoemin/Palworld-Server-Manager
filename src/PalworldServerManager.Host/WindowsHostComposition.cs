@@ -83,9 +83,12 @@ public static class WindowsHostComposition
             options.MaxReceiveMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
             options.MaxSendMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
         });
-        WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate, rpc.Repository.RecognizesTransportFingerprint, rpc.BindConnection(certificate));
+        WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate, rpc.Repository.RecognizesTransportFingerprint,
+            rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint));
         var app = builder.Build(); app.MapGrpcService<PeerSecurityRpcService>(); return app;
     }
+    internal static PeerActivationRpcClient CreatePeerActivationClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
+        => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
 
     public static WebApplication BuildLocalApplication(LocalSecurityRpcRuntime rpc, SecurityIdentifier serviceSid,
         SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe)

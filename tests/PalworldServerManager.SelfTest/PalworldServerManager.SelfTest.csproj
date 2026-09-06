@@ -30,5 +30,6 @@
     <ProjectReference Include="..\..\src\PalworldServerManager.Contracts\PalworldServerManager.Contracts.csproj" />
     <None Update="Fixtures\host-*.pb" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\local-security-*.pb" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\peer-security-*.pb" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

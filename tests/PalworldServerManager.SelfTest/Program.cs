@@ -13,6 +13,7 @@ if (args.Length > 0)
 {
     if (args is ["--peer-grpc-probe"])
     {
+        await ProtocolTests.SchemaEvolution();
         await PeerSecurityRpcTests.ActualActivationAndLostReply(); await PeerSecurityRpcTests.ProtocolAndConnectionIdentity();
         await PeerSecurityRpcTests.TlsRefusalsAndLimits(); await PeerSecurityRpcTests.RecordedPendingPin();
         Console.WriteLine("PASS actual pinned Host gRPC activation and refusal probes."); return 0;

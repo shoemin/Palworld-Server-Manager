@@ -101,9 +101,9 @@ internal static class PeerSecurityRpcTests
         }
         Check(a.State.Repository.Read(b.State.HostId)!.State == "PeerBound" && b.State.Repository.Read(a.State.HostId)!.State == "Active");
         await b.Stop(); await b.Start(); // New real listener/connection; durable trust survives.
-        var result = await new PeerActivationRpcClient(a.Runtime, a.Certificate.Value).FinalizeAsync(b.State.HostId, b.Address);
+        var result = await WindowsHostComposition.CreatePeerActivationClient(a.Runtime, a.Certificate.Value).FinalizeAsync(b.State.HostId, b.Address);
         Check(result == PeerActivationDisposition.Activated && a.State.Repository.Read(b.State.HostId)!.State == "Active");
-        Check(await new PeerActivationRpcClient(a.Runtime, a.Certificate.Value).FinalizeAsync(b.State.HostId, b.Address) == PeerActivationDisposition.AlreadyActive);
+        Check(await WindowsHostComposition.CreatePeerActivationClient(a.Runtime, a.Certificate.Value).FinalizeAsync(b.State.HostId, b.Address) == PeerActivationDisposition.AlreadyActive);
         Check(a.State.Count("ActivationRpcEffects") == 1 && b.State.Count("ActivationRpcEffects") == 1);
         Check(a.State.Count("HostCapabilityGrants") == 0 && b.State.Count("ServerCapabilityGrants") == 0);
     }
@@ -161,7 +161,7 @@ internal static class PeerSecurityRpcTests
         Check(!b.State.Repository.RecognizesTransportFingerprint(a.Pin));
         Check(b.State.Count("ActivationRpcEffects") == 0);
         using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
-        try { await new PeerActivationRpcClient(a.Runtime, a.Certificate.Value).FinalizeAsync(b.State.HostId, b.Address, cancelled.Token); throw new Exception("Cancellation ignored"); }
+        try { await WindowsHostComposition.CreatePeerActivationClient(a.Runtime, a.Certificate.Value).FinalizeAsync(b.State.HostId, b.Address, cancelled.Token); throw new Exception("Cancellation ignored"); }
         catch (OperationCanceledException) { }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled) { }
     }
