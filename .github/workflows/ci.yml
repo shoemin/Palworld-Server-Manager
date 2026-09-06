@@ -13,6 +13,43 @@ permissions:
   contents: read
 
 jobs:
+  astra-spake2-qualification:
+    name: Isolated Astra SPAKE2 qualification
+    if: github.event_name == 'workflow_dispatch' && (github.ref_name == 'astra/44-direct-assessment' || github.ref_name == 'experiment/astra-v0.5.0')
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Install pinned assessment toolchain
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Rust toolchain setup failed.' }
+      - name: Run isolated fixtures
+        shell: pwsh
+        run: |
+          $env:RUSTUP_TOOLCHAIN = '1.98.1'
+          ./tools/experiments/spake2-qualification/run.ps1
+      - name: Check out pinned upstream vector suite
+        uses: actions/checkout@v7
+        with:
+          repository: djx-y-z/pakery
+          ref: 4fa353417ddddfcaaf29f990404e1f48127167e3
+          path: build-logs/spake2-upstream
+          persist-credentials: false
+      - name: Check upstream oracle and run RFC suite
+        shell: pwsh
+        run: |
+          $env:RUSTUP_TOOLCHAIN = '1.98.1'
+          Invoke-WebRequest 'https://www.rfc-editor.org/rfc/rfc9382.txt' -OutFile 'build-logs/rfc9382.txt'
+          python ./tools/experiments/spake2-qualification/check-rfc-constants.py build-logs/spake2-upstream build-logs/rfc9382.txt
+          if ($LASTEXITCODE -ne 0) { throw 'RFC oracle mismatch.' }
+          cargo test --locked --release --manifest-path build-logs/spake2-upstream/Cargo.toml -p pakery-tests --features p256 --test spake2_p256_vectors
+          if ($LASTEXITCODE -ne 0) { throw 'RFC suite failed.' }
+
   build-and-test:
     name: Build and self-test
     runs-on: windows-latest
