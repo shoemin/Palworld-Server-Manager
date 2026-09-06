@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Logging;
+using PalworldServerManager.Platform.Windows;
 using static PalworldServerManager.SelfTest.WindowsPlatformTests;
 
 namespace PalworldServerManager.SelfTest;
@@ -49,33 +50,13 @@ public sealed class LocalIpcSpike : IAsyncDisposable
         var certificate = cacheCertificate is null ? CreateTestCertificate() : new X509Certificate2(cacheCertificate);
         var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
         builder.Logging.ClearProviders(); // Request content, keys and bearer values must not enter logs.
-        builder.WebHost.UseNamedPipes(options =>
-        {
-            options.CurrentUserOnly = false;
-            var acl = new PipeSecurity(); acl.SetAccessRuleProtection(true, false);
-            acl.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.NetworkSid, null), PipeAccessRights.FullControl, AccessControlType.Deny));
-            foreach (var sid in new[] { identity.User!, new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null) }.Distinct())
-                acl.AddAccessRule(new PipeAccessRule(sid, PipeAccessRights.FullControl, AccessControlType.Allow));
-            acl.AddAccessRule(new PipeAccessRule(group, PipeAccessRights.ReadWrite, AccessControlType.Allow));
-            options.PipeSecurity = acl;
-        });
-        builder.WebHost.ConfigureKestrel(options => options.ListenNamedPipe(pipeName, listen =>
-        {
-            listen.Protocols = HttpProtocols.Http2;
-            listen.UseHttps(certificate, https => https.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13);
-        }));
+        WindowsLocalTlsEndpoint.Configure(builder.WebHost, pipeName, identity.User!, group, certificate);
         var application = builder.Build();
         var spike = new LocalIpcSpike(application, certificate, pipeName, cacheCertificate is null);
         application.MapPost("/probe", async context =>
         {
             Check(context.Request.IsHttps && context.Request.Protocol == "HTTP/2", "Probe lacked HTTP/2 TLS.");
-            var feature = context.Features.Get<IConnectionNamedPipeFeature>() ?? throw new Exception("Native named-pipe feature unavailable.");
-            string? sid = null;
-            feature.NamedPipe.RunAsClient(() =>
-            {
-                using var peer = WindowsIdentity.GetCurrent(true);
-                sid = peer?.User?.Value;
-            }); // Identification only; no filesystem or authority effects while impersonating.
+            var sid = WindowsLocalTlsEndpoint.ReadNativePrincipal(context);
             Check(!string.IsNullOrWhiteSpace(sid), "Native peer SID unavailable.");
             spike.ObservedSids.Add(sid!);
             context.Response.ContentType = "text/plain";
@@ -93,6 +74,11 @@ public sealed class LocalIpcSpike : IAsyncDisposable
         var pfx = generated.Export(X509ContentType.Pfx);
         try { return new X509Certificate2(pfx, (string?)null, X509KeyStorageFlags.DefaultKeySet); }
         finally { CryptographicOperations.ZeroMemory(pfx); }
+    }
+
+    internal string PublicKeyPin
+    {
+        get { using var key = _certificate.GetECDsaPublicKey()!; return Convert.ToHexString(SHA256.HashData(key.ExportSubjectPublicKeyInfo())); }
     }
 
     public static async Task<string> RequestAsync(string pipeName, string pin)

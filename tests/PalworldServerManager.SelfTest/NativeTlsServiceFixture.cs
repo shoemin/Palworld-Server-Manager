@@ -4,14 +4,15 @@ using System.Security.Principal;
 using System.ServiceProcess;
 using System.Text.Json;
 using PalworldServerManager.Platform.Windows;
+using PalworldServerManager.Platform.Contracts;
 using static PalworldServerManager.SelfTest.WindowsPlatformTests;
 
 namespace PalworldServerManager.SelfTest;
 
-// Synthetic workload only. The production channel/identity coordinator follows in #42b2.
+// Synthetic workload only. The production identity coordinator follows in #42c/d.
 internal sealed class NativeTlsServiceFixture : IDisposable
 {
-    internal sealed record Config(Guid HostId, string GroupSid);
+    internal sealed record Config(Guid HostId, string GroupSid, string PublicDirectory);
     internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin);
     private readonly IDisposable _runtime;
     private readonly Task _worker;
@@ -50,6 +51,8 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await cache.ReconcileAsync(["tls-current"], stop);
                 using var certificate = await cache.LoadAsync("tls-current", stop);
                 using var key = (ECDsaCng)certificate.GetECDsaPrivateKey()!;
+                var publicKeyPin = Convert.ToHexString(SHA256.HashData(key.ExportSubjectPublicKeyInfo()));
+                await new WindowsLocalHostTrustPublisher(config.PublicDirectory, identity.User!).PublishAsync(new LocalHostTrustPublication(config.HostId, publicKeyPin), stop);
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin);

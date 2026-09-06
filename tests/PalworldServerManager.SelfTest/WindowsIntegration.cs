@@ -91,6 +91,24 @@ public static class WindowsIntegration
             await LocalIpcSpike.RejectWrongPinAsync(serviceName);
         }
         else if (action == "ipc-denied") await LocalIpcSpike.RejectTransportAsync(serviceName);
+        else if (action is "trusted-ipc" or "public-trust")
+        {
+            var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", serviceName).Translate(typeof(SecurityIdentifier));
+            var reader = new WindowsLocalHostTrustReader(hostRoot, serviceSid);
+            var anchor = await reader.ReadAsync();
+            if (action == "trusted-ipc")
+                Check(await LocalTrustTests.Request(reader, credentialPath, anchor.HostId) == identity.User!.Value, "Pinned production channel did not retain the native user.");
+            else
+            {
+                var path = Path.Combine(hostRoot, WindowsLocalHostTrustPublisher.DescriptorFileName);
+                Check(File.ReadAllBytes(path).Length > 0, "Nonadmin could not read public trust.");
+                foreach (var attempt in new Action[] { () => File.WriteAllBytes(path, new byte[] { 1 }), () => File.Delete(path) })
+                {
+                    try { attempt(); throw new Exception("Nonadmin modified public Host trust."); }
+                    catch (UnauthorizedAccessException) { }
+                }
+            }
+        }
         else if (action == "native-key-denied")
         {
             try
@@ -145,6 +163,7 @@ public static class WindowsIntegration
         var root = Path.GetFullPath(Path.Combine(baseRoot, "PSM Astra Test " + suffix));
         Check(root.StartsWith(baseRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase), "Unsafe test root.");
         var hostRoot = Path.Combine(root, "Host"); var mutex = @"Global\" + service;
+        var publicDirectory = Path.Combine(root, "PublicTrust");
         var platform = new WindowsHostPlatform(service, group, hostRoot);
         var tlsHostId = Guid.NewGuid();
         SecurityIdentifier? serviceSid = null;
@@ -170,8 +189,19 @@ public static class WindowsIntegration
                 Check(lease is not null, "Native provisioning lacks offline lease.");
                 nativeGrantAdded = WindowsNativeTlsProvisioning.EnsureCreatePermission(serviceSid);
                 Check(!WindowsNativeTlsProvisioning.EnsureCreatePermission(serviceSid), "Native provisioning was not idempotent.");
+                WindowsLocalHostTrustPublisher.Provision(publicDirectory, serviceSid);
+                var publicPath = Path.Combine(publicDirectory, WindowsLocalHostTrustPublisher.DescriptorFileName);
+                var missingTarget = Path.Combine(publicDirectory, "missing-target.json");
+                File.CreateSymbolicLink(publicPath, missingTarget);
+                try
+                {
+                    await SecureStoreTests.Reject<PalworldServerManager.Client.Platform.Contracts.LocalHostAuthenticationException>(() => new WindowsLocalHostTrustReader(publicDirectory, serviceSid).ReadAsync());
+                    await SecureStoreTests.Reject<IOException>(() => new WindowsLocalHostTrustPublisher(publicDirectory, serviceSid).PublishAsync(new(tlsHostId, new string('A', 64))));
+                }
+                finally { File.Delete(publicPath); }
+                Check(!File.Exists(missingTarget), "Rejected trust symlink touched its destination.");
             }
-            File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, groupSid.Value)));
+            File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, groupSid.Value, publicDirectory)));
             var aces = descriptor.DiscretionaryAcl!.Cast<CommonAce>().ToArray();
             Check(aces.Length == 3 && aces.Single(a => a.SecurityIdentifier == groupSid).AccessMask == 0x14, "SCM DACL read-back failed.");
             Check(!await platform.IsEnabledAsync(), "Default boot-start not Manual.");
@@ -240,6 +270,10 @@ public static class WindowsIntegration
             Check(activeTls.KeyName == firstTls.KeyName && activeTls.Pin == firstTls.Pin, "Abnormal restart changed machine credential.");
             RunUser(executable, userB, password, "ipc-denied", activeTls.Pipe, activeTls.Pin, hostRoot, shared);
             RunUser(executable, userA, password, "ipc-authorized", activeTls.Pipe, activeTls.Pin, hostRoot, shared);
+            RunUser(executable, userA, password, "public-trust", service, activeTls.Pipe, publicDirectory, shared);
+            RunUser(executable, userB, password, "public-trust", service, activeTls.Pipe, publicDirectory, shared);
+            RunUser(executable, userA, password, "trusted-ipc", service, activeTls.Pipe, publicDirectory, shared);
+            Console.WriteLine("PASS integration: service publishes protected public descriptor; two nonadmins read but cannot write/delete; client authenticates production local TLS");
             RunUser(executable, userA, password, "native-key-denied", activeTls.KeyName, activeTls.KeyFile, hostRoot, shared);
             RunUser(executable, userB, password, "native-key-denied", activeTls.KeyName, activeTls.KeyFile, hostRoot, shared);
             await platform.StopAsync();
