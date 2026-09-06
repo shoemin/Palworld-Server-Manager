@@ -90,6 +90,21 @@ public static class LocalTrustTests
             new FileInfo(orphan).SetAccessControl(orphanAcl);
             await publisher.PublishAsync(good);
             Check(!File.Exists(orphan) && (await reader.ReadAsync()).HostId == id, "Public publication orphan was not retired safely.");
+            var overlap = new LocalHostTrustPublication(id, endpoint.PublicKeyPin, new string('B', 64), Guid.NewGuid());
+            var writers = Task.Run(async () => { for (var i = 0; i < 20; i++) await publisher.PublishAsync(i % 2 == 0 ? good : overlap); });
+            var readers = Enumerable.Range(0, 4).Select(_ => Task.Run(async () =>
+            {
+                for (var i = 0; i < 20; i++)
+                {
+                    var snapshot = await reader.ReadAsync();
+                    Check(snapshot.HostId == id && snapshot.CurrentFingerprint == good.CurrentHostCredentialFingerprint &&
+                        ((snapshot.PendingFingerprint is null && snapshot.PendingRotationId is null) ||
+                         (snapshot.PendingFingerprint == overlap.PendingHostCredentialFingerprint && snapshot.PendingRotationId == overlap.PendingRotationId)),
+                        "Concurrent publication exposed a partial or mixed descriptor.");
+                }
+            }));
+            await Task.WhenAll(readers.Append(writers));
+            await publisher.PublishAsync(good);
             await RejectPlainEndpoint(reader, id);
             await RejectPlainEndpoint(reader, id, stall: true);
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
