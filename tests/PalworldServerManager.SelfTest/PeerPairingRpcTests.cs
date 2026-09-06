@@ -42,15 +42,16 @@ internal static class PeerPairingRpcTests
         public async ValueTask DisposeAsync()
         {
             try { if (app is not null) { await app.StopAsync(); await app.DisposeAsync(); } }
-            finally { Runtime.Dispose(); Certificate.Dispose(); State.Dispose(); }
+            finally { try { Runtime.Dispose(); } finally { try { Certificate.Dispose(); } finally { State.Dispose(); } } }
         }
     }
     // Lifecycle-only fixture. It cannot verify a code or produce a cryptographic identity.
     private sealed class TrackingFactory : IPairingKeyExchangeFactory
     {
         internal int Created, Disposed;
+        internal bool FailInitialization;
         public IPairingKeyExchange Start(PairingRole role, byte[] code, byte[] nonce, CancellationToken cancellationToken = default)
-        { Interlocked.Increment(ref Created); return new Exchange(this); }
+        { Interlocked.Increment(ref Created); if (FailInitialization) throw new CryptographicException("Fixture initialization failed."); return new Exchange(this); }
         private sealed class Exchange(TrackingFactory owner) : IPairingKeyExchange
         {
             private int disposed;
@@ -81,7 +82,7 @@ internal static class PeerPairingRpcTests
     public static async Task AdmissionAndFrameOrder()
     {
         var factory = new TrackingFactory(); await using var a = new Fixture(factory); await using var b = new Fixture(factory); await b.Start();
-        using var invitation = b.Runtime.Attempts.CreateInvitation();
+        using var invitation = b.Runtime.CreateInvitation();
         await SendInvalid(a, b, new() { Share = ByteString.CopyFrom(new byte[65]) }, StatusCode.InvalidArgument);
         var wrongProtocol = Start(invitation.Id); wrongProtocol.Start.Handshake.Protocol.Major = 2;
         await SendInvalid(a, b, wrongProtocol, StatusCode.FailedPrecondition);
@@ -97,7 +98,7 @@ internal static class PeerPairingRpcTests
     public static async Task DisconnectAndSingleConnection()
     {
         var factory = new TrackingFactory(); await using var a = new Fixture(factory); await using var b = new Fixture(factory); await b.Start();
-        using var invitation = b.Runtime.Attempts.CreateInvitation();
+        using var invitation = b.Runtime.CreateInvitation();
         using var channel = Channel(a, b, out var transport); using var owner = transport;
         var client = new PeerPairingProtocol.PeerPairingProtocolClient(channel);
         using (var call = client.Pair(deadline: DateTime.UtcNow.AddSeconds(5)))
@@ -121,12 +122,42 @@ internal static class PeerPairingRpcTests
             cmd.Parameters.AddWithValue("$peer", activation.PeerHostId.ToString("D")); cmd.ExecuteNonQuery();
         }
     }
+    public static async Task AuditFailureBlocksAdmission()
+    {
+        var factory = new TrackingFactory(); await using var a = new Fixture(factory); await using var b = new Fixture(factory); await b.Start();
+        using var invitation = b.Runtime.CreateInvitation();
+        b.State.Execute("CREATE TRIGGER FailTerminalAudit BEFORE INSERT ON AuditEvents WHEN NEW.EventKind='PairingAttemptFailed' BEGIN SELECT RAISE(ABORT,'fixture secret must not be echoed'); END;");
+        using var channel = Channel(a, b, out var transport); using var owner = transport;
+        using (var call = new PeerPairingProtocol.PeerPairingProtocolClient(channel).Pair(deadline: DateTime.UtcNow.AddSeconds(5)))
+        {
+            await call.RequestStream.WriteAsync(Start(invitation.Id));
+            await PeerPairingRpcService.Read(call.ResponseStream, PeerPairingFrame.FrameOneofCase.Challenge, CancellationToken.None);
+        }
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (!b.Runtime.AuditStorageUnavailable || b.Runtime.Audit.PendingCount != 1 || Volatile.Read(ref factory.Disposed) != 1) await Task.Delay(10, deadline.Token);
+        await SendInvalid(a, b, Start(invitation.Id), StatusCode.FailedPrecondition);
+        Check(factory.Created == 1 && b.State.Count("TrustedManagers") == 0);
+        try { using var refused = b.Runtime.CreateInvitation(); throw new Exception("Expected audit admission refusal."); } catch (InvalidOperationException) { }
+        b.State.Execute("DROP TRIGGER FailTerminalAudit;"); b.Runtime.Audit.Maintain(); Check(!b.Runtime.AuditStorageUnavailable && b.Runtime.Audit.PendingCount == 0);
+        Check(HostDatabase.QueryScalarLong(b.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
+        using var canceled = b.Runtime.CreateInvitation(); b.Runtime.CancelInvitation(canceled.Id);
+        Check(HostDatabase.QueryScalarLong(b.State.Writer, $"SELECT COUNT(*) FROM AuditEvents WHERE AuditEventId='{canceled.Id:D}' AND EventKind='PairingAttemptFailed';") == 1);
+        var slots = Enumerable.Range(0, 16).Select(_ => b.Runtime.Enter()).ToArray();
+        try { try { using var refused = b.Runtime.Enter(); throw new Exception("Expected capacity refusal."); } catch (InvalidOperationException) { } }
+        finally { foreach (var slot in slots) slot.Dispose(); }
+        using var restored = b.Runtime.Enter();
+        var failingFactory = new TrackingFactory { FailInitialization = true }; await using var initialization = new Fixture(failingFactory); await initialization.Start();
+        using var first = initialization.Runtime.CreateInvitation();
+        await SendInvalid(a, initialization, Start(first.Id), StatusCode.Unauthenticated);
+        Check(failingFactory.Created == 1 && failingFactory.Disposed == 0);
+        Check(HostDatabase.QueryScalarLong(initialization.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
+    }
     public static async Task Native(string path)
     {
         using var provider = new WindowsSpake2Provider(path, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))));
         await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
         {
-            await b.Start(); using var invitation = b.Runtime.Attempts.CreateInvitation();
+            await b.Start(); using var invitation = b.Runtime.CreateInvitation();
             var paired = await WindowsHostComposition.CreatePeerPairingClient(a.Runtime, a.Certificate.Value).PairAsync(b.Address, invitation.Id, invitation.Code);
             Check(paired.Local.Disposition == PeerBindingDisposition.PeerBoundCreated && paired.Remote == PeerPairingResult.PeerBound);
             Check(a.State.Repository.Read(b.State.HostId)!.CurrentFingerprint == b.Pin && b.State.Repository.Read(a.State.HostId)!.CurrentFingerprint == a.Pin);
@@ -134,7 +165,7 @@ internal static class PeerPairingRpcTests
             Check(a.State.Count("HostCapabilityGrants") == 0 && a.State.Count("ServerCapabilityGrants") == 0 &&
                 b.State.Count("HostCapabilityGrants") == 0 && b.State.Count("ServerCapabilityGrants") == 0);
             await Task.Delay(1100);
-            using (var retry = b.Runtime.Attempts.CreateInvitation())
+            using (var retry = b.Runtime.CreateInvitation())
             {
                 var resumed = await WindowsHostComposition.CreatePeerPairingClient(a.Runtime, a.Certificate.Value).PairAsync(b.Address, retry.Id, retry.Code);
                 Check(resumed.Local.Disposition == PeerBindingDisposition.ResumePeerBound && resumed.Remote == PeerPairingResult.Resumed && resumed.Local.ExpiresUtc == paired.Local.ExpiresUtc);
@@ -154,18 +185,34 @@ internal static class PeerPairingRpcTests
         }
         await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
         {
-            await b.Start(); using var invitation = b.Runtime.Attempts.CreateInvitation(); var bytes = invitation.Code.CopyBytes();
+            await b.Start(); using var invitation = b.Runtime.CreateInvitation(); var bytes = invitation.Code.CopyBytes();
             bytes[0] = bytes[0] == (byte)'9' ? (byte)'0' : (byte)(bytes[0] + 1);
             using var wrong = new RedactedSecret(bytes); CryptographicOperations.ZeroMemory(bytes);
             await Refused(async () => { await WindowsHostComposition.CreatePeerPairingClient(a.Runtime, a.Certificate.Value).PairAsync(b.Address, invitation.Id, wrong); }, StatusCode.Unauthenticated);
             Check(a.State.Count("TrustedManagers") == 0 && b.State.Count("TrustedManagers") == 0);
+            Check(HostDatabase.QueryScalarLong(a.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
+            Check(HostDatabase.QueryScalarLong(b.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
         }
         await InvalidVerifiedBinding(provider, false); await InvalidVerifiedBinding(provider, true);
-        Console.WriteLine("PASS actual native first-contact gRPC: reciprocal PAKE/TLS binding and retry, separate pinned activation, consumed/wrong code, credential substitution and trailing-frame refusal.");
+        await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
+        {
+            await b.Start(); using var invitation = b.Runtime.CreateInvitation();
+            var loss = new PairingLostResultTransport(new WindowsPeerHttpTransportFactory(a.Certificate.Value));
+            try
+            {
+                await new PeerPairingRpcClient(a.Runtime, loss).PairAsync(b.Address, invitation.Id, invitation.Code);
+                throw new Exception("Expected the result read to fail.");
+            }
+            catch (RpcException ex) when (ex.StatusCode == StatusCode.Unavailable && ex.Status.DebugException is IOException io && io.Message == "Fixture pairing result read lost.") { }
+            Check(loss.ResultReadFailed && a.State.Repository.Read(b.State.HostId)!.State == "PeerBound");
+            Check(HostDatabase.QueryScalarLong(a.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 0);
+            Check(HostDatabase.QueryScalarLong(a.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerBoundCreated';") == 1);
+        }
+        Console.WriteLine("PASS actual native first-contact gRPC: reciprocal PAKE/TLS binding and retry, separate pinned activation, consumed/wrong code, credential substitution, trailing-frame refusal and retained PeerBound after result loss.");
     }
     private static async Task InvalidVerifiedBinding(IPairingKeyExchangeFactory factory, bool trailingFrame)
     {
-        await using var a = new Fixture(factory); await using var b = new Fixture(factory); await b.Start(); using var invitation = b.Runtime.Attempts.CreateInvitation();
+        await using var a = new Fixture(factory); await using var b = new Fixture(factory); await b.Start(); using var invitation = b.Runtime.CreateInvitation();
         using var channel = Channel(a, b, out var transport); using var owner = transport;
         using var call = new PeerPairingProtocol.PeerPairingProtocolClient(channel).Pair(deadline: DateTime.UtcNow.AddSeconds(10));
         await call.RequestStream.WriteAsync(Start(invitation.Id));
@@ -188,6 +235,7 @@ internal static class PeerPairingRpcTests
             await call.RequestStream.CompleteAsync();
             await Refused(async () => { await call.ResponseStream.MoveNext(CancellationToken.None); }, trailingFrame ? StatusCode.InvalidArgument : StatusCode.Unauthenticated);
             Check(a.State.Count("TrustedManagers") == 0 && b.State.Count("TrustedManagers") == 0);
+            Check(HostDatabase.QueryScalarLong(b.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
         }
     }
 }

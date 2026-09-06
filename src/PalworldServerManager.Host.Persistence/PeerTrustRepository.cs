@@ -24,10 +24,10 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
     private static string Fingerprint(string value) => HostTrustPlanning.Fingerprint(value) ? value : throw new ArgumentException("Invalid public fingerprint.");
     private static string Stamp(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
     private static DateTimeOffset Date(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-    private SqliteConnection Open()
+    private SqliteConnection Open(int timeoutSeconds = 30)
     {
         var c = new SqliteConnection(new SqliteConnectionStringBuilder {
-            DataSource = database.DatabasePath, Mode = SqliteOpenMode.ReadWrite, Pooling = false, ForeignKeys = true
+            DataSource = database.DatabasePath, Mode = SqliteOpenMode.ReadWrite, Pooling = false, ForeignKeys = true, DefaultTimeout = timeoutSeconds
         }.ToString());
         try { c.Open(); return c; } catch { c.Dispose(); throw; }
     }

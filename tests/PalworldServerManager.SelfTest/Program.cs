@@ -11,6 +11,11 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--pairing-audit-probe"])
+    {
+        await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
+        Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
+    }
     if (args is ["--peer-pairing-probe"])
     {
         await ProtocolTests.SchemaEvolution(); await PeerPairingRpcTests.AdmissionAndFrameOrder(); await PeerPairingRpcTests.DisconnectAndSingleConnection();
@@ -161,6 +166,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Pairing terminal audits are idempotent public records with no claimed actor", PairingAuditTests.IdempotenceAndPrivacy),
+    ("Pairing audit retries preserve outcome time and pending expiry commits atomically", PairingAuditTests.RetryAndPendingCleanup),
+    ("Pairing audit overflow stays failed closed and shutdown reports unavailable storage", PairingAuditTests.CapacityAndShutdownFailure),
+    ("Actual pairing disconnect cleans native state despite audit failure and closes admission", PeerPairingRpcTests.AuditFailureBlocksAdmission),
     ("First-contact pairing rejects invalid protocol frames and exposes no activation RPC", PeerPairingRpcTests.AdmissionAndFrameOrder),
     ("First-contact pairing cleans disconnected exchanges and permits one attempt per TLS connection", PeerPairingRpcTests.DisconnectAndSingleConnection),
     ("Host peer gRPC resumes durable activation after listener restart and discarded reply", PeerSecurityRpcTests.ActualActivationAndLostReply),
