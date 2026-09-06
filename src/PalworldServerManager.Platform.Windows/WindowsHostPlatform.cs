@@ -35,6 +35,12 @@ public sealed class WindowsHostPlatform : IHostServiceLifecycle, IBootStartPlatf
     public void ValidateOfflineDataRoot(SecurityIdentifier serviceSid, CancellationToken ct = default)
     {
         Privileged(ct);
+        ValidateProtectedDataRoot(serviceSid, ct);
+    }
+    // Read-only service startup validation. This does not grant elevation or repair any ACL.
+    public void ValidateProtectedDataRoot(SecurityIdentifier serviceSid, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
         var root = new DirectoryInfo(_root);
         new PublicTrustFileSecurity(serviceSid).Ancestors(root.Parent);
         void Validate(FileSystemInfo item)
