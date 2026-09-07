@@ -67,6 +67,10 @@ internal static partial class WindowsPeerReceiptCrashQualification
             Directory.CreateDirectory(Path.GetDirectoryName(Config.Root)!);
             var acl = WindowsHostPlatform.BuildHostDirectoryAcl(new(Config.Sid));
             acl.SetOwner(new SecurityIdentifier(Config.Sid)); new DirectoryInfo(Config.Root).Create(acl);
+            // The service publisher also deliberately requires prior provisioning. This
+            // fixture creates only its own new directory, using the exact platform policy.
+            var publicAcl = new PublicTrustFileSecurity(new(Config.Sid)).NewDirectory();
+            publicAcl.SetOwner(new SecurityIdentifier(Config.Sid)); new DirectoryInfo(Config.PublicDirectory).Create(publicAcl);
             using var c = Database.OpenConnection(); new HostSchemaMigrationRunner(HostSchema.AllMigrations()).Migrate(c);
             var identity = new HostIdentityRepository(Database);
             identity.EnsureHostIdentity(c, hostIdFactory: () => Config.Host.ToString("D"));
