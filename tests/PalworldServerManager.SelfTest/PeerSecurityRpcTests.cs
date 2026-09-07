@@ -6,6 +6,7 @@ using Microsoft.Data.Sqlite;
 using PalworldServerManager.Contracts.Wire;
 using PalworldServerManager.Host;
 using PalworldServerManager.Host.Persistence;
+using PalworldServerManager.Platform.Contracts;
 using PalworldServerManager.Platform.Windows;
 
 namespace PalworldServerManager.SelfTest;
@@ -90,6 +91,32 @@ internal static class PeerSecurityRpcTests
     }
     private static PeerActivationAck Ack(Fixture sender, Fixture receiver) => PeerSecurityRpcService.Wire(
         sender.State.Repository.PrepareActivationAcknowledgement(receiver.State.HostId, receiver.Pin, sender.Pin));
+    private sealed class UnprovenTransport(string advertisedPin) : IPeerHttpTransportFactory
+    {
+        internal bool Admitted;
+        public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed = null)
+        {
+            Admitted = acceptsServerPin(advertisedPin); // Certificate advertised, but no completed handshake.
+            throw new System.Security.Authentication.AuthenticationException("Fixture handshake did not complete.");
+        }
+    }
+    public static async Task ProvenRotationObservation()
+    {
+        await using var a = new Fixture(); await using var b = new Fixture(); a.Bind(b); b.Bind(a);
+        var rotation = Guid.NewGuid(); var old = new string('D', 64);
+        // Synthetic already-accepted stage; the actual server presents New using real mutual TLS.
+        a.State.Execute($"UPDATE TrustedManagers SET State='Active',CurrentTrustedPublicKeyFingerprint='{old}',PendingTrustedPublicKeyFingerprint='{b.Pin}',PendingRotationId='{rotation:D}',PendingRotationExpiresUtc='{a.State.Time.Now.AddMinutes(-1):O}' WHERE PeerHostId='{b.State.HostId:D}';");
+        b.State.Execute($"UPDATE TrustedManagers SET State='Active' WHERE PeerHostId='{a.State.HostId:D}';");
+        var unproven = new UnprovenTransport(b.Pin);
+        try { await new PeerActivationRpcClient(a.Runtime, unproven).FinalizeAsync(b.State.HostId, new Uri("https://127.0.0.1:1/")); throw new Exception("Expected fixture handshake refusal."); }
+        catch (System.Security.Authentication.AuthenticationException ex) when (ex.Message == "Fixture handshake did not complete.") { }
+        Check(unproven.Admitted && a.State.Repository.Read(b.State.HostId)!.CurrentFingerprint == old && a.State.Count("TrustedManagerCredentialHistory") == 0);
+        await b.Start();
+        Check(await WindowsHostComposition.CreatePeerActivationClient(a.Runtime, a.Certificate.Value).FinalizeAsync(b.State.HostId, b.Address) == PeerActivationDisposition.AlreadyActive);
+        var trust = a.State.Repository.Read(b.State.HostId)!;
+        Check(trust.CurrentFingerprint == b.Pin && trust.PendingFingerprint is null && trust.PendingRotationId == rotation && a.State.Count("TrustedManagerCredentialHistory") == 1);
+        Check(a.State.Count("ActivationRpcEffects") == 0 && b.State.Count("ActivationRpcEffects") == 0);
+    }
     public static async Task ActualActivationAndLostReply()
     {
         await using var a = new Fixture(); await using var b = new Fixture(); a.Bind(b); b.Bind(a); await b.Start();
@@ -170,14 +197,20 @@ internal static class PeerSecurityRpcTests
         await using var a = new Fixture(); await using var b = new Fixture(); await using var rotated = new Fixture();
         a.Bind(b); b.Bind(a);
         // Represents a previously authenticated rotation staging, not a rotation API.
-        b.State.Execute($"UPDATE TrustedManagers SET State='Active',PendingTrustedPublicKeyFingerprint='{rotated.Pin}',PendingReconfirmationRequired=1 WHERE PeerHostId='{a.State.HostId:D}';");
+        var rotation = Guid.NewGuid();
+        b.State.Execute($"UPDATE TrustedManagers SET State='Active',PendingTrustedPublicKeyFingerprint='{rotated.Pin}',PendingRotationId='{rotation:D}',PendingRotationExpiresUtc='{b.State.Time.Now.AddMinutes(-1):O}',PendingReconfirmationRequired=1 WHERE PeerHostId='{a.State.HostId:D}';");
         b.State.Time.Now += TimeSpan.FromHours(1);
         Check(b.State.Repository.RecognizesTransportFingerprint(rotated.Pin));
         await b.Start();
+        using var oldConnection = new RawClient(a, b);
+        await oldConnection.Negotiate(PeerSecurityRpcRuntime.Hello(a.State.HostId));
         using var client = new RawClient(rotated, b);
         await client.Negotiate(PeerSecurityRpcRuntime.Hello(a.State.HostId));
         var reply = await client.Activate(new() { FromHostId = a.State.HostId.ToString("D"), RecordedHostId = b.State.HostId.ToString("D"), RecordedFingerprint = b.Pin });
         Check(reply.Result == PeerActivationResult.AlreadyActive && reply.Acknowledgement.RecordedFingerprint == rotated.Pin);
+        var trust = b.State.Repository.Read(a.State.HostId)!;
+        Check(trust.CurrentFingerprint == rotated.Pin && trust.PendingFingerprint is null && trust.PendingRotationId == rotation);
+        await Refused(oldConnection.Activate(Ack(a, b)), StatusCode.Unauthenticated);
         Check(b.State.Count("ActivationRpcEffects") == 0);
     }
     public static async Task ReconnectRequiresFreshTransport()

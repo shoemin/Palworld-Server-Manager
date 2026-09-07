@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--peer-rotation-completion-probe"])
+    {
+        await PeerRotationCompletionTests.PromotionReceiptAndConcurrentReplay(); await PeerRotationCompletionTests.LapseAndTransactionalRollback();
+        await PeerRotationCompletionTests.InvalidAndRecoveryStates(); await PeerRotationCompletionTests.ActualTlsPresentationPromotes();
+        await PeerSecurityRpcTests.ProvenRotationObservation();
+        await PeerSecurityRpcTests.RecordedPendingPin();
+        Console.WriteLine("PASS durable peer promotion, retained receipt, lapse/rollback and actual TLS observation."); return 0;
+    }
     if (args is ["--rotation-material-probe"])
     {
         await RoutineRotationMaterialTests.DurableWriteRetryAndSerialization(); await RoutineRotationMaterialTests.CancellationAuthorizationAndAuditRollback(); await RoutineRotationMaterialTests.InvalidExistingMaterialNeverReplaced();
@@ -176,6 +184,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Peer rotation promotion and durable receipt retries serialize without changing grants", PeerRotationCompletionTests.PromotionReceiptAndConcurrentReplay),
+    ("Peer rotation lapse retains live pins and every transition rolls back on failed audit", PeerRotationCompletionTests.LapseAndTransactionalRollback),
+    ("Peer rotation refuses incomplete metadata and inactive or recovery-required trust", PeerRotationCompletionTests.InvalidAndRecoveryStates),
+    ("Actual completed mutual TLS with the staged key promotes trust and rejects the old key", PeerRotationCompletionTests.ActualTlsPresentationPromotes),
+    ("Outbound rotation observation waits for proven TLS and runs in the real pinned RPC client", PeerSecurityRpcTests.ProvenRotationObservation),
     ("Routine rotation material recovers durable writes and serializes retries without changing identity", RoutineRotationMaterialTests.DurableWriteRetryAndSerialization),
     ("Routine rotation material preserves reservations on cancellation and rejects stale Owner or audit failure", RoutineRotationMaterialTests.CancellationAuthorizationAndAuditRollback),
     ("Routine rotation never replaces corrupt, missing recorded or unusable existing key material", RoutineRotationMaterialTests.InvalidExistingMaterialNeverReplaced),
