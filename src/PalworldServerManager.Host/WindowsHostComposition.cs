@@ -2,6 +2,7 @@ using System.Security.Principal;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -57,21 +58,29 @@ public static class WindowsHostComposition
             ?? throw new InvalidOperationException("Privileged machine bootstrap is required.");
         await new WindowsHostCredentialMaterial(store).ValidateAsync(snapshot.CurrentReference!, publication.CurrentFingerprint, stop).ConfigureAwait(false);
         using var certificate = await native.LoadAsync(snapshot.CurrentReference!, stop).ConfigureAwait(false);
+        await using var traffic = new HostTrafficLifetime();
         var groupSid = (SecurityIdentifier)new NTAccount(Environment.MachineName, WindowsHostPlatform.ProductActivationGroup).Translate(typeof(SecurityIdentifier));
         var rpc = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { });
-        await using var app = BuildLocalApplication(rpc, serviceSid, groupSid, certificate, PipeName);
+        await using var app = BuildLocalApplication(rpc, serviceSid, groupSid, certificate, PipeName, traffic.BindConnection);
         try
         {
             await app.StartAsync(stop).ConfigureAwait(false);
-            await app.WaitForShutdownAsync(stop).ConfigureAwait(false);
+            using var ended = CancellationTokenSource.CreateLinkedTokenSource(stop, app.Lifetime.ApplicationStopping);
+            try { await Task.Delay(Timeout.Infinite, ended.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (ended.IsCancellationRequested) { }
         }
-        finally { await app.StopAsync(CancellationToken.None).ConfigureAwait(false); }
-        // app disposal, certificate disposal and then lease disposal occur in that order.
+        finally
+        {
+            try { await traffic.DrainAsync().ConfigureAwait(false); }
+            finally { await app.StopAsync(CancellationToken.None).ConfigureAwait(false); }
+        }
+        // App and traffic disposal precede certificate disposal, then lease disposal.
     }
 
     // Trusted composition/test seam only. Empty hosting avoids loading environment/appsettings
     // before configuration can be constrained; it never enables development exception pages.
-    public static WebApplication BuildPeerApplication(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate, System.Net.IPEndPoint endpoint)
+    public static WebApplication BuildPeerApplication(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate, System.Net.IPEndPoint endpoint,
+        Func<ConnectionDelegate, ConnectionDelegate>? transportMiddleware = null)
     {
         var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
         { Args = [], ApplicationName = typeof(WindowsHostComposition).Assembly.FullName, ContentRootPath = AppContext.BaseDirectory, EnvironmentName = Environments.Production });
@@ -84,7 +93,7 @@ public static class WindowsHostComposition
             options.MaxSendMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
         });
         WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate, rpc.Repository.RecognizesTransportFingerprint,
-            rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint));
+            rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint), transportMiddleware);
         var app = builder.Build(); app.MapGrpcService<PeerSecurityRpcService>(); return app;
     }
     internal static PeerActivationRpcClient CreatePeerActivationClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
@@ -97,7 +106,8 @@ public static class WindowsHostComposition
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
     internal static RoutineRotationAcceptanceCollector CreateRotationAcceptanceCollector(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
-    public static WebApplication BuildPairingApplication(PeerPairingRpcRuntime rpc, X509Certificate2 certificate, System.Net.IPEndPoint endpoint)
+    public static WebApplication BuildPairingApplication(PeerPairingRpcRuntime rpc, X509Certificate2 certificate, System.Net.IPEndPoint endpoint,
+        Func<ConnectionDelegate, ConnectionDelegate>? transportMiddleware = null)
     {
         var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
         { Args = [], ApplicationName = typeof(WindowsHostComposition).Assembly.FullName, ContentRootPath = AppContext.BaseDirectory, EnvironmentName = Environments.Production });
@@ -111,14 +121,15 @@ public static class WindowsHostComposition
         // This separate first-contact endpoint maps ONLY the bounded PAKE stream. Accepting
         // a usable TLS key here is not trust; the MAC must bind that exact key before storage.
         WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate, _ => true,
-            rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint, WindowsPeerEndpoint.ReadSourceAddress));
+            rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint, WindowsPeerEndpoint.ReadSourceAddress), transportMiddleware);
         var app = builder.Build(); app.MapGrpcService<PeerPairingRpcService>(); return app;
     }
     internal static PeerPairingRpcClient CreatePeerPairingClient(PeerPairingRpcRuntime rpc, X509Certificate2 certificate)
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
 
     public static WebApplication BuildLocalApplication(LocalSecurityRpcRuntime rpc, SecurityIdentifier serviceSid,
-        SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe)
+        SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe,
+        Func<ConnectionDelegate, ConnectionDelegate>? transportMiddleware = null)
     {
         var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions
         { Args = [], ApplicationName = typeof(WindowsHostComposition).Assembly.FullName, ContentRootPath = AppContext.BaseDirectory, EnvironmentName = Environments.Production });
@@ -132,7 +143,7 @@ public static class WindowsHostComposition
             options.MaxReceiveMessageSize = LocalSecurityRpcService.MaximumMessageBytes;
             options.MaxSendMessageSize = LocalSecurityRpcService.MaximumMessageBytes;
         });
-        WindowsLocalTlsEndpoint.Configure(builder.WebHost, pipe, serviceSid, groupSid, certificate, rpc.BindConnection);
+        WindowsLocalTlsEndpoint.Configure(builder.WebHost, pipe, serviceSid, groupSid, certificate, rpc.BindConnection, transportMiddleware);
         var app = builder.Build();
         app.MapGrpcService<LocalSecurityRpcService>();
         return app;

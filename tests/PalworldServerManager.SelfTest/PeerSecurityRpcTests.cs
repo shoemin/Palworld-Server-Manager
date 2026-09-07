@@ -48,16 +48,16 @@ internal static class PeerSecurityRpcTests
         internal string Pin => WindowsPeerTls.PublicFingerprint(Certificate.Value);
         private WebApplication? app;
         internal Uri Address => new(app!.Urls.Single());
-        internal Fixture()
+        internal Fixture(IPeerActivationHook? hook = null)
         {
             State.Execute($"UPDATE SecureCredentialReferences SET PublicKeyFingerprint='{Pin}' WHERE CredentialRef='current';");
             State.Execute("CREATE TABLE ActivationRpcEffects (Peer TEXT PRIMARY KEY);");
-            Runtime = new(State.Database, State.HostId, new Hook(), State.Time);
+            Runtime = new(State.Database, State.HostId, hook ?? new Hook(), State.Time);
         }
         internal void Bind(Fixture peer) => State.Repository.RecordVerifiedBinding(peer.State.HostId, peer.Pin, Pin);
-        internal async Task Start(System.Security.Cryptography.X509Certificates.X509Certificate2? presented = null)
+        internal async Task Start(System.Security.Cryptography.X509Certificates.X509Certificate2? presented = null, HostTrafficLifetime? traffic = null)
         {
-            app = WindowsHostComposition.BuildPeerApplication(Runtime, presented ?? Certificate.Value, new(IPAddress.Loopback, 0));
+            app = WindowsHostComposition.BuildPeerApplication(Runtime, presented ?? Certificate.Value, new(IPAddress.Loopback, 0), traffic is null ? null : traffic.BindConnection);
             Check(app.Configuration["urls"] is null && app.Environment.EnvironmentName == "Production");
             await app.StartAsync(); Check(app.Urls.Count == 1 && Address.Scheme == "https");
         }

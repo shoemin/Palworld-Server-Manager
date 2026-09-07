@@ -73,13 +73,14 @@ public static class LocalSecurityRpcTests
                 pendingHostCredentialFingerprint = (string?)null, pendingRotationId = (Guid?)null })));
         }
         internal Client Connect(string? pin = null) => new(State.HostId, Pipe, Trust(pin));
-        internal async Task Start()
+        internal Task Start() => Start(null);
+        internal async Task Start(HostTrafficLifetime? traffic)
         {
             using var identity = WindowsIdentity.GetCurrent();
             var runtime = new LocalSecurityRpcRuntime(State.Database, State.HostId, State.Secrets,
                 context => { Interlocked.Increment(ref Delivered); return WindowsLocalTlsEndpoint.ReadNativePrincipal(context); },
                 reason => { lock (Failures) Failures.Add(reason); }, State.Time);
-            _app = WindowsHostComposition.BuildLocalApplication(runtime, identity.User!, identity.User!, _certificate, Pipe);
+            _app = WindowsHostComposition.BuildLocalApplication(runtime, identity.User!, identity.User!, _certificate, Pipe, traffic is null ? null : traffic.BindConnection);
             Check(_app.Environment.EnvironmentName == "Production" && _app.Configuration["urls"] is null, "Production listener accepted environment configuration.");
             await _app.StartAsync();
         }

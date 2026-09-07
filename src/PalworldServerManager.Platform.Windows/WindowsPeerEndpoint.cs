@@ -17,7 +17,8 @@ public static class WindowsPeerEndpoint
     public static IPAddress ReadSourceAddress(ConnectionContext connection)
         => (connection.RemoteEndPoint as IPEndPoint)?.Address ?? throw new AuthenticationException("Peer source unavailable.");
     public static void Configure(IWebHostBuilder builder, IPEndPoint endpoint, X509Certificate2 certificate,
-        Func<string, bool> acceptsPin, Func<ConnectionDelegate, ConnectionDelegate> applicationMiddleware)
+        Func<string, bool> acceptsPin, Func<ConnectionDelegate, ConnectionDelegate> applicationMiddleware,
+        Func<ConnectionDelegate, ConnectionDelegate>? transportMiddleware = null)
     {
         var profile = WindowsPeerTls.ServerOptions(certificate, acceptsPin);
         builder.ConfigureKestrel(options =>
@@ -27,6 +28,7 @@ public static class WindowsPeerEndpoint
             options.Listen(endpoint, listen =>
             {
                 listen.Protocols = HttpProtocols.Http2;
+                if (transportMiddleware is not null) listen.Use(transportMiddleware);
                 listen.UseHttps(certificate, tls =>
                 {
                     tls.ClientCertificateMode = ClientCertificateMode.RequireCertificate;

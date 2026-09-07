@@ -16,7 +16,8 @@ namespace PalworldServerManager.Platform.Windows;
 public static class WindowsLocalTlsEndpoint
 {
     public static void Configure(IWebHostBuilder builder, string pipeName, SecurityIdentifier serviceSid,
-        SecurityIdentifier activationGroupSid, X509Certificate2 certificate, Func<ConnectionDelegate, ConnectionDelegate>? applicationMiddleware = null)
+        SecurityIdentifier activationGroupSid, X509Certificate2 certificate, Func<ConnectionDelegate, ConnectionDelegate>? applicationMiddleware = null,
+        Func<ConnectionDelegate, ConnectionDelegate>? transportMiddleware = null)
     {
         if (string.IsNullOrEmpty(pipeName) || pipeName.Length > 128 || pipeName.Any(c => !char.IsAsciiLetterOrDigit(c) && c is not '.' and not '_' and not '-'))
             throw new ArgumentException("A bounded local pipe name is required.");
@@ -34,6 +35,7 @@ public static class WindowsLocalTlsEndpoint
         builder.ConfigureKestrel(options => options.ListenNamedPipe(pipeName, listen =>
         {
             listen.Protocols = HttpProtocols.Http2;
+            if (transportMiddleware is not null) listen.Use(transportMiddleware);
             listen.UseHttps(certificate, tls => tls.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13);
             if (applicationMiddleware is not null) listen.Use(applicationMiddleware);
         }));
