@@ -137,6 +137,16 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--host-discovery-runtime-probe"])
+    {
+        await HostDiscoveryRuntimeTests.StartupMetadataAndExpiry();
+        await HostDiscoveryRuntimeTests.BoundedRetriesAndFreshReceiver();
+        await HostDiscoveryRuntimeTests.StopDrainsEveryOwnedActivity();
+        await HostDiscoveryRuntimeTests.FatalFailuresNeverRetryOrHideCleanup();
+        await HostDiscoveryRuntimeTests.SenderFailureDrainsReceiverAndCancellation();
+        await HostDiscoveryRuntimeTests.ActualLoopbackPacketsAndRelease();
+        Console.WriteLine("Host discovery runtime probe passed."); return 0;
+    }
     if (args is ["--windows-lan-availability-probe"])
     {
         await WindowsLanAvailabilityTests.ExactOriginsAndSocketSetupCleanup(); await WindowsLanAvailabilityTests.ReceiverKeepsCallbackAndCleanupFailuresFatal();
@@ -444,6 +454,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("LAN discovery source policy requires the exact interface and subnet host", WindowsLanInterfaceTests.LinkSourcePolicy),
     ("Windows LAN eligibility rejects virtual tunnels and changed adapter identity", WindowsLanInterfaceTests.HardwareEligibilityAndCorrelation),
     ("Windows LAN native layout and read-only adapter inventory match the SDK", WindowsLanInterfaceTests.NativeLayoutAndReadOnlyInventory),
+    ("Host discovery runtime StartupMetadataAndExpiry", HostDiscoveryRuntimeTests.StartupMetadataAndExpiry),
+    ("Host discovery runtime BoundedRetriesAndFreshReceiver", HostDiscoveryRuntimeTests.BoundedRetriesAndFreshReceiver),
+    ("Host discovery runtime StopDrainsEveryOwnedActivity", HostDiscoveryRuntimeTests.StopDrainsEveryOwnedActivity),
+    ("Host discovery runtime FatalFailuresNeverRetryOrHideCleanup", HostDiscoveryRuntimeTests.FatalFailuresNeverRetryOrHideCleanup),
+    ("Host discovery runtime SenderFailureDrainsReceiverAndCancellation", HostDiscoveryRuntimeTests.SenderFailureDrainsReceiverAndCancellation),
+    ("Host discovery runtime ActualLoopbackPacketsAndRelease", HostDiscoveryRuntimeTests.ActualLoopbackPacketsAndRelease),
     ("Manual Host addresses reject authority and URI injection", HostDiscoveryTests.ManualAddresses),
     ("Host discovery packets remain bounded and unverified across versions", HostDiscoveryTests.PacketBoundsAndCompatibility),
     ("Host discovery directory preserves actual source conflicts and monotonic expiry", HostDiscoveryTests.DirectorySourceBoundsAndExpiry),
