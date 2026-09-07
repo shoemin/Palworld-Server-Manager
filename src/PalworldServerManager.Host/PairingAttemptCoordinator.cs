@@ -86,6 +86,7 @@ internal sealed class PairingAttemptCoordinator : IDisposable
             if (!invitations.TryGetValue(invitationId, out var invitation) || invitation.Failures >= 10 || invitation.Active is not null)
             { Penalize(source); throw Refused(); }
             var code = invitation.Code.CopyBytes();
+            var attemptId = Guid.NewGuid();
             IPairingKeyExchange? exchange = null;
             try
             {
@@ -94,13 +95,13 @@ internal sealed class PairingAttemptCoordinator : IDisposable
                 ct.ThrowIfCancellationRequested();
                 if (time.GetElapsedTime(invitation.Issued) >= Lifetime)
                 { Remove(invitation, PairingAttemptOutcome.Expired); throw Refused(); }
-                var attempt = new Attempt(this, invitation, source, exchange, nonce);
+                var attempt = new Attempt(this, invitation, source, exchange, nonce, attemptId);
                 invitation.Active = attempt; source.Active = true;
                 return attempt;
             }
             catch
             {
-                try { exchange?.Dispose(); } finally { Penalize(source); }
+                try { exchange?.Dispose(); } finally { Penalize(source); Report(attemptId, PairingAttemptOutcome.Failed); }
                 throw;
             }
             finally { CryptographicOperations.ZeroMemory(code); }
@@ -181,9 +182,9 @@ internal sealed class PairingAttemptCoordinator : IDisposable
         private readonly byte[] nonce;
         internal bool ended;
         internal HostPairingPhase phase = HostPairingPhase.Created;
-        internal Guid Id { get; } = Guid.NewGuid();
-        internal Attempt(PairingAttemptCoordinator owner, InvitationState invitation, SourceState source, IPairingKeyExchange exchange, byte[] nonce)
-        { this.owner = owner; this.invitation = invitation; this.source = source; this.exchange = exchange; this.nonce = nonce; }
+        internal Guid Id { get; }
+        internal Attempt(PairingAttemptCoordinator owner, InvitationState invitation, SourceState source, IPairingKeyExchange exchange, byte[] nonce, Guid id)
+        { this.owner = owner; this.invitation = invitation; this.source = source; this.exchange = exchange; this.nonce = nonce; Id = id; }
         internal HostPairingPhase Phase { get { lock (owner.gate) return phase; } }
         internal byte[] SessionNonce => Run(() => nonce.ToArray());
         internal byte[] InitialMessage => Run(() => exchange.InitialMessage);

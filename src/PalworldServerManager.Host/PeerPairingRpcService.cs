@@ -34,16 +34,19 @@ public sealed class PeerPairingRpcService(PeerPairingRpcRuntime runtime) : PeerP
     public override async Task Pair(IAsyncStreamReader<PeerPairingFrame> input, IServerStreamWriter<PeerPairingFrame> output, ServerCallContext context)
     {
         PairingAttemptCoordinator.Attempt? attempt = null;
+        IDisposable? admission = null;
+        var stored = false;
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken); deadline.CancelAfter(TimeSpan.FromSeconds(20));
         var ct = deadline.Token;
         try
         {
+            admission = runtime.Enter();
             var http = context.GetHttpContext();
             if (!http.Request.IsHttps || http.Request.Protocol != "HTTP/2") throw new AuthenticationException();
             var connection = http.Features.Get<PeerPairingConnection>() ?? throw new AuthenticationException(); connection.Begin();
             var start = (await Read(input, PeerPairingFrame.FrameOneofCase.Start, ct).ConfigureAwait(false)).Start;
             Negotiate(start.Handshake);
-            attempt = runtime.Attempts.Begin(PeerSecurityRpcService.Id(start.InvitationId), connection.Source, ct);
+            attempt = runtime.Begin(PeerSecurityRpcService.Id(start.InvitationId), connection.Source, ct);
             await output.WriteAsync(new() { Challenge = new() { Handshake = PeerPairingRpcRuntime.Hello(), Nonce = ByteString.CopyFrom(attempt.SessionNonce), Share = ByteString.CopyFrom(attempt.InitialMessage) } }, ct).ConfigureAwait(false);
             var share = await Read(input, PeerPairingFrame.FrameOneofCase.Share, ct).ConfigureAwait(false);
             if (share.Share.Length != 65) throw new ArgumentException(); attempt.ReceivePeerMessage(share.Share.ToByteArray(), ct);
@@ -57,8 +60,9 @@ public sealed class PeerPairingRpcService(PeerPairingRpcRuntime runtime) : PeerP
             if (peerBinding.Binding.Length is 0 or > 1200) throw new ArgumentException();
             var peer = attempt.VerifyIdentityBinding(peerBinding.Binding.ToByteArray(), ct);
             if (await input.MoveNext(ct).ConfigureAwait(false)) throw new ArgumentException("Unexpected trailing pairing frame.");
-            ct.ThrowIfCancellationRequested(); var stored = runtime.Store(peer, connection.Identity);
-            await output.WriteAsync(new() { Result = Wire(stored.Disposition) }, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested(); var bindingResult = runtime.Store(peer, connection.Identity);
+            stored = true;
+            await output.WriteAsync(new() { Result = Wire(bindingResult.Disposition) }, ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { throw new RpcException(new(StatusCode.Cancelled, "Pairing canceled.")); }
         catch (RpcException ex) when (ex.StatusCode is StatusCode.ResourceExhausted or StatusCode.Cancelled or StatusCode.DeadlineExceeded)
@@ -70,6 +74,14 @@ public sealed class PeerPairingRpcService(PeerPairingRpcRuntime runtime) : PeerP
         { throw new RpcException(new(StatusCode.FailedPrecondition, "Pairing precondition failed.")); }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         { throw new RpcException(new(StatusCode.Internal, "Pairing failed.")); }
-        finally { attempt?.Disconnect(); }
+        finally
+        {
+            try
+            {
+                attempt?.Disconnect();
+                if (attempt is not null && !stored) runtime.Failed(attempt.Id);
+            }
+            finally { admission?.Dispose(); }
+        }
     }
 }
