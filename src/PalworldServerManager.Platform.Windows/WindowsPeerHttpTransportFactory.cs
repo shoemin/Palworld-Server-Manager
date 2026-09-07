@@ -9,13 +9,13 @@ namespace PalworldServerManager.Platform.Windows;
 // all transports have been disposed; each transport owns its handler and TLS connections.
 public sealed class WindowsPeerHttpTransportFactory(X509Certificate2 certificate) : IPeerHttpTransportFactory
 {
-    public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin) => new Transport(certificate, acceptsServerPin);
+    public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed = null) => new Transport(certificate, acceptsServerPin, observed);
     private sealed class Transport : IPeerHttpTransport
     {
         private PeerTlsConnectionIdentity? identity;
         public HttpMessageHandler Handler { get; }
         public PeerTlsConnectionIdentity Identity => Volatile.Read(ref identity) ?? throw new AuthenticationException("Peer TLS proof unavailable.");
-        internal Transport(X509Certificate2 certificate, Func<string, bool> acceptsServerPin)
+        internal Transport(X509Certificate2 certificate, Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed)
         {
             var local = WindowsPeerTls.PublicFingerprint(certificate);
             Handler = new SocketsHttpHandler
@@ -32,6 +32,7 @@ public sealed class WindowsPeerHttpTransportFactory(X509Certificate2 certificate
                     var evidence = new PeerTlsConnectionIdentity(local, WindowsPeerTls.PublicFingerprint(remote));
                     if (WindowsPeerTls.PublicFingerprint(own) != local || Interlocked.CompareExchange(ref identity, evidence, null) is not null)
                         throw new AuthenticationException("Retry with a fresh peer connection.");
+                    observed?.Invoke(evidence);
                     return ValueTask.FromResult(context.PlaintextStream);
                 }
             };

@@ -35,6 +35,6 @@ public sealed partial class PeerTrustRepository
     public int MaintainPendingPairingTrust()
     {
         using var c = Open(1); using var tx = c.BeginTransaction(deferred: false); RequireHost(c, tx);
-        var count = Expire(c, tx, time.GetUtcNow()); tx.Commit(); return count;
+        var now = time.GetUtcNow(); var count = Expire(c, tx, now); ExpireRotations(c, tx, now); tx.Commit(); return count;
     }
 }

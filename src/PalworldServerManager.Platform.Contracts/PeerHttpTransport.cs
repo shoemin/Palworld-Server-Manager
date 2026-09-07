@@ -10,5 +10,7 @@ public interface IPeerHttpTransport : IDisposable
 }
 public interface IPeerHttpTransportFactory
 {
-    IPeerHttpTransport Create(Func<string, bool> acceptsServerPin);
+    // Optional observation runs only after completed mutual TLS and before HTTP is released.
+    // The pin-admission callback can run before proof; it must remain read-only.
+    IPeerHttpTransport Create(Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed = null);
 }

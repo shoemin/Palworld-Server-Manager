@@ -9,7 +9,8 @@ namespace PalworldServerManager.SelfTest;
 internal sealed class PairingLostResultTransport(IPeerHttpTransportFactory inner) : IPeerHttpTransportFactory
 {
     internal bool ResultReadFailed;
-    public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin) => new Connection(inner.Create(acceptsServerPin), this);
+    public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed = null)
+        => new Connection(inner.Create(acceptsServerPin, observed), this);
     private sealed class Connection : IPeerHttpTransport
     {
         private readonly IPeerHttpTransport inner;

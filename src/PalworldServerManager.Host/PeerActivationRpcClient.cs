@@ -18,8 +18,9 @@ internal sealed class PeerActivationRpcClient(PeerSecurityRpcRuntime runtime, IP
             address.UserInfo.Length != 0 || address.AbsolutePath != "/" || address.Query.Length != 0 || address.Fragment.Length != 0)
             throw new ArgumentException("A reachable peer HTTPS address is required.");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct); deadline.CancelAfter(TimeSpan.FromSeconds(15));
-        using var connection = transport.Create(pin =>
-        { runtime.Authentication.Authenticate(peer, pin, PeerTrafficPurpose.PairingFinalization); return true; });
+        using var connection = transport.Create(
+            pin => runtime.Authentication.AdmitHandshake(peer, pin, PeerTrafficPurpose.PairingFinalization),
+            actual => runtime.Authentication.Authenticate(peer, actual.PeerFingerprint, PeerTrafficPurpose.PairingFinalization));
         using var channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions
         {
             HttpHandler = connection.Handler, HttpVersion = HttpVersion.Version20, HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact,

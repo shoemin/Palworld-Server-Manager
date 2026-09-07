@@ -28,9 +28,9 @@ internal static class PeerTlsTests
             Check(!CngKey.Exists(name, provider));
         }
     }
-    private static async Task Exchange(X509Certificate2 server, X509Certificate2 client,
+    internal static async Task Exchange(X509Certificate2 server, X509Certificate2 client,
         Func<string, bool> serverAccepts, Func<string, bool> clientAccepts, bool success,
-        Action<SslClientAuthenticationOptions>? tamperClient = null)
+        Action<SslClientAuthenticationOptions>? tamperClient = null, Action<string>? observedByClient = null)
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -58,6 +58,7 @@ internal static class PeerTlsTests
             using var seenByClient = new X509Certificate2(clientStream.RemoteCertificate!);
             Check(!seenByServer.HasPrivateKey && !seenByClient.HasPrivateKey);
             Check(WindowsPeerTls.PublicFingerprint(seenByServer) == WindowsPeerTls.PublicFingerprint(client));
+            observedByClient?.Invoke(WindowsPeerTls.PublicFingerprint(seenByClient));
             await clientStream.WriteAsync(new byte[] { 7, 8, 9 }, deadline.Token);
             var received = new byte[3]; await serverStream.ReadExactlyAsync(received, deadline.Token);
             Check(received.SequenceEqual(new byte[] { 7, 8, 9 }));
@@ -115,14 +116,15 @@ internal static class PeerTlsTests
         f.Time.Now += TimeSpan.FromMinutes(30);
         Reject(() => auth.Authenticate(f.PeerId, peer, PeerTrafficPurpose.PairingFinalization));
         // Fixture represents a previously completed activation/staging, not a production bypass.
-        f.Execute($"UPDATE TrustedManagers SET State='Active',PendingTrustedPublicKeyFingerprint='{pending}',PendingReconfirmationRequired=1 WHERE PeerHostId='{f.PeerId:D}';");
+        f.Execute($"UPDATE TrustedManagers SET State='Active',PendingTrustedPublicKeyFingerprint='{pending}',PendingRotationId='{Guid.NewGuid():D}',PendingRotationExpiresUtc='{f.Time.Now.AddMinutes(-1):O}',PendingReconfirmationRequired=1 WHERE PeerHostId='{f.PeerId:D}';");
         Check(auth.Authenticate(f.PeerId, peer, PeerTrafficPurpose.OrdinaryManagement).TrustState == "Active");
-        Check(auth.Authenticate(f.PeerId, pending, PeerTrafficPurpose.OrdinaryManagement).UsesPendingCredential);
+        Check(auth.Authenticate(f.PeerId, pending, PeerTrafficPurpose.OrdinaryManagement).PromotedCredential);
+        Reject(() => auth.Authenticate(f.PeerId, peer, PeerTrafficPurpose.OrdinaryManagement));
         Check(f.Count("HostCapabilityGrants") == 0); // Transport authentication manufactured no authority.
         f.Execute($"UPDATE TrustedManagers SET PeerRecoveryRequired=1 WHERE PeerHostId='{f.PeerId:D}';");
         Reject(() => auth.Authenticate(f.PeerId, peer, PeerTrafficPurpose.OrdinaryManagement));
         Reject(() => auth.Authenticate(f.PeerId, pending, PeerTrafficPurpose.PairingFinalization));
-        f.Execute($"UPDATE TrustedManagers SET State='Revoked',PeerRecoveryRequired=0,CurrentTrustedPublicKeyFingerprint=NULL,PendingTrustedPublicKeyFingerprint=NULL,PendingReconfirmationRequired=0 WHERE PeerHostId='{f.PeerId:D}';");
+        f.Execute($"UPDATE TrustedManagers SET State='Revoked',PeerRecoveryRequired=0,CurrentTrustedPublicKeyFingerprint=NULL,PendingTrustedPublicKeyFingerprint=NULL,PendingRotationId=NULL,PendingRotationExpiresUtc=NULL,PendingReconfirmationRequired=0 WHERE PeerHostId='{f.PeerId:D}';");
         Reject(() => auth.Authenticate(f.PeerId, peer, PeerTrafficPurpose.OrdinaryManagement));
         return Task.CompletedTask;
     }

@@ -8,7 +8,8 @@ public enum PeerBindingDisposition { PeerBoundCreated, ResumePeerBound, ActiveRe
 public sealed record PeerBindingResult(PeerBindingDisposition Disposition, Guid PeerHostId, DateTimeOffset? ExpiresUtc, Guid? ReplacementId = null);
 public sealed record PeerTrustRecord(Guid PeerHostId, string State, string? CurrentFingerprint,
     bool RecoveryRequired, string? LocalBoundFingerprint, DateTimeOffset? ExpiresUtc,
-    string? PendingFingerprint = null, bool PendingReconfirmationRequired = false);
+    string? PendingFingerprint = null, bool PendingReconfirmationRequired = false,
+    Guid? PendingRotationId = null, DateTimeOffset? PendingRotationExpiresUtc = null);
 
 // Trusted online Host persistence primitive; the caller retains the machine lease. Public
 // fingerprints here must come from verified PAKE/mTLS, never unchecked request fields.
@@ -57,7 +58,7 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
     {
         using var command = Command(c, tx, """
             SELECT t.State,t.CurrentTrustedPublicKeyFingerprint,t.PeerRecoveryRequired,p.LocalBoundPublicKeyFingerprint,p.ExpiresUtc,
-                t.PendingTrustedPublicKeyFingerprint,t.PendingReconfirmationRequired
+                t.PendingTrustedPublicKeyFingerprint,t.PendingReconfirmationRequired,t.PendingRotationId,t.PendingRotationExpiresUtc
             FROM TrustedManagers t LEFT JOIN TrustedManagerPairings p ON p.PeerHostId=t.PeerHostId WHERE t.PeerHostId=$peer;
             """, ("$peer", Id(peer)));
         using var reader = command.ExecuteReader(); if (!reader.Read()) return null;
@@ -65,7 +66,8 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
         if (state is not ("PeerBound" or "Active" or "Revoked")) throw new InvalidDataException("Unknown peer trust state.");
         return new(peer, state, reader.IsDBNull(1) ? null : Fingerprint(reader.GetString(1)), reader.GetInt32(2) != 0,
             reader.IsDBNull(3) ? null : Fingerprint(reader.GetString(3)), reader.IsDBNull(4) ? null : Date(reader.GetString(4)),
-            reader.IsDBNull(5) ? null : Fingerprint(reader.GetString(5)), reader.GetInt32(6) != 0);
+            reader.IsDBNull(5) ? null : Fingerprint(reader.GetString(5)), reader.GetInt32(6) != 0,
+            reader.IsDBNull(7) ? null : Guid.ParseExact(reader.GetString(7), "D"), reader.IsDBNull(8) ? null : Date(reader.GetString(8)));
     }
     public PeerTrustRecord? Read(Guid peer)
     {
@@ -182,7 +184,7 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
             INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorPeerHostId,AffectedHostId,Summary)
             VALUES ($id,$now,$kind,$actorKind,$actorPeer,$host,$summary);
             """, ("$id", Id(Guid.NewGuid())), ("$now", Stamp(now)), ("$kind", kind),
-            ("$actorKind", kind == "PeerBoundExpired" ? null : "RemoteManager"),
-            ("$actorPeer", kind == "PeerBoundExpired" ? null : Id(peer)), ("$host", Id(hostId)),
+            ("$actorKind", kind is "PeerBoundExpired" or "PeerRotationReconfirmationRequired" ? null : "RemoteManager"),
+            ("$actorPeer", kind is "PeerBoundExpired" or "PeerRotationReconfirmationRequired" ? null : Id(peer)), ("$host", Id(hostId)),
             ("$summary", $"{kind}: peer {Id(peer)}."));
 }
