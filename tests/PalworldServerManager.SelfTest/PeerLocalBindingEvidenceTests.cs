@@ -31,7 +31,8 @@ internal static class PeerLocalBindingEvidenceTests
         using(var f=new PeerTrustTests.Fixture(schemaVersion:7))
         {
             f.SeedHistoricalBinding(f.PeerId,Peer,Local);var trust=f.Repository.Read(f.PeerId);var version=Incarnation(f);
-            Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer)==1 && HostSchemaMigrationRunner.Default().Migrate(f.Writer)==0);
+            var throughBinding=new HostSchemaMigrationRunner(HostSchema.AllMigrations().Take(8));
+            Check(throughBinding.Migrate(f.Writer)==1 && throughBinding.Migrate(f.Writer)==0);
             Check(f.Count("PeerLocalBindingEvidence")==0 && f.Repository.Read(f.PeerId)==trust && Incarnation(f)==version);
             Check(f.Repository.RecordVerifiedBinding(f.PeerId,Peer,Local).Disposition==PeerBindingDisposition.ResumePeerBound);
             Check(f.Count("PeerLocalBindingEvidence")==0); // Resume cannot retroactively certify the first binding.

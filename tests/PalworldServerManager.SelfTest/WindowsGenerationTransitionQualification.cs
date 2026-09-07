@@ -114,14 +114,19 @@ internal static class WindowsGenerationTransitionQualification
                 System.Text.Encoding.UTF8.GetBytes("PalworldServerManager.Host.Credential.v1:"+reference)))+".bin");
             Check(File.Exists(Blob(references[0])) && File.Exists(Blob(prepared.NewReference)),"Protected fixture keys must exist before completion.");
             var beforeCompletion=owner.Endpoints!.Value;
-            publisher.FailCurrent=proposal.NewFingerprint;
+            using(var deletionBlock=new FileStream(Blob(references[0]),FileMode.Open,FileAccess.Read,FileShare.Read))
+            {
             await SecureStoreTests.Reject<IOException>(()=>owner.CompleteRotationAsync(actor,prepared.RotationId,ct));
             Check(owner.Phase==HostGenerationPhase.Quiesced && owner.Endpoints is null &&
-                state.Read().Rotations.Single().State==HostCredentialRotationState.Completed,"Completion/reconciliation failure lost durable state or quiescence.");
+                state.Read().Rotations.Single() is {State:HostCredentialRotationState.CutOver,RetirementAuthorized:true},"Retirement failure falsely completed rotation or lost quiescence.");
             RequireClosed(pipe,beforeCompletion.Peer,beforeCompletion.Pairing,ct);
-            Check(File.Exists(Blob(references[0])) && CngKey.Exists(oldNative,CngProvider.MicrosoftSoftwareKeyStorageProvider,CngKeyOpenOptions.MachineKey),
-                "Failed publication must not already delete Old.");
-            publisher.FailCurrent=null;await owner.RecoverAsync(ct);
+            Check(File.Exists(Blob(references[0])) && !CngKey.Exists(oldNative,CngProvider.MicrosoftSoftwareKeyStorageProvider,CngKeyOpenOptions.MachineKey),
+                "Protected deletion failure must retain its file after actual native retirement.");
+            Check(HostDatabase.QueryScalarLong(writer,"SELECT COUNT(*) FROM HostCredentialRotations WHERE CompletedUtc IS NOT NULL;")==0 &&
+                HostDatabase.QueryScalarLong(writer,"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='HostRoutineRotationCompleted';")==0,
+                "Failed deletion claimed terminal completion.");
+            }
+            await owner.RecoverAsync(ct);
             Check(!File.Exists(Blob(references[0])) && File.Exists(Blob(prepared.NewReference)) &&
                 !CngKey.Exists(oldNative,CngProvider.MicrosoftSoftwareKeyStorageProvider,CngKeyOpenOptions.MachineKey) &&
                 CngKey.Exists(nextNative,CngProvider.MicrosoftSoftwareKeyStorageProvider,CngKeyOpenOptions.MachineKey),"Old protected/native material was not retired while New survived.");

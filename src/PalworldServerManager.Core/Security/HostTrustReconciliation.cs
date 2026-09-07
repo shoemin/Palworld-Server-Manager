@@ -3,7 +3,7 @@ namespace PalworldServerManager.Core.Security;
 public enum MachineCredentialRecoveryReason { CredentialLoss = 1, SuspectedCompromise = 2 }
 public enum HostCredentialRotationState { Prepared, Staging, ReadyForCutover, CutOver, Completed, Aborted }
 public sealed record HostCredentialMetadata(string Reference, string? PublicKeyFingerprint, bool Retired);
-public sealed record HostRotationMetadata(Guid RotationId, string? OldReference, string? NewReference, HostCredentialRotationState State);
+public sealed record HostRotationMetadata(Guid RotationId, string? OldReference, string? NewReference, HostCredentialRotationState State, bool RetirementAuthorized = false);
 public sealed record HostCredentialSnapshot(Guid HostId, bool Initialized, string? CurrentReference,
     IReadOnlyList<HostCredentialMetadata> Credentials, IReadOnlyList<HostRotationMetadata> Rotations);
 public sealed record HostTrustProjection(Guid HostId, string CurrentFingerprint, string? PendingFingerprint, Guid? PendingRotationId);
@@ -28,7 +28,8 @@ public static class HostTrustPlanning
             retained.Add(reference); return row.PublicKeyFingerprint!;
         }
         var active = state.Rotations.Where(r => r.State is not HostCredentialRotationState.Completed and not HostCredentialRotationState.Aborted).ToArray();
-        if (state.Rotations.Any(r => !Enum.IsDefined(r.State)) || active.Length > 1) throw new InvalidDataException("Ambiguous credential rotation state.");
+        if (state.Rotations.Any(r => !Enum.IsDefined(r.State) ||
+            (r.RetirementAuthorized && r.State is not (HostCredentialRotationState.CutOver or HostCredentialRotationState.Completed))) || active.Length > 1) throw new InvalidDataException("Ambiguous credential rotation state.");
         HostTrustProjection? publication = null;
         if (state.CurrentReference is { } current)
         {
@@ -36,7 +37,17 @@ public static class HostTrustPlanning
             if (active.SingleOrDefault() is { } rotation)
             {
                 if (rotation.RotationId == Guid.Empty || rotation.OldReference == rotation.NewReference) throw new InvalidDataException("Invalid rotation identity.");
-                var old = Require(rotation.OldReference); string? next;
+                string old;
+                if (rotation.RetirementAuthorized)
+                {
+                    // Durable authorization releases Old only after the complete peer gate and
+                    // successful generation drain. Restart retries deletion before serving.
+                    if (rotation.OldReference is null || !references.TryGetValue(rotation.OldReference, out var prior) ||
+                        !Fingerprint(prior.PublicKeyFingerprint)) throw new InvalidDataException("Invalid retiring credential.");
+                    old = prior.PublicKeyFingerprint!;
+                }
+                else old = Require(rotation.OldReference);
+                string? next;
                 if (rotation.State == HostCredentialRotationState.Prepared)
                 {
                     // Prepared also reserves a not-yet-materialized reference. Preserve it

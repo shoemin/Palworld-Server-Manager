@@ -59,6 +59,8 @@ internal static class HostGenerationTransitionTests
                 var plan = HostTrustPlanning.Build(State.Read()); var p = plan.Publication!;
                 // Explicit public-publication fixture; real Windows cache/store reconciliation is qualified separately.
                 await PublishAsync(new(p.HostId, p.CurrentFingerprint, p.PendingFingerprint, p.PendingRotationId), ct);
+                // Explicit deletion-success fixture. Real key deletion is qualified by the Windows service.
+                foreach(var reference in plan.Retire) State.RecordRetired(reference);
             }, async (snapshot, ct) =>
             {
                 Starts++; if (Starts == FailStartNumber) throw new IOException("Injected replacement startup failure.");
@@ -326,7 +328,7 @@ internal static class HostGenerationTransitionTests
         Check(await c.Actions.ConfirmRotationAsync(a.F.State.HostId,a.Address)==PeerRotationReceiptExchange.Confirmed);
         a.FailReconcile=true;await Reject<IOException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
         Check(a.Actions.Phase==HostGenerationPhase.Quiesced && a.Starts==2 && a.Borrowed.All(c=>c.Handle==IntPtr.Zero));
-        Check(a.State.Read().Rotations.Single().State==HostCredentialRotationState.Completed && a.State.Read().CurrentReference==p.NewReference);
+        Check(a.State.Read().Rotations.Single() is {State:HostCredentialRotationState.CutOver,RetirementAuthorized:true} && a.State.Read().CurrentReference==p.NewReference);
         a.FailReconcile=false;await a.Actions.RecoverAsync();await a.LocalNegotiation(a.NextPin);
         Check(a.Starts==3 && (await a.Actions.CompleteRotationAsync(a.Owner,p.RotationId)).State==HostCredentialRotationState.Completed && a.Starts==3);
         Check(HostDatabase.QueryScalarLong(a.F.State.Writer,"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='HostRoutineRotationCompleted';")==1);

@@ -11,7 +11,7 @@ internal sealed class RoutineRotationCompletionCoordinator(HostCredentialStateRe
     internal async Task<RoutineRotationPreparation> CompleteWhileQuiescedAsync(LocalPrincipalMutationActor owner,Guid rotation,CancellationToken ct=default)
     {
         await serial.WaitAsync(ct).ConfigureAwait(false);
-        try {return state.CommitRoutineRotationCompletionWhileQuiesced(owner,rotation,actualLocalFingerprint,ct);}
+        try {return state.AuthorizeRoutineRotationRetirementWhileQuiesced(owner,rotation,actualLocalFingerprint,ct);}
         finally {serial.Release();}
     }
 }
