@@ -32,6 +32,28 @@ internal static class PeerRelationshipIncarnationTests
         return new(Guid.NewGuid(),f.HostId,r.RotationId,Next);
     }
     private static long Evidence(PeerTrustTests.Fixture f) => HostDatabase.QueryScalarLong(f.Writer,"SELECT Incarnation FROM HostRotationPromotionEvidence;");
+    public static Task CurrentConfirmationUpgradeCancellationAndFirstNewPairing()
+    {
+        using var f=new PeerTrustTests.Fixture(schemaVersion:6);Bind(f);Activate(f);var receipt=CutOver(f);
+        State(f).RecordRoutineRotationPromotionReceipt(receipt,f.PeerId,Peer,Next,Version(f));
+        var first=HostDatabase.QueryScalarText(f.Writer,"SELECT PromotedUtc FROM HostCredentialRotationPeers;");var evidence=Evidence(f);
+        Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer)==1 && HostSchemaMigrationRunner.Default().Migrate(f.Writer)==0);
+        Check(f.Count("HostRotationCurrentCredentialEvidence")==0 && Evidence(f)==evidence);
+        var proof=State(f).PrepareCurrentCredentialConfirmation(receipt.RotationId,Next);
+        using var cancellation=new CancellationTokenSource();cancellation.Cancel();
+        Reject<OperationCanceledException>(()=>State(f).RecordCurrentCredentialConfirmation(proof,f.PeerId,Peer,Next,Version(f),cancellation.Token));
+        Check(f.Count("HostRotationCurrentCredentialEvidence")==0);
+        Check(State(f).RecordCurrentCredentialConfirmation(proof,f.PeerId,Peer,Next,Version(f)));
+        Check(HostDatabase.QueryScalarText(f.Writer,"SELECT PromotedUtc FROM HostCredentialRotationPeers;")==first);
+        // Repository seam with verified first binding under New: this peer has never promoted Old.
+        var freshPeer=Guid.NewGuid();f.Repository.RecordVerifiedBinding(freshPeer,Peer,Next);
+        f.Repository.AcceptActivationAcknowledgement(freshPeer,Peer,Next,new(freshPeer,f.HostId,Next),new LocalOwnerActivationTests.Hook());
+        var fresh=f.Repository.ReadAuthenticatedRelationshipIncarnation(freshPeer,Peer,Next);
+        Check(State(f).RecordCurrentCredentialConfirmation(proof,freshPeer,Peer,Next,fresh));
+        Check(HostDatabase.QueryScalarLong(f.Writer,$"SELECT COUNT(*) FROM HostCredentialRotationPeers WHERE PeerHostId='{freshPeer:D}' AND StagedUtc IS NULL AND AcknowledgedUtc IS NULL AND PromotedUtc IS NULL;")==1);
+        Check(f.Count("HostCapabilityGrants")==0 && f.Count("ServerCapabilityGrants")==0);
+        return Task.CompletedTask;
+    }
     public static Task ConservativeUpgradeAndMigrationRollback()
     {
         using(var f=new PeerTrustTests.Fixture(schemaVersion:5))
@@ -39,7 +61,8 @@ internal static class PeerRelationshipIncarnationTests
             Bind(f);Activate(f);var receipt=CutOver(f);
             f.Execute($"INSERT INTO HostCredentialRotationPeers VALUES ('{receipt.RotationId:D}','{f.PeerId:D}','staged','acknowledged','first-promotion');");
             var trust=f.Repository.Read(f.PeerId);var audits=f.Count("AuditEvents");
-            Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer)==1 && HostSchemaMigrationRunner.Default().Migrate(f.Writer)==0);
+            var throughIncarnation=new HostSchemaMigrationRunner(HostSchema.AllMigrations().Take(6));
+            Check(throughIncarnation.Migrate(f.Writer)==1 && throughIncarnation.Migrate(f.Writer)==0);
             Check(Version(f)>0 && f.Count("HostRotationPromotionEvidence")==0 && f.Repository.Read(f.PeerId)==trust && f.Count("AuditEvents")==audits);
             Check(HostDatabase.QueryScalarText(f.Writer,"SELECT PromotedUtc FROM HostCredentialRotationPeers;")=="first-promotion");
             Check(State(f).RecordRoutineRotationPromotionReceipt(receipt,f.PeerId,Peer,Next,Version(f)));

@@ -124,6 +124,7 @@ internal static class HostGenerationTransitionTests
         Check(a.Borrowed[0].Handle == IntPtr.Zero && old.ListenerStopped.IsCompleted);
         await a.LocalNegotiation(a.NextPin);
         Check(await b.Actions.ConfirmRotationAsync(a.F.State.HostId, a.Address) == PeerRotationReceiptExchange.Confirmed);
+        Check(await a.Actions.ConfirmCurrentCredentialAsync(b.F.State.HostId, b.Address, p.RotationId));
         Check(b.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint == a.NextPin);
         await Reject<AuthenticationException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, Routes(b)));
         Check(a.Starts == 2 && a.State.Read().Credentials.All(c => !c.Retired) && a.F.State.Count("HostCapabilityGrants") == 0);
@@ -225,6 +226,7 @@ internal static class HostGenerationTransitionTests
         await Reject<OperationCanceledException>(() => a.Actions.CheckRotationAsync(peer, address));
         await Reject<OperationCanceledException>(() => a.Actions.StageRotationAsync(peer, address, Guid.NewGuid()));
         await Reject<OperationCanceledException>(() => a.Actions.ConfirmRotationAsync(peer, address));
+        await Reject<OperationCanceledException>(() => a.Actions.ConfirmCurrentCredentialAsync(peer, address, Guid.NewGuid()));
     }
     public static async Task ConcurrentWorkAndStopWaitForFailureCleanup()
     {

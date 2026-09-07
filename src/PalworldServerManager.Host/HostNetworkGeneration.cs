@@ -27,6 +27,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
     private PeerRotationStatusRpcClient? status;
     private PeerRotationProposalRpcClient? proposal;
     private PeerRotationReceiptRpcClient? receipt;
+    private PeerCurrentCredentialRpcClient? currentCredential;
     private RoutineRotationAcceptanceCollector? collector;
     private RoutineRotationCutoverCoordinator? cutover;
     private HostCredentialStateRepository? credentialState;
@@ -81,6 +82,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             pairing = pairingRuntime; credentialState = runtime.Credentials; HostId = runtime.HostId;
             activation = new(runtime, transport); pairingClient = new(pairingRuntime, transport);
             status = new(runtime, transport); proposal = new(runtime, transport); receipt = new(runtime, transport); collector = new(runtime, transport);
+            currentCredential = new(runtime, transport);
         }
     }
     internal async Task StartAsync(CancellationToken ct)
@@ -161,6 +163,8 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         => RunAsync(token => Required(proposal).StageAsync(peer, address, rotation, token), ct);
     internal Task<PeerRotationReceiptExchange> ConfirmRotationAsync(Guid peer, Uri address, CancellationToken ct = default)
         => RunAsync(token => Required(receipt).ConfirmAsync(peer, address, token), ct);
+    internal Task<bool> ConfirmCurrentCredentialAsync(Guid peer, Uri address, Guid rotation, CancellationToken ct = default)
+        => RunAsync(token => Required(currentCredential).ConfirmAsync(peer, address, rotation, token), ct);
     internal Task<RotationAcceptanceCollection> CollectRotationAsync(Guid rotation, IReadOnlyDictionary<Guid, Uri> addresses, CancellationToken ct = default)
         => RunAsync(token => Required(collector).CollectAsync(rotation, addresses, token), ct);
     internal RotationAcceptanceAssessment AssessRotation(RotationAcceptanceCollection collection) => Required(collector).Recheck(collection);

@@ -73,10 +73,11 @@ internal static class PeerSecurityRpcTests
         private readonly SocketsHttpHandler handler;
         private readonly GrpcChannel channel;
         internal readonly PeerSecurityProtocol.PeerSecurityProtocolClient Rpc;
-        internal RawClient(Fixture client, Fixture server, string? expectedPin = null, bool unboundedSend = false)
+        internal RawClient(Fixture client, Fixture server, string? expectedPin = null, bool unboundedSend = false,
+            System.Security.Cryptography.X509Certificates.X509Certificate2? certificate = null)
         {
             handler = new() { UseProxy = false, AllowAutoRedirect = false,
-                SslOptions = WindowsPeerTls.ClientOptions(client.Certificate.Value, pin => pin == (expectedPin ?? server.Pin)) };
+                SslOptions = WindowsPeerTls.ClientOptions(certificate ?? client.Certificate.Value, pin => pin == (expectedPin ?? server.Pin)) };
             channel = GrpcChannel.ForAddress(server.Address, new GrpcChannelOptions
             {
                 HttpHandler = handler, HttpVersion = HttpVersion.Version20, HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact,
