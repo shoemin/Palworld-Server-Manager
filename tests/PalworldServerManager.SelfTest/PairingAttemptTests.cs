@@ -139,6 +139,58 @@ internal static class PairingAttemptTests
         finally { foreach (var invitation in invitations) invitation.Dispose(); }
         return Task.CompletedTask;
     }
+    public static Task AdvertisedSelection()
+    {
+        var clock = new Clock(); var factory = new Factory();
+        using var host = new PairingAttemptCoordinator(factory, (_, _) => { }, clock);
+        using var older = host.CreateInvitation(); using var latest = host.CreateInvitation();
+        var selected = host.BeginAdvertised(IPAddress.Loopback);
+        // Cancellation of the advertised invitation ends precisely the selected exchange.
+        host.CancelInvitation(latest.Id); Check(selected.Phase == HostPairingPhase.Disposed);
+        Reject(() => host.Begin(older.Id, IPAddress.Parse("::ffff:127.0.0.1")));
+        Reject(() => host.BeginAdvertised(IPAddress.Parse("192.0.2.2")));
+        host.Begin(older.Id, IPAddress.Parse("192.0.2.3")).Disconnect();
+        using var consumed = host.CreateInvitation();
+        var success = host.BeginAdvertised(IPAddress.Parse("192.0.2.4"));
+        success.ReceivePeerMessage(new byte[65]); success.ConfirmPeer(new byte[32]);
+        success.CreateIdentityBinding(Guid.NewGuid(), [1]); success.VerifyIdentityBinding([1]);
+        Reject(() => host.BeginAdvertised(IPAddress.Parse("192.0.2.5")));
+        // Terminal cleanup of an older in-flight invitation must not clear a newer selection.
+        using var inFlight = host.CreateInvitation(); var oldAttempt = host.BeginAdvertised(IPAddress.Parse("192.0.2.6"));
+        using var newer = host.CreateInvitation(); host.CancelInvitation(inFlight.Id);
+        Check(oldAttempt.Phase == HostPairingPhase.Disposed);
+        host.BeginAdvertised(IPAddress.Parse("192.0.2.7")).Disconnect();
+        for (var i = 0; i < 9; i++) host.BeginAdvertised(IPAddress.Parse("198.51.100." + (i + 1))).Disconnect();
+        Reject(() => host.BeginAdvertised(IPAddress.Parse("192.0.2.8")));
+        host.Begin(older.Id, IPAddress.Parse("192.0.2.9")).Disconnect();
+        using var expired = host.CreateInvitation(); clock.Utc = clock.Utc.AddYears(-1); clock.Advance(300);
+        Reject(() => host.BeginAdvertised(IPAddress.Parse("192.0.2.10")));
+        using var restarted = new PairingAttemptCoordinator(factory, (_, _) => { }, clock);
+        Reject(() => restarted.BeginAdvertised(IPAddress.Loopback));
+        return Task.CompletedTask;
+    }
+    public static async Task AdvertisedAdmissionIsAtomic()
+    {
+        var factory = new Factory(); using var host = new PairingAttemptCoordinator(factory, (_, _) => { });
+        using var invitation = host.CreateInvitation();
+        using var entered = new ManualResetEventSlim(); using var release = new ManualResetEventSlim();
+        factory.OnStart = () => { entered.Set(); Check(release.Wait(TimeSpan.FromSeconds(10))); };
+        var begin = Task.Run(() => host.BeginAdvertised(IPAddress.Loopback));
+        try
+        {
+            Check(entered.Wait(TimeSpan.FromSeconds(10)));
+            var cancel = Task.Run(() => host.CancelInvitation(invitation.Id));
+            var create = Task.Run(() => host.CreateInvitation());
+            release.Set(); var attempt = await begin; await cancel;
+            using var next = await create;
+            Check(attempt.Phase == HostPairingPhase.Disposed && factory.Exchanges.Single().Disposals == 1);
+            factory.OnStart = null;
+            var nextAttempt = host.BeginAdvertised(IPAddress.Parse("192.0.2.1"));
+            host.CancelInvitation(next.Id); Check(nextAttempt.Phase == HostPairingPhase.Disposed);
+            Reject(() => host.BeginAdvertised(IPAddress.Parse("192.0.2.2")));
+        }
+        finally { release.Set(); }
+    }
     public static void Native(string path)
     {
         using var provider = new WindowsSpake2Provider(path, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))));

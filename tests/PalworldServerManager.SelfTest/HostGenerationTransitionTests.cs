@@ -191,6 +191,7 @@ internal static class HostGenerationTransitionTests
         using var code = new RedactedSecret(new byte[10]); var address = new Uri("https://127.0.0.1:1"); var peer = Guid.NewGuid();
         await Reject<OperationCanceledException>(() => a.Actions.ActivateAsync(peer, address));
         await Reject<OperationCanceledException>(() => a.Actions.PairAsync(address, peer, code));
+        await Reject<OperationCanceledException>(() => a.Actions.PairAsync(address, code));
         await Reject<OperationCanceledException>(() => a.Actions.CreateInvitationAsync());
         await Reject<OperationCanceledException>(() => a.Actions.CancelInvitationAsync(peer));
         await Reject<OperationCanceledException>(() => a.Actions.CheckRotationAsync(peer, address));
@@ -254,7 +255,7 @@ internal static class HostGenerationTransitionTests
         {
             a.F.State.Execute("CREATE TRIGGER transition_audit_failure BEFORE INSERT ON AuditEvents WHEN NEW.EventKind='PairingAttemptFailed' BEGIN SELECT RAISE(ABORT,'fixture'); END;");
             using var invitation = await b.Actions.CreateInvitationAsync();
-            await Reject<RpcException>(() => a.Actions.PairAsync(b.Actions.Endpoints!.Value.Pairing, invitation.Id, invitation.Code));
+            await Reject<RpcException>(() => a.Actions.PairAsync(b.Actions.Endpoints!.Value.Pairing, invitation.Code));
             var p = a.Prepare();
             await Reject<AggregateException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, new Dictionary<Guid, Uri>()));
             Check(a.Actions.Phase == HostGenerationPhase.Faulted && a.Starts == 1 && a.Reconciliations == 1 && a.State.Read().CurrentReference == p.OldReference);
