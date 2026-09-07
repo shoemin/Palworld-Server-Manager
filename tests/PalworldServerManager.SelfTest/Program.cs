@@ -11,6 +11,20 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--rotation-completion-probe"])
+    {
+        await RotationCompletionTests.EveryPeerMustResolveAndExpiryIsNotProof();
+        await RotationCompletionTests.CurrentIncarnationAndFirstNewProof();
+        await RotationCompletionTests.FinalAuditAndScopeRollback();
+        await RotationCompletionTests.WriterQueueRechecksOwnerPeerAndCancellation();
+        await RotationCompletionTests.InvalidMetadataAndCompletedScopeRefuse();
+        await HostGenerationTransitionTests.ActualCutoverNewTlsAndReceipt();
+        await HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration();
+        await HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery();
+        await HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship();
+        await HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit();
+        Console.WriteLine("PASS rotation completion persistence and actual owned generation."); return 0;
+    }
     if (args is ["--local-binding-provenance-probe"])
     {
         await PeerLocalBindingEvidenceTests.ConservativeUpgradeAndRollback();
@@ -527,6 +541,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
     ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
+    ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
+    ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Rotation completion EveryPeerMustResolveAndExpiryIsNotProof", RotationCompletionTests.EveryPeerMustResolveAndExpiryIsNotProof),
+    ("Rotation completion CurrentIncarnationAndFirstNewProof", RotationCompletionTests.CurrentIncarnationAndFirstNewProof),
+    ("Rotation completion FinalAuditAndScopeRollback", RotationCompletionTests.FinalAuditAndScopeRollback),
+    ("Rotation completion WriterQueueRechecksOwnerPeerAndCancellation", RotationCompletionTests.WriterQueueRechecksOwnerPeerAndCancellation),
+    ("Rotation completion InvalidMetadataAndCompletedScopeRefuse", RotationCompletionTests.InvalidMetadataAndCompletedScopeRefuse),
     ("Local binding ConservativeUpgradeAndRollback", PeerLocalBindingEvidenceTests.ConservativeUpgradeAndRollback),
     ("Local binding OwnerBindingContinuityAndInvalidation", PeerLocalBindingEvidenceTests.OwnerBindingContinuityAndInvalidation),
     ("Local binding AtomicAuditAndFinalContextRollback", PeerLocalBindingEvidenceTests.AtomicAuditAndFinalContextRollback),

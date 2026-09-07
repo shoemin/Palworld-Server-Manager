@@ -30,6 +30,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
     private PeerCurrentCredentialRpcClient? currentCredential;
     private RoutineRotationAcceptanceCollector? collector;
     private RoutineRotationCutoverCoordinator? cutover;
+    private RoutineRotationCompletionCoordinator? completion;
     private HostCredentialStateRepository? credentialState;
     private Func<(Uri Peer, Uri Pairing)>? readEndpoints;
     private Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>>? startDiscovery;
@@ -177,6 +178,14 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         {
             if (!stopped.Task.IsCompletedSuccessfully) throw new InvalidOperationException("Generation has not successfully stopped.");
             return cutover ??= new(Required(credentialState), Required(collector), material, publisher);
+        }
+    }
+    internal RoutineRotationCompletionCoordinator QuiescedCompletion()
+    {
+        lock(gate)
+        {
+            if(!stopped.Task.IsCompletedSuccessfully)throw new InvalidOperationException("Generation has not successfully stopped.");
+            return completion??=new(Required(credentialState),Required(LocalFingerprint));
         }
     }
     internal Task StopAsync()
