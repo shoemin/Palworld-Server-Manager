@@ -141,6 +141,8 @@ internal static class PeerPairingRpcTests
         var factory = new TrackingFactory(); await using var a = new Fixture(factory); await using var b = new Fixture(factory); await b.Start();
         using var invitation = b.Runtime.CreateInvitation();
         b.State.Execute("CREATE TRIGGER FailTerminalAudit BEFORE INSERT ON AuditEvents WHEN NEW.EventKind='PairingAttemptFailed' BEGIN SELECT RAISE(ABORT,'fixture secret must not be echoed'); END;");
+        try
+        {
         using var channel = Channel(a, b, out var transport); using var owner = transport;
         using (var call = new PeerPairingProtocol.PeerPairingProtocolClient(channel).Pair(deadline: DateTime.UtcNow.AddSeconds(5)))
         {
@@ -165,6 +167,14 @@ internal static class PeerPairingRpcTests
         await SendInvalid(a, initialization, Start(first.Id), StatusCode.Unauthenticated);
         Check(failingFactory.Created == 1 && failingFactory.Disposed == 0);
         Check(HostDatabase.QueryScalarLong(initialization.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
+        }
+        finally
+        {
+            // If an earlier wait/assertion fails, remove the injected fault before fixture
+            // disposal so its deliberate shutdown failure cannot hide the original failure.
+            b.State.Execute("DROP TRIGGER IF EXISTS FailTerminalAudit;");
+            b.Runtime.Audit.Maintain();
+        }
     }
     // The wrapper returns only the genuine provider's verified identity; it never creates proof.
     private sealed class OwnerChangeFactory(IPairingKeyExchangeFactory inner) : IPairingKeyExchangeFactory
