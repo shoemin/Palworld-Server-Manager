@@ -3,7 +3,7 @@ using PalworldServerManager.Core.Security;
 
 namespace PalworldServerManager.Host.Persistence;
 
-// Public protocol data only; the future wire adapter must bind it to completed current-key TLS.
+// Public protocol data only; the trusted wire adapter must bind it to completed current-key TLS.
 public sealed record HostRotationProposal(Guid HostId, Guid RotationId, long Sequence, string OldFingerprint, string NewFingerprint);
 
 public sealed partial class HostCredentialStateRepository

@@ -51,9 +51,22 @@ message PeerRotationProposalReply {
   string retained_rotation_id = 3;
   int64 remaining_acceptance_milliseconds = 4;
 }
+message PeerRotationReceiptRequest {
+  string request_id = 1;
+  string host_id = 2;
+  string rotation_id = 3;
+  string new_fingerprint = 4;
+}
+enum PeerRotationReceiptResult {
+  PEER_ROTATION_RECEIPT_RESULT_UNSPECIFIED = 0;
+  PEER_ROTATION_RECEIPT_RESULT_RECORDED = 1;
+  PEER_ROTATION_RECEIPT_RESULT_ALREADY_RECORDED = 2;
+}
+message PeerRotationReceiptReply { PeerRotationReceiptRequest request = 1; PeerRotationReceiptResult result = 2; }
 service PeerSecurityProtocol {
   rpc Negotiate(PeerHello) returns (PeerHello);
   rpc Activate(PeerActivationAck) returns (PeerActivationReply);
   rpc ReadRotationStatus(PeerRotationStatusRequest) returns (PeerRotationStatusReply);
   rpc StageRotation(PeerRotationProposalRequest) returns (PeerRotationProposalReply);
+  rpc ConfirmRotationPromotion(PeerRotationReceiptRequest) returns (PeerRotationReceiptReply);
 }

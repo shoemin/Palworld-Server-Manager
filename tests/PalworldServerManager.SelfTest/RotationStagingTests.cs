@@ -96,7 +96,7 @@ internal static class RotationStagingTests
         var afterPromotion = newer with { OldFingerprint = Next, Sequence = 1 };
         blocked = f.Repository.StagePeerRotation(afterPromotion, Next, Local);
         Check(blocked.Disposition == PeerRotationStagingDisposition.PromotionReceiptPending && blocked.RetainedRotationId == first.RotationId && f.Count("PeerRotationProposals") == 1);
-        f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Next, first.RotationId);
+        f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Next, first.RotationId, Local);
         Check(f.Repository.StagePeerRotation(afterPromotion, Next, Local).Disposition == PeerRotationStagingDisposition.Staged); // New current-key epoch.
         Reject<AuthenticationException>(() => f.Repository.StagePeerRotation(first, Old, Local));
         Check(f.Repository.Read(f.PeerId)!.CurrentFingerprint == Next); Preserved(f); return Task.CompletedTask;
@@ -122,7 +122,7 @@ internal static class RotationStagingTests
         Check(f.Count("PeerRotationProposals") == 0 && f.Count("HostRotationProposals") == 0 && f.Repository.Read(f.PeerId)!.PendingRotationExpiresUtc == deadline);
         Reject<InvalidDataException>(() => f.Repository.StagePeerRotation(Proposal(f), Old, Local));
         Check(f.Repository.ObserveActivePeerCredential(f.PeerId, Next).Promoted); // Existing verified live pin remains valid.
-        Check(f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Next, retained));
+        Check(f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Next, retained, Local));
         Check(f.Repository.StagePeerRotation(Proposal(f) with { OldFingerprint = Next, NewFingerprint = Later }, Next, Local).Disposition == PeerRotationStagingDisposition.Staged);
         Preserved(f); return Task.CompletedTask;
     }

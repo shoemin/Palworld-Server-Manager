@@ -75,4 +75,10 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
         var result = runtime.Repository.StagePeerRotation(proposal, session.PeerFingerprint, session.LocalFingerprint);
         return PeerRotationProposalWire.Reply(request, result, runtime.Clock.GetUtcNow());
     }, FeatureCapability.PeerRotationProposal, PeerTrafficPurpose.TrustMaintenance);
+    public override Task<PeerRotationReceiptReply> ConfirmRotationPromotion(PeerRotationReceiptRequest request, ServerCallContext context) => Dispatch(context, false, session =>
+    {
+        var recorded = runtime.Credentials.RecordRoutineRotationPromotionReceipt(PeerRotationReceiptWire.Durable(request),
+            session.PeerId, session.PeerFingerprint, session.LocalFingerprint);
+        return new PeerRotationReceiptReply { Request = request.Clone(), Result = recorded ? PeerRotationReceiptResult.Recorded : PeerRotationReceiptResult.AlreadyRecorded };
+    }, FeatureCapability.PeerRotationReceipt, PeerTrafficPurpose.TrustMaintenance);
 }
