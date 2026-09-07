@@ -17,6 +17,19 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--generation-transitions-probe"])
+    {
+        await HostGenerationTransitionTests.AuditCleanupFailurePreventsEveryReplacement();
+        await HostGenerationTransitionTests.ActualCutoverNewTlsAndReceipt();
+        await HostGenerationTransitionTests.PreflightRefusalLeavesGenerationServing();
+        await HostGenerationTransitionTests.PublicationFailuresRequireExplicitAuthoritativeRecovery();
+        await HostGenerationTransitionTests.FinalOwnerAndAcceptanceChecksSurviveSlowShutdown();
+        await HostGenerationTransitionTests.StopDuringActualStartupClosesReturnedCandidate();
+        await HostGenerationTransitionTests.ConcurrentWorkAndStopWaitForFailureCleanup();
+        await HostGenerationTransitionTests.UnexpectedListenerStopClosesEntireOwner();
+        await HostGenerationTransitionTests.ReplacementOrReconciliationFailureNeverRestoresOld();
+        Console.WriteLine("PASS Host generation transition coordination and failure recovery."); return 0;
+    }
     if (args is ["--generation-construction-probe"])
     { await HostNetworkGenerationTests.RuntimeConstructionFailureCleansEarlierTimer(); Console.WriteLine("PASS runtime construction cleanup."); return 0; }
     if (args is ["--host-generation-probe"])
@@ -274,6 +287,16 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Failed generation audit cleanup prevents cutover and every replacement", HostGenerationTransitionTests.AuditCleanupFailurePreventsEveryReplacement),
+    ("Host transitions perform real cutover New TLS and peer receipt", HostGenerationTransitionTests.ActualCutoverNewTlsAndReceipt),
+    ("Host transition preflight refuses without disrupting service", HostGenerationTransitionTests.PreflightRefusalLeavesGenerationServing),
+    ("Publication failures leave transitions quiesced until explicit recovery", HostGenerationTransitionTests.PublicationFailuresRequireExplicitAuthoritativeRecovery),
+    ("Slow shutdown cannot bypass fresh Owner or acceptance margin", HostGenerationTransitionTests.FinalOwnerAndAcceptanceChecksSurviveSlowShutdown),
+    ("Stop during actual generation startup closes the returned candidate", HostGenerationTransitionTests.StopDuringActualStartupClosesReturnedCandidate),
+    ("Host transition stop cancels queued work and waits failed callback cleanup", HostGenerationTransitionTests.ConcurrentWorkAndStopWaitForFailureCleanup),
+    ("Unexpected listener stopping closes the complete transition owner", HostGenerationTransitionTests.UnexpectedListenerStopClosesEntireOwner),
+    ("Replacement or reconciliation failure cannot restore an old credential", HostGenerationTransitionTests.ReplacementOrReconciliationFailureNeverRestoresOld),
+
     ("Failed pairing runtime construction cleans its previously created audit timer", HostNetworkGenerationTests.RuntimeConstructionFailureCleansEarlierTimer),
     ("Host generation owns actual network work and closes every outgoing helper", HostNetworkGenerationTests.ActualNetworkWorkAndClosedAdmission),
     ("Host generation stop waits for work before releasing the credential", HostNetworkGenerationTests.StopWaitsForWorkAndRejectsPrematureCutover),
