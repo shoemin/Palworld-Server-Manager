@@ -51,6 +51,7 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
         var hello = PeerSecurityRpcRuntime.Hello(runtime.HostId);
         var protocol = NegotiatedProtocol.Negotiate(hello.Handshake, request.Handshake);
         protocol.Require(FeatureCapability.PeerTrustActivation);
+        session.PeerIncarnation = runtime.Repository.ReadAuthenticatedRelationshipIncarnation(peer, session.PeerFingerprint, session.LocalFingerprint);
         session.PeerId = peer; session.Protocol = protocol; hello.Handshake.Protocol.Minor = protocol.Minor; return hello;
     });
     public override Task<PeerActivationReply> Activate(PeerActivationAck request, ServerCallContext context) => Dispatch(context, false, session =>
@@ -78,7 +79,7 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
     public override Task<PeerRotationReceiptReply> ConfirmRotationPromotion(PeerRotationReceiptRequest request, ServerCallContext context) => Dispatch(context, false, session =>
     {
         var recorded = runtime.Credentials.RecordRoutineRotationPromotionReceipt(PeerRotationReceiptWire.Durable(request),
-            session.PeerId, session.PeerFingerprint, session.LocalFingerprint);
+            session.PeerId, session.PeerFingerprint, session.LocalFingerprint, session.PeerIncarnation);
         return new PeerRotationReceiptReply { Request = request.Clone(), Result = recorded ? PeerRotationReceiptResult.Recorded : PeerRotationReceiptResult.AlreadyRecorded };
     }, FeatureCapability.PeerRotationReceipt, PeerTrafficPurpose.TrustMaintenance);
 }

@@ -49,6 +49,7 @@ internal sealed class PeerSecurityRpcConnection(string localFingerprint, string 
     internal string LocalFingerprint { get; } = localFingerprint;
     internal string PeerFingerprint { get; } = peerFingerprint;
     internal Guid PeerId { get; set; }
+    internal long PeerIncarnation { get; set; }
     internal NegotiatedProtocol? Protocol { get; set; }
     internal bool NegotiationAttempted { get; set; }
     internal async Task<T> Invoke<T>(Func<PeerSecurityRpcConnection, T> action, CancellationToken ct)
@@ -60,7 +61,7 @@ internal sealed class PeerSecurityRpcConnection(string localFingerprint, string 
     public async ValueTask DisposeAsync()
     {
         await gate.WaitAsync().ConfigureAwait(false);
-        try { closed = true; Protocol = null; PeerId = Guid.Empty; }
+        try { closed = true; Protocol = null; PeerId = Guid.Empty; PeerIncarnation = 0; }
         finally { gate.Release(); }
     }
 }

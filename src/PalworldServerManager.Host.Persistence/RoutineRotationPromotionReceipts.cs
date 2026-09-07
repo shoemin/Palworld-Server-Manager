@@ -8,11 +8,11 @@ public sealed record RoutineRotationPromotionReceipt(Guid RequestId, Guid HostId
 public sealed partial class HostCredentialStateRepository
 {
     public bool RecordRoutineRotationPromotionReceipt(RoutineRotationPromotionReceipt receipt, Guid peer,
-        string actualPeerFingerprint, string actualLocalFingerprint)
+        string actualPeerFingerprint, string actualLocalFingerprint, long negotiatedIncarnation)
     {
         ArgumentNullException.ThrowIfNull(receipt);
         if (receipt.RequestId == Guid.Empty || receipt.HostId != _hostId || receipt.RotationId == Guid.Empty ||
-            peer == Guid.Empty || peer == _hostId || !HostTrustPlanning.Fingerprint(receipt.NewFingerprint) ||
+            peer == Guid.Empty || peer == _hostId || negotiatedIncarnation <= 0 || !HostTrustPlanning.Fingerprint(receipt.NewFingerprint) ||
             !HostTrustPlanning.Fingerprint(actualPeerFingerprint) || receipt.NewFingerprint != actualLocalFingerprint) throw RoutineDenied();
         using var c = Open(); using var tx = c.BeginTransaction(deferred: false);
         var snapshot = Read(c, tx); var plan = HostTrustPlanning.Build(snapshot);
@@ -25,16 +25,19 @@ public sealed partial class HostCredentialStateRepository
                 AND CurrentTrustedPublicKeyFingerprint=$fingerprint;
             """, ("$peer", peer.ToString("D")), ("$fingerprint", actualPeerFingerprint)))
             if (Convert.ToInt32(command.ExecuteScalar()) != 1) throw RoutineDenied();
-        using (var command = Command(c, tx, "SELECT PromotedUtc FROM HostCredentialRotationPeers WHERE RotationId=$rotation AND PeerHostId=$peer;",
+        if (PeerRelationshipIncarnation.Read(c, tx, peer) != negotiatedIncarnation) throw RoutineDenied();
+        using (var command = Command(c, tx, "SELECT Incarnation FROM HostRotationPromotionEvidence WHERE RotationId=$rotation AND PeerHostId=$peer;",
             ("$rotation", receipt.RotationId.ToString("D")), ("$peer", peer.ToString("D"))))
-            if (command.ExecuteScalar() is string) return false;
+            if (command.ExecuteScalar() is long prior && prior == negotiatedIncarnation) return false;
         var now = DateTimeOffset.UtcNow.ToString("O");
         Execute(c, tx, """
             INSERT INTO HostCredentialRotationPeers (RotationId,PeerHostId,PromotedUtc) VALUES ($rotation,$peer,$now)
-                ON CONFLICT(RotationId,PeerHostId) DO UPDATE SET PromotedUtc=$now;
+                ON CONFLICT(RotationId,PeerHostId) DO UPDATE SET PromotedUtc=COALESCE(PromotedUtc,$now);
+            INSERT INTO HostRotationPromotionEvidence (RotationId,PeerHostId,Incarnation,ConfirmedUtc) VALUES ($rotation,$peer,$incarnation,$now)
+                ON CONFLICT(RotationId,PeerHostId) DO UPDATE SET Incarnation=$incarnation,ConfirmedUtc=$now;
             INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorPeerHostId,AffectedHostId,Summary)
                 VALUES ($event,$now,'HostRotationPeerPromotionReceived','RemoteManager',$peer,$host,$summary);
-            """, ("$rotation", receipt.RotationId.ToString("D")), ("$peer", peer.ToString("D")), ("$now", now),
+            """, ("$rotation", receipt.RotationId.ToString("D")), ("$peer", peer.ToString("D")), ("$now", now), ("$incarnation", negotiatedIncarnation),
             ("$event", Guid.NewGuid().ToString("D")), ("$host", _hostId.ToString("D")), ("$summary", $"Peer confirmed promotion for rotation {receipt.RotationId:D}."));
         tx.Commit(); return true;
     }
