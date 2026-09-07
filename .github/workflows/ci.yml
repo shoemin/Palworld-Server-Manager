@@ -91,6 +91,11 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Independently qualify Windows LAN native layout
+        if: github.event_name == 'workflow_dispatch' && (startsWith(github.ref_name, 'astra/44-') || github.ref_name == 'experiment/astra-v0.5.0')
+        shell: pwsh
+        run: .\scripts\test-windows-lan-abi.ps1
+
       - name: Build and run self-tests
         shell: pwsh
         run: .\scripts\build.ps1

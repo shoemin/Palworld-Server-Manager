@@ -137,6 +137,12 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--windows-lan-interfaces-probe"])
+    {
+        await WindowsLanInterfaceTests.LinkSourcePolicy(); await WindowsLanInterfaceTests.HardwareEligibilityAndCorrelation();
+        await WindowsLanInterfaceTests.NativeLayoutAndReadOnlyInventory();
+        Console.WriteLine("PASS Windows LAN source policy, hardware eligibility and read-only native inventory."); return 0;
+    }
     if (args is ["--host-discovery-probe"])
     {
         await HostDiscoveryTests.ManualAddresses(); await HostDiscoveryTests.PacketBoundsAndCompatibility();
@@ -407,6 +413,9 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
     ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
     ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
+    ("LAN discovery source policy requires the exact interface and subnet host", WindowsLanInterfaceTests.LinkSourcePolicy),
+    ("Windows LAN eligibility rejects virtual tunnels and changed adapter identity", WindowsLanInterfaceTests.HardwareEligibilityAndCorrelation),
+    ("Windows LAN native layout and read-only adapter inventory match the SDK", WindowsLanInterfaceTests.NativeLayoutAndReadOnlyInventory),
     ("Manual Host addresses reject authority and URI injection", HostDiscoveryTests.ManualAddresses),
     ("Host discovery packets remain bounded and unverified across versions", HostDiscoveryTests.PacketBoundsAndCompatibility),
     ("Host discovery directory preserves actual source conflicts and monotonic expiry", HostDiscoveryTests.DirectorySourceBoundsAndExpiry),
