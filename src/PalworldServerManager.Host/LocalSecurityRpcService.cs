@@ -9,7 +9,7 @@ using WireInvitation = PalworldServerManager.Contracts.Wire.LocalEnrollmentInvit
 
 namespace PalworldServerManager.Host;
 
-public sealed class LocalSecurityRpcService(LocalSecurityRpcRuntime runtime) : LocalSecurityProtocol.LocalSecurityProtocolBase
+public sealed partial class LocalSecurityRpcService(LocalSecurityRpcRuntime runtime) : LocalSecurityProtocol.LocalSecurityProtocolBase
 {
     public const int MaximumMessageBytes = 16 * 1024;
     private static Guid Id(string text) => Guid.TryParseExact(text, "D", out var id) && id != Guid.Empty ? id : throw new ArgumentException("Invalid identity.");
@@ -47,11 +47,14 @@ public sealed class LocalSecurityRpcService(LocalSecurityRpcRuntime runtime) : L
         if (session.NegotiationAttempted) throw new RpcException(new(StatusCode.FailedPrecondition, "This connection already attempted negotiation."));
         session.NegotiationAttempted = true;
         if (request.Capabilities.Count > 64 || request.ProductVersion.Length > 256) throw new ArgumentException();
-        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 1 }, ProductVersion = "0.5.0-astra" };
+        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 8 }, ProductVersion = "0.5.0-astra" };
         hello.Capabilities.Add(FeatureCapability.LocalPrincipalSecurity);
+        if (runtime.Pairing is not null) hello.Capabilities.Add(FeatureCapability.LocalOwnerPairing);
+        var offered = hello.Capabilities.ToArray();
         var negotiated = NegotiatedProtocol.Negotiate(hello, request);
         hello.Protocol.Minor = negotiated.Minor;
-        if (!negotiated.Supports(FeatureCapability.LocalPrincipalSecurity)) hello.Capabilities.Clear();
+        hello.Capabilities.Clear();
+        hello.Capabilities.AddRange(offered.Where(negotiated.Supports));
         var reply = new LocalHandshakeReply { Handshake = hello, Host = new() { HostId = runtime.HostId.ToString("D") }, Initialized = runtime.IsInitialized() };
         session.Protocol = negotiated;
         return Task.FromResult(reply);

@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--local-owner-pairing-rpc-probe"])
+    {
+        await ProtocolTests.SchemaEvolution();
+        await LocalOwnerPairingRpcTests.CapabilityAndNativeIdentity();
+        await LocalOwnerPairingRpcTests.DiscoveryAndRequestBounds();
+        await LocalOwnerPairingRpcTests.StaleOwnerAndResponseConstruction();
+        Console.WriteLine("PASS protected local Owner pairing RPC."); return 0;
+    }
     if (args is ["--local-owner-pairing-probe"])
     {
         await LocalOwnerPairingTests.RepositoryBoundaries();
@@ -481,6 +489,9 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
     ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Local Owner RPC CapabilityAndNativeIdentity", LocalOwnerPairingRpcTests.CapabilityAndNativeIdentity),
+    ("Local Owner RPC DiscoveryAndRequestBounds", LocalOwnerPairingRpcTests.DiscoveryAndRequestBounds),
+    ("Local Owner RPC StaleOwnerAndResponseConstruction", LocalOwnerPairingRpcTests.StaleOwnerAndResponseConstruction),
     ("Local Owner pairing RepositoryBoundaries", LocalOwnerPairingTests.RepositoryBoundaries),
     ("Local Owner pairing WriterQueueFreshness", LocalOwnerPairingTests.WriterQueueFreshness),
     ("Local Owner pairing AuthenticatedGenerationActions", LocalOwnerPairingTests.AuthenticatedGenerationActions),
