@@ -13,6 +13,16 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--permission-denial-probe"])
+    {
+        await PermissionDenialAuditTests.EveryPreWritePathRecordsActualActorWithoutEffects();
+        await PermissionDenialAuditTests.AuthenticationMalformedStaleAndCancellationAreNotPolicyDenials();
+        await PermissionDenialAuditTests.DenialAuditFailureRemovalMutationAndIdentityRaceRollBack();
+        await PermissionDenialAuditTests.PresetDenialAndCallbackFailureNeverCommitPartialWork();
+        await PermissionDenialAuditTests.ConcurrentDenialsKeepRevisionAndSuccessfulGrantsSeparate();
+        await PermissionDenialAuditTests.LateCancellationAndSuccessfulAuditFailureDoNotBecomeDenials();
+        Console.WriteLine("PASS durable pre-write permission denial audit."); return 0;
+    }
     if (args is ["--remote-grants-probe"])
     {
         await RemoteGrantPolicyTests.ExactDelegationPersistsRealPeerAndProvenance();
@@ -626,6 +636,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Permission denial EveryPreWritePathRecordsActualActorWithoutEffects", PermissionDenialAuditTests.EveryPreWritePathRecordsActualActorWithoutEffects),
+    ("Permission denial AuthenticationMalformedStaleAndCancellationAreNotPolicyDenials", PermissionDenialAuditTests.AuthenticationMalformedStaleAndCancellationAreNotPolicyDenials),
+    ("Permission denial DenialAuditFailureRemovalMutationAndIdentityRaceRollBack", PermissionDenialAuditTests.DenialAuditFailureRemovalMutationAndIdentityRaceRollBack),
+    ("Permission denial PresetDenialAndCallbackFailureNeverCommitPartialWork", PermissionDenialAuditTests.PresetDenialAndCallbackFailureNeverCommitPartialWork),
+    ("Permission denial ConcurrentDenialsKeepRevisionAndSuccessfulGrantsSeparate", PermissionDenialAuditTests.ConcurrentDenialsKeepRevisionAndSuccessfulGrantsSeparate),
+    ("Permission denial LateCancellationAndSuccessfulAuditFailureDoNotBecomeDenials", PermissionDenialAuditTests.LateCancellationAndSuccessfulAuditFailureDoNotBecomeDenials),
     ("Remote grants ExactDelegationPersistsRealPeerAndProvenance", RemoteGrantPolicyTests.ExactDelegationPersistsRealPeerAndProvenance),
     ("Remote grants RootsScopeAndRightsCannotBeManufactured", RemoteGrantPolicyTests.RootsScopeAndRightsCannotBeManufactured),
     ("Remote grants AllEntryPointsRequireCurrentTransportAndRevision", RemoteGrantPolicyTests.AllEntryPointsRequireCurrentTransportAndRevision),

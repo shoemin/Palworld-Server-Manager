@@ -150,10 +150,10 @@ internal static class RemoteGrantPolicyTests
             new("cross-server",good.Hosts,[new(Guid.NewGuid(),r.Grantee,ServerCapability.ViewServer,new(r.Other,r.Target.ServerProfileId),Use,r.ServerRoot)]),
             new("bootstrap",[new(bootstrap,r.Peer,HostCapability.CreateServer,r.F.HostId,Onward,r.HostRoot),new(Guid.NewGuid(),r.Grantee,HostCapability.CreateServer,r.F.HostId,Use,bootstrap)],[])];
         foreach(var recipe in bad)Reject<UnauthorizedAccessException>(()=>r.Repo.ApplyRemotePreset(r.Actor,before,recipe));
-        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits);
+        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits+bad.Length);
         var result=r.Repo.ApplyRemotePreset(r.Actor,before,good);Check(result.Revision==before+2&&result.HostGrantIds.Count==1&&result.ServerGrantIds.Count==1);
         Reject<NotSupportedException>(()=>((IList<Guid>)result.HostGrantIds).Clear());
-        using var cmd=r.F.Writer.CreateCommand();cmd.CommandText="SELECT Summary FROM AuditEvents WHERE ActorKind='RemoteManager';";using var reader=cmd.ExecuteReader();int count=0;
+        using var cmd=r.F.Writer.CreateCommand();cmd.CommandText="SELECT Summary FROM AuditEvents WHERE ActorKind='RemoteManager' AND EventKind='CapabilityGrantIssued';";using var reader=cmd.ExecuteReader();int count=0;
         while(reader.Read()){var text=reader.GetString(0);Check(text.Contains("RolePreset:"+result.AuditBatchId!.Value.ToString("D"))&&!text.Contains("private-fixture-label"));count++;}
         Check(count==2);return Task.CompletedTask;
     }

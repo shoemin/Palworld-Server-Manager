@@ -14,13 +14,17 @@ public sealed partial class GrantPolicyRepository
         ArgumentNullException.ThrowIfNull(preset);ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
         var before=Read(c,tx);actor.Require(c,tx,before);RequireRevision(expectedRevision,before.Revision);
-        if(actor.Actual.Kind==ActorKind.RemoteManager)
-        {
-            foreach(var entry in preset.Hosts)RequireIncomingTarget(entry.TargetHostId);
-            foreach(var entry in preset.Servers)RequireIncomingTarget(entry.Target.AuthoritativeHostId);
-        }
         var now=time.GetUtcNow();var actual=actor.Actual;
-        var expansion=before.Policy.ExpandPreset(actual,preset,now);
+        var expansion=AuthorizeOrAudit(c,tx,actor,before.Revision,
+            new("ApplyPreset",hostId,null,$"HostEntries={preset.Hosts.Count}; ServerEntries={preset.Servers.Count}"),()=>
+        {
+            if(actual.Kind==ActorKind.RemoteManager)
+            {
+                foreach(var entry in preset.Hosts)RequireIncomingTarget(entry.TargetHostId);
+                foreach(var entry in preset.Servers)RequireIncomingTarget(entry.Target.AuthoritativeHostId);
+            }
+            return before.Policy.ExpandPreset(actual,preset,now);
+        },ct);
         var grants=expansion.Hosts.Cast<CapabilityGrant>().Concat(expansion.Servers).ToArray();
         ct.ThrowIfCancellationRequested();
         if(grants.Length==0)return new(null,before.Revision,Array.Empty<Guid>(),Array.Empty<Guid>());

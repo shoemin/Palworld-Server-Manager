@@ -41,7 +41,12 @@ public sealed partial class GrantPolicyRepository
         ArgumentNullException.ThrowIfNull(actor);ArgumentNullException.ThrowIfNull(template);ValidateDefaultTargets(template);ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
         var before=Read(c,tx);RequireLocal(c,tx,actor,before);RequireRevision(expectedRevision,before.Revision);
-        if(!before.Policy.IsOwner(ActorRef.LocalPrincipal(actor.LocalPrincipalId)))throw new UnauthorizedAccessException("Only Owner may configure defaults.");
+        AuthorizeOrAudit(c,tx,LocalWriter(actor),before.Revision,
+            new("ConfigureDefaults",hostId,null,$"HostEntries={template.Hosts.Count}; ServerEntries={template.Servers.Count}"),()=>
+        {
+            if(!before.Policy.IsOwner(ActorRef.LocalPrincipal(actor.LocalPrincipalId)))throw new UnauthorizedAccessException("Only Owner may configure defaults.");
+            return true;
+        },ct);
         var prior=ReadDefaults(c,tx,before.Revision);var config=Guid.NewGuid();var now=time.GetUtcNow();
         Execute(c,tx,"DELETE FROM HostDefaultGrants; DELETE FROM ServerDefaultGrants;");
         foreach(var entry in template.Hosts)Execute(c,tx,"INSERT INTO HostDefaultGrants VALUES ($cap,$delegate,$onward);",

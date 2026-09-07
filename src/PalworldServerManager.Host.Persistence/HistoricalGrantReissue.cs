@@ -22,10 +22,15 @@ public sealed partial class GrantPolicyRepository
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
         var before=Read(c,tx);RequireLocal(c,tx,owner,before);RequireRevision(expectedRevision,before.Revision);
         var actual=ActorRef.LocalPrincipal(owner.LocalPrincipalId);
-        if(!before.Policy.IsOwner(actual)||!before.Policy.IsActive(peer))throw new UnauthorizedAccessException("Owner and active peer required.");
         var now=time.GetUtcNow();
-        var hosts=hs.Select(id=>(Old:before.HostGrants.SingleOrDefault(g=>g.GrantId==id),New:before.Policy.ReissueHostRoot(actual,Guid.NewGuid(),peerId,id,now))).ToArray();
-        var servers=ss.Select(id=>(Old:before.ServerGrants.SingleOrDefault(g=>g.GrantId==id),New:before.Policy.ReissueServerRoot(actual,Guid.NewGuid(),peerId,id,now))).ToArray();
+        var (hosts,servers)=AuthorizeOrAudit(c,tx,LocalWriter(owner),before.Revision,
+            new("ReissueHistoricalRoots",hostId,null,$"Peer={Id(peerId)}; HostEntries={hs.Length}; ServerEntries={ss.Length}"),()=>
+        {
+            if(!before.Policy.IsOwner(actual)||!before.Policy.IsActive(peer))throw new UnauthorizedAccessException("Owner and active peer required.");
+            var hostCandidates=hs.Select(id=>(Old:before.HostGrants.SingleOrDefault(g=>g.GrantId==id),New:before.Policy.ReissueHostRoot(actual,Guid.NewGuid(),peerId,id,now))).ToArray();
+            var serverCandidates=ss.Select(id=>(Old:before.ServerGrants.SingleOrDefault(g=>g.GrantId==id),New:before.Policy.ReissueServerRoot(actual,Guid.NewGuid(),peerId,id,now))).ToArray();
+            return (hostCandidates,serverCandidates);
+        },ct);
         var pairs=hosts.Select(p=>(Old:(CapabilityGrant)p.Old!,New:(CapabilityGrant)p.New))
             .Concat(servers.Select(p=>(Old:(CapabilityGrant)p.Old!,New:(CapabilityGrant)p.New))).ToArray();
         ct.ThrowIfCancellationRequested();
