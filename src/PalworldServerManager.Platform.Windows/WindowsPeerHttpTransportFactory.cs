@@ -12,6 +12,8 @@ public sealed class WindowsPeerHttpTransportFactory(X509Certificate2 certificate
     public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed = null) => new Transport(certificate, acceptsServerPin, observed);
     private sealed class Transport : IPeerHttpTransport
     {
+        private readonly object callbackGate = new();
+        private bool disposed;
         private PeerTlsConnectionIdentity? identity;
         public HttpMessageHandler Handler { get; }
         public PeerTlsConnectionIdentity Identity => Volatile.Read(ref identity) ?? throw new AuthenticationException("Peer TLS proof unavailable.");
@@ -21,22 +23,35 @@ public sealed class WindowsPeerHttpTransportFactory(X509Certificate2 certificate
             Handler = new SocketsHttpHandler
             {
                 UseProxy = false, AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(10),
-                SslOptions = WindowsPeerTls.ClientOptions(certificate, acceptsServerPin),
+                SslOptions = WindowsPeerTls.ClientOptions(certificate, pin =>
+                {
+                    lock (callbackGate) return !disposed && acceptsServerPin(pin);
+                }),
                 PlaintextStreamFilter = (context, token) =>
                 {
-                    token.ThrowIfCancellationRequested();
-                    if (context.PlaintextStream is not SslStream ssl || !ssl.IsMutuallyAuthenticated ||
-                        ssl.NegotiatedApplicationProtocol != SslApplicationProtocol.Http2 || ssl.LocalCertificate is null || ssl.RemoteCertificate is null)
-                        throw new AuthenticationException("Peer TLS proof refused.");
-                    using var own = new X509Certificate2(ssl.LocalCertificate); using var remote = new X509Certificate2(ssl.RemoteCertificate);
-                    var evidence = new PeerTlsConnectionIdentity(local, WindowsPeerTls.PublicFingerprint(remote));
-                    if (WindowsPeerTls.PublicFingerprint(own) != local || Interlocked.CompareExchange(ref identity, evidence, null) is not null)
-                        throw new AuthenticationException("Retry with a fresh peer connection.");
-                    observed?.Invoke(evidence);
-                    return ValueTask.FromResult(context.PlaintextStream);
+                    lock (callbackGate)
+                    {
+                        ObjectDisposedException.ThrowIf(disposed, this);
+                        token.ThrowIfCancellationRequested();
+                        if (context.PlaintextStream is not SslStream ssl || !ssl.IsMutuallyAuthenticated ||
+                            ssl.NegotiatedApplicationProtocol != SslApplicationProtocol.Http2 || ssl.LocalCertificate is null || ssl.RemoteCertificate is null)
+                            throw new AuthenticationException("Peer TLS proof refused.");
+                        using var own = new X509Certificate2(ssl.LocalCertificate); using var remote = new X509Certificate2(ssl.RemoteCertificate);
+                        var evidence = new PeerTlsConnectionIdentity(local, WindowsPeerTls.PublicFingerprint(remote));
+                        if (WindowsPeerTls.PublicFingerprint(own) != local || Interlocked.CompareExchange(ref identity, evidence, null) is not null)
+                            throw new AuthenticationException("Retry with a fresh peer connection.");
+                        observed?.Invoke(evidence);
+                        return ValueTask.FromResult(context.PlaintextStream);
+                    }
                 }
             };
         }
-        public void Dispose() => Handler.Dispose();
+        public void Dispose()
+        {
+            // Request cancellation can finish before SocketsHttpHandler's TLS callbacks.
+            // Drain callbacks using Host state, and prevent any later callback entering it.
+            lock (callbackGate) disposed = true;
+            Handler.Dispose();
+        }
     }
 }
