@@ -13,6 +13,16 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--authorization-foundation-probe"])
+    {
+        await AuthorizationPolicyTests.ModelsAndProtocolMapping();
+        await AuthorizationPolicyTests.ExhaustiveDelegationRightsAndTypedScope();
+        await AuthorizationPolicyTests.ForestValidityAndExactSubtrees();
+        await AuthorizationPolicyTests.MalformedLineagesAndStructuralOwner();
+        await AuthorizationPolicyTests.DualLocalAndRemoteCeilings();
+        await AuthorizationPolicyTests.SnapshotIsolationAndClosedInputs();
+        Console.WriteLine("PASS pure authorization foundation."); return 0;
+    }
     if (args is ["--rotation-completion-probe"])
     {
         await RotationCompletionTests.DeletionFailureAndCompletionAuditRecover();
@@ -549,6 +559,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Authorization ModelsAndProtocolMapping", AuthorizationPolicyTests.ModelsAndProtocolMapping),
+    ("Authorization ExhaustiveDelegationRightsAndTypedScope", AuthorizationPolicyTests.ExhaustiveDelegationRightsAndTypedScope),
+    ("Authorization ForestValidityAndExactSubtrees", AuthorizationPolicyTests.ForestValidityAndExactSubtrees),
+    ("Authorization MalformedLineagesAndStructuralOwner", AuthorizationPolicyTests.MalformedLineagesAndStructuralOwner),
+    ("Authorization DualLocalAndRemoteCeilings", AuthorizationPolicyTests.DualLocalAndRemoteCeilings),
+    ("Authorization SnapshotIsolationAndClosedInputs", AuthorizationPolicyTests.SnapshotIsolationAndClosedInputs),
     ("Retirement failures and final audit retry before terminal rotation completion", RotationCompletionTests.DeletionFailureAndCompletionAuditRecover),
     ("Retirement schema upgrade preserves intent without inventing deletion", RotationCompletionTests.UpgradePreservesIntentWithoutInventingDeletion),
     ("Offline recovery supersedes retirement intent and final audit changes roll back", RotationCompletionTests.RecoverySupersedesIntentAndFinalAuditRollsBack),
