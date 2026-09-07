@@ -54,13 +54,13 @@ public static partial class WindowsIntegration
             try { await UserProbe(args[1], args[2], args[3], args[4]); File.WriteAllText(args[5], "PASS"); return 0; }
             catch (Exception ex) { File.WriteAllText(args[5], ex.GetType().Name + ": " + ex.Message); return 1; }
         }
-        if (args.Length != 1 || args[0] != "--windows-integration") throw new ArgumentException("Unknown Windows integration invocation.");
+        if (args[0] != "--windows-integration" || args.Length is not 1 and not 3) throw new ArgumentException("Unknown Windows integration invocation.");
         using var admin = WindowsIdentity.GetCurrent();
         if (!new WindowsPrincipal(admin).IsInRole(WindowsBuiltInRole.Administrator))
             throw new UnauthorizedAccessException("FIELD EVIDENCE REQUIRED: explicit Windows integration requires an elevated Administrator token; no test was skipped as PASS.");
         await NativeTlsCacheTests.Lifecycle();
         Console.WriteLine("PASS integration: native TLS cache authority, nonexportability, reopen and retirement");
-        await Suite(); return 0;
+        await Suite(args.Length == 3 ? args[1] : null, args.Length == 3 ? args[2] : null); return 0;
     }
     private static async Task UserProbe(string action, string serviceName, string credentialPath, string hostRoot)
     {
@@ -107,6 +107,18 @@ public static partial class WindowsIntegration
                     try { attempt(); throw new Exception("Nonadmin modified public Host trust."); }
                     catch (UnauthorizedAccessException) { }
                 }
+            }
+        }
+        else if (action == "native-provider-denied")
+        {
+            using (var readable = File.OpenRead(credentialPath))
+                Check(Convert.ToHexString(SHA256.HashData(readable)) == serviceName, "Public native provider changed or was unreadable.");
+            foreach (var attempt in new Action[] {
+                () => { using var writable = File.Open(credentialPath, FileMode.Open, FileAccess.Write); },
+                () => File.Delete(credentialPath) })
+            {
+                try { attempt(); throw new Exception("Non-admin could modify the fixture provider."); }
+                catch (UnauthorizedAccessException) { }
             }
         }
         else if (action == "native-key-denied")
@@ -157,7 +169,7 @@ public static partial class WindowsIntegration
         else if (action.StartsWith("handoff-", StringComparison.Ordinal)) await HandoffProbe(action, serviceName, credentialPath, hostRoot);
         else throw new ArgumentException("Unknown probe action.");
     }
-    private static async Task Suite()
+    private static async Task Suite(string? pairingProviderPath, string? pairingProviderHash)
     {
         var suffix = Guid.NewGuid().ToString("N")[..12];
         var service = "PSMAstra" + suffix; var group = "PSMAstraG" + suffix;
@@ -182,7 +194,31 @@ public static partial class WindowsIntegration
             Directory.CreateDirectory(root);
             Grant(root, new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.ReadAndExecute);
             var binaries = Path.Combine(root, "Service Binaries");
+            // Create this fresh fixture binary tree with explicit installer-only writes.
+            // The service and ordinary test users need only public read/execute access.
+            var binaryAcl = new DirectorySecurity(); binaryAcl.SetAccessRuleProtection(true, false);
+            binaryAcl.SetOwner(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));
+            foreach (var writer in new[] { WellKnownSidType.BuiltinAdministratorsSid, WellKnownSidType.LocalSystemSid })
+                binaryAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(writer, null), FileSystemRights.FullControl,
+                    InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+            binaryAcl.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), FileSystemRights.ReadAndExecute,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
+            new DirectoryInfo(binaries).Create(binaryAcl);
             CopyDirectory(AppContext.BaseDirectory, binaries);
+            string? protectedProvider = null;
+            if (pairingProviderPath is not null)
+            {
+                Check(Path.IsPathFullyQualified(pairingProviderPath) && pairingProviderHash is { Length: 64 }, "Invalid explicit fixture provider.");
+                protectedProvider = Path.Combine(binaries, "palworld_spake2.dll");
+                // Pin the same opened source through copying. Both original and copied bytes
+                // must match the digest produced by this run's existing native build script.
+                using var source = new FileStream(pairingProviderPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                Check(Convert.ToHexString(SHA256.HashData(source)) == pairingProviderHash, "Fixture provider source digest mismatch.");
+                source.Position = 0;
+                using (var destination = new FileStream(protectedProvider, FileMode.CreateNew, FileAccess.Write, FileShare.None)) source.CopyTo(destination);
+                using var copied = File.OpenRead(protectedProvider);
+                Check(Convert.ToHexString(SHA256.HashData(copied)) == pairingProviderHash, "Fixture provider copy changed.");
+            }
             var executable = Path.Combine(binaries, "PalworldServerManager.SelfTest.exe");
             await platform.InstallForServiceAsync(executable, ["--windows-service", service, hostRoot, mutex]);
             installed = true;
@@ -206,7 +242,8 @@ public static partial class WindowsIntegration
                 finally { File.Delete(publicPath); }
                 Check(!File.Exists(missingTarget), "Rejected trust symlink touched its destination.");
             }
-            File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, rotationHostId, groupSid.Value, publicDirectory)));
+            File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, rotationHostId, groupSid.Value,
+                publicDirectory, protectedProvider, pairingProviderHash)));
             var aces = descriptor.DiscretionaryAcl!.Cast<CommonAce>().ToArray();
             Check(aces.Length == 3 && aces.Single(a => a.SecurityIdentifier == groupSid).AccessMask == 0x14, "SCM DACL read-back failed.");
             Check(!await platform.IsEnabledAsync(), "Default boot-start not Manual.");
@@ -281,6 +318,12 @@ public static partial class WindowsIntegration
             Console.WriteLine("PASS integration: service publishes protected public descriptor; two nonadmins read but cannot write/delete; client authenticates production local TLS");
             RunUser(executable, userA, password, "native-key-denied", activeTls.KeyName, activeTls.KeyFile, hostRoot, shared);
             RunUser(executable, userB, password, "native-key-denied", activeTls.KeyName, activeTls.KeyFile, hostRoot, shared);
+            if (protectedProvider is not null)
+            {
+                RunUser(executable, userA, password, "native-provider-denied", pairingProviderHash!, protectedProvider, hostRoot, shared);
+                RunUser(executable, userB, password, "native-provider-denied", pairingProviderHash!, protectedProvider, hostRoot, shared);
+                Console.WriteLine("PASS integration: actual native PeerBound process crash/restart and pinned activation without PAKE; copied provider digest and two-user write/delete denial");
+            }
             await platform.StopAsync();
             using (var offlineLease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex))
             {

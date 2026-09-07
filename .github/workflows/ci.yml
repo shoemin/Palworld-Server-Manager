@@ -118,9 +118,16 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+      - name: Build native provider for disposable process qualification
+        shell: pwsh
+        run: |
+          rustup toolchain install 1.98.1 --profile minimal
+          if ($LASTEXITCODE -ne 0) { throw 'Rust setup failed.' }
+          $env:RUSTUP_TOOLCHAIN = '1.98.1'
+          ./scripts/build-spake2.ps1
       - name: Build integration harness
         shell: pwsh
         run: dotnet build PalworldServerManager.sln -c Release
       - name: Run explicit privileged integration (no skip)
         shell: pwsh
-        run: .\scripts\test-windows-integration.ps1
+        run: .\scripts\test-windows-integration.ps1 -PairingProviderPath "$PWD/build-logs/spake2-native/target/x86_64-pc-windows-msvc/release/palworld_spake2.dll"
