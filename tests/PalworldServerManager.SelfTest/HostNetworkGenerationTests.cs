@@ -74,9 +74,10 @@ internal static class HostNetworkGenerationTests
     }
     private static void QuiescenceRefused(HostNetworkGeneration generation)
     {
-        try { generation.QuiescedCutover(null!, null!); }
-        catch (InvalidOperationException) { return; }
-        throw new Exception("Incomplete generation shutdown supplied a cutover coordinator.");
+        bool cutover=false,completion=false;
+        try { generation.QuiescedCutover(null!, null!); } catch (InvalidOperationException) { cutover=true; }
+        try { generation.QuiescedCompletion(); } catch (InvalidOperationException) { completion=true; }
+        Check(cutover && completion);
     }
 
     public static async Task ActualNetworkWorkAndClosedAdmission()

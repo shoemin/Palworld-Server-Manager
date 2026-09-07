@@ -128,6 +128,12 @@ internal static class HostGenerationTransitionTests
         Check(b.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint == a.NextPin);
         await Reject<AuthenticationException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, Routes(b)));
         Check(a.Starts == 2 && a.State.Read().Credentials.All(c => !c.Retired) && a.F.State.Count("HostCapabilityGrants") == 0);
+        var completed=await a.Actions.CompleteRotationAsync(a.Owner,p.RotationId);
+        Check(completed.State==HostCredentialRotationState.Completed && a.Starts==3 && a.Reconciliations==3);
+        Check(a.Borrowed[1].Handle==IntPtr.Zero && HostTrustPlanning.Build(a.State.Read()).Retire.Contains(p.OldReference));
+        await a.LocalNegotiation(a.NextPin);
+        Check((await a.Actions.CompleteRotationAsync(a.Owner,p.RotationId)).State==HostCredentialRotationState.Completed && a.Starts==3);
+
     }
     public static async Task DiscoveryDrainPrecedesCutoverAndFreshGeneration()
     {
@@ -152,6 +158,10 @@ internal static class HostGenerationTransitionTests
             Check(!ReferenceEquals(old.Runtime, probes[1].Runtime) && old.Receiver.Disposes == 1 && a.Borrowed[0].Handle == IntPtr.Zero);
             Check((await a.Actions.DiscoverAsync()).Count == 0 && a.State.Read().Credentials.All(c => !c.Retired));
             await a.LocalNegotiation(a.NextPin); Check(a.F.State.Count("HostCapabilityGrants") == 0);
+            Check((await a.Actions.CompleteRotationAsync(a.Owner,p.RotationId)).State==HostCredentialRotationState.Completed);
+            Check(probes.Count==3 && probes[1].Runtime.Completion.IsCompletedSuccessfully && a.Borrowed[1].Handle==IntPtr.Zero);
+            await a.LocalNegotiation(a.NextPin);
+
         }
         finally { old.ReleaseSend.TrySetResult(); }
     }
@@ -227,6 +237,7 @@ internal static class HostGenerationTransitionTests
         await Reject<OperationCanceledException>(() => a.Actions.StageRotationAsync(peer, address, Guid.NewGuid()));
         await Reject<OperationCanceledException>(() => a.Actions.ConfirmRotationAsync(peer, address));
         await Reject<OperationCanceledException>(() => a.Actions.ConfirmCurrentCredentialAsync(peer, address, Guid.NewGuid()));
+        await Reject<OperationCanceledException>(() => a.Actions.CompleteRotationAsync(a.Owner,Guid.NewGuid()));
     }
     public static async Task ConcurrentWorkAndStopWaitForFailureCleanup()
     {
@@ -294,4 +305,69 @@ internal static class HostGenerationTransitionTests
         }
         finally { await a.DisposeFailed(); }
     }
+    public static async Task CompletionPreflightAndReconciliationRecovery()
+    {
+        await using var a=new Rig();await using var b=new Rig();await using var c=new Rig();
+        await a.Actions.StartAsync();await b.Actions.StartAsync();await c.Actions.StartAsync();await Bind(a,b);await Bind(a,c);
+        var p=a.Prepare();var routes=Routes(b);routes.Add(c.F.State.HostId,c.Address);
+        await a.Actions.CutOverAsync(a.Owner,p.RotationId,routes);
+        Check(await a.Actions.ConfirmCurrentCredentialAsync(b.F.State.HostId,b.Address,p.RotationId));
+        // The second peer has not contacted New. Advance its own trust clock and run its actual lapse writer.
+        c.F.State.Time.Now+=TimeSpan.FromDays(3650);c.F.State.Repository.MaintainPendingPairingTrust();
+        Check(c.F.State.Repository.Read(a.F.State.HostId) is {PendingReconfirmationRequired:true} &&
+            c.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint==a.F.Pin);
+        await Reject<AuthenticationException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
+        Check(a.Actions.Phase==HostGenerationPhase.Serving && a.Starts==2 && a.State.Read().Rotations.Single().State==HostCredentialRotationState.CutOver);
+        // An actual authenticated contact promotes the second peer locally, but sends no promotion receipt.
+        await c.Actions.ActivateAsync(a.F.State.HostId,a.Address);
+        Check(c.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint==a.NextPin &&
+            c.F.State.Repository.Read(a.F.State.HostId)!.PendingRotationId==p.RotationId);
+        await Reject<AuthenticationException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
+        Check(await c.Actions.ConfirmRotationAsync(a.F.State.HostId,a.Address)==PeerRotationReceiptExchange.Confirmed);
+        a.FailReconcile=true;await Reject<IOException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
+        Check(a.Actions.Phase==HostGenerationPhase.Quiesced && a.Starts==2 && a.Borrowed.All(c=>c.Handle==IntPtr.Zero));
+        Check(a.State.Read().Rotations.Single().State==HostCredentialRotationState.Completed && a.State.Read().CurrentReference==p.NewReference);
+        a.FailReconcile=false;await a.Actions.RecoverAsync();await a.LocalNegotiation(a.NextPin);
+        Check(a.Starts==3 && (await a.Actions.CompleteRotationAsync(a.Owner,p.RotationId)).State==HostCredentialRotationState.Completed && a.Starts==3);
+        Check(HostDatabase.QueryScalarLong(a.F.State.Writer,"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='HostRoutineRotationCompleted';")==1);
+    }
+    public static async Task CompletionDrainRechecksOwnerAndRelationship()
+    {
+        foreach(var ownerChange in new[]{true,false})
+        {
+            await using var a=new Rig();await using var b=new Rig();await a.Actions.StartAsync();await b.Actions.StartAsync();await Bind(a,b);
+            var p=a.Prepare();await a.Actions.CutOverAsync(a.Owner,p.RotationId,Routes(b));
+            await a.Actions.ConfirmCurrentCredentialAsync(b.F.State.HostId,b.Address,p.RotationId);
+            var canceled=Signal();var release=Signal();
+            var work=a.Generations[^1].RunAsync(async ct=>{using var registration=ct.Register(()=>canceled.TrySetResult());await release.Task;});
+            var complete=a.Actions.CompleteRotationAsync(a.Owner,p.RotationId);
+            try
+            {
+                await Bounded(canceled.Task);Check(!complete.IsCompleted && a.Actions.Phase==HostGenerationPhase.Transitioning);
+                if(ownerChange)a.F.State.Execute("UPDATE LocalPrincipals SET PublicVerificationKey='changed' WHERE IsOwner=1;");
+                else a.F.State.Execute("UPDATE TrustedManagers SET PeerRecoveryRequired=1; UPDATE TrustedManagers SET PeerRecoveryRequired=0;");
+            }
+            finally {release.TrySetResult();await Bounded(work);}
+            await Reject<AuthenticationException>(()=>complete);
+            Check(a.Actions.Phase==HostGenerationPhase.Quiesced && a.Starts==2 && a.State.Read().Rotations.Single().State==HostCredentialRotationState.CutOver);
+            Check(HostTrustPlanning.Build(a.State.Read()).Retained.Contains(p.OldReference));await a.Actions.RecoverAsync();await a.LocalNegotiation(a.NextPin);
+        }
+    }
+    public static async Task CompletionAuditCleanupFailureCannotCommit()
+    {
+        var a=new Rig();await using var b=new Rig();await a.Actions.StartAsync();await b.Actions.StartAsync();
+        try
+        {
+            var p=a.Prepare();await a.Actions.CutOverAsync(a.Owner,p.RotationId,new Dictionary<Guid,Uri>());
+            a.F.State.Execute("CREATE TRIGGER completion_audit_failure BEFORE INSERT ON AuditEvents WHEN NEW.EventKind='PairingAttemptFailed' BEGIN SELECT RAISE(ABORT,'fixture'); END;");
+            using var invitation=await b.Actions.CreateInvitationAsync();
+            await Reject<RpcException>(()=>a.Actions.PairAsync(b.Actions.Endpoints!.Value.Pairing,invitation.Code));
+            await Reject<AggregateException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
+            Check(a.Actions.Phase==HostGenerationPhase.Faulted && a.Starts==2 && a.State.Read().Rotations.Single().State==HostCredentialRotationState.CutOver);
+            Check(HostTrustPlanning.Build(a.State.Read()).Retained.Contains(p.OldReference));
+            bool refused=false;try {a.Generations[^1].QuiescedCompletion();}catch(InvalidOperationException){refused=true;}Check(refused);
+        }
+        finally {await a.DisposeFailed();}
+    }
+
 }

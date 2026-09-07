@@ -98,6 +98,34 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
             throw;
         }
     }, ct);
+    internal Task<RoutineRotationPreparation> CompleteRotationAsync(LocalPrincipalMutationActor owner,Guid rotation,
+        CancellationToken ct=default)=>Serialized(async token=>
+    {
+        Require(HostGenerationPhase.Serving);var generation=current!;
+        var assessment=state.InspectRoutineRotationCompletion(owner,rotation,generation.LocalFingerprint??throw new InvalidOperationException("Peer networking is not configured."));
+        if(!assessment.Ready)throw new AuthenticationException("Rotation still has unresolved peers.");
+        if(assessment.Rotation.State==HostCredentialRotationState.Completed)return assessment.Rotation;
+        token.ThrowIfCancellationRequested();lock(gate)phase=HostGenerationPhase.Transitioning;
+        bool drained=false;
+        try
+        {
+            await generation.StopAsync().ConfigureAwait(false);drained=true;lock(gate)current=null;
+            var result=await generation.QuiescedCompletion().CompleteWhileQuiescedAsync(owner,rotation,token).ConfigureAwait(false);
+            // Still quiesced: a failed publication/native cleanup/secret deletion is retryable
+            // from durable Current. Only successful reconciliation proceeds to listener startup.
+            await reconcile(token).ConfigureAwait(false);
+            await StartCurrentAsync(token,trustAlreadyReconciled:true).ConfigureAwait(false);return result;
+        }
+        catch(Exception error)
+        {
+            lock(gate)
+            {
+                if(!drained) {phase=HostGenerationPhase.Faulted;terminalFailure??=error;}
+                else if(phase==HostGenerationPhase.Transitioning)phase=HostGenerationPhase.Quiesced;
+            }
+            throw;
+        }
+    },ct);
     // Explicit recovery after a closed-generation cutover/publication failure. The actual
     // durable Current wins; no retained collection or old-generation handoff is exposed.
     internal Task RecoverAsync(CancellationToken ct = default) => Serialized(async token =>
@@ -105,12 +133,13 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
         Require(HostGenerationPhase.Quiesced); lock (gate) phase = HostGenerationPhase.Transitioning;
         await StartCurrentAsync(token).ConfigureAwait(false); return true;
     }, ct);
-    private async Task StartCurrentAsync(CancellationToken ct)
+    private async Task StartCurrentAsync(CancellationToken ct,bool trustAlreadyReconciled=false)
     {
         HostNetworkGeneration? candidate = null;
         try
         {
-            ct.ThrowIfCancellationRequested(); await reconcile(ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            if(!trustAlreadyReconciled)await reconcile(ct).ConfigureAwait(false);
             var snapshot = state.Read(); var projection = HostTrustPlanning.Build(snapshot).Publication;
             if (!snapshot.Initialized || projection is null) throw new AuthenticationException("Initialized Host trust is required.");
             candidate = await start(snapshot, ct).ConfigureAwait(false);

@@ -110,12 +110,36 @@ internal static class WindowsGenerationTransitionQualification
                 HostDatabase.QueryScalarLong(writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='HostRoutineRotationCutOver';") == 1 &&
                 HostDatabase.QueryScalarLong(writer, "SELECT COUNT(*) FROM HostCapabilityGrants;") == 0 &&
                 HostDatabase.QueryScalarLong(writer, "SELECT COUNT(*) FROM ServerCapabilityGrants;") == 0, "Cutover changed retention, audit count or authority.");
+            string Blob(string reference)=>Path.Combine(root,"credentials",Convert.ToHexString(SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes("PalworldServerManager.Host.Credential.v1:"+reference)))+".bin");
+            Check(File.Exists(Blob(references[0])) && File.Exists(Blob(prepared.NewReference)),"Protected fixture keys must exist before completion.");
+            var beforeCompletion=owner.Endpoints!.Value;
+            publisher.FailCurrent=proposal.NewFingerprint;
+            await SecureStoreTests.Reject<IOException>(()=>owner.CompleteRotationAsync(actor,prepared.RotationId,ct));
+            Check(owner.Phase==HostGenerationPhase.Quiesced && owner.Endpoints is null &&
+                state.Read().Rotations.Single().State==HostCredentialRotationState.Completed,"Completion/reconciliation failure lost durable state or quiescence.");
+            RequireClosed(pipe,beforeCompletion.Peer,beforeCompletion.Pairing,ct);
+            Check(File.Exists(Blob(references[0])) && CngKey.Exists(oldNative,CngProvider.MicrosoftSoftwareKeyStorageProvider,CngKeyOpenOptions.MachineKey),
+                "Failed publication must not already delete Old.");
+            publisher.FailCurrent=null;await owner.RecoverAsync(ct);
+            Check(!File.Exists(Blob(references[0])) && File.Exists(Blob(prepared.NewReference)) &&
+                !CngKey.Exists(oldNative,CngProvider.MicrosoftSoftwareKeyStorageProvider,CngKeyOpenOptions.MachineKey) &&
+                CngKey.Exists(nextNative,CngProvider.MicrosoftSoftwareKeyStorageProvider,CngKeyOpenOptions.MachineKey),"Old protected/native material was not retired while New survived.");
+            Check(state.Read().Credentials.Single(c=>c.Reference==references[0]).Retired &&
+                !state.Read().Credentials.Single(c=>c.Reference==prepared.NewReference).Retired,"Retirement metadata disagrees with actual material.");
+            await material.ValidateAsync(prepared.NewReference,proposal.NewFingerprint,ct);await Negotiate(hostId,pipe,reader,ct);
+            using(var next=await cache.LoadAsync(prepared.NewReference,ct))
+            using(var key=(ECDsaCng)next.GetECDsaPrivateKey()!)Check(key.Key.KeyName==nextNative,"Completion regenerated Current New.");
+            Check((await owner.CompleteRotationAsync(actor,prepared.RotationId,ct)).State==HostCredentialRotationState.Completed &&
+                HostDatabase.QueryScalarLong(writer,"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='HostRoutineRotationCompleted';")==1,"Completion retry changed history.");
+            Check(HostDatabase.QueryScalarLong(writer,"SELECT COUNT(*) FROM HostCapabilityGrants;")==0 &&
+                HostDatabase.QueryScalarLong(writer,"SELECT COUNT(*) FROM ServerCapabilityGrants;")==0,"Completion changed authority.");
             await owner.StopAsync(); Check(owner.Phase == HostGenerationPhase.Stopped && owner.Endpoints is null, "Final generation did not close.");
         }
         finally
         {
             // This deletes only disposable fixture material after complete listener/key cleanup.
-            // Actual product old-key retirement still requires its separate acceptance policy.
+            // Product completion above already retired Old; final fixture cleanup remains idempotent.
             // A failed closure is not permission to delete possibly borrowed material. The
             // outer disposable-service harness can clean after the process has actually exited.
             if (owner is not null) await owner.StopAsync();
