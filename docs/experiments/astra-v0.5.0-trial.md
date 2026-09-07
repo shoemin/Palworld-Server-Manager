@@ -2269,3 +2269,11 @@ A1 also copied address bytes/IPv6 scope as well as the endpoint port so later ca
 
 
 A2 actual Windows service job `101637806750` in CI `34088751645` failed at the two-second connect-to-closed-TCP-port probe with OperationCanceledException; it did not reach the expected connection-refused result. The failed run is retained, not counted as closure evidence. Replaced that timing-sensitive oracle with an actual exclusive bind to each previously serving TCP endpoint; the named-pipe negative probe remains. A timeout is never treated as quiescence success. This is a service-test oracle correction, not evidence of a production listener leak; corrected service execution is still required. Two correction/verification cycles total; initial and A1 local ordinary suites both 333/333 PASS, UI/strict Docs and zero-warning build PASS. Corrected build/full/remote qualification remains before A clean.
+
+
+The corrected exclusive-bind oracle was independently checked on the local Windows socket API: it refused an already-listening exact endpoint and succeeded after that listener closed. Corrected zero-warning build, UI and strict Docs PASS. CI `34088751645` finished with only the service timing-oracle failure; ordinary/native jobs passed at old A1 content. Corrected CI `34089059852` and Docs `34089061372` target exact `987030dacb89a836308334837938b0a4f3dab3e0`; the corrected Docs already passed. No timeout is being relabeled as successful closure.
+
+
+### #44x Review Pass A completion
+
+Corrected executable/test HEAD `987030dacb89a836308334837938b0a4f3dab3e0`: all-three-job CI `34089059852` and Docs `34089061372` PASS, including both actual service-account rotation workloads before readiness and the main multi-user/ACL checks afterward. Corrected local zero-warning build, 333/333 ordinary tests, actual UI and strict Docs PASS. The exclusive-bind correction now has actual service evidence as well as the independent local live/closed socket control. All eight changed files, forty invariants and affected platform/ownership/cleanup/readiness paths reviewed; stale scope scan clean. Two correction/verification cycles, one recorded failed service-oracle check, no new product escape. A clean before PR creation. Installed initiation/address foundations, retirement and full crash/physical acceptance remain outstanding.
