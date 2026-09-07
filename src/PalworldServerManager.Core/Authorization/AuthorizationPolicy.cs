@@ -81,6 +81,18 @@ public sealed class AuthorizationPolicy
         var ss=preset.Servers.Select(p=>IssueServer(issuer,p.GrantId,p.Grantee,p.Capability,p.Target,p.Rights,root?null:p.SourceGrantId,utc)).ToArray();
         return new(Array.AsReadOnly(hs),Array.AsReadOnly(ss));
     }
+    // Pure candidates only. The Host must independently confirm a NEW successful creation
+    // before persisting them. The approved automatic policy uses real Owner roots, not a
+    // Host CreateServer grant converted into a server-scoped parent.
+    public IReadOnlyList<ServerCapabilityGrant> ExpandRemoteCreatorGrants(Guid peerId,ServerRef target,DateTimeOffset utc)
+    {
+        ArgumentNullException.ThrowIfNull(target);var peer=ActorRef.RemoteManager(peerId);
+        if(target.AuthoritativeHostId!=ThisHostId||!CanUseHost(peer,HostCapability.CreateServer,ThisHostId))
+            throw new UnauthorizedAccessException("Authorized remote creator required.");
+        ServerCapability[] capabilities=[ServerCapability.ViewServer,ServerCapability.StartStopRestart,
+            ServerCapability.EditSettings,ServerCapability.ManageBackups,ServerCapability.TransferExport,ServerCapability.DeleteServer];
+        return Array.AsReadOnly(capabilities.Select(cap=>IssueServer(owner!,Guid.NewGuid(),peer,cap,target,new(false,false),null,utc)).ToArray());
+    }
     // Historical selection is audit context, never a parent or a revived grant. This is
     // ordinary Owner issuance; credential replacement itself is a separate workflow.
     private void RequireHistoricalRoot(ActorRef issuer,Guid peerId,CapabilityGrant? old)
