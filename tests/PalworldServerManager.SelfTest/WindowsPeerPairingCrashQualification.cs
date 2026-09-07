@@ -39,8 +39,10 @@ internal static class WindowsPeerPairingCrashQualification
             Check(first.Kind == "ready" && first.Pin == receiverPin && !string.IsNullOrEmpty(first.Key) && first.PeerState is null,
                 "Initial receiver unexpectedly has trust or lacks a native identity.");
             using (var denied = HostExclusivityLock.TryAcquire(TimeSpan.Zero, b.Config.Mutex)) Check(denied is null, "Receiver lease not held.");
-            using var invitation = await sender.CreateInvitationAsync(ct);
-            var paired = await receiver.Pair(sender.Endpoints!.Value.Pairing, invitation.Code, ct);
+            Report paired;
+            using (var invitation = await sender.CreateInvitationAsync(ct))
+                paired = await receiver.Pair(sender.Endpoints!.Value.Pairing, invitation.Code, ct);
+            // Dispose the parent's invitation/code copy before the crash boundary, too.
             Check(paired.Kind == "paired" && paired.CurrentPeerPin == senderPin && paired.PeerState == "PeerBound" && paired.BindingExpiry is not null,
                 "Actual native exchange did not bind the expected sender.");
             var senderBound = a.Peers.Read(bId)!;
@@ -65,7 +67,8 @@ internal static class WindowsPeerPairingCrashQualification
                 restarted.CurrentPeerPin == senderPin && restarted.PeerState == "PeerBound" && restarted.BindingExpiry == paired.BindingExpiry,
                 "Fresh receiver changed its durable binding or native identity.");
             var activated = await receiver.Command("activate", sender.Endpoints!.Value.Peer, ct);
-            Check(activated.Kind == "activated" && activated.PeerState == "Active" && activated.BindingExpiry is null, "Pinned activation did not recover.");
+            Check(activated.Kind == "activated" && activated.PeerState == "Active" && activated.BindingExpiry == paired.BindingExpiry,
+                "Pinned activation did not recover or rewrote binding history.");
             var retry = await receiver.Command("activate", sender.Endpoints!.Value.Peer, ct);
             Check(retry.Kind == "activated" && retry.PeerState == "Active" && retry.Pin == receiverPin, "Activation retry changed identity/state.");
             a.RequireNoGrants(); Check(a.Peers.Read(bId)!.State == "Active", "Sender activation did not commit independently.");
@@ -73,7 +76,7 @@ internal static class WindowsPeerPairingCrashQualification
             using (var lease = Lease(b.Config))
             {
                 b.RequireNoGrants(); var persisted = b.Peers.Read(aId)!;
-                Check(persisted.State == "Active" && persisted.CurrentFingerprint == senderPin && persisted.ExpiresUtc is null,
+                Check(persisted.State == "Active" && persisted.CurrentFingerprint == senderPin && persisted.ExpiresUtc == paired.BindingExpiry,
                     "Activated trust did not survive final exit.");
                 using var c = b.Database.OpenConnection();
                 Check(HostDatabase.QueryScalarLong(c, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerBoundCreated';") == 1,

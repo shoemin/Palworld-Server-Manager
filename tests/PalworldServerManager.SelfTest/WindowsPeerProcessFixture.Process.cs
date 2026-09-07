@@ -172,9 +172,10 @@ internal static partial class WindowsPeerProcessFixture
                             var result = await owner.PairAsync(address, code, ct);
                             Check(result.Local.PeerHostId == config.Peer && result.Local.Disposition == PeerBindingDisposition.PeerBoundCreated &&
                                 result.Remote == PalworldServerManager.Contracts.Wire.PeerPairingResult.PeerBound, "Expected independently committed PeerBound.");
-                            host.RequireNoGrants(0); await Send("paired");
+                            host.RequireNoGrants(0);
                         }
                         finally { CryptographicOperations.ZeroMemory(bytes); }
+                        await Send("paired"); // Secret copies are gone before the parent may terminate us.
                         break;
                 }
             }
