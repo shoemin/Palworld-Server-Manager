@@ -16,7 +16,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
     internal sealed record Config(Guid HostId, Guid RotationHostId, string GroupSid, string PublicDirectory,
         string? PairingProviderPath = null, string? PairingProviderHash = null);
     internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin, bool RotationQualified,
-        bool ReceiptCrashQualified, bool PairingCrashQualified);
+        bool ReceiptCrashQualified, bool PairingCrashQualified, bool PrecommitCrashQualified);
     private readonly IDisposable _runtime;
     private readonly Task _worker;
     internal NativeTlsServiceFixture(string service, string root, IDisposable runtime, CancellationToken stop)
@@ -43,7 +43,10 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await WindowsPeerReceiptCrashQualification.Run(root, identity.User!, stop);
                 if ((config.PairingProviderPath is null) != (config.PairingProviderHash is null)) throw new InvalidDataException("Incomplete fixture provider selection.");
                 if (config.PairingProviderPath is not null)
+                {
                     await WindowsPeerPairingCrashQualification.Run(root, identity.User!, config.PairingProviderPath, config.PairingProviderHash!, stop);
+                    await WindowsPeerPrecommitCrashQualification.Run(root, identity.User!, config.PairingProviderPath, config.PairingProviderHash!, stop);
+                }
                 var store = new WindowsSecureCredentialStore(root, identity.User!);
                 var material = new WindowsHostCredentialMaterial(store);
                 // Actual service-account protected storage; this is a reload fixture, not a crash claim.
@@ -69,7 +72,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin, true, true,
-                    config.PairingProviderPath is not null);
+                    config.PairingProviderPath is not null, config.PairingProviderPath is not null);
                 File.WriteAllText(Path.Combine(root, "tls-ready.tmp"), JsonSerializer.Serialize(ready));
                 File.Move(Path.Combine(root, "tls-ready.tmp"), Path.Combine(root, "tls-ready.json"), true);
                 await Task.Delay(Timeout.Infinite, stop);
@@ -104,6 +107,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                     if (!ready.ReceiptCrashQualified) throw new Exception("Service receipt process qualification was skipped.");
                     var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
                     if (config.PairingProviderPath is not null && !ready.PairingCrashQualified) throw new Exception("Requested native pairing process qualification was skipped.");
+                    if (config.PairingProviderPath is not null && !ready.PrecommitCrashQualified) throw new Exception("Requested native precommit crash qualification was skipped.");
                     return ready;
                 }
             }

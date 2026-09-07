@@ -322,6 +322,7 @@ public static partial class WindowsIntegration
             {
                 RunUser(executable, userA, password, "native-provider-denied", pairingProviderHash!, protectedProvider, hostRoot, shared);
                 RunUser(executable, userB, password, "native-provider-denied", pairingProviderHash!, protectedProvider, hostRoot, shared);
+                Console.WriteLine("PASS integration: actual native pre-PeerBound process termination discards trust, refuses activation and requires fresh pairing");
                 Console.WriteLine("PASS integration: actual native PeerBound process crash/restart and pinned activation without PAKE; copied provider digest and two-user write/delete denial");
             }
             await platform.StopAsync();

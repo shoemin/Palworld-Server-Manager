@@ -21,7 +21,7 @@ internal static partial class WindowsPeerProcessFixture
     // even if Windows happens to reuse a numerical PID. Reports are public; only command 3
     // appends ten secret code bytes on the private stdin pipe, never JSON/argv/config/logs.
     internal sealed record Report(string Kind, int Pid, Guid Instance, Guid Host, string Pin, string Key,
-        Uri Address, string? CurrentPeerPin, Guid? PendingRotation, string? PeerState, DateTimeOffset? BindingExpiry);
+        Uri Address, string? CurrentPeerPin, Guid? PendingRotation, string? PeerState, DateTimeOffset? BindingExpiry, string? VerifiedPeerPin = null);
     private static async Task<string> Line(TextReader reader, CancellationToken ct)
     {
         var line = new StringBuilder(); var one = new char[1];
@@ -135,15 +135,23 @@ internal static partial class WindowsPeerProcessFixture
             // Native provider lifetime encloses every generation/attempt. Null deliberately
             // supplies the refusing provider, including the post-PeerBound recovery process.
             using var provider = config.NativePath is null ? null : new WindowsSpake2Provider(config.NativePath, config.NativeHash!);
-            await using var owner = host.Create(provider); await owner.StartAsync(ct); var instance = Guid.NewGuid();
-            async Task Send(string kind)
+            var barrier = config.PauseBeforePeerBound
+                ? new VerifiedPairingBarrier(provider ?? throw new InvalidDataException("A native barrier requires a provider.")) : null;
+            await using var owner = host.Create((IPairingKeyExchangeFactory?)barrier ?? provider); await owner.StartAsync(ct); var instance = Guid.NewGuid();
+            async Task Send(string kind, string? verifiedPin = null)
             {
                 var credential = await host.Credential(ct); var peer = host.Peers.Read(config.Peer);
                 await Console.Out.WriteLineAsync(JsonSerializer.Serialize(new Report(kind, Environment.ProcessId, instance, config.Host,
                     credential.Pin, credential.Key, owner.Endpoints!.Value.Peer, peer?.CurrentFingerprint, peer?.PendingRotationId,
-                    peer?.State, peer?.ExpiresUtc)).AsMemory(), ct);
+                    peer?.State, peer?.ExpiresUtc, verifiedPin)).AsMemory(), ct);
                 await Console.Out.FlushAsync(ct);
             }
+            barrier?.Arm(async (verified, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                Check(verified.HostId == config.Peer, "Native barrier verified the wrong Host.");
+                await Send("verified-before-store", Convert.ToHexString(SHA256.HashData(verified.PublicCredential)));
+            });
             await Send("ready");
             using var input = Console.OpenStandardInput();
             while (true)
