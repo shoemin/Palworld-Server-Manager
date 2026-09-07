@@ -17,6 +17,13 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--rotation-peer-set-probe"])
+    {
+        await RotationPeerSetTests.UpgradePreservesRowsAndDoesNotInventEvidence(); await RotationPeerSetTests.TransactionRollbackAndIdenticalStateAba();
+        await RotationPeerSetTests.PairingWritesAndConcurrentMembershipAreTracked(); await RotationPeerSetTests.MissingAndExhaustedRevisionFailClosed();
+        await RotationPeerSetTests.PendingRecoveryAndMalformedSnapshotGates(); await RotationPeerSetTests.RealObserverAuditRollbackAndHostScope(); await RotationStagingTests.UpgradeDoesNotInventOrdering();
+        Console.WriteLine("PASS dynamic peer-set revision, rollback, ABA, additive upgrade and snapshot gates."); return 0;
+    }
     if (args is ["--rotation-receipt-rpc-probe"])
     {
         await ProtocolTests.SchemaEvolution(); await PeerRotationReceiptRpcTests.ActualObservationAndConcurrentReceipt();
@@ -226,6 +233,12 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Peer observer audit rollback preserves revision and rotation snapshots require exact Host scope", RotationPeerSetTests.RealObserverAuditRollbackAndHostScope),
+    ("Peer revision upgrade preserves existing trust and does not invent acknowledgement evidence", RotationPeerSetTests.UpgradePreservesRowsAndDoesNotInventEvidence),
+    ("Peer revision rolls back with trust and detects identical-state ABA changes", RotationPeerSetTests.TransactionRollbackAndIdenticalStateAba),
+    ("Pairing metadata and concurrent peer membership updates advance the same revision", RotationPeerSetTests.PairingWritesAndConcurrentMembershipAreTracked),
+    ("Missing exhausted and malformed peer revision fail closed without partial trust writes", RotationPeerSetTests.MissingAndExhaustedRevisionFailClosed),
+    ("Rotation peer snapshots preserve unresolved pending recovery and malformed-state gates", RotationPeerSetTests.PendingRecoveryAndMalformedSnapshotGates),
     ("Old TLS and incomplete proof cannot report promotion or clear a changed receipt", PeerRotationReceiptRpcTests.OldPresentationIncompleteProofAndChangedReceipt),
     ("Actual New observation and concurrent receipt commit exactly once without changing grants", PeerRotationReceiptRpcTests.ActualObservationAndConcurrentReceipt),
     ("Lost promotion reply and receiver audit failure preserve durable retry across reopen", PeerRotationReceiptRpcTests.LostReceiptAndReceiverAuditRetryAfterReopen),
