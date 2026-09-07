@@ -83,8 +83,14 @@ public static class WindowsHostComposition
         ArgumentNullException.ThrowIfNull(serviceSid); ArgumentNullException.ThrowIfNull(groupSid); ArgumentNullException.ThrowIfNull(publisher);
         ArgumentNullException.ThrowIfNull(peerEndpoint); ArgumentNullException.ThrowIfNull(pairingEndpoint);
         ArgumentNullException.ThrowIfNull(pairingFactory); ArgumentNullException.ThrowIfNull(activationHook); ArgumentException.ThrowIfNullOrWhiteSpace(pipe);
-        var peer = new System.Net.IPEndPoint(peerEndpoint.Address, peerEndpoint.Port);
-        var pairing = new System.Net.IPEndPoint(pairingEndpoint.Address, pairingEndpoint.Port);
+        static System.Net.IPEndPoint CopyEndpoint(System.Net.IPEndPoint value)
+        {
+            var address = value.Address;
+            var copy = address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6
+                ? new System.Net.IPAddress(address.GetAddressBytes(), address.ScopeId) : new System.Net.IPAddress(address.GetAddressBytes());
+            return new(copy, value.Port);
+        }
+        var peer = CopyEndpoint(peerEndpoint); var pairing = CopyEndpoint(pairingEndpoint);
         var state = new HostCredentialStateRepository(database, hostId);
         var material = new WindowsHostCredentialMaterial(store);
         var native = new WindowsHostTlsCredentialCache(hostId, serviceSid, store);

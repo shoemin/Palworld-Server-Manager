@@ -1,4 +1,6 @@
 using System.Net;
+using System.Net.Sockets;
+using System.IO.Pipes;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
@@ -64,10 +66,16 @@ internal static class WindowsGenerationTransitionQualification
             var actor = new LocalPrincipalMutationActor(hostId, Guid.NewGuid(), serviceSid.Value, "fixture-public");
             using (var tx = writer.BeginTransaction())
             { identity.InitializeWithOwner(writer, tx, actor.LocalPrincipalId.ToString("D"), serviceSid.Value, actor.PublicVerificationKey); tx.Commit(); }
+            var peerBind = new IPEndPoint(IPAddress.Loopback, 0); var pairingBind = new IPEndPoint(IPAddress.Loopback, 0);
             owner = WindowsHostComposition.CreateNetworkTransitions(database, hostId, store, serviceSid, serviceSid, publisher, pipe,
-                new(IPAddress.Loopback, 0), new(IPAddress.Loopback, 0), new RefusingPairing(), new RefusingActivation());
-            await owner.StartAsync(ct);
+                peerBind, pairingBind, new RefusingPairing(), new RefusingActivation());
+            using (var occupied = new TcpListener(IPAddress.Loopback, 0))
+            {
+                occupied.Start(); peerBind.Port = pairingBind.Port = ((IPEndPoint)occupied.LocalEndpoint).Port;
+                await owner.StartAsync(ct); // The owner's copied configuration must ignore these later caller mutations.
+            }
             Check(owner.Phase == HostGenerationPhase.Serving && owner.Endpoints is not null, "Full generation did not start.");
+            var oldEndpoints = owner.Endpoints!.Value;
             await Negotiate(hostId, pipe, reader, ct);
             string oldNative;
             using (var old = await cache.LoadAsync(references[0], ct))
@@ -81,6 +89,7 @@ internal static class WindowsGenerationTransitionQualification
             publisher.FailCurrent = proposal.NewFingerprint;
             await SecureStoreTests.Reject<IOException>(() => owner.CutOverAsync(actor, prepared.RotationId, new Dictionary<Guid, Uri>(), ct));
             Check(owner.Phase == HostGenerationPhase.Quiesced && owner.Endpoints is null && publisher.Failed == 1, "Failure did not leave a closed generation.");
+            await RequireClosed(pipe, oldEndpoints.Peer, oldEndpoints.Pairing, ct);
             Check(state.Read().CurrentReference == prepared.NewReference && state.Read().Rotations.Single().State == HostCredentialRotationState.CutOver,
                 "Durable Current New was lost.");
             var staged = await reader.ReadAsync(ct);
@@ -122,5 +131,18 @@ internal static class WindowsGenerationTransitionQualification
         ct.ThrowIfCancellationRequested(); using var client = new LocalSecurityRpcTests.Client(hostId, pipe, reader);
         var reply = await client.Negotiate();
         Check(reply.Initialized && reply.Host.HostId == hostId.ToString("D"), "Actual local TLS negotiation lost the Host identity.");
+    }
+    private static async Task RequireClosed(string pipe, Uri peer, Uri pairing, CancellationToken ct)
+    {
+        using var local = new NamedPipeClientStream(".", pipe, PipeDirection.InOut, PipeOptions.Asynchronous);
+        await SecureStoreTests.Reject<TimeoutException>(() => local.ConnectAsync(250, ct));
+        foreach (var address in new[] { peer, pairing })
+        {
+            using var socket = new TcpClient(); using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(TimeSpan.FromSeconds(2));
+            try { await socket.ConnectAsync(address.Host, address.Port, deadline.Token); }
+            catch (SocketException error) when (error.SocketErrorCode == SocketError.ConnectionRefused) { continue; }
+            throw new Exception("Quiesced generation still accepted a TCP connection.");
+        }
     }
 }
