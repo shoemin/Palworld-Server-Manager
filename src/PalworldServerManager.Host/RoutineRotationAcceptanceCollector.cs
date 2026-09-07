@@ -72,12 +72,22 @@ internal sealed class RoutineRotationAcceptanceCollector(PeerSecurityRpcRuntime 
     }
     internal RotationAcceptanceAssessment Recheck(RotationAcceptanceCollection collection)
     {
-        ArgumentNullException.ThrowIfNull(collection);
-        if (!ReferenceEquals(collection.Scope, scope)) throw new InvalidOperationException("Acceptance collection belongs to another Host round owner.");
-        var blocked = collection.InitialBlockers.ToList();
+        RequireScope(collection);
         RoutineRotationPeerSet current;
         try { current = runtime.Credentials.ReadRoutineRotationPeerSet(collection.Snapshot.Proposal.RotationId); }
-        catch (AuthenticationException) { blocked.Add(new(null, RotationAcceptanceBlock.ProposalChanged)); return new(blocked.AsReadOnly()); }
+        catch (AuthenticationException) { return new(Array.AsReadOnly(collection.InitialBlockers.Append(new(null, RotationAcceptanceBlock.ProposalChanged)).ToArray())); }
+        return AssessCurrent(collection, current);
+    }
+    internal void RequireScope(RotationAcceptanceCollection collection)
+    {
+        ArgumentNullException.ThrowIfNull(collection);
+        if (!ReferenceEquals(collection.Scope, scope)) throw new InvalidOperationException("Acceptance collection belongs to another Host round owner.");
+    }
+    // Called with the repository's same-transaction snapshot at the final mutation boundary.
+    internal RotationAcceptanceAssessment AssessCurrent(RotationAcceptanceCollection collection, RoutineRotationPeerSet current)
+    {
+        RequireScope(collection); ArgumentNullException.ThrowIfNull(current);
+        var blocked = collection.InitialBlockers.ToList();
         if (current.Proposal != collection.Snapshot.Proposal) blocked.Add(new(null, RotationAcceptanceBlock.ProposalChanged));
         if (current.Revision != collection.Snapshot.Revision || !current.Peers.SequenceEqual(collection.Snapshot.Peers))
             blocked.Add(new(null, RotationAcceptanceBlock.PeerSetChanged));
