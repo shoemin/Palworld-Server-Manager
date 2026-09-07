@@ -81,7 +81,8 @@ internal static class WindowsPeerPrecommitCrashQualification
             // The peer listener is live, but neither Host has a credential binding. The
             // direct admission assertions above also exclude a generic network failure as proof.
             try { await sender.ActivateAsync(bId, restarted.Address, ct); throw new Exception("Unbound activation succeeded."); }
-            catch (RpcException error) when (error.StatusCode == StatusCode.Unavailable) { }
+            catch (RpcException error) when (error.StatusCode is StatusCode.Internal or StatusCode.Unavailable &&
+                error.Status.DebugException is HttpRequestException { InnerException: AuthenticationException }) { }
             Unbound(a, receiverPin);
             Report paired;
             using (var invitation = await sender.CreateInvitationAsync(ct))
