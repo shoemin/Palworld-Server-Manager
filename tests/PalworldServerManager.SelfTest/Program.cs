@@ -1,4 +1,4 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using PalworldServerManager.Core.Infrastructure;
 using PalworldServerManager.Core.Models;
 using PalworldServerManager.Core.Services;

@@ -46,9 +46,9 @@ internal static class LocalOwnerPairingTests
         // Inbound code proof still has its separate trusted Host path.
         Check(repo.RecordVerifiedBinding(Guid.NewGuid(), new('D',64), new('A',64)).Disposition == PeerBindingDisposition.PeerBoundCreated);
         f.Execute("UPDATE HostIdentity SET HostBootstrapState='Uninitialized' WHERE Id=1;");
-        await Denied<InvalidOperationException>(() => { repo.AuthorizePairingOwner(owner with { PublicVerificationKey = "changed" }); return Task.CompletedTask; });
+        await Denied<InvalidDataException>(() => { repo.AuthorizePairingOwner(owner with { PublicVerificationKey = "changed" }); return Task.CompletedTask; });
         f.Execute("UPDATE HostIdentity SET HostBootstrapState='Initialized' WHERE Id=1; UPDATE LocalPrincipals SET State='Revoked',PublicVerificationKey=NULL WHERE IsOwner=1;");
-        await Denied<InvalidOperationException>(() => { repo.AuthorizePairingOwner(owner); return Task.CompletedTask; });
+        await Denied<InvalidDataException>(() => { repo.AuthorizePairingOwner(owner); return Task.CompletedTask; });
     }
     public static async Task WriterQueueFreshness()
     {
