@@ -23,12 +23,14 @@ internal static class RotationCutoverTests
     private sealed class Material(Rotation f) : IHostRotationMaterial
     {
         internal Func<string>? Override;
-        public Task<string> EnsurePreparedAsync(Guid hostId, string reference, string? expected, CancellationToken ct = default)
+        internal Func<CancellationToken, Task>? BeforeValidate;
+        public async Task<string> EnsurePreparedAsync(Guid hostId, string reference, string? expected, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
+            if (BeforeValidate is not null) await BeforeValidate(ct);
             Check(hostId == f.A.State.HostId && reference == f.Prepared.NewReference && expected == f.NextPin);
             Check(f.Next.Value.HasPrivateKey);
-            return Task.FromResult(Override is null ? f.NextPin : Override());
+            return Override is null ? f.NextPin : Override();
         }
     }
     private sealed class Publisher(Rotation f) : ILocalHostTrustPublisher
@@ -164,7 +166,24 @@ internal static class RotationCutoverTests
         try { await f.Coordinator.CutOverWhileQuiescedAsync(Owner(f.A), f.Round); throw new Exception("Expected audit refusal."); } catch (SqliteException) { }
         f.Current(false); Check(f.Publisher.Last!.PendingRotationId == f.Prepared.RotationId);
         f.A.State.Execute("DROP TRIGGER fail_cutover;");
-        var results = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => f.Coordinator.CutOverWhileQuiescedAsync(Owner(f.A), f.Round)));
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously); var calls = 0;
+        f.Material.BeforeValidate = async token =>
+        {
+            if (Interlocked.Increment(ref calls) == 1)
+            { entered.SetResult(); await release.Task.WaitAsync(TimeSpan.FromSeconds(5), token); }
+        };
+        var first = f.Coordinator.CutOverWhileQuiescedAsync(Owner(f.A), f.Round);
+        Task<RoutineRotationPreparation>[] others = []; var waited = false;
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            others = Enumerable.Range(0, 3).Select(_ => f.Coordinator.CutOverWhileQuiescedAsync(Owner(f.A), f.Round)).ToArray();
+            waited = others.All(t => !t.IsCompleted) && calls == 1; f.Current(false);
+        }
+        finally { release.TrySetResult(); await Task.WhenAll(others.Prepend(first)); }
+        var results = await Task.WhenAll(others.Prepend(first));
+        Check(waited && calls == 4);
         Check(results.All(r => r.State == HostCredentialRotationState.CutOver)); f.Current(true);
         Check(f.Publisher.Calls.Count == 6); // Failed stage, successful stage+current, three read-only committed retries.
     }
