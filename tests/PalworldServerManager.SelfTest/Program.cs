@@ -13,6 +13,18 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--creator-grants-probe"])
+    {
+        await CreatorGrantPolicyTests.SixCanonicalCandidatesHaveExactScopeAndNoDelegation();
+        await CreatorGrantPolicyTests.ConfirmedCreationCommitsSixWithRealActorAudit();
+        await CreatorGrantPolicyTests.FailedMissingAndExistingCreationNeverGrant();
+        await CreatorGrantPolicyTests.CurrentTransportAndCreateAuthorityAreRequired();
+        await CreatorGrantPolicyTests.ConfirmationAndAuditMutationsRollBackEverything();
+        await CreatorGrantPolicyTests.ConcurrentFinalizationAndCreateRevocationStaySeparate();
+        await CreatorGrantPolicyTests.MachineGrantDoesNotAuthorizeEveryLocalUser();
+        await CreatorGrantPolicyTests.PendingPinAndCancellationRespectCurrentEvidence();
+        Console.WriteLine("PASS approved six-permission creator policy."); return 0;
+    }
     if (args is ["--historical-reissue-probe"])
     {
         await HistoricalGrantReissueTests.PureRulesRequireOwnerAndHistoricalRoots();
@@ -603,6 +615,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Creator grants SixCanonicalCandidatesHaveExactScopeAndNoDelegation", CreatorGrantPolicyTests.SixCanonicalCandidatesHaveExactScopeAndNoDelegation),
+    ("Creator grants ConfirmedCreationCommitsSixWithRealActorAudit", CreatorGrantPolicyTests.ConfirmedCreationCommitsSixWithRealActorAudit),
+    ("Creator grants FailedMissingAndExistingCreationNeverGrant", CreatorGrantPolicyTests.FailedMissingAndExistingCreationNeverGrant),
+    ("Creator grants CurrentTransportAndCreateAuthorityAreRequired", CreatorGrantPolicyTests.CurrentTransportAndCreateAuthorityAreRequired),
+    ("Creator grants ConfirmationAndAuditMutationsRollBackEverything", CreatorGrantPolicyTests.ConfirmationAndAuditMutationsRollBackEverything),
+    ("Creator grants ConcurrentFinalizationAndCreateRevocationStaySeparate", CreatorGrantPolicyTests.ConcurrentFinalizationAndCreateRevocationStaySeparate),
+    ("Creator grants MachineGrantDoesNotAuthorizeEveryLocalUser", CreatorGrantPolicyTests.MachineGrantDoesNotAuthorizeEveryLocalUser),
+    ("Creator grants PendingPinAndCancellationRespectCurrentEvidence", CreatorGrantPolicyTests.PendingPinAndCancellationRespectCurrentEvidence),
     ("Historical reissue PureRulesRequireOwnerAndHistoricalRoots", HistoricalGrantReissueTests.PureRulesRequireOwnerAndHistoricalRoots),
     ("Historical reissue NewRootsPreserveHistoryAndActualAudit", HistoricalGrantReissueTests.NewRootsPreserveHistoryAndActualAudit),
     ("Historical reissue InvalidSelectionsAndNonOwnerHaveNoEffects", HistoricalGrantReissueTests.InvalidSelectionsAndNonOwnerHaveNoEffects),
