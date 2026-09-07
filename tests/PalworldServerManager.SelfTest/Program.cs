@@ -11,8 +11,8 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
-    if (args is ["--receipt-process-host", var receiptConfig])
-        return await WindowsPeerReceiptCrashQualification.RunChild(receiptConfig);
+    if (args is ["--peer-process-host", var peerProcessConfig])
+        return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--rotation-completion-probe"])
     {
         await RotationCompletionTests.EveryPeerMustResolveAndExpiryIsNotProof();
