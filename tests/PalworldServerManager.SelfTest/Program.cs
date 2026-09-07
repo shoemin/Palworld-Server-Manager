@@ -11,6 +11,18 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--current-credential-confirmation-probe"])
+    {
+        await ProtocolTests.SchemaEvolution();
+        await PeerRelationshipIncarnationTests.CurrentConfirmationUpgradeCancellationAndFirstNewPairing();
+        await PeerRotationReceiptRpcTests.CurrentConfirmationRepairsClearedLegacyEvidence();
+        await PeerRotationReceiptRpcTests.CurrentConfirmationDoesNotInventHistoryOrClearReceipt();
+        await PeerRotationReceiptRpcTests.CurrentConfirmationProtocolAndTrustRefusals();
+        await PeerRotationReceiptRpcTests.CurrentConfirmationRejectsOldAndUnobservedPending();
+        await PeerRotationReceiptRpcTests.CurrentConfirmationReplyFaultsAndStateChangeRetry();
+        await PeerRotationReceiptRpcTests.CurrentConfirmationAuditAndQueuedWriterRollback();
+        Console.WriteLine("PASS explicit current-credential confirmation."); return 0;
+    }
     if (args is ["--peer-relationship-provenance-probe"])
     {
         await PeerRelationshipIncarnationTests.ConservativeUpgradeAndMigrationRollback();
@@ -507,6 +519,13 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
     ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Current credential confirmation upgrade cancellation and first-New pairing", PeerRelationshipIncarnationTests.CurrentConfirmationUpgradeCancellationAndFirstNewPairing),
+    ("Current credential confirmation repairs cleared legacy evidence", PeerRotationReceiptRpcTests.CurrentConfirmationRepairsClearedLegacyEvidence),
+    ("Current credential confirmation does not invent history or clear receipts", PeerRotationReceiptRpcTests.CurrentConfirmationDoesNotInventHistoryOrClearReceipt),
+    ("Current credential confirmation protocol and trust refusal", PeerRotationReceiptRpcTests.CurrentConfirmationProtocolAndTrustRefusals),
+    ("Current credential confirmation denies Old and unobserved Pending", PeerRotationReceiptRpcTests.CurrentConfirmationRejectsOldAndUnobservedPending),
+    ("Current credential confirmation reply faults and state retry", PeerRotationReceiptRpcTests.CurrentConfirmationReplyFaultsAndStateChangeRetry),
+    ("Current credential confirmation audit and queued writer rollback", PeerRotationReceiptRpcTests.CurrentConfirmationAuditAndQueuedWriterRollback),
     ("Relationship provenance conservative migration", PeerRelationshipIncarnationTests.ConservativeUpgradeAndMigrationRollback),
     ("Relationship provenance activation and routine continuity", PeerRelationshipIncarnationTests.ActivationRoutinePromotionAndUnrelatedPeersPreserveEvidence),
     ("Relationship provenance identical-state ABA and pairing changes", PeerRelationshipIncarnationTests.SameIdentityAbaAndPairingChangesInvalidate),

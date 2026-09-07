@@ -107,6 +107,7 @@ internal static class HostNetworkGenerationTests
         await Reject<InvalidOperationException>(() => ga.CheckRotationAsync(b.State.HostId, address));
         await Reject<InvalidOperationException>(() => ga.StageRotationAsync(b.State.HostId, address, Guid.NewGuid()));
         await Reject<InvalidOperationException>(() => ga.ConfirmRotationAsync(b.State.HostId, address));
+        await Reject<InvalidOperationException>(() => ga.ConfirmCurrentCredentialAsync(b.State.HostId, address, Guid.NewGuid()));
         await Reject<InvalidOperationException>(() => ga.CollectRotationAsync(Guid.NewGuid(), new Dictionary<Guid, Uri>()));
         Check(a.State.Count("HostCapabilityGrants") == 0 && b.State.Count("ServerCapabilityGrants") == 0);
     }
@@ -251,6 +252,7 @@ internal static class HostNetworkGenerationTests
         using var local = new LocalSecurityRpcTests.Client(a.State.HostId, pipe, Reader(a.State.HostId, nextPin));
         Check((await local.Negotiate()).Host.HostId == a.State.HostId.ToString("D"));
         Check(await gb.ConfirmRotationAsync(a.State.HostId, replacement.Endpoints!.Value.Peer) == PeerRotationReceiptExchange.Confirmed);
+        Check(await replacement.ConfirmCurrentCredentialAsync(b.State.HostId, gb.Endpoints.Value.Peer, prepared.RotationId));
         Check(b.State.Repository.Read(a.State.HostId)!.CurrentFingerprint == nextPin && b.State.Repository.Read(a.State.HostId)!.PendingRotationId is null);
         Check(state.Read().CurrentReference == prepared.NewReference && state.Read().Credentials.All(c => !c.Retired));
     }

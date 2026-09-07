@@ -63,10 +63,22 @@ enum PeerRotationReceiptResult {
   PEER_ROTATION_RECEIPT_RESULT_ALREADY_RECORDED = 2;
 }
 message PeerRotationReceiptReply { PeerRotationReceiptRequest request = 1; PeerRotationReceiptResult result = 2; }
+message PeerCurrentCredentialRequest {
+  string request_id = 1;
+  string host_id = 2;
+  string rotation_id = 3;
+  string new_fingerprint = 4;
+}
+enum PeerCurrentCredentialResult {
+  PEER_CURRENT_CREDENTIAL_RESULT_UNSPECIFIED = 0;
+  PEER_CURRENT_CREDENTIAL_RESULT_CONFIRMED = 1;
+}
+message PeerCurrentCredentialReply { PeerCurrentCredentialRequest request = 1; PeerCurrentCredentialResult result = 2; }
 service PeerSecurityProtocol {
   rpc Negotiate(PeerHello) returns (PeerHello);
   rpc Activate(PeerActivationAck) returns (PeerActivationReply);
   rpc ReadRotationStatus(PeerRotationStatusRequest) returns (PeerRotationStatusReply);
   rpc StageRotation(PeerRotationProposalRequest) returns (PeerRotationProposalReply);
   rpc ConfirmRotationPromotion(PeerRotationReceiptRequest) returns (PeerRotationReceiptReply);
+  rpc ConfirmCurrentCredential(PeerCurrentCredentialRequest) returns (PeerCurrentCredentialReply);
 }

@@ -82,4 +82,10 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
             session.PeerId, session.PeerFingerprint, session.LocalFingerprint, session.PeerIncarnation);
         return new PeerRotationReceiptReply { Request = request.Clone(), Result = recorded ? PeerRotationReceiptResult.Recorded : PeerRotationReceiptResult.AlreadyRecorded };
     }, FeatureCapability.PeerRotationReceipt, PeerTrafficPurpose.TrustMaintenance);
+    public override Task<PeerCurrentCredentialReply> ConfirmCurrentCredential(PeerCurrentCredentialRequest request, ServerCallContext context) => Dispatch(context, false, session =>
+    {
+        runtime.Repository.ConfirmObservedCurrentCredential(PeerCurrentCredentialWire.Durable(request),
+            session.PeerId, session.PeerFingerprint, session.LocalFingerprint, session.PeerIncarnation);
+        return new PeerCurrentCredentialReply { Request = request.Clone(), Result = PeerCurrentCredentialResult.Confirmed };
+    }, FeatureCapability.PeerCurrentCredentialConfirmation, PeerTrafficPurpose.TrustMaintenance);
 }
