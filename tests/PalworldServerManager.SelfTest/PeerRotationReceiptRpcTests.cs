@@ -11,7 +11,7 @@ using RawClient = PalworldServerManager.SelfTest.PeerSecurityRpcTests.RawClient;
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class PeerRotationReceiptRpcTests
+internal static partial class PeerRotationReceiptRpcTests
 {
     private static void Check(bool value) { if (!value) throw new Exception("Rotation receipt RPC assertion failed."); }
     private static async Task Refused<T>(Task<T> task, StatusCode code)

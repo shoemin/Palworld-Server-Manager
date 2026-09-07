@@ -27,7 +27,8 @@ internal static class RotationPeerSetTests
     {
         using var f = new PeerTrustTests.Fixture(schemaVersion: 4); Bind(f); var id = Proposal(f);
         var before = f.Repository.Read(f.PeerId); var audits = f.Count("AuditEvents");
-        Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer) == 1 && HostSchemaMigrationRunner.Default().Migrate(f.Writer) == 0);
+        var throughRevision = new HostSchemaMigrationRunner(HostSchema.AllMigrations().Take(5));
+        Check(throughRevision.Migrate(f.Writer) == 1 && throughRevision.Migrate(f.Writer) == 0);
         Check(f.Repository.Read(f.PeerId) == before && f.Count("AuditEvents") == audits && Revision(f) == 0);
         Check(HostDatabase.QueryScalarLong(f.Writer, "SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name LIKE '%_Revision_%';") == 6);
         var snapshot = State(f).ReadRoutineRotationPeerSet(id);

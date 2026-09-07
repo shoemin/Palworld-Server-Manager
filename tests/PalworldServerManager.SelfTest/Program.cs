@@ -11,6 +11,15 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--peer-relationship-provenance-probe"])
+    {
+        await PeerRelationshipIncarnationTests.ConservativeUpgradeAndMigrationRollback();
+        await PeerRelationshipIncarnationTests.ActivationRoutinePromotionAndUnrelatedPeersPreserveEvidence();
+        await PeerRelationshipIncarnationTests.SameIdentityAbaAndPairingChangesInvalidate();
+        await PeerRelationshipIncarnationTests.QueuedReceiptAuditRollbackAndMetadataRefusal();
+        await PeerRotationReceiptRpcTests.NegotiatedRelationshipCannotSurviveIdenticalStateAba();
+        Console.WriteLine("PASS relationship-specific promotion provenance."); return 0;
+    }
     if (args is ["--local-owner-activation-probe"])
     {
         await ProtocolTests.SchemaEvolution();
@@ -498,6 +507,11 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
     ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Relationship provenance conservative migration", PeerRelationshipIncarnationTests.ConservativeUpgradeAndMigrationRollback),
+    ("Relationship provenance activation and routine continuity", PeerRelationshipIncarnationTests.ActivationRoutinePromotionAndUnrelatedPeersPreserveEvidence),
+    ("Relationship provenance identical-state ABA and pairing changes", PeerRelationshipIncarnationTests.SameIdentityAbaAndPairingChangesInvalidate),
+    ("Relationship provenance queued receipt rollback and metadata refusal", PeerRelationshipIncarnationTests.QueuedReceiptAuditRollbackAndMetadataRefusal),
+    ("Relationship provenance real negotiated-session ABA", PeerRotationReceiptRpcTests.NegotiatedRelationshipCannotSurviveIdenticalStateAba),
     ("Local Owner activation ExactOwnerAndIdempotentActivation", LocalOwnerActivationTests.ExactOwnerAndIdempotentActivation),
     ("Local Owner activation HookAndCancellationRollback", LocalOwnerActivationTests.HookAndCancellationRollback),
     ("Local Owner activation FinalWriterFreshness", LocalOwnerActivationTests.FinalWriterFreshness),
