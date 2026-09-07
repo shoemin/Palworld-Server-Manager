@@ -27,23 +27,85 @@ public sealed partial class PeerTrustRepository
     // Actual completed mutual-TLS evidence supplied by the trusted Host, never a claimed status
     // or message fingerprint. A previously verified Pending pin remains live-valid after lapse.
     public PeerCredentialObservation ObserveActivePeerCredential(Guid peer, string actualFingerprint)
+        => ObserveActivePeerCredentialCore(peer, actualFingerprint, null, CancellationToken.None);
+    // Original negotiated connection evidence. Validate it in the SAME transaction that can
+    // promote Pending or record lapse; a separate read followed by observation has a race.
+    public PeerCredentialObservation ObserveActivePeerCredential(PeerGrantMutationActor actor, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(actor);
+        if (actor.HostId != hostId || actor.PeerHostId == hostId || actor.Incarnation <= 0) throw RotationRefused();
+        Fingerprint(actor.LocalFingerprint);
+        return ObserveActivePeerCredentialCore(actor.PeerHostId, actor.PeerFingerprint, actor, ct);
+    }
+    private void RequireObservationConnection(SqliteConnection c, SqliteTransaction tx, PeerGrantMutationActor actor)
+    {
+        if (RequireHost(c, tx) != actor.LocalFingerprint ||
+            PeerRelationshipIncarnation.Read(c, tx, actor.PeerHostId) != actor.Incarnation) throw RotationRefused();
+    }
+    private long ObservationRevision(SqliteConnection c, SqliteTransaction tx)
+    {
+        using var command = Command(c, tx, "SELECT Revision FROM AuthorizationRevision WHERE Id=1 AND typeof(Revision)='integer' AND Revision>=0;");
+        return command.ExecuteScalar() is long revision ? revision : throw new InvalidDataException("Permission revision unavailable.");
+    }
+    private PeerCredentialObservation ObserveActivePeerCredentialCore(Guid peer, string actualFingerprint,
+        PeerGrantMutationActor? connection, CancellationToken ct)
     {
         Id(peer); Fingerprint(actualFingerprint);
+        ct.ThrowIfCancellationRequested();
         using var c = Open(); using var tx = c.BeginTransaction(deferred: false);
+        if (connection is not null) RequireObservationConnection(c, tx, connection);
+        var revision = connection is null ? 0 : ObservationRevision(c, tx);
         var trust = RequireObservedActivePeer(c, tx, peer, actualFingerprint); var now = time.GetUtcNow();
+        Guid? audit; Guid? history = null; string kind; PeerTrustRecord expected;
+        var promoted = trust.CurrentFingerprint != actualFingerprint;
         if (trust.CurrentFingerprint == actualFingerprint)
         {
-            MarkRotationLapsed(c, tx, trust, now); var current = Read(c, tx, peer)!; tx.Commit(); return new(current, false);
+            var lapsed = MarkRotationLapsed(c, tx, trust, now, out audit);
+            expected = lapsed ? trust with { PendingReconfirmationRequired = true } : trust;
+            kind = "PeerRotationReconfirmationRequired";
         }
-        Execute(c, tx, """
+        else
+        {
+            history = Guid.NewGuid();
+            Execute(c, tx, """
             INSERT INTO TrustedManagerCredentialHistory (CredentialHistoryId,PeerHostId,PriorPublicKeyFingerprint,RotatedUtc)
                 VALUES ($id,$peer,$old,$now);
             UPDATE TrustedManagers SET CurrentTrustedPublicKeyFingerprint=PendingTrustedPublicKeyFingerprint,
                 PendingTrustedPublicKeyFingerprint=NULL,PendingRotationExpiresUtc=NULL,PendingReconfirmationRequired=0
                 WHERE PeerHostId=$peer;
-            """, ("$id", Id(Guid.NewGuid())), ("$peer", Id(peer)), ("$old", trust.CurrentFingerprint), ("$now", Stamp(now)));
-        Audit(c, tx, peer, "PeerCredentialPromoted", now);
-        var promoted = Read(c, tx, peer)!; tx.Commit(); return new(promoted, true);
+            """, ("$id", Id(history.Value)), ("$peer", Id(peer)), ("$old", trust.CurrentFingerprint), ("$now", Stamp(now)));
+            kind = "PeerCredentialPromoted"; audit = Audit(c, tx, peer, kind, now);
+            expected = trust with { CurrentFingerprint = actualFingerprint, PendingFingerprint = null,
+                PendingRotationExpiresUtc = null, PendingReconfirmationRequired = false };
+        }
+        var after = Read(c, tx, peer)!;
+        if (connection is not null)
+        {
+            RequireObservationConnection(c, tx, connection);
+            if (ObservationRevision(c, tx) != checked(revision + (audit is null ? 0 : 1)))
+                throw new StaleAuthorizationRevisionException();
+            if (after != expected) throw new InvalidOperationException("Observed peer credential state changed before commit.");
+            if (audit is {} auditId)
+            {
+                var system = kind == "PeerRotationReconfirmationRequired";
+                using var check = Command(c, tx, """
+                    SELECT COUNT(*) FROM AuditEvents WHERE AuditEventId=$id AND OccurredUtc=$now AND EventKind=$kind
+                        AND ActorKind IS $actor AND ActorPeerHostId IS $peer AND ActorLocalPrincipalId IS NULL
+                        AND AffectedHostId=$host AND AffectedServerProfileId IS NULL AND IsOfflineRecovery=0 AND Summary=$summary;
+                    """, ("$id", Id(auditId)), ("$now", Stamp(now)), ("$kind", kind), ("$actor", system ? null : "RemoteManager"),
+                    ("$peer", system ? null : Id(peer)), ("$host", Id(hostId)), ("$summary", $"{kind}: peer {Id(peer)}."));
+                if (Convert.ToInt32(check.ExecuteScalar()) != 1) throw new InvalidOperationException("Peer observation audit changed before commit.");
+            }
+            if (history is {} historyId)
+            {
+                using var check = Command(c, tx, """
+                    SELECT COUNT(*) FROM TrustedManagerCredentialHistory WHERE CredentialHistoryId=$id AND PeerHostId=$peer
+                        AND PriorPublicKeyFingerprint=$old AND RotatedUtc=$now;
+                    """, ("$id", Id(historyId)), ("$peer", Id(peer)), ("$old", trust.CurrentFingerprint), ("$now", Stamp(now)));
+                if (Convert.ToInt32(check.ExecuteScalar()) != 1) throw new InvalidOperationException("Peer observation history changed before commit.");
+            }
+        }
+        ct.ThrowIfCancellationRequested(); tx.Commit(); return new(after, promoted);
     }
     // Only after the remote Host has confirmed durable receipt for this exact RotationId on
     // the authenticated connection. This primitive does not itself send/receive that RPC.
@@ -60,11 +122,14 @@ public sealed partial class PeerTrustRepository
         Audit(c, tx, peer, "PeerRotationReceiptConfirmed", time.GetUtcNow()); tx.Commit(); return true;
     }
     private bool MarkRotationLapsed(SqliteConnection c, SqliteTransaction tx, PeerTrustRecord trust, DateTimeOffset now)
+        => MarkRotationLapsed(c, tx, trust, now, out _);
+    private bool MarkRotationLapsed(SqliteConnection c, SqliteTransaction tx, PeerTrustRecord trust, DateTimeOffset now, out Guid? audit)
     {
+        audit = null;
         ValidateRotationMetadata(trust);
         if (trust.PendingFingerprint is null || trust.PendingReconfirmationRequired || trust.PendingRotationExpiresUtc > now) return false;
         Execute(c, tx, "UPDATE TrustedManagers SET PendingReconfirmationRequired=1 WHERE PeerHostId=$peer;", ("$peer", Id(trust.PeerHostId)));
-        Audit(c, tx, trust.PeerHostId, "PeerRotationReconfirmationRequired", now); return true;
+        audit = Audit(c, tx, trust.PeerHostId, "PeerRotationReconfirmationRequired", now); return true;
     }
     private void ExpireRotations(SqliteConnection c, SqliteTransaction tx, DateTimeOffset now)
     {
