@@ -40,17 +40,18 @@ public sealed partial class GrantPolicyRepository
         var inventory=ReadCreationInventory(c,tx,target)??throw new InvalidOperationException("Host creation confirmation did not register the new server.");
         var confirmed=Read(c,tx);RequirePeer(c,tx,creator,confirmed);RequireRevision(before.Revision,confirmed.Revision);
         var grants=confirmed.Policy.ExpandRemoteCreatorGrants(creator.PeerHostId,target,time.GetUtcNow());
-        var creationEvent=Guid.NewGuid();var actual=ActorRef.RemoteManager(creator.PeerHostId);
+        var creationEvent=Guid.NewGuid();var actual=ActorRef.RemoteManager(creator.PeerHostId);var audits=new List<Action>();
         foreach(var grant in grants)
         {
             Insert(c,tx,grant);
-            Audit(c,tx,actual,grant,"CreatorGrantApplied",grant.GrantedUtc,1,"ConfirmedServerCreation:"+Id(creationEvent));
+            audits.Add(Audit(c,tx,actual,grant,"CreatorGrantApplied",grant.GrantedUtc,1,"ConfirmedServerCreation:"+Id(creationEvent)));
         }
         var after=Read(c,tx);RequirePeer(c,tx,creator,after);RequireRevision(checked(before.Revision+grants.Count),after.Revision);
         if(ReadCreationInventory(c,tx,target)!=inventory)throw new UnauthorizedAccessException("Confirmed server changed before commit.");
         foreach(var grant in grants)
             if(after.ServerGrants.Single(g=>g.GrantId==grant.GrantId)!=grant||!after.Policy.IsOwner(grant.GrantedByActor))
                 throw new UnauthorizedAccessException("Creator grant changed before commit.");
+        foreach(var audit in audits)audit();
         ct.ThrowIfCancellationRequested();tx.Commit();
         return new(creationEvent,after.Revision,Array.AsReadOnly(grants.Select(g=>g.GrantId).ToArray()));
     }
