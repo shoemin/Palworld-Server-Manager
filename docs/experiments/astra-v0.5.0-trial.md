@@ -3986,3 +3986,40 @@ Cross-component reference inspection found the older SPAKE2 wrapper evidence pag
 Both runtimes now own internal permission dispatchers and connection features verify exact creating-runtime association. Local dispatcher derives current signed local identity under native/negotiation/lifetime gates; peer dispatcher derives original negotiated actual-TLS evidence and invokes45j guarded ordinary observation before the canonical action. Scoped local/peer facades carry only captured actual proof/repository/cancellation privately and expose their bounded typed action families; disposed/foreign-thread/aborted calls refuse. No request actor/Owner/validator/alternate cancellation or proof/snapshot output. No new endpoint/feature/operation/UI.
 
 Corrected focused6 PASS: real production P256 local signature/verifier with controlled transport/native fixtures, all local and peer action families and real grantors, Owner configuration/invalidation/history, exact approved creator grants and independent local-user ceiling, missing/wrong channel/negotiation/runtime/key/native/pin/incarnation/recovery/initialization, escaped/foreign-thread/disposed/cancelled/aborted contexts, valid pending promotion followed by stale/denied permission and zero new grant. Build zero warnings/errors; actual UI/SDK/strict Docs PASS before the subsequent A doc correction, full474 suite running. Eleven current evidence pages plus the older wrapper status now distinguish implemented dispatch from component acceptance/downstream installed operations. No production correction; unit2cycles as above. Accessibility WAIVED and parent45 IN PROGRESS until component qualification.
+
+### #45k Review A — complete diff and acceptance audit
+
+Reviewed all 19 changed files against e1cbb7e99790528a9bd06f465c058566f28c8081 at executable 152ac1d8f2fae3550afb4b93cd29111e1656dcc9. Local qualification is complete: 474/474 self-tests, six focused dispatch scenarios, zero-warning build, actual Avalonia UI, Windows SDK ABI and corrected strict Docs PASS. Remote CI34170326797 and executable Docs34170327884 are pending; PR waits for qualification. A found the wrapper-status contradiction recorded above; correction and repeated reference search are clean. No production finding. Total unit2 correction cycles (pre-A compile alias1, A documentation1).
+
+Adversarial review traced both new dispatchers from runtime-owned connection creation to callback entry, every facade method to its typed canonical repository writer, and the observation-to-permission transaction gap. Exact runtime association prevents connection relabelling; native binding/current signed local evidence and original peer incarnation/pins cannot be supplied by request proposals. Pending rotation may change policy revision before the requested mutation: the stale test proves identity history commits once without minting a grant. Authentication failures do not become permission denials. Current transaction proof/revision checks remain essential after the connection check; no callback or returned revision is an execution permit. Connection disposal takes the same existing gate; facades have no asynchronous method and fail after callback return or on another thread. Request abort and caller cancellation both propagate. Existing enrollment/trust-maintenance routes retain their behavior. No new public wire endpoint, operation feature, secret holder, database writer or business executor appears.
+
+Acceptance mapping for this bounded adapter: actual authenticated local/peer action families and audit grantors are demonstrated by the first two scenarios; closed channel/protocol/identity/trust inputs by scenarios3-4; runtime/lifetime/cancellation by scenario5; rotation/revision separation by scenario6. Parent45's nine criteria remain backed by the unchanged canonical suites: indirect paths (defaults/presets/history/creator), typed scopes and full ServerRef, exact dependent subtree, no ManagePermissions shortcut, structural Owner, nonretroactive defaults, independent ceilings and controlled actual-actor audit. Their full regression suite passed. Parent component acceptance remains a distinct checkpoint, with actual RPC operations and creation workflow downstream.
+
+| Invariant | Why affected / evidence checked | Result |
+|---|---|---|
+| ARCH-001, ARCH-002 | Diff excludes frozen WPF/Lan; new code remains Host-only. | PASS |
+| HOST-001, HOST-002 | Runtime adapter uses existing authoritative Host/lease/repositories; no executor or second Host. | PASS |
+| PERSIST-001 | All facade actions route to current immediate-transaction repository; no client writer or schema change. | PASS |
+| CLIENT-001, CLIENT-002, CLIENT-003 | No dependency/credential-holder/client-channel changes; real user-side signature and Host verifier tested. | PASS |
+| IDENT-001, IDENT-002 | Host identity remains separate from public pins; typed full ServerRef forwarded unchanged. | PASS |
+| IDENT-003, IDENT-004 | Guarded current/Pending observation; original incarnation/local key and recovery enforced; stale permission cannot create authority. | PASS |
+| LOCAL-001, LOCAL-002 | Initialized Host/current persisted signed identity required; private keys remain fixture client side. | PASS |
+| LOCAL-003, LOCAL-004 | Changed native/key/revoked/unauthenticated contexts refuse before callback; TLS HTTP2/runtime feature required. Controlled fixtures explicitly labelled. | PASS |
+| OWNER-001, OWNER-002 | No peer Owner operation or bootstrap route; real current local Owner canonical checks, no caller flag. | PASS |
+| REMOTE-001, REMOTE-002 | Host-only incoming adapter; pure/two-DB independent ceilings and creator-local refusal regressions pass; outbound business routing not claimed. | PASS |
+| PAIR-001, PAIR-002 | Active/current peer proof before action, no pairing-derived grant; PeerBound/revoked/recovery refuse. | PASS |
+| PAIR-003, PAIR-004 | Separate local identity/permission transactions; no cross-Host atomicity, credential replacement or silent historical reactivation. | PASS |
+| AUTH-001, AUTH-005 | Closed Host/server action families preserve capability type and exact destination, no target translation. | PASS |
+| AUTH-002 | Exact source grant and rights forwarded unchanged; canonical forest regressions pass. | PASS |
+| AUTH-003 | Every direct/preset/default/history/creator facade routes canonical writer with actual captured proof; six creator roots remain current-Owner use-only. | PASS |
+| AUTH-004 | Existing configured/default activation hook unchanged and nonretroactive regression passes. | PASS |
+| PROTO-001 | Existing negotiated security features required; no speculative wire feature; unknown typed capabilities still deny. | PASS |
+| OPS-001 | Expected revision forwarded unchanged, observed promotion versus stale write tested; no reusable permit. | PASS |
+| OPS-002, OPS-003, OPS-004 | No business operation/lock/identity implementation. Synchronous connection callback explicitly excludes long-running operation ownership. | PASS, unchanged |
+| RECOVERY-001 | No interrupted-operation resume logic; identity recovery refuses; original cleanup/regressions retained. | PASS, unchanged |
+| SEC-001 | No public proof output or free-text denial fields; underlying audits keep actual actor and controlled provenance without secrets. | PASS |
+| MIG-001 | No migration or v0.4 store changes. | PASS, unchanged |
+| PLATFORM-001, PLATFORM-002 | Trusted native seam retained, no platform branch or Host shell/UI action. | PASS |
+| LINUX-001 | No Linux production implementation or Windows parity claim. | PASS, gate retained |
+
+All 40 registry IDs were reviewed. Stale search for incomplete authenticated adapters/canonical grants found no remaining contradictory current developer page; historical ledger statements remain historical. No Product Decision. Accessibility WAIVED, never PASS; physical multi-machine/reboot/Palworld/parity/Linux/release evidence remains downstream. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
