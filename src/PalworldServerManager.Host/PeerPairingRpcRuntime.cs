@@ -31,16 +31,29 @@ public sealed class PeerPairingRpcRuntime : IDisposable
         HostId = hostId; this.publicCredential = publicCredential.ToArray();
         LocalFingerprint = Convert.ToHexString(SHA256.HashData(publicCredential));
         Factory = factory ?? throw new ArgumentNullException(nameof(factory)); Repository = new(database, hostId, time);
-        Audit = new(Repository, time);
-        Attempts = new(factory, (id, outcome) =>
+        PairingAuditJournal? createdAudit = null;
+        try
         {
-            try
+            Audit = createdAudit = new(Repository, time);
+            Attempts = new(factory, (id, outcome) =>
             {
-                if (outcome != PairingAttemptOutcome.IdentityVerified)
-                    Audit.Record(id, outcome == PairingAttemptOutcome.Expired ? PairingTerminalOutcome.Expired : PairingTerminalOutcome.Failed);
-            }
-            finally { try { report(id, outcome.ToString()); } catch { } }
-        }, time);
+                try
+                {
+                    if (outcome != PairingAttemptOutcome.IdentityVerified)
+                        Audit.Record(id, outcome == PairingAttemptOutcome.Expired ? PairingTerminalOutcome.Expired : PairingTerminalOutcome.Failed);
+                }
+                finally { try { report(id, outcome.ToString()); } catch { } }
+            }, time);
+        }
+        catch (Exception startup)
+        {
+            // A failed constructor is never returned to the generation owner for disposal.
+            // Stop any already-created background writer before propagating that failure.
+            try { createdAudit?.Dispose(); }
+            catch (Exception cleanup) { throw new AggregateException("Pairing runtime startup and cleanup failed.", startup, cleanup); }
+            finally { slots.Dispose(); }
+            throw;
+        }
     }
     internal PairingInvitation CreateInvitation() { Audit.RequireHealthy(); return Attempts.CreateInvitation(); }
     internal void CancelInvitation(Guid id) => Attempts.CancelInvitation(id);
