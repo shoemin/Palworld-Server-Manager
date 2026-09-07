@@ -31,5 +31,5 @@ public sealed class NegotiatedProtocol
     public bool Supports(FeatureCapability feature) => IsKnown(feature) && _features.Contains(feature);
     public void Require(FeatureCapability feature)
     { if (!Supports(feature)) throw new InvalidOperationException("The requested feature was not negotiated."); }
-    public static bool IsKnown(FeatureCapability value) => value is FeatureCapability.ServerInventory or FeatureCapability.ServerIdentity or FeatureCapability.LocalPrincipalSecurity or FeatureCapability.PeerTrustActivation or FeatureCapability.PeerPairing;
+    public static bool IsKnown(FeatureCapability value) => value is FeatureCapability.ServerInventory or FeatureCapability.ServerIdentity or FeatureCapability.LocalPrincipalSecurity or FeatureCapability.PeerTrustActivation or FeatureCapability.PeerPairing or FeatureCapability.PeerRotationStatus;
 }

@@ -22,11 +22,12 @@ public sealed partial class PeerTrustRepository
         internal object Scope { get; }
         internal DateTimeOffset OriginalDeadline { get; }
         internal long Started { get; }
+        internal string LocalFingerprint { get; }
         internal LocalPrincipalMutationActor? Owner { get; }
         private int consumed;
         internal RotationStatusQuery(object scope, RoutineRotationStatusRequest request, DateTimeOffset deadline,
-            long started, LocalPrincipalMutationActor? owner)
-        { Scope = scope; Request = request; OriginalDeadline = deadline; Started = started; Owner = owner; }
+            long started, LocalPrincipalMutationActor? owner, string localFingerprint)
+        { Scope = scope; Request = request; OriginalDeadline = deadline; Started = started; Owner = owner; LocalFingerprint = localFingerprint; }
         internal bool Consume() => Interlocked.Exchange(ref consumed, 1) == 0;
     }
     private void RequireRotationOwner(SqliteConnection c, SqliteTransaction tx, LocalPrincipalMutationActor owner)
@@ -42,23 +43,24 @@ public sealed partial class PeerTrustRepository
     // through actual local authentication. Opportunistic queries pass null and cannot renew.
     public RotationStatusQuery BeginPeerRotationStatusQuery(Guid peer, LocalPrincipalMutationActor? owner = null)
     {
-        Id(peer); using var c = Open(); using var tx = c.BeginTransaction(deferred: true); RequireHost(c, tx);
+        Id(peer); using var c = Open(); using var tx = c.BeginTransaction(deferred: true); var local = RequireHost(c, tx);
         var row = Read(c, tx, peer) ?? throw RotationRefused();
         var trust = RequireObservedActivePeer(c, tx, peer, row.CurrentFingerprint ?? throw RotationRefused());
         if (trust.PendingFingerprint is null) throw RotationRefused();
         if (owner is not null) RequireRotationOwner(c, tx, owner);
         return new(rotationQueryScope, new(Guid.NewGuid(), peer, trust.PendingRotationId!.Value,
-            trust.CurrentFingerprint!, trust.PendingFingerprint), trust.PendingRotationExpiresUtc!.Value, time.GetTimestamp(), owner);
+            trust.CurrentFingerprint!, trust.PendingFingerprint), trust.PendingRotationExpiresUtc!.Value, time.GetTimestamp(), owner, local);
     }
     // Called only after this Host initiated a fresh query and the transport bound the exact
     // reply to negotiated peer UUID and completed mutual TLS. Reply content is never proof.
-    public PeerRotationResolution CompletePeerRotationStatusQuery(RotationStatusQuery query, RoutineRotationStatusReply reply, string actualFingerprint)
+    public PeerRotationResolution CompletePeerRotationStatusQuery(RotationStatusQuery query, RoutineRotationStatusReply reply, string actualFingerprint, string actualLocalFingerprint)
     {
         ArgumentNullException.ThrowIfNull(query); ArgumentNullException.ThrowIfNull(reply);
         if (!ReferenceEquals(query.Scope, rotationQueryScope) || !query.Consume()) throw RotationRefused();
         if (reply.Request != query.Request || !Enum.IsDefined(reply.State)) throw RotationRefused();
         Fingerprint(actualFingerprint);
         using var c = Open(); using var tx = c.BeginTransaction(deferred: false);
+        if (actualLocalFingerprint != query.LocalFingerprint || RequireHost(c, tx) != actualLocalFingerprint) throw RotationRefused();
         // This completion handles Old-only status. Actual New presentation is handled by the
         // ordinary observation path before RPC and makes this captured pending state stale.
         var trust = RequireObservedActivePeer(c, tx, query.Request.HostId, actualFingerprint);

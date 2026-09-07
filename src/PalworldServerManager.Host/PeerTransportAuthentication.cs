@@ -4,7 +4,7 @@ using PalworldServerManager.Host.Persistence;
 
 namespace PalworldServerManager.Host;
 
-internal enum PeerTrafficPurpose { PairingFinalization = 1, OrdinaryManagement = 2 }
+internal enum PeerTrafficPurpose { PairingFinalization = 1, OrdinaryManagement = 2, TrustMaintenance = 3 }
 internal sealed record AuthenticatedPeerTransport(Guid PeerHostId, string PresentedFingerprint, string TrustState, bool UsesPendingCredential,
     bool PromotedCredential = false);
 
@@ -20,7 +20,7 @@ internal sealed class PeerTransportAuthentication(PeerTrustRepository repository
     private PeerTrustRecord ReadAllowed(Guid peer, string tlsFingerprint, PeerTrafficPurpose purpose)
     {
         if (peer == Guid.Empty || !HostTrustPlanning.Fingerprint(tlsFingerprint) ||
-            purpose is not (PeerTrafficPurpose.PairingFinalization or PeerTrafficPurpose.OrdinaryManagement)) throw Refused();
+            purpose is not (PeerTrafficPurpose.PairingFinalization or PeerTrafficPurpose.OrdinaryManagement or PeerTrafficPurpose.TrustMaintenance)) throw Refused();
         var trust = repository.Read(peer);
         if (trust is null || trust.RecoveryRequired || trust.State is not ("PeerBound" or "Active")) throw Refused();
         var current = trust.CurrentFingerprint == tlsFingerprint;

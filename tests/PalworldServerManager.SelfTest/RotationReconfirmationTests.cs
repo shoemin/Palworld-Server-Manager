@@ -34,19 +34,19 @@ internal static class RotationReconfirmationTests
         using var f = new PeerTrustTests.Fixture(); var repo = Stage(f); var retained = repo.Read(f.PeerId)!;
         f.Time.Now += TimeSpan.FromMinutes(30);
         var passive = repo.BeginPeerRotationStatusQuery(f.PeerId);
-        Check(repo.CompletePeerRotationStatusQuery(passive, Reply(passive, RoutineRotationLiveState.Staging), Old) == PeerRotationResolution.Unchanged);
+        Check(repo.CompletePeerRotationStatusQuery(passive, Reply(passive, RoutineRotationLiveState.Staging), Old, Local) == PeerRotationResolution.Unchanged);
         Check(repo.Read(f.PeerId)!.PendingReconfirmationRequired && repo.Read(f.PeerId)!.PendingRotationExpiresUtc == retained.PendingRotationExpiresUtc);
         var staleOwner = repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f));
         f.Execute("UPDATE LocalPrincipals SET PublicVerificationKey='changed' WHERE IsOwner=1;");
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(staleOwner, Reply(staleOwner, RoutineRotationLiveState.Staging), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(staleOwner, Reply(staleOwner, RoutineRotationLiveState.Staging), Old, Local));
         Reject<AuthenticationException>(() => repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f)));
         f.Execute("UPDATE LocalPrincipals SET PublicVerificationKey='fixture-public' WHERE IsOwner=1;");
         var query = repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f));
-        Check(repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.ReadyForCutover), Old) == PeerRotationResolution.Renewed);
+        Check(repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.ReadyForCutover), Old, Local) == PeerRotationResolution.Renewed);
         var renewed = repo.Read(f.PeerId)!;
         Check(renewed.CurrentFingerprint == Old && renewed.PendingFingerprint == Next && renewed.PendingRotationId == retained.PendingRotationId &&
             !renewed.PendingReconfirmationRequired && renewed.PendingRotationExpiresUtc == f.Time.Now.AddMinutes(30));
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.ReadyForCutover), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.ReadyForCutover), Old, Local));
         Check(HostDatabase.QueryScalarLong(f.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerRotationReconfirmed' AND ActorKind='LocalPrincipal' AND ActorPeerHostId IS NULL;") == 1);
         Check(f.Count("TrustedManagerCredentialHistory") == 0); Preserved(f); return Task.CompletedTask;
     }
@@ -56,7 +56,7 @@ internal static class RotationReconfirmationTests
         {
             using var f = new PeerTrustTests.Fixture(); var repo = Stage(f); f.Time.Now += TimeSpan.FromHours(1);
             var query = repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f));
-            Check(repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old) == PeerRotationResolution.Unchanged);
+            Check(repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old, Local) == PeerRotationResolution.Unchanged);
             Check(repo.Read(f.PeerId)!.CurrentFingerprint == Old && repo.Read(f.PeerId)!.PendingFingerprint == Next && repo.Read(f.PeerId)!.PendingReconfirmationRequired);
             Check(f.Count("TrustedManagerCredentialHistory") == 0); Preserved(f);
         }
@@ -64,7 +64,7 @@ internal static class RotationReconfirmationTests
         {
             using var f = new PeerTrustTests.Fixture(); var repo = Stage(f); f.Time.Now += TimeSpan.FromHours(1);
             var query = repo.BeginPeerRotationStatusQuery(f.PeerId);
-            Check(repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old) == PeerRotationResolution.Cleared);
+            Check(repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old, Local) == PeerRotationResolution.Cleared);
             var row = repo.Read(f.PeerId)!; Check(row.CurrentFingerprint == Old && row.PendingFingerprint is null && row.PendingRotationId is null && row.PendingRotationExpiresUtc is null && !row.PendingReconfirmationRequired);
             Check(f.Count("PeerRotationProposals") == 1 && f.Count("TrustedManagerCredentialHistory") == 0); Preserved(f);
             Reject<AuthenticationException>(() => repo.BeginPeerRotationStatusQuery(f.PeerId));
@@ -82,27 +82,27 @@ internal static class RotationReconfirmationTests
     {
         using var f = new PeerTrustTests.Fixture(); Stage(f); var clock = new Clock(f.Time); var repo = new PeerTrustRepository(f.Database, f.HostId, clock);
         var query = repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f));
-        Reject<AuthenticationException>(() => f.Repository.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old));
+        Reject<AuthenticationException>(() => f.Repository.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old, Local));
         clock.Seconds = 20; f.Time.Now -= TimeSpan.FromDays(1); // Wall rollback does not revive a monotonic-expired query.
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old, Local));
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, new(query.Request with { QueryId = Guid.NewGuid() }, RoutineRotationLiveState.Unknown), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, new(query.Request with { QueryId = Guid.NewGuid() }, RoutineRotationLiveState.Unknown), Old, Local));
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, new(query.Request with { NewFingerprint = Later }, RoutineRotationLiveState.Unknown), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, new(query.Request with { NewFingerprint = Later }, RoutineRotationLiveState.Unknown), Old, Local));
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, (RoutineRotationLiveState)99), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, (RoutineRotationLiveState)99), Old, Local));
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
         f.Execute("UPDATE TrustedManagers SET PeerRecoveryRequired=1;");
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old, Local));
         Reject<AuthenticationException>(() => repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f)));
         f.Execute("UPDATE TrustedManagers SET PeerRecoveryRequired=0;");
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
         repo.StagePeerRotation(new(f.PeerId, Guid.NewGuid(), 2, Old, Later), Old);
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old, Local));
         Check(repo.Read(f.PeerId)!.PendingFingerprint == Later);
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
         repo.ObserveActivePeerCredential(f.PeerId, Later);
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Aborted), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Aborted), Old, Local));
         Check(repo.Read(f.PeerId)!.CurrentFingerprint == Later && repo.Read(f.PeerId)!.PendingRotationId is not null); Preserved(f); return Task.CompletedTask;
     }
     public static async Task ConcurrentRenewalAndAuditRollback()
@@ -113,22 +113,22 @@ internal static class RotationReconfirmationTests
         {
             var query = repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f));
             f.Execute("CREATE TRIGGER FailResolution BEFORE INSERT ON AuditEvents BEGIN SELECT RAISE(ABORT,'fixture resolution audit failure'); END;");
-            Reject<SqliteException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old));
+            Reject<SqliteException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old, Local));
             f.Execute("DROP TRIGGER FailResolution;");
             Check(repo.Read(f.PeerId)!.PendingRotationExpiresUtc == deadline && repo.Read(f.PeerId)!.PendingFingerprint == Next);
-            Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old)); // New live query after ambiguous/failing completion.
+            Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, state), Old, Local)); // New live query after ambiguous/failing completion.
         }
         var queries = Enumerable.Range(0, 12).Select(_ => repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f))).ToArray();
         var delayed = repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f));
         var results = await Task.WhenAll(queries.Select(query => Task.Run(() =>
         {
-            try { return repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Staging), Old) == PeerRotationResolution.Renewed; }
+            try { return repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Staging), Old, Local) == PeerRotationResolution.Renewed; }
             catch (AuthenticationException) { return false; }
         })));
         Check(results.Count(x => x) == 1);
         f.Time.Now += TimeSpan.FromMinutes(30);
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(delayed, Reply(delayed, RoutineRotationLiveState.Staging), Old));
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(queries[0], Reply(queries[0], RoutineRotationLiveState.Staging), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(delayed, Reply(delayed, RoutineRotationLiveState.Staging), Old, Local));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(queries[0], Reply(queries[0], RoutineRotationLiveState.Staging), Old, Local));
         Preserved(f);
     }
     public static Task SenderStatusBindsTupleAndPresentedCurrent()
@@ -161,7 +161,7 @@ internal static class RotationReconfirmationTests
         var crossing = new CrossingClock(f.Time); var repo = new PeerTrustRepository(f.Database, f.HostId, crossing);
         var deadline = repo.Read(f.PeerId)!.PendingRotationExpiresUtc;
         var query = repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f));
-        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Staging), Old));
+        Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Staging), Old, Local));
         Check(repo.Read(f.PeerId)!.PendingRotationExpiresUtc == deadline &&
             HostDatabase.QueryScalarLong(f.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerRotationReconfirmed';") == 0);
         Preserved(f); return Task.CompletedTask;
