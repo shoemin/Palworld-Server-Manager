@@ -78,7 +78,7 @@ public static class WindowsHostComposition
     internal static HostGenerationTransitions CreateNetworkTransitions(HostDatabase database, Guid hostId, WindowsSecureCredentialStore store,
         SecurityIdentifier serviceSid, SecurityIdentifier groupSid, ILocalHostTrustPublisher publisher, string pipe,
         System.Net.IPEndPoint peerEndpoint, System.Net.IPEndPoint pairingEndpoint, IPairingKeyExchangeFactory pairingFactory,
-        IPeerActivationHook activationHook)
+        IPeerActivationHook activationHook, int? discoveryPort = null)
     {
         ArgumentNullException.ThrowIfNull(database); ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(serviceSid); ArgumentNullException.ThrowIfNull(groupSid); ArgumentNullException.ThrowIfNull(publisher);
@@ -92,6 +92,7 @@ public static class WindowsHostComposition
             return new(copy, value.Port);
         }
         var peer = CopyEndpoint(peerEndpoint); var pairing = CopyEndpoint(pairingEndpoint);
+        var discovery = CreateWindowsDiscoveryFactory(discoveryPort, peer, pairing);
         var state = new HostCredentialStateRepository(database, hostId);
         var material = new WindowsHostCredentialMaterial(store);
         var native = new WindowsHostTlsCredentialCache(hostId, serviceSid, store);
@@ -105,8 +106,23 @@ public static class WindowsHostComposition
                 await material.ValidateAsync(snapshot.CurrentReference!, publication.CurrentFingerprint, token).ConfigureAwait(false);
                 var certificate = await native.LoadAsync(snapshot.CurrentReference!, token).ConfigureAwait(false);
                 return await CreateNetworkGenerationAsync(database, hostId, store, serviceSid, groupSid, certificate, pipe,
-                    peer, pairing, pairingFactory, activationHook, token).ConfigureAwait(false);
+                    peer, pairing, pairingFactory, activationHook, token, discoveryFactory: discovery).ConfigureAwait(false);
             });
+    }
+
+    // Pure configuration. Actual socket acquisition starts only when the generation invokes it.
+    // IPv4 Any ensures the advertised ports listen on every eligible IPv4 LAN link used by the sender.
+    internal static Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>>? CreateWindowsDiscoveryFactory(
+        int? discoveryPort, System.Net.IPEndPoint peer, System.Net.IPEndPoint pairing)
+    {
+        ArgumentNullException.ThrowIfNull(peer); ArgumentNullException.ThrowIfNull(pairing);
+        if (discoveryPort is null) return null;
+        var port = discoveryPort.Value;
+        if (port is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(discoveryPort));
+        if (!peer.Address.Equals(System.Net.IPAddress.Any) || !pairing.Address.Equals(System.Net.IPAddress.Any))
+            throw new ArgumentException("Automatic IPv4 LAN discovery requires both TCP listeners on IPv4 Any.");
+        return (advertisement, token) => HostDiscoveryRuntime.StartAsync(advertisement,
+            callback => new WindowsLanDiscoveryReceiver(port, callback), new WindowsLanDiscoveryBroadcaster(port), token);
     }
 
     // These factories take ownership of certificate immediately, including any startup failure.
