@@ -137,6 +137,12 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--windows-lan-broadcaster-probe"])
+    {
+        await WindowsLanBroadcasterTests.BoundedFreshRoundAndPublicPacket(); await WindowsLanBroadcasterTests.FailureCancellationAndOwnedCleanup();
+        await WindowsLanBroadcasterTests.ActualWindowsSocketConstraints();
+        Console.WriteLine("Windows LAN broadcaster probe passed."); return 0;
+    }
     if (args is ["--windows-lan-receiver-probe"])
     {
         await WindowsLanReceiverTests.ActualPacketsAndFreshAdmission(); await WindowsLanReceiverTests.StopDrainsSerializedCallback();
@@ -419,6 +425,9 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
     ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
     ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
+    ("Windows discovery rounds copy public data and refresh exact bounded LAN links", WindowsLanBroadcasterTests.BoundedFreshRoundAndPublicPacket),
+    ("Windows discovery sends preserve failure cancellation and owned cleanup", WindowsLanBroadcasterTests.FailureCancellationAndOwnedCleanup),
+    ("Windows discovery sender constrains the real interface and loopback datagram", WindowsLanBroadcasterTests.ActualWindowsSocketConstraints),
     ("Windows discovery uses actual packet metadata and fresh bounded admission", WindowsLanReceiverTests.ActualPacketsAndFreshAdmission),
     ("Windows discovery shutdown drains its serialized callback", WindowsLanReceiverTests.StopDrainsSerializedCallback),
     ("Windows discovery preserves worker and cancellation failures after cleanup", WindowsLanReceiverTests.WorkerAndCancellationFailures),
