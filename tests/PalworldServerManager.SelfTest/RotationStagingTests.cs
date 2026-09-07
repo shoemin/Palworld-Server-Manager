@@ -118,7 +118,8 @@ internal static class RotationStagingTests
     {
         using var f = new PeerTrustTests.Fixture(schemaVersion: 3); Active(f); var retained = Guid.NewGuid(); var deadline = f.Time.Now.AddMinutes(10);
         f.Execute($"UPDATE TrustedManagers SET PendingTrustedPublicKeyFingerprint='{Next}',PendingRotationId='{retained:D}',PendingRotationExpiresUtc='{deadline:O}' WHERE PeerHostId='{f.PeerId:D}';");
-        Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer) == 1 && HostSchemaMigrationRunner.Default().Migrate(f.Writer) == 0);
+        var throughProposal = new HostSchemaMigrationRunner(HostSchema.AllMigrations().Where(m => m.Version <= 4));
+        Check(throughProposal.Migrate(f.Writer) == 1 && throughProposal.Migrate(f.Writer) == 0);
         Check(f.Count("PeerRotationProposals") == 0 && f.Count("HostRotationProposals") == 0 && f.Repository.Read(f.PeerId)!.PendingRotationExpiresUtc == deadline);
         Reject<InvalidDataException>(() => f.Repository.StagePeerRotation(Proposal(f), Old, Local));
         Check(f.Repository.ObserveActivePeerCredential(f.PeerId, Next).Promoted); // Existing verified live pin remains valid.
