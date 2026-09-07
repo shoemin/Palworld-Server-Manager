@@ -37,6 +37,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
                 using var identity = WindowsIdentity.GetCurrent();
                 await WindowsRotationCutoverQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
+                await WindowsGenerationTransitionQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 var store = new WindowsSecureCredentialStore(root, identity.User!);
                 var material = new WindowsHostCredentialMaterial(store);
                 // Actual service-account protected storage; this is a reload fixture, not a crash claim.

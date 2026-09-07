@@ -72,6 +72,36 @@ public static class WindowsHostComposition
         // The generation has released listeners, work and its credential before lease disposal.
     }
 
+    // Explicit full-network composition under the caller's machine lease. The native PAKE
+    // provider/store must outlive this owner. Installed RunAsync still selects local-only.
+    internal static HostGenerationTransitions CreateNetworkTransitions(HostDatabase database, Guid hostId, WindowsSecureCredentialStore store,
+        SecurityIdentifier serviceSid, SecurityIdentifier groupSid, ILocalHostTrustPublisher publisher, string pipe,
+        System.Net.IPEndPoint peerEndpoint, System.Net.IPEndPoint pairingEndpoint, IPairingKeyExchangeFactory pairingFactory,
+        IPeerActivationHook activationHook)
+    {
+        ArgumentNullException.ThrowIfNull(database); ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(serviceSid); ArgumentNullException.ThrowIfNull(groupSid); ArgumentNullException.ThrowIfNull(publisher);
+        ArgumentNullException.ThrowIfNull(peerEndpoint); ArgumentNullException.ThrowIfNull(pairingEndpoint);
+        ArgumentNullException.ThrowIfNull(pairingFactory); ArgumentNullException.ThrowIfNull(activationHook); ArgumentException.ThrowIfNullOrWhiteSpace(pipe);
+        var peer = new System.Net.IPEndPoint(peerEndpoint.Address, peerEndpoint.Port);
+        var pairing = new System.Net.IPEndPoint(pairingEndpoint.Address, pairingEndpoint.Port);
+        var state = new HostCredentialStateRepository(database, hostId);
+        var material = new WindowsHostCredentialMaterial(store);
+        var native = new WindowsHostTlsCredentialCache(hostId, serviceSid, store);
+        var reconciler = new HostTrustReconciler(state.Read,
+            (p, token) => publisher.PublishAsync(new(p.HostId, p.CurrentFingerprint, p.PendingFingerprint, p.PendingRotationId), token),
+            native.ReconcileAsync, store.DeleteAsync, state.RecordRetired);
+        return new(state, material, publisher, async token => { await reconciler.ReconcileAsync(token).ConfigureAwait(false); },
+            async (snapshot, token) =>
+            {
+                var publication = HostTrustPlanning.Build(snapshot).Publication ?? throw new InvalidOperationException("Initialized Host trust is required.");
+                await material.ValidateAsync(snapshot.CurrentReference!, publication.CurrentFingerprint, token).ConfigureAwait(false);
+                var certificate = await native.LoadAsync(snapshot.CurrentReference!, token).ConfigureAwait(false);
+                return await CreateNetworkGenerationAsync(database, hostId, store, serviceSid, groupSid, certificate, pipe,
+                    peer, pairing, pairingFactory, activationHook, token).ConfigureAwait(false);
+            });
+    }
+
     // These factories take ownership of certificate immediately, including any startup failure.
     internal static async Task<HostNetworkGeneration> CreateLocalGenerationAsync(LocalSecurityRpcRuntime rpc, SecurityIdentifier serviceSid,
         SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe, CancellationToken ct = default)
