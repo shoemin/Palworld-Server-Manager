@@ -41,6 +41,24 @@ internal static class PeerTrustTests
             command.Parameters.AddWithValue("$now", Time.Now.ToString("O")); command.Parameters.AddWithValue("$fp", Local);
             command.ExecuteNonQuery(); tx.Commit();
         }
+        // Explicit historical fixture, not a fallback in the current production writer.
+        internal void SeedHistoricalBinding(Guid peer, string peerFingerprint, string localFingerprint)
+        {
+            var version = HostSchemaMigrationRunner.ReadSchemaVersion(Writer);
+            if (version is < 3 or >= 8) throw new InvalidOperationException("Historical schema3-7 fixture required.");
+            using var tx = Writer.BeginTransaction();
+            using var command = Writer.CreateCommand(); command.Transaction = tx;
+            command.CommandText = """
+                INSERT INTO TrustedManagers (PeerHostId,State,CurrentTrustedPublicKeyFingerprint,CreatedUtc)
+                    VALUES ($peer,'PeerBound',$remote,$now);
+                INSERT INTO TrustedManagerPairings (PeerHostId,BoundUtc,ExpiresUtc,LocalBoundPublicKeyFingerprint)
+                    VALUES ($peer,$now,$expiry,$local);
+                """;
+            command.Parameters.AddWithValue("$peer",peer.ToString("D"));command.Parameters.AddWithValue("$remote",peerFingerprint);
+            command.Parameters.AddWithValue("$local",localFingerprint);command.Parameters.AddWithValue("$now",Time.Now.ToString("O"));
+            command.Parameters.AddWithValue("$expiry",Time.Now.AddMinutes(30).ToString("O"));
+            command.ExecuteNonQuery();tx.Commit();
+        }
         internal void Execute(string sql) { using var c = Writer.CreateCommand(); c.CommandText = sql; c.ExecuteNonQuery(); }
         internal long Count(string table) => HostDatabase.QueryScalarLong(Writer, "SELECT COUNT(*) FROM " + table + ";");
         public void Dispose() { Writer.Dispose(); SqliteConnection.ClearAllPools(); lease.Dispose(); Directory.Delete(root, true); }

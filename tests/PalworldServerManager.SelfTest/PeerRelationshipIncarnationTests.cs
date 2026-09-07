@@ -17,7 +17,8 @@ internal static class PeerRelationshipIncarnationTests
     private static HostCredentialStateRepository State(PeerTrustTests.Fixture f) => new(f.Database,f.HostId);
     private static void Bind(PeerTrustTests.Fixture f)
     {
-        f.Repository.RecordVerifiedBinding(f.PeerId,Peer,Local);
+        if (HostSchemaMigrationRunner.ReadSchemaVersion(f.Writer)<8) f.SeedHistoricalBinding(f.PeerId,Peer,Local);
+        else f.Repository.RecordVerifiedBinding(f.PeerId,Peer,Local);
         f.Execute("CREATE TABLE ActivationRpcEffects (Peer TEXT PRIMARY KEY);");
     }
     private static void Activate(PeerTrustTests.Fixture f) => f.Repository.AcceptActivationAcknowledgement(f.PeerId,Peer,Local,
@@ -37,7 +38,8 @@ internal static class PeerRelationshipIncarnationTests
         using var f=new PeerTrustTests.Fixture(schemaVersion:6);Bind(f);Activate(f);var receipt=CutOver(f);
         State(f).RecordRoutineRotationPromotionReceipt(receipt,f.PeerId,Peer,Next,Version(f));
         var first=HostDatabase.QueryScalarText(f.Writer,"SELECT PromotedUtc FROM HostCredentialRotationPeers;");var evidence=Evidence(f);
-        Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer)==1 && HostSchemaMigrationRunner.Default().Migrate(f.Writer)==0);
+        var throughConfirmation=new HostSchemaMigrationRunner(HostSchema.AllMigrations().Take(7));
+        Check(throughConfirmation.Migrate(f.Writer)==1 && throughConfirmation.Migrate(f.Writer)==0);
         Check(f.Count("HostRotationCurrentCredentialEvidence")==0 && Evidence(f)==evidence);
         var proof=State(f).PrepareCurrentCredentialConfirmation(receipt.RotationId,Next);
         using var cancellation=new CancellationTokenSource();cancellation.Cancel();
@@ -46,6 +48,7 @@ internal static class PeerRelationshipIncarnationTests
         Check(State(f).RecordCurrentCredentialConfirmation(proof,f.PeerId,Peer,Next,Version(f)));
         Check(HostDatabase.QueryScalarText(f.Writer,"SELECT PromotedUtc FROM HostCredentialRotationPeers;")==first);
         // Repository seam with verified first binding under New: this peer has never promoted Old.
+        HostSchemaMigrationRunner.Default().Migrate(f.Writer);
         var freshPeer=Guid.NewGuid();f.Repository.RecordVerifiedBinding(freshPeer,Peer,Next);
         f.Repository.AcceptActivationAcknowledgement(freshPeer,Peer,Next,new(freshPeer,f.HostId,Next),new LocalOwnerActivationTests.Hook());
         var fresh=f.Repository.ReadAuthenticatedRelationshipIncarnation(freshPeer,Peer,Next);

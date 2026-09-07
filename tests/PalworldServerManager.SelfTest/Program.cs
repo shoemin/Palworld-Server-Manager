@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--local-binding-provenance-probe"])
+    {
+        await PeerLocalBindingEvidenceTests.ConservativeUpgradeAndRollback();
+        await PeerLocalBindingEvidenceTests.OwnerBindingContinuityAndInvalidation();
+        await PeerLocalBindingEvidenceTests.AtomicAuditAndFinalContextRollback();
+        await PeerLocalBindingEvidenceTests.QueuedOwnerChangeAndFirstNewBinding();
+        Console.WriteLine("PASS local binding provenance."); return 0;
+    }
     if (args is ["--current-credential-confirmation-probe"])
     {
         await ProtocolTests.SchemaEvolution();
@@ -519,6 +527,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
     ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Local binding ConservativeUpgradeAndRollback", PeerLocalBindingEvidenceTests.ConservativeUpgradeAndRollback),
+    ("Local binding OwnerBindingContinuityAndInvalidation", PeerLocalBindingEvidenceTests.OwnerBindingContinuityAndInvalidation),
+    ("Local binding AtomicAuditAndFinalContextRollback", PeerLocalBindingEvidenceTests.AtomicAuditAndFinalContextRollback),
+    ("Local binding QueuedOwnerChangeAndFirstNewBinding", PeerLocalBindingEvidenceTests.QueuedOwnerChangeAndFirstNewBinding),
     ("Current credential confirmation upgrade cancellation and first-New pairing", PeerRelationshipIncarnationTests.CurrentConfirmationUpgradeCancellationAndFirstNewPairing),
     ("Current credential confirmation repairs cleared legacy evidence", PeerRotationReceiptRpcTests.CurrentConfirmationRepairsClearedLegacyEvidence),
     ("Current credential confirmation does not invent history or clear receipts", PeerRotationReceiptRpcTests.CurrentConfirmationDoesNotInventHistoryOrClearReceipt),
