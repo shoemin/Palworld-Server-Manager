@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using PalworldServerManager.Core.Security;
+using Authority=PalworldServerManager.Core.Authorization;
 
 namespace PalworldServerManager.Host.Persistence;
 
@@ -7,7 +8,9 @@ namespace PalworldServerManager.Host.Persistence;
 // pinned mutual TLS, with both actual connection fingerprints supplied separately.
 public sealed record PeerActivationAcknowledgement(Guid FromHostId, Guid RecordedHostId, string RecordedFingerprint);
 public enum PeerActivationDisposition { Activated = 1, AlreadyActive = 2 }
-public sealed record PeerActivationContext(Guid AuthoritativeHostId, Guid PeerHostId, DateTimeOffset ActivatedUtc);
+// Trusted caller provenance, never a request-body claim or an authentication substitute.
+public sealed record PeerActivationContext(Guid AuthoritativeHostId, Guid PeerHostId, DateTimeOffset ActivatedUtc,
+    Authority.ActorRef InitiatingActor);
 
 // Trusted Host composition only. #45 must apply configured defaults through canonical
 // issuance using this SAME transaction. No network calls, nested commit or external side
@@ -85,7 +88,8 @@ public sealed partial class PeerTrustRepository
         Execute(c, tx, """
             UPDATE TrustedManagers SET State='Active',PairedUtc=$now WHERE PeerHostId=$peer AND State='PeerBound';
             """, ("$now", Stamp(now)), ("$peer", Id(peer)));
-        var validateEffects = hook.Apply(c, tx, new(hostId, peer, now))
+        var initiator=owner is null?Authority.ActorRef.RemoteManager(peer):Authority.ActorRef.LocalPrincipal(owner.LocalPrincipalId);
+        var validateEffects = hook.Apply(c, tx, new(hostId, peer, now, initiator))
             ?? throw new InvalidOperationException("Activation effect validation is required.");
         Audit(c, tx, peer, "PeerActivated", now);
         validateEffects();

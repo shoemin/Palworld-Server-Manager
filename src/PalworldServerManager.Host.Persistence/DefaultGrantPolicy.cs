@@ -79,6 +79,9 @@ public sealed partial class GrantPolicyRepository
         if(activation.AuthoritativeHostId!=hostId||activation.ActivatedUtc.Offset!=TimeSpan.Zero)throw new UnauthorizedAccessException("Invalid activation authority.");
         var before=Read(c,tx);var peer=ActorRef.RemoteManager(activation.PeerHostId);
         if(!before.Policy.IsActive(peer))throw new UnauthorizedAccessException("Active peer required for defaults.");
+        if(activation.InitiatingActor is null||
+            (activation.InitiatingActor!=peer&&!before.Policy.IsOwner(activation.InitiatingActor)))
+            throw new UnauthorizedAccessException("Activation initiator is invalid.");
         Guid owner;
         using(var cmd=Command(c,tx,"SELECT LocalPrincipalId FROM LocalPrincipals WHERE State='Active' AND IsOwner=1;"))
             owner=ParseId(cmd.ExecuteScalar() as string??throw Corrupt());
@@ -88,9 +91,9 @@ public sealed partial class GrantPolicyRepository
         foreach(var grant in grants)
         {
             Insert(c,tx,grant);
-            // The authenticated peer triggers activation; structural Owner is the canonical
-            // root issuer. Record both rather than fabricate a local authenticated request.
-            Audit(c,tx,peer,grant,"DefaultGrantApplied",activation.ActivatedUtc,1,$"ConfiguredDefault:{defaults.ConfigurationId?.ToString("D")??"Factory"}");
+            // Preserve the actual authenticated local Owner or remote peer initiator,
+            // separately from the structural Owner root issuer and peer grantee.
+            Audit(c,tx,activation.InitiatingActor,grant,"DefaultGrantApplied",activation.ActivatedUtc,1,$"ConfiguredDefault:{defaults.ConfigurationId?.ToString("D")??"Factory"}");
         }
         return ()=>
         {
