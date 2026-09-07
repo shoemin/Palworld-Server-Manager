@@ -89,7 +89,7 @@ internal static class WindowsGenerationTransitionQualification
             publisher.FailCurrent = proposal.NewFingerprint;
             await SecureStoreTests.Reject<IOException>(() => owner.CutOverAsync(actor, prepared.RotationId, new Dictionary<Guid, Uri>(), ct));
             Check(owner.Phase == HostGenerationPhase.Quiesced && owner.Endpoints is null && publisher.Failed == 1, "Failure did not leave a closed generation.");
-            await RequireClosed(pipe, oldEndpoints.Peer, oldEndpoints.Pairing, ct);
+            RequireClosed(pipe, oldEndpoints.Peer, oldEndpoints.Pairing, ct);
             Check(state.Read().CurrentReference == prepared.NewReference && state.Read().Rotations.Single().State == HostCredentialRotationState.CutOver,
                 "Durable Current New was lost.");
             var staged = await reader.ReadAsync(ct);
@@ -132,11 +132,11 @@ internal static class WindowsGenerationTransitionQualification
         var reply = await client.Negotiate();
         Check(reply.Initialized && reply.Host.HostId == hostId.ToString("D"), "Actual local TLS negotiation lost the Host identity.");
     }
-    private static async Task RequireClosed(string pipe, Uri peer, Uri pairing, CancellationToken ct)
+    private static void RequireClosed(string pipe, Uri peer, Uri pairing, CancellationToken ct)
     {
         Check(peer.Port > 0 && pairing.Port > 0 && peer != pairing, "Distinct actual bound endpoints are required.");
-        using var local = new NamedPipeClientStream(".", pipe, PipeDirection.InOut, PipeOptions.Asynchronous);
-        await SecureStoreTests.Reject<TimeoutException>(() => local.ConnectAsync(250, ct));
+        ct.ThrowIfCancellationRequested();
+        using var local = new NamedPipeServerStream(pipe, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance);
         foreach (var address in new[] { peer, pairing })
         {
             ct.ThrowIfCancellationRequested();
