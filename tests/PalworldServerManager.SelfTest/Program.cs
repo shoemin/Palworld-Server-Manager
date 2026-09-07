@@ -17,6 +17,20 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--peer-transport-lifetime-probe"])
+    {
+        await RotationAcceptanceCollectorTests.DisposalDrainsActualTlsTrustCallbacks();
+        Console.WriteLine("PASS transport disposal drains actual TLS trust callbacks."); return 0;
+    }
+    if (args is ["--rotation-acceptance-probe"])
+    {
+        await RotationAcceptanceCollectorTests.ActualAllPeerCollectionAndHistoryIsNotFreshEvidence();
+        await RotationAcceptanceCollectorTests.MissingAddressUnreachableAndFreshRetry(); await RotationAcceptanceCollectorTests.MarginLapseAndReceiptRemainBlocked();
+        await RotationAcceptanceCollectorTests.PendingAndRecoveryAreNotSilentlyExcluded(); await RotationAcceptanceCollectorTests.LateMembershipAbaAndAbortInvalidateTheRound();
+        await RotationAcceptanceCollectorTests.ActualPeerKeyPromotionRequiresANewCollection(); await RotationAcceptanceCollectorTests.ElapsedBoundsScopeAndCancellation();
+        await RotationAcceptanceCollectorTests.DisposalDrainsActualTlsTrustCallbacks();
+        Console.WriteLine("PASS fresh multi-peer acceptance, remaining margin, dynamic trust, proof and retry gates."); return 0;
+    }
     if (args is ["--rotation-peer-set-probe"])
     {
         await RotationPeerSetTests.UpgradePreservesRowsAndDoesNotInventEvidence(); await RotationPeerSetTests.TransactionRollbackAndIdenticalStateAba();
@@ -233,6 +247,14 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Transport disposal drains in-flight actual TLS trust callbacks", RotationAcceptanceCollectorTests.DisposalDrainsActualTlsTrustCallbacks),
+    ("Actual multi-peer acceptance covers every peer and history cannot replace a fresh round", RotationAcceptanceCollectorTests.ActualAllPeerCollectionAndHistoryIsNotFreshEvidence),
+    ("Missing and unreachable peers block acceptance until a fresh actual retry", RotationAcceptanceCollectorTests.MissingAddressUnreachableAndFreshRetry),
+    ("Acceptance collection enforces remaining margin lapse and receipt gates", RotationAcceptanceCollectorTests.MarginLapseAndReceiptRemainBlocked),
+    ("Unresolved pending and recovery peers remain acceptance blockers", RotationAcceptanceCollectorTests.PendingAndRecoveryAreNotSilentlyExcluded),
+    ("Late membership restored trust and concurrent abort invalidate acceptance collection", RotationAcceptanceCollectorTests.LateMembershipAbaAndAbortInvalidateTheRound),
+    ("Actual peer key promotion requires a new collection with the current peer set", RotationAcceptanceCollectorTests.ActualPeerKeyPromotionRequiresANewCollection),
+    ("Acceptance bounds expire monotonically and collections reject wrong scope or cancellation", RotationAcceptanceCollectorTests.ElapsedBoundsScopeAndCancellation),
     ("Peer observer audit rollback preserves revision and rotation snapshots require exact Host scope", RotationPeerSetTests.RealObserverAuditRollbackAndHostScope),
     ("Peer revision upgrade preserves existing trust and does not invent acknowledgement evidence", RotationPeerSetTests.UpgradePreservesRowsAndDoesNotInventEvidence),
     ("Peer revision rolls back with trust and detects identical-state ABA changes", RotationPeerSetTests.TransactionRollbackAndIdenticalStateAba),

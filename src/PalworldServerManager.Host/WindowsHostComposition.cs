@@ -95,6 +95,8 @@ public static class WindowsHostComposition
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
     internal static PeerRotationReceiptRpcClient CreatePeerRotationReceiptClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
+    internal static RoutineRotationAcceptanceCollector CreateRotationAcceptanceCollector(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
+        => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
     public static WebApplication BuildPairingApplication(PeerPairingRpcRuntime rpc, X509Certificate2 certificate, System.Net.IPEndPoint endpoint)
     {
         var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions

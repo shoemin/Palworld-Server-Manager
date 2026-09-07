@@ -12,11 +12,15 @@ internal enum PeerRotationProposalOutcome { Acknowledged = 1, ReconfirmationRequ
 // Public acknowledgement evidence with a decreasing conservative bound, not permission to
 // cut over. The future global engine must freshly verify its full dynamic peer set.
 internal sealed class PeerRotationProposalExchange(PeerRotationProposalOutcome outcome, Guid retainedRotationId,
-    long remoteRemainingMilliseconds, TimeProvider clock, long started)
+    long remoteRemainingMilliseconds, TimeProvider clock, long started, Guid peerHostId = default,
+    string? actualPeerFingerprint = null, HostRotationProposal? proposal = null)
 {
     private long greatestElapsedTicks;
     internal PeerRotationProposalOutcome Outcome { get; } = outcome;
     internal Guid RetainedRotationId { get; } = retainedRotationId;
+    internal Guid PeerHostId { get; } = peerHostId;
+    internal string? ActualPeerFingerprint { get; } = actualPeerFingerprint;
+    internal HostRotationProposal? Proposal { get; } = proposal;
     internal TimeSpan RemainingAcceptance
     {
         get
@@ -76,6 +80,6 @@ internal sealed class PeerRotationProposalRpcClient(PeerSecurityRpcRuntime runti
         };
         if (outcome == PeerRotationProposalOutcome.Acknowledged)
             runtime.Credentials.RecordRoutineRotationPeerAcknowledgement(proposal, peer, actual.LocalFingerprint, actual.PeerFingerprint);
-        return new(outcome, retained, reply.RemainingAcceptanceMilliseconds, runtime.Clock, started);
+        return new(outcome, retained, reply.RemainingAcceptanceMilliseconds, runtime.Clock, started, peer, actual.PeerFingerprint, proposal);
     }
 }
