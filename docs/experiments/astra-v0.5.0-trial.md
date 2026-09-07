@@ -4057,3 +4057,39 @@ The unmodified PR146 executable plus the new RemovedAuditRollsBackGrant regressi
 Add private WriteSuccessAudit returning a same-transaction final validator for all ten persisted audit fields. Single writers retain one validator; all batches retain every validator until after all writes. Active defaults run them in the existing post-outer-audit callback. No authority/proof/revision/schema/secret fields change; success-audit failure rolls back all requested effects and is never denial-only commit. The original reproduction and expanded4 scenarios PASS:143 deletion/field cases across13 actions,12 later-batch/outer-trust-audit cases, exact before/after database snapshots and successful retries, and8 competing presets with1 winner. Full478 suite is running; zero-warning build, UI/SDK PASS.
 
 Two pre-A correction cycles so far: the reproduced accepted implementation defect1, and a test-only misplaced using declaration1 (build caught appended imports; moved to file top). Production compiled before the test-only correction. No A/B clean claim yet. Accepted cumulative cycles remain200 until this unit accepts; component45 remains IN PROGRESS. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #45l Review A inspection and complete invariant audit
+
+Reviewed all17 changed files against63a1ab4fe4eebe6dca31817aeb84391e9ca9a2ab at executableed9136582d8ce1747f94b43a12124e54e79ea272, including all helper callers and the existing enclosing PeerActivation final-callback order. Local full478 and remote CI34171408149 are still running. One A evidence-wording correction: narrow "Every fault case" to the two fault matrices (the original minimal reproduction has no retry) and describe the concurrent test's audit-count assertion without implying it individually inspects every row field. The existing canonical actor/provenance tests independently provide successful payload evidence. No production or test change from A. Unit3cycles(pre-A implementation1/pre-A test imports1/A evidence wording1).
+
+Adversarial checks: a successful insert is not durable evidence; generated identity plus all ten fields must survive. Nullable actor/target comparisons use SQL IS so altered null/non-null fields cannot pass. Validators capture per-call immutable field values privately, with no shared accumulator, free-text client field or database writes during validation. All singles call their guard after final proof/revision/effect checks. All batch guards run after every audit; activation runs after the outer trust audit in the same transaction. A later guard cannot mutate an earlier record because it only SELECTs. Exceptions unwind the existing transaction without entering pre-write denial handling. Source enumeration found no discarded successful-audit result in the canonical grant repository. Concurrent stale attempts create neither extra grant nor audit; original full-stack cancellation, grant/default/proof/Owner mutation regressions remain required. No attempt is made to restore old missing audit history or broaden other security writers' semantics.
+
+Acceptance: original deletion reproduces the earlier escape;13 paths cover local/remote Host/server direct issuance, local/remote mixed presets, configuration, mixed historical roots, exact-six creator finalization, both typed dependent-subtree invalidations and peer/Owner activation. Eleven modes delete or change each persisted field; full snapshots of grants/defaults/trust/incarnation/inventory/revision/audit remain identical on rejection and retries succeed. Twelve cases deliberately damage an earlier row from later batch/outer audit, defeating an immediate-only check. Eight competing presets prove per-call guards and one revision winner. Existing nine parent criteria retain canonical tests; the corrected audit criterion is qualified here before parent acceptance.
+
+| Invariant | Why affected / evidence checked | Result |
+|---|---|---|
+| ARCH-001, ARCH-002 | No frozen WPF/Lan code or dependency changes. | PASS |
+| HOST-001, HOST-002 | Existing authoritative Host transaction remains the sole action boundary; no new executor. | PASS |
+| PERSIST-001 | Private same-connection/transaction guard, final SELECT only; rollback snapshots and retry. | PASS |
+| CLIENT-001, CLIENT-002, CLIENT-003 | No client dependency, machine credential or local channel change. | PASS, unchanged |
+| IDENT-001, IDENT-002 | Stable Host/full ServerRef still separate from public pins; exact audit target verified. | PASS |
+| IDENT-003, IDENT-004 | No credential rotation/recovery change; current proof checks retained after all writes. | PASS, unchanged |
+| LOCAL-001, LOCAL-002, LOCAL-003, LOCAL-004 | Current signed/local proof and Owner checks unchanged; no enrollment/transport/private key change. | PASS |
+| OWNER-001, OWNER-002 | Guards cannot create Owner; default/reissue/invalidation still require actual current Owner, no bootstrap route. | PASS |
+| REMOTE-001, REMOTE-002 | Host-only remote writers still enforce peer evidence and machine ceiling independently; no routing or user authority added. | PASS |
+| PAIR-001, PAIR-002 | Active/default rules unchanged; damaged default audit rolls back activation rather than granting partial authority. | PASS |
+| PAIR-003, PAIR-004 | Each Host commits independently; outer default guard cannot commit; no historical trust resurrection or replacement change. | PASS |
+| AUTH-001, AUTH-005 | Typed capability/target/provenance summaries retain exact scope and nullable server identity. | PASS |
+| AUTH-002 | Exact single-parent grants and subtree writes unchanged; failure restores complete pre-call snapshot. | PASS |
+| AUTH-003 | Direct/preset/default/history/creator paths all keep canonical rules; every new success audit checked at final boundary. | PASS |
+| AUTH-004 | Factory/configured/nonretroactive semantics unchanged; both activation initiators retain canonical configured roots. | PASS |
+| PROTO-001 | No wire/version/capability or unknown-enum behavior change. | PASS, unchanged |
+| OPS-001 | Expected revision/proof checks retained; failed audit restores revision and competing batches yield one winner. | PASS |
+| OPS-002, OPS-003, OPS-004 | No operation executor/lifetime/lock model introduced. | PASS, unchanged |
+| RECOVERY-001 | No resume/recovery classification change; rollback is transaction-local. | PASS, unchanged |
+| SEC-001 | Complete exact actual-actor/time/target/event/summary audit verified; no secret/private proof or free-text label added. | PASS |
+| MIG-001 | No migration or historical audit repair. | PASS, unchanged |
+| PLATFORM-001, PLATFORM-002 | No OS branch, platform implementation, service shell action or UI. | PASS, unchanged |
+| LINUX-001 | No Linux production work or parity acceptance. | PASS, gate retained |
+
+All40 registry IDs reviewed. Reference search covers all success writer callers and current transaction/default/preset/history/creator/remote/denial evidence pages. No stale claim now treats insert success alone as audit integrity. The original historical review/validation claims remain historical, qualified by the reproduced seventh escape above. No Product Decision; accessibility WAIVED and physical/parity/Palworld/Linux/release evidence remains downstream. A clean qualification awaits complete local/CI results.
