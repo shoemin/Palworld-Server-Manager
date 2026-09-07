@@ -187,12 +187,24 @@ internal static class HostDiscoveryRuntimeTests
         {
             Receiver? receiver = null; var marker = Temporary();
             var runtime = await HostDiscoveryRuntime.StartAsync(Advertisement(), callback => receiver = new(callback) { CleanupFailure = marker }, new Broadcaster());
-            if (primary is null) receiver!.End.SetResult(); else receiver!.End.SetException(primary);
+            // Keep Completion pending on explicit stop: the marker must be a disposal-only
+            // failure, without an earlier unexpected-success error masking that branch.
+            if (primary is null) _ = runtime.DisposeAsync(); else receiver!.End.SetException(primary);
             var failure = await Failure(runtime.Completion);
             Check(failure is AggregateException aggregate && aggregate.Flatten().InnerExceptions.Contains(marker));
             if (primary is not null) Check(((AggregateException)failure).InnerExceptions.Contains(primary));
-            Check(ReferenceEquals(await Failure(runtime.DisposeAsync().AsTask()), failure) && receiver.Disposes == 1);
+            Check(ReferenceEquals(await Failure(runtime.DisposeAsync().AsTask()), failure) && receiver!.Disposes == 1);
         }
+        var releaseRace = Signal(); Receiver? raced = null;
+        var stopRace = await HostDiscoveryRuntime.StartAsync(Advertisement(), callback => raced = new(callback) { Release = releaseRace.Task }, new Broadcaster());
+        try
+        {
+            var stop = stopRace.DisposeAsync().AsTask(); await Bounded(raced!.Disposing.Task);
+            // Stop won the wait, then a clean native failure completed while disposal drained.
+            raced.End.SetException(Temporary()); Check(!stop.IsCompleted); releaseRace.SetResult();
+            await Bounded(stop); Check(raced.Disposes == 1);
+        }
+        finally { releaseRace.TrySetResult(); await stopRace.DisposeAsync(); }
         Receiver? ended = null;
         var successfulEnd = await HostDiscoveryRuntime.StartAsync(Advertisement(), callback => ended = new(callback), new Broadcaster());
         ended!.End.SetResult(); Check(await Failure(successfulEnd.Completion) is InvalidOperationException);
