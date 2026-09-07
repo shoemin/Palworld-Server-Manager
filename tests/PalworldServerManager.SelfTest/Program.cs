@@ -137,6 +137,16 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--generation-discovery-probe"])
+    {
+        await HostGenerationDiscoveryTests.ActualBoundMetadataAndSealedConfiguration();
+        await HostGenerationDiscoveryTests.StopStartsDiscoveryBeforeTrafficDrain();
+        await HostGenerationDiscoveryTests.StartupCancellationOwnsReturnedDiscovery();
+        await HostGenerationDiscoveryTests.StartupFailureAndUnavailableManualService();
+        await HostGenerationDiscoveryTests.FatalCompletionAndCleanupRefuseCutover();
+        await HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration();
+        Console.WriteLine("Generation discovery probe passed."); return 0;
+    }
     if (args is ["--host-discovery-runtime-probe"])
     {
         await HostDiscoveryRuntimeTests.StartupMetadataAndExpiry();
@@ -454,6 +464,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("LAN discovery source policy requires the exact interface and subnet host", WindowsLanInterfaceTests.LinkSourcePolicy),
     ("Windows LAN eligibility rejects virtual tunnels and changed adapter identity", WindowsLanInterfaceTests.HardwareEligibilityAndCorrelation),
     ("Windows LAN native layout and read-only adapter inventory match the SDK", WindowsLanInterfaceTests.NativeLayoutAndReadOnlyInventory),
+    ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Generation discovery ActualBoundMetadataAndSealedConfiguration", HostGenerationDiscoveryTests.ActualBoundMetadataAndSealedConfiguration),
+    ("Generation discovery StopStartsDiscoveryBeforeTrafficDrain", HostGenerationDiscoveryTests.StopStartsDiscoveryBeforeTrafficDrain),
+    ("Generation discovery StartupCancellationOwnsReturnedDiscovery", HostGenerationDiscoveryTests.StartupCancellationOwnsReturnedDiscovery),
+    ("Generation discovery StartupFailureAndUnavailableManualService", HostGenerationDiscoveryTests.StartupFailureAndUnavailableManualService),
+    ("Generation discovery FatalCompletionAndCleanupRefuseCutover", HostGenerationDiscoveryTests.FatalCompletionAndCleanupRefuseCutover),
     ("Host discovery runtime StartupMetadataAndExpiry", HostDiscoveryRuntimeTests.StartupMetadataAndExpiry),
     ("Host discovery runtime BoundedRetriesAndFreshReceiver", HostDiscoveryRuntimeTests.BoundedRetriesAndFreshReceiver),
     ("Host discovery runtime StopDrainsEveryOwnedActivity", HostDiscoveryRuntimeTests.StopDrainsEveryOwnedActivity),
