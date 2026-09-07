@@ -25,7 +25,7 @@ internal static class RotationPeerSetTests
     private static long Revision(PeerTrustTests.Fixture f) => HostDatabase.QueryScalarLong(f.Writer, "SELECT Revision FROM PeerTrustRevision WHERE Id=1;");
     public static Task UpgradePreservesRowsAndDoesNotInventEvidence()
     {
-        using var f = new PeerTrustTests.Fixture(schemaVersion: 4); Bind(f); var id = Proposal(f);
+        using var f = new PeerTrustTests.Fixture(schemaVersion: 4); f.SeedHistoricalBinding(f.PeerId,Peer,Local); var id = Proposal(f);
         var before = f.Repository.Read(f.PeerId); var audits = f.Count("AuditEvents");
         var throughRevision = new HostSchemaMigrationRunner(HostSchema.AllMigrations().Take(5));
         Check(throughRevision.Migrate(f.Writer) == 1 && throughRevision.Migrate(f.Writer) == 0);

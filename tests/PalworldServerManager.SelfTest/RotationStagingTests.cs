@@ -21,7 +21,8 @@ internal static class RotationStagingTests
     }
     private static void Active(PeerTrustTests.Fixture f)
     {
-        f.Repository.RecordVerifiedBinding(f.PeerId, Old, Local);
+        if (HostSchemaMigrationRunner.ReadSchemaVersion(f.Writer)<8) f.SeedHistoricalBinding(f.PeerId,Old,Local);
+        else f.Repository.RecordVerifiedBinding(f.PeerId, Old, Local);
         f.Execute($"""
             UPDATE TrustedManagers SET State='Active' WHERE PeerHostId='{f.PeerId:D}';
             INSERT INTO HostCapabilityGrants (GrantId,TargetHostId,Capability,GranteeActorKind,GranteePeerHostId,

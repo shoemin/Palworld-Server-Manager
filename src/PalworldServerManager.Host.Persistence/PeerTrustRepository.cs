@@ -109,7 +109,22 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
                 INSERT INTO TrustedManagerPairings (PeerHostId,BoundUtc,ExpiresUtc,LocalBoundPublicKeyFingerprint)
                 VALUES ($peer,$now,$expires,$local);
                 """, ("$peer", Id(peer)), ("$fp", peerFingerprint), ("$now", Stamp(now)), ("$expires", Stamp(expires)), ("$local", verifiedLocalFingerprint));
-            Audit(c, tx, peer, "PeerBoundCreated", now); result = new(PeerBindingDisposition.PeerBoundCreated, peer, expires);
+            var incarnation = PeerRelationshipIncarnation.Read(c, tx, peer);
+            Execute(c, tx, """
+                INSERT INTO PeerLocalBindingEvidence (PeerHostId,Incarnation,LocalFingerprint,BoundUtc)
+                VALUES ($peer,$incarnation,$local,$now);
+                """, ("$peer", Id(peer)), ("$incarnation", incarnation), ("$local", verifiedLocalFingerprint), ("$now", Stamp(now)));
+            Audit(c, tx, peer, "PeerBoundCreated", now);
+            // Audit work and insert triggers are inside this writer transaction. A changed
+            // credential, relationship or initiating Owner must roll back the proof too.
+            if (RequireHost(c, tx) != verifiedLocalFingerprint || PeerRelationshipIncarnation.Read(c, tx, peer) != incarnation)
+                throw new InvalidOperationException("Verified binding context changed before commit.");
+            if (owner is not null) RequirePairingOwner(c, tx, owner);
+            var bound = Read(c, tx, peer);
+            if (bound is not { State: "PeerBound", RecoveryRequired: false } || bound.CurrentFingerprint != peerFingerprint ||
+                bound.LocalBoundFingerprint != verifiedLocalFingerprint || bound.ExpiresUtc != expires)
+                throw new InvalidOperationException("Verified binding changed before commit.");
+            result = new(PeerBindingDisposition.PeerBoundCreated, peer, expires);
         }
         else if (existing.CurrentFingerprint == peerFingerprint && existing.State != "Revoked")
         {
