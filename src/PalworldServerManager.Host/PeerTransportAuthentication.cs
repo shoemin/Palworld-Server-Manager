@@ -42,5 +42,12 @@ internal sealed class PeerTransportAuthentication(PeerTrustRepository repository
         }
         return new(peer, tlsFingerprint, trust.State, trust.CurrentFingerprint != tlsFingerprint && trust.PendingFingerprint == tlsFingerprint);
     }
+    // Ordinary permission dispatch has an original negotiated incarnation/local credential.
+    // Guard them atomically with any observation effect, then recheck at permission commit.
+    internal AuthenticatedPeerTransport AuthenticateOrdinary(PeerGrantMutationActor connection, CancellationToken ct)
+    {
+        var observation = repository.ObserveActivePeerCredential(connection, ct);
+        return new(connection.PeerHostId, connection.PeerFingerprint, observation.Trust.State, false, observation.Promoted);
+    }
     private static AuthenticationException Refused() => new("Peer transport authentication refused.");
 }

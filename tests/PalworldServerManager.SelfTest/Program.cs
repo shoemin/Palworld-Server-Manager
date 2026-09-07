@@ -13,6 +13,16 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--authenticated-permission-dispatch-probe"])
+    {
+        await AuthenticatedPermissionDispatchTests.LocalSignaturesFeedCanonicalOwnerAndDelegationActions();
+        await AuthenticatedPermissionDispatchTests.PeerActionsUseRealPeerAndCreatorKeepsIndependentUserCeiling();
+        await AuthenticatedPermissionDispatchTests.LocalChannelNegotiationAndCurrentIdentityGateCallbacks();
+        await AuthenticatedPermissionDispatchTests.PeerChannelNegotiationAndOriginalProofGateCallbacks();
+        await AuthenticatedPermissionDispatchTests.CallLifetimeCancellationAndRuntimeAssociationAreBound();
+        await AuthenticatedPermissionDispatchTests.GuardedPromotionDoesNotBecomePermissionOrLocalUserAuthority();
+        Console.WriteLine("PASS authenticated Host permission dispatch."); return 0;
+    }
     if (args is ["--bound-peer-observation-probe"])
     {
         await BoundPeerObservationTests.CurrentLapsedAndPendingPreserveIdentityAndExactEffects();
@@ -654,6 +664,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Permission dispatch LocalSignaturesFeedCanonicalOwnerAndDelegationActions", AuthenticatedPermissionDispatchTests.LocalSignaturesFeedCanonicalOwnerAndDelegationActions),
+    ("Permission dispatch PeerActionsUseRealPeerAndCreatorKeepsIndependentUserCeiling", AuthenticatedPermissionDispatchTests.PeerActionsUseRealPeerAndCreatorKeepsIndependentUserCeiling),
+    ("Permission dispatch LocalChannelNegotiationAndCurrentIdentityGateCallbacks", AuthenticatedPermissionDispatchTests.LocalChannelNegotiationAndCurrentIdentityGateCallbacks),
+    ("Permission dispatch PeerChannelNegotiationAndOriginalProofGateCallbacks", AuthenticatedPermissionDispatchTests.PeerChannelNegotiationAndOriginalProofGateCallbacks),
+    ("Permission dispatch CallLifetimeCancellationAndRuntimeAssociationAreBound", AuthenticatedPermissionDispatchTests.CallLifetimeCancellationAndRuntimeAssociationAreBound),
+    ("Permission dispatch GuardedPromotionDoesNotBecomePermissionOrLocalUserAuthority", AuthenticatedPermissionDispatchTests.GuardedPromotionDoesNotBecomePermissionOrLocalUserAuthority),
     ("Bound peer observation CurrentLapsedAndPendingPreserveIdentityAndExactEffects", BoundPeerObservationTests.CurrentLapsedAndPendingPreserveIdentityAndExactEffects),
     ("Bound peer observation WrongConnectionAndInactiveTrustNeverObserve", BoundPeerObservationTests.WrongConnectionAndInactiveTrustNeverObserve),
     ("Bound peer observation AuditHistoryAndLateProofMutationsRollBack", BoundPeerObservationTests.AuditHistoryAndLateProofMutationsRollBack),

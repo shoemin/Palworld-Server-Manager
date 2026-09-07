@@ -14,6 +14,7 @@ public sealed class PeerSecurityRpcRuntime
     internal TimeProvider Clock { get; }
     internal IPeerActivationHook Hook { get; }
     internal PeerTransportAuthentication Authentication { get; }
+    internal PeerPermissionDispatcher Permissions { get; }
     public PeerSecurityRpcRuntime(HostDatabase database, Guid hostId, IPeerActivationHook hook, TimeProvider? time = null)
     {
         if (hostId == Guid.Empty) throw new ArgumentException("Host identity required.");
@@ -21,6 +22,7 @@ public sealed class PeerSecurityRpcRuntime
         Repository = new(database, hostId, time); Authentication = new(Repository, time);
         Credentials = new(database, hostId);
         Clock = time ?? TimeProvider.System;
+        Permissions = new(this, new GrantPolicyRepository(database, hostId, time));
     }
     internal static PeerHello Hello(Guid hostId)
     {
@@ -37,14 +39,15 @@ public sealed class PeerSecurityRpcRuntime
         return next => async connection =>
         {
             var peer = readRemoteFingerprint(connection);
-            await using var state = new PeerSecurityRpcConnection(local, peer);
+            await using var state = new PeerSecurityRpcConnection(this, local, peer);
             connection.Features.Set(state); await next(connection).ConfigureAwait(false);
         };
     }
 }
 
-internal sealed class PeerSecurityRpcConnection(string localFingerprint, string peerFingerprint) : IAsyncDisposable
+internal sealed class PeerSecurityRpcConnection(PeerSecurityRpcRuntime runtime, string localFingerprint, string peerFingerprint) : IAsyncDisposable
 {
+    internal bool BelongsTo(PeerSecurityRpcRuntime expected) => ReferenceEquals(runtime, expected);
     private readonly SemaphoreSlim gate = new(1, 1);
     private bool closed;
     internal string LocalFingerprint { get; } = localFingerprint;
