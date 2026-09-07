@@ -137,6 +137,12 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--host-discovery-probe"])
+    {
+        await HostDiscoveryTests.ManualAddresses(); await HostDiscoveryTests.PacketBoundsAndCompatibility();
+        await HostDiscoveryTests.DirectorySourceBoundsAndExpiry(); await ProtocolTests.SchemaEvolution();
+        Console.WriteLine("PASS manual Host addresses and unverified bounded discovery metadata/directory."); return 0;
+    }
     if (args is ["--peer-pairing-probe"])
     {
         await ProtocolTests.SchemaEvolution(); await PeerPairingRpcTests.AdmissionAndFrameOrder(); await PeerPairingRpcTests.DisconnectAndSingleConnection();
@@ -401,6 +407,9 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
     ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
     ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
+    ("Manual Host addresses reject authority and URI injection", HostDiscoveryTests.ManualAddresses),
+    ("Host discovery packets remain bounded and unverified across versions", HostDiscoveryTests.PacketBoundsAndCompatibility),
+    ("Host discovery directory preserves actual source conflicts and monotonic expiry", HostDiscoveryTests.DirectorySourceBoundsAndExpiry),
     ("Address/code selects only the latest live invitation without fallback", PairingAttemptTests.AdvertisedSelection),
     ("Advertised invitation selection and admission serialize with creation and cancellation", PairingAttemptTests.AdvertisedAdmissionIsAtomic),
     ("Shell uses exact Host-qualified identity and separates focus from selection", ShellStateTests.ExactIdentityAndFocus),

@@ -172,7 +172,8 @@ internal static class PeerPairingRpcTests
         await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
         {
             await b.Start(); using var invitation = b.Runtime.CreateInvitation();
-            var paired = await WindowsHostComposition.CreatePeerPairingClient(a.Runtime, a.Certificate.Value).PairAsync(b.Address, invitation.Code);
+            var addressFromInput = PalworldServerManager.Contracts.HostReachableAddress.Parse(b.Address.Host, b.Address.Port);
+            var paired = await WindowsHostComposition.CreatePeerPairingClient(a.Runtime, a.Certificate.Value).PairAsync(addressFromInput.HttpsAddress, invitation.Code);
             Check(paired.Local.Disposition == PeerBindingDisposition.PeerBoundCreated && paired.Remote == PeerPairingResult.PeerBound);
             Check(a.State.Repository.Read(b.State.HostId)!.CurrentFingerprint == b.Pin && b.State.Repository.Read(a.State.HostId)!.CurrentFingerprint == a.Pin);
             Check(a.State.Repository.Read(b.State.HostId)!.State == "PeerBound" && b.State.Repository.Read(a.State.HostId)!.State == "PeerBound");

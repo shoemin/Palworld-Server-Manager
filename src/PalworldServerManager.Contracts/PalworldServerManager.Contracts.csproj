@@ -14,5 +14,6 @@
     <Protobuf Include="Protos\local_security.proto" GrpcServices="None" />
     <Protobuf Include="Protos\peer_security.proto" GrpcServices="None" />
     <Protobuf Include="Protos\peer_pairing.proto" GrpcServices="None" />
+    <Protobuf Include="Protos\host_discovery.proto" GrpcServices="None" />
   </ItemGroup>
 </Project>

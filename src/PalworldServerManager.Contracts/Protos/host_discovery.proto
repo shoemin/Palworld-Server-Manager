@@ -1,0 +1,14 @@
+syntax = "proto3";
+package palworld.manager.v1;
+option csharp_namespace = "PalworldServerManager.Contracts.Wire";
+import "Protos/host.proto";
+
+// Unauthenticated LAN hints only. The destination address is the actual packet source.
+// No RPC, code, credential, trusted identity or authorization is represented here.
+message HostDiscoveryAdvertisement {
+  string marker = 1;
+  string claimed_host_id = 2;
+  ProtocolVersion protocol = 3;
+  uint32 peer_port = 4;
+  uint32 pairing_port = 5;
+}
