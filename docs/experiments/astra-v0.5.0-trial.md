@@ -2408,3 +2408,10 @@ All forty invariants freshly reconsidered with A's substantive classifications u
 ### #44aa Review Pass B completion
 
 The B1 wording refinement now matches the precise code/test address exclusions and does not imply registry-wide filtering. Corrected strict local Docs PASS. Eleven-file and all-forty B review is clean; only documentation differs from fully qualified executable/test HEAD `0e65335ee2ca3dc15f677f24b6d564afe33138a6`. B1 resolved, two correction/verification cycles, one retained initial SDK fixture compilation failure, no new escaped defect. B clean. Final exact-HEAD Docs and unchanged base/HEAD gate remain before merge.
+
+
+### #44aa merged checkpoint
+
+PR #117 final HEAD `d56388d79744e808c0f120ca39af1567ad8ea47b` merged as `755145ca7c82274cee65245c06fab867040b6703` after all-three-job CI `34094290567` at executable/test HEAD `0e65335ee2ca3dc15f677f24b6d564afe33138a6`, final Docs `34096731147` at exact final PR HEAD and unchanged base/HEAD gate PASS. Local 341/341, focused native policy/read-only inventory, independent Windows SDK ABI, actual UI, strict Docs and zero-warning build PASS. Both eleven-file/all-forty reviews clean. Initial SDK fixture header repair plus B1 documentation precision correction total two cycles; no new escaped defect. #44aa is SHADOW DONE.
+
+Fifty-seven PRs #61-#117 merged; ten canonical children complete; cumulative correction/verification cycles 150. Current #44 body unchanged and all 39 Project items inspected read-only (#44 Todo/Backlog). #44 remains IN PROGRESS. Next bounded work is owned Windows UDP receive/lifetime using actual packet source/interface and refreshed eligibility, followed by constrained broadcast sending and Host ownership/composition. No physical-LAN packet evidence is claimed. No outside reviewer/contact or repeated permission required. #52 accessibility remains WAIVED; Linux/release gates remain incomplete.
