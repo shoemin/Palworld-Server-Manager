@@ -1,13 +1,10 @@
 using System.Security.Authentication;
-using System.Buffers.Binary;
-using Google.Protobuf;
 using Grpc.Core;
 using PalworldServerManager.Contracts.Wire;
 using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Platform.Windows;
-using PalworldServerManager.Platform.Contracts;
 using Fixture = PalworldServerManager.SelfTest.PeerSecurityRpcTests.Fixture;
 using RawClient = PalworldServerManager.SelfTest.PeerSecurityRpcTests.RawClient;
 
@@ -26,7 +23,7 @@ internal static class PeerRotationStatusRpcTests
         var credentials = sender.Runtime.Credentials; var owner = Owner(sender);
         var rotation = credentials.PrepareRoutineRotation(owner, Guid.NewGuid()); credentials.RecordCreated(rotation.NewReference, next);
         credentials.BeginRoutineRotationStaging(owner, rotation.RotationId); var proposal = credentials.PrepareRoutineRotationProposal(owner, rotation.RotationId);
-        receiver.Runtime.Repository.StagePeerRotation(proposal, sender.Pin); return proposal;
+        receiver.Runtime.Repository.StagePeerRotation(proposal, sender.Pin, receiver.Pin); return proposal;
     }
     private static PeerRotationStatusRpcClient Client(Fixture f) => WindowsHostComposition.CreatePeerRotationStatusClient(f.Runtime, f.Certificate.Value);
     private static PeerRotationStatusRequest Request(Fixture receiver, Fixture sender) => PeerRotationStatusWire.Wire(receiver.Runtime.Repository.BeginPeerRotationStatusQuery(sender.State.HostId).Request);
@@ -120,54 +117,13 @@ internal static class PeerRotationStatusRpcTests
         try { await Client(a).CheckAsync(b.State.HostId, b.Address); throw new Exception("Expected stale local transport refusal."); } catch (AuthenticationException) { }
         Check(a.Runtime.Repository.Read(b.State.HostId)!.PendingFingerprint == before.PendingFingerprint); NoAuthority(a, b);
     }
-    // Fault injection occurs only after the inner transport's actual mutual TLS and real
-    // server response. It does not synthesize or bypass the possession-proof callback.
-    private sealed class AlterReplyTransport(IPeerHttpTransportFactory inner, Action<PeerRotationStatusReply> alter) : IPeerHttpTransportFactory
-    {
-        internal int Altered;
-        public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed = null)
-            => new Connection(inner.Create(acceptsServerPin, observed), this, alter);
-        private sealed class Connection : IPeerHttpTransport
-        {
-            private readonly IPeerHttpTransport inner;
-            public PeerTlsConnectionIdentity Identity => inner.Identity;
-            public HttpMessageHandler Handler { get; }
-            internal Connection(IPeerHttpTransport inner, AlterReplyTransport owner, Action<PeerRotationStatusReply> alter)
-            { this.inner = inner; Handler = new HandlerImpl(inner.Handler, owner, alter); }
-            public void Dispose() { Handler.Dispose(); inner.Dispose(); }
-        }
-        private sealed class HandlerImpl(HttpMessageHandler inner, AlterReplyTransport owner, Action<PeerRotationStatusReply> alter) : HttpMessageHandler
-        {
-            private readonly HttpMessageInvoker invoker = new(inner, disposeHandler: false);
-            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-            {
-                var response = await invoker.SendAsync(request, ct);
-                if (!request.RequestUri!.AbsolutePath.EndsWith("/ReadRotationStatus", StringComparison.Ordinal)) return response;
-                try
-                {
-                    var content = response.Content; var bytes = await content.ReadAsByteArrayAsync(ct);
-                    Check(bytes.Length >= 5 && bytes[0] == 0 && BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(1, 4)) == bytes.Length - 5);
-                    var reply = PeerRotationStatusReply.Parser.ParseFrom(bytes, 5, bytes.Length - 5);
-                    Interlocked.Increment(ref owner.Altered); alter(reply);
-                    var payload = reply.ToByteArray(); var frame = new byte[payload.Length + 5];
-                    BinaryPrimitives.WriteUInt32BigEndian(frame.AsSpan(1, 4), (uint)payload.Length); payload.CopyTo(frame, 5);
-                    var replacement = new ByteArrayContent(frame);
-                    foreach (var header in content.Headers)
-                        if (!header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase)) replacement.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                    response.Content = replacement; content.Dispose(); return response;
-                }
-                catch { response.Dispose(); throw; }
-            }
-            protected override void Dispose(bool disposing) { if (disposing) invoker.Dispose(); base.Dispose(disposing); }
-        }
-    }
     public static async Task ActualReplyForgeryAndStaleOwnerAreRefused()
     {
         for (var variant = 0; variant < 4; variant++)
         {
             await using var a = new Fixture(); await using var b = new Fixture(); Stage(a, b, new string('C', 64)); await b.Start();
             a.State.Time.Now += TimeSpan.FromMinutes(30); var retained = a.Runtime.Repository.Read(b.State.HostId)!;
-            var transport = new AlterReplyTransport(new WindowsPeerHttpTransportFactory(a.Certificate.Value), reply =>
+            var transport = new PeerReplyFaultTransport<PeerRotationStatusReply>(new WindowsPeerHttpTransportFactory(a.Certificate.Value), "ReadRotationStatus", PeerRotationStatusReply.Parser, reply =>
             {
                 if (variant == 0) reply.Request.QueryId = Guid.NewGuid().ToString("D");
                 if (variant == 1) reply.State = (PeerRotationLiveState)99;

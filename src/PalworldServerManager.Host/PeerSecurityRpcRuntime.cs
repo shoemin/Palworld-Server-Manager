@@ -11,6 +11,7 @@ public sealed class PeerSecurityRpcRuntime
     public Guid HostId { get; }
     internal PeerTrustRepository Repository { get; }
     internal HostCredentialStateRepository Credentials { get; }
+    internal TimeProvider Clock { get; }
     internal IPeerActivationHook Hook { get; }
     internal PeerTransportAuthentication Authentication { get; }
     public PeerSecurityRpcRuntime(HostDatabase database, Guid hostId, IPeerActivationHook hook, TimeProvider? time = null)
@@ -19,13 +20,15 @@ public sealed class PeerSecurityRpcRuntime
         HostId = hostId; Hook = hook ?? throw new ArgumentNullException(nameof(hook));
         Repository = new(database, hostId, time); Authentication = new(Repository, time);
         Credentials = new(database, hostId);
+        Clock = time ?? TimeProvider.System;
     }
     internal static PeerHello Hello(Guid hostId)
     {
         var hello = new PeerHello { Host = new() { HostId = hostId.ToString("D") },
-            Handshake = new() { Protocol = new() { Major = 1, Minor = 4 }, ProductVersion = "0.5.0-astra" } };
+            Handshake = new() { Protocol = new() { Major = 1, Minor = 5 }, ProductVersion = "0.5.0-astra" } };
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustActivation);
-        hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationStatus); return hello;
+        hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationStatus);
+        hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationProposal); return hello;
     }
     internal Func<ConnectionDelegate, ConnectionDelegate> BindConnection(string local, Func<ConnectionContext, string> readRemoteFingerprint)
     {

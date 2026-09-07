@@ -68,4 +68,11 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
     public override Task<PeerRotationStatusReply> ReadRotationStatus(PeerRotationStatusRequest request, ServerCallContext context) => Dispatch(context, false, session =>
         PeerRotationStatusWire.Wire(runtime.Credentials.ReadRoutineRotationStatus(PeerRotationStatusWire.Durable(request), session.LocalFingerprint)),
         FeatureCapability.PeerRotationStatus, PeerTrafficPurpose.TrustMaintenance);
+    public override Task<PeerRotationProposalReply> StageRotation(PeerRotationProposalRequest request, ServerCallContext context) => Dispatch(context, false, session =>
+    {
+        var proposal = PeerRotationProposalWire.Durable(request);
+        if (proposal.HostId != session.PeerId) throw new AuthenticationException();
+        var result = runtime.Repository.StagePeerRotation(proposal, session.PeerFingerprint, session.LocalFingerprint);
+        return PeerRotationProposalWire.Reply(request, result, runtime.Clock.GetUtcNow());
+    }, FeatureCapability.PeerRotationProposal, PeerTrafficPurpose.TrustMaintenance);
 }

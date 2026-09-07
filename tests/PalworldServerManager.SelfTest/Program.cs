@@ -17,6 +17,14 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--rotation-proposal-rpc-probe"])
+    {
+        await ProtocolTests.SchemaEvolution(); await PeerRotationProposalRpcTests.ActualConcurrentProposalAndClockOffset();
+        await PeerRotationProposalRpcTests.LostReplyAndAuditFailureResumeDurably(); await PeerRotationProposalRpcTests.LapsedAndReceiptStateCannotBeOverwritten();
+        await PeerRotationProposalRpcTests.ProposalProtocolIdentityAndFreshState(); await PeerRotationProposalRpcTests.ForgedAcknowledgementAndConcurrentAbort();
+        await PeerRotationProposalRpcTests.ConservativeRemainingTimeIsNotDurableAuthority(); await PeerRotationStatusRpcTests.ActualReplyForgeryAndStaleOwnerAreRefused();
+        Console.WriteLine("PASS actual rotation proposals, durable acknowledgement history, replay/fault gates and conservative time bounds."); return 0;
+    }
     if (args is ["--rotation-status-rpc-probe"])
     {
         await ProtocolTests.SchemaEvolution(); await PeerRotationStatusRpcTests.ActualRenewalAbortAndFreshRetry();
@@ -210,6 +218,12 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Actual concurrent rotation proposals preserve deadlines across unrelated Host clocks", PeerRotationProposalRpcTests.ActualConcurrentProposalAndClockOffset),
+    ("Lost rotation replies and sender audit failure resume from receiver durable staging", PeerRotationProposalRpcTests.LostReplyAndAuditFailureResumeDurably),
+    ("Actual proposals cannot overwrite lapsed staging or pending promotion receipts", PeerRotationProposalRpcTests.LapsedAndReceiptStateCannotBeOverwritten),
+    ("Proposal RPC enforces negotiation exact identity and both current TLS credentials", PeerRotationProposalRpcTests.ProposalProtocolIdentityAndFreshState),
+    ("Forged proposal acknowledgements and concurrent abort cannot create sender history", PeerRotationProposalRpcTests.ForgedAcknowledgementAndConcurrentAbort),
+    ("Proposal acceptance bounds subtract elapsed time without assuming UTC agreement", PeerRotationProposalRpcTests.ConservativeRemainingTimeIsNotDurableAuthority),
     ("Actual rotation status replies cannot replay correlation forge cutover or reuse stale Owner authority", PeerRotationStatusRpcTests.ActualReplyForgeryAndStaleOwnerAreRefused),
     ("Actual pinned rotation status renews with Owner intent and recovers abort after failed contact", PeerRotationStatusRpcTests.ActualRenewalAbortAndFreshRetry),
     ("Rotation status connection promotes only with actual New possession proof", PeerRotationStatusRpcTests.ActualNewProofPromotesWithoutStatusClaim),

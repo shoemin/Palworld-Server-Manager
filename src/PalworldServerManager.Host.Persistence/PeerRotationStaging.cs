@@ -9,12 +9,13 @@ public sealed partial class PeerTrustRepository
 
     // Proposal content is not proof. Actual fingerprint is obtained independently from completed
     // mutual TLS; the wire adapter must also match the negotiated peer UUID to proposal.HostId.
-    public PeerRotationStagingResult StagePeerRotation(HostRotationProposal proposal, string actualFingerprint)
+    public PeerRotationStagingResult StagePeerRotation(HostRotationProposal proposal, string actualFingerprint, string actualLocalFingerprint)
     {
         ArgumentNullException.ThrowIfNull(proposal); Id(proposal.HostId); Id(proposal.RotationId);
         Fingerprint(actualFingerprint); Fingerprint(proposal.OldFingerprint); Fingerprint(proposal.NewFingerprint);
         if (proposal.Sequence <= 0 || proposal.OldFingerprint != actualFingerprint || proposal.NewFingerprint == actualFingerprint) throw RotationRefused();
         using var c = Open(); using var tx = c.BeginTransaction(deferred: false);
+        if (RequireHost(c, tx) != actualLocalFingerprint) throw RotationRefused();
         var trust = RequireObservedActivePeer(c, tx, proposal.HostId, actualFingerprint);
         if (trust.CurrentFingerprint != actualFingerprint) throw RotationRefused();
         var known = false;
