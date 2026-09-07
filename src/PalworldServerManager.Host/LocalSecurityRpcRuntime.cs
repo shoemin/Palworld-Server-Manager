@@ -10,6 +10,7 @@ namespace PalworldServerManager.Host;
 public sealed class LocalSecurityRpcRuntime
 {
     public Guid HostId { get; }
+    internal HostNetworkGeneration? Pairing { get; init; }
     internal LocalEnrollmentService Enrollment { get; }
     internal Func<bool> IsInitialized { get; }
     internal Func<HttpContext, string> NativePrincipal { get; }

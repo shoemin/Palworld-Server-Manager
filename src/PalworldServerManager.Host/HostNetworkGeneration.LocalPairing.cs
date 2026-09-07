@@ -21,8 +21,13 @@ internal sealed partial class HostNetworkGeneration
             return Task.FromResult(Required(discovery).Snapshot());
         }, ct);
     internal Task<PairingInvitation> CreateInvitationForOwnerAsync(LocalPrincipalConnectionAuthentication connection, CancellationToken ct = default)
+        => CreateInvitationForOwnerAsync(connection, invitation => invitation, ct);
+    // Trusted synchronous response construction stays inside the same ownership/cleanup scope.
+    internal Task<T> CreateInvitationForOwnerAsync<T>(LocalPrincipalConnectionAuthentication connection,
+        Func<PairingInvitation, T> deliver, CancellationToken ct = default)
         => RunAsync(token =>
         {
+            ArgumentNullException.ThrowIfNull(deliver);
             var actor = PairingOwner(connection); token.ThrowIfCancellationRequested();
             PairingInvitation? invitation = null;
             try
@@ -30,7 +35,7 @@ internal sealed partial class HostNetworkGeneration
                 // No database transaction spans Sweep/audit callbacks or code creation.
                 invitation = Required(pairing).CreateInvitation();
                 token.ThrowIfCancellationRequested(); Required(pairing).Repository.AuthorizePairingOwner(actor);
-                return Task.FromResult(invitation);
+                return Task.FromResult(deliver(invitation));
             }
             catch (Exception primary)
             {

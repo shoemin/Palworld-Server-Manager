@@ -157,7 +157,7 @@ public static class WindowsHostComposition
             var plan = HostTrustPlanning.Build(state);
             if (!state.Initialized || plan.Publication?.CurrentFingerprint != WindowsPeerTls.PublicFingerprint(certificate))
                 throw new System.Security.Authentication.AuthenticationException("Current initialized Host credential is required.");
-            var local = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { }, time);
+            var local = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { }, time) { Pairing = generation };
             var peer = new PeerSecurityRpcRuntime(database, hostId, activationHook, time);
             byte[] publicKey;
             using (var key = certificate.GetECDsaPublicKey()!) publicKey = key.ExportSubjectPublicKeyInfo();

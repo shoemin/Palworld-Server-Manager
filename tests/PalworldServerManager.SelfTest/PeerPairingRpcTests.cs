@@ -258,6 +258,7 @@ internal static class PeerPairingRpcTests
             Check(HostDatabase.QueryScalarLong(b.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
         }
         await NativeOwnerAuthorization(provider);
+        await LocalOwnerPairingRpcTests.Native(provider);
         await InvalidVerifiedBinding(provider, false); await InvalidVerifiedBinding(provider, true);
         await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
         {
