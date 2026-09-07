@@ -11,6 +11,15 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--local-owner-activation-probe"])
+    {
+        await ProtocolTests.SchemaEvolution();
+        await LocalOwnerActivationTests.ExactOwnerAndIdempotentActivation();
+        await LocalOwnerActivationTests.HookAndCancellationRollback();
+        await LocalOwnerActivationTests.FinalWriterFreshness();
+        await LocalOwnerPairingRpcTests.ActivationBoundaries();
+        Console.WriteLine("PASS local Owner activation foundations and RPC."); return 0;
+    }
     if (args is ["--local-owner-pairing-rpc-probe"])
     {
         await ProtocolTests.SchemaEvolution();
@@ -489,6 +498,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
     ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Local Owner activation ExactOwnerAndIdempotentActivation", LocalOwnerActivationTests.ExactOwnerAndIdempotentActivation),
+    ("Local Owner activation HookAndCancellationRollback", LocalOwnerActivationTests.HookAndCancellationRollback),
+    ("Local Owner activation FinalWriterFreshness", LocalOwnerActivationTests.FinalWriterFreshness),
+    ("Local Owner activation RPC boundaries", LocalOwnerPairingRpcTests.ActivationBoundaries),
     ("Local Owner RPC CapabilityAndNativeIdentity", LocalOwnerPairingRpcTests.CapabilityAndNativeIdentity),
     ("Local Owner RPC DiscoveryAndRequestBounds", LocalOwnerPairingRpcTests.DiscoveryAndRequestBounds),
     ("Local Owner RPC StaleOwnerAndResponseConstruction", LocalOwnerPairingRpcTests.StaleOwnerAndResponseConstruction),

@@ -4,6 +4,7 @@ using Grpc.Net.Client;
 using PalworldServerManager.Contracts;
 using PalworldServerManager.Contracts.Wire;
 using PalworldServerManager.Host.Persistence;
+using PalworldServerManager.Core.Security;
 using PalworldServerManager.Platform.Contracts;
 
 namespace PalworldServerManager.Host;
@@ -12,7 +13,15 @@ namespace PalworldServerManager.Host;
 // Each bounded attempt gets a new channel/negotiation; callers retry from durable trust.
 internal sealed class PeerActivationRpcClient(PeerSecurityRpcRuntime runtime, IPeerHttpTransportFactory transport)
 {
-    internal async Task<PeerActivationDisposition> FinalizeAsync(Guid peer, Uri address, CancellationToken ct = default)
+    internal Task<PeerActivationDisposition> FinalizeAsync(Guid peer, Uri address, CancellationToken ct = default)
+        => FinalizeCoreAsync(peer, address, null, ct);
+    internal Task<PeerActivationDisposition> FinalizeForOwnerAsync(Guid peer, Uri address, LocalPrincipalMutationActor owner, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(owner); ct.ThrowIfCancellationRequested();
+        runtime.Repository.AuthorizePairingOwner(owner); ct.ThrowIfCancellationRequested();
+        return FinalizeCoreAsync(peer, address, owner, ct);
+    }
+    private async Task<PeerActivationDisposition> FinalizeCoreAsync(Guid peer, Uri address, LocalPrincipalMutationActor? owner, CancellationToken ct)
     {
         if (peer == Guid.Empty || peer == runtime.HostId || !address.IsAbsoluteUri || address.Scheme != "https" ||
             address.UserInfo.Length != 0 || address.AbsolutePath != "/" || address.Query.Length != 0 || address.Fragment.Length != 0)
@@ -32,12 +41,17 @@ internal sealed class PeerActivationRpcClient(PeerSecurityRpcRuntime runtime, IP
         if (reply.Host is null || PeerSecurityRpcService.Id(reply.Host.HostId) != peer) throw new AuthenticationException("Peer identity refused.");
         var actual = connection.Identity;
         NegotiatedProtocol.Negotiate(hello.Handshake, reply.Handshake).Require(FeatureCapability.PeerTrustActivation);
-        var ack = runtime.Repository.PrepareActivationAcknowledgement(peer, actual.PeerFingerprint, actual.LocalFingerprint);
+        var ack = owner is null
+            ? runtime.Repository.PrepareActivationAcknowledgement(peer, actual.PeerFingerprint, actual.LocalFingerprint)
+            : runtime.Repository.PrepareOwnerActivationAcknowledgement(owner, peer, actual.PeerFingerprint, actual.LocalFingerprint);
         var activated = await client.ActivateAsync(PeerSecurityRpcService.Wire(ack), cancellationToken: deadline.Token).ResponseAsync.ConfigureAwait(false);
         if (activated.Acknowledgement is null || activated.Result is not (PeerActivationResult.Activated or PeerActivationResult.AlreadyActive))
             throw new AuthenticationException("Peer activation proof refused.");
         deadline.Token.ThrowIfCancellationRequested();
-        return runtime.Repository.AcceptActivationAcknowledgement(peer, actual.PeerFingerprint, actual.LocalFingerprint,
-            PeerSecurityRpcService.Durable(activated.Acknowledgement), runtime.Hook);
+        var acknowledgement = PeerSecurityRpcService.Durable(activated.Acknowledgement);
+        return owner is null
+            ? runtime.Repository.AcceptActivationAcknowledgement(peer, actual.PeerFingerprint, actual.LocalFingerprint, acknowledgement, runtime.Hook)
+            : runtime.Repository.AcceptOwnerActivationAcknowledgement(owner, peer, actual.PeerFingerprint, actual.LocalFingerprint,
+                acknowledgement, runtime.Hook, deadline.Token);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using PalworldServerManager.Core.Security;
 
 namespace PalworldServerManager.Host.Persistence;
 
@@ -36,17 +37,38 @@ public sealed partial class PeerTrustRepository
     // request parameters or a connection-authentication snapshot from an earlier RPC.
     public PeerActivationAcknowledgement PrepareActivationAcknowledgement(Guid peer,
         string actualPeerFingerprint, string actualLocalFingerprint)
+        => PrepareActivationCore(peer, actualPeerFingerprint, actualLocalFingerprint, null);
+    public PeerActivationAcknowledgement PrepareOwnerActivationAcknowledgement(LocalPrincipalMutationActor owner, Guid peer,
+        string actualPeerFingerprint, string actualLocalFingerprint)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        return PrepareActivationCore(peer, actualPeerFingerprint, actualLocalFingerprint, owner);
+    }
+    private PeerActivationAcknowledgement PrepareActivationCore(Guid peer, string actualPeerFingerprint,
+        string actualLocalFingerprint, LocalPrincipalMutationActor? owner)
     {
         Id(peer); Fingerprint(actualPeerFingerprint); Fingerprint(actualLocalFingerprint);
         using var c = Open(); using var tx = c.BeginTransaction(deferred: true);
         RequireActivationPeer(c, tx, peer, actualPeerFingerprint, actualLocalFingerprint, time.GetUtcNow());
+        if (owner is not null) RequirePairingOwner(c, tx, owner);
         return new(hostId, peer, actualPeerFingerprint);
     }
 
     public PeerActivationDisposition AcceptActivationAcknowledgement(Guid peer,
         string actualPeerFingerprint, string actualLocalFingerprint,
         PeerActivationAcknowledgement acknowledgement, IPeerActivationHook hook)
+        => AcceptActivationCore(peer, actualPeerFingerprint, actualLocalFingerprint, acknowledgement, hook, null, CancellationToken.None);
+    public PeerActivationDisposition AcceptOwnerActivationAcknowledgement(LocalPrincipalMutationActor owner, Guid peer,
+        string actualPeerFingerprint, string actualLocalFingerprint, PeerActivationAcknowledgement acknowledgement,
+        IPeerActivationHook hook, CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(owner);
+        return AcceptActivationCore(peer, actualPeerFingerprint, actualLocalFingerprint, acknowledgement, hook, owner, ct);
+    }
+    private PeerActivationDisposition AcceptActivationCore(Guid peer, string actualPeerFingerprint, string actualLocalFingerprint,
+        PeerActivationAcknowledgement acknowledgement, IPeerActivationHook hook, LocalPrincipalMutationActor? owner, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(acknowledgement); ArgumentNullException.ThrowIfNull(hook);
         Id(peer); Fingerprint(actualPeerFingerprint); Fingerprint(actualLocalFingerprint);
         if (acknowledgement.FromHostId != peer || acknowledgement.RecordedHostId != hostId ||
@@ -54,6 +76,8 @@ public sealed partial class PeerTrustRepository
         using var c = Open(); using var tx = c.BeginTransaction(deferred: false);
         var now = time.GetUtcNow();
         var trust = RequireActivationPeer(c, tx, peer, actualPeerFingerprint, actualLocalFingerprint, now);
+        if (owner is not null) RequirePairingOwner(c, tx, owner);
+        ct.ThrowIfCancellationRequested();
         if (trust.State == "Active") return PeerActivationDisposition.AlreadyActive;
 
         Execute(c, tx, """
@@ -64,6 +88,8 @@ public sealed partial class PeerTrustRepository
         // A slow hook/audit cannot extend the original pending window. The transaction
         // prevents other writers from changing trust while these effects are prepared.
         if (trust.ExpiresUtc <= time.GetUtcNow()) throw ActivationRefused();
+        if (owner is not null) RequirePairingOwner(c, tx, owner);
+        ct.ThrowIfCancellationRequested();
         tx.Commit();
         return PeerActivationDisposition.Activated;
     }

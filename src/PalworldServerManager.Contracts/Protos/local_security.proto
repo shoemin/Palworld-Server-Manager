@@ -3,6 +3,7 @@ package palworld.manager.v1;
 option csharp_namespace = "PalworldServerManager.Contracts.Wire";
 import "Protos/host.proto";
 import "Protos/peer_pairing.proto";
+import "Protos/peer_security.proto";
 
 // No native caller identity, actor/Owner setter or private key is accepted from a request.
 // Field numbers are permanent. Secrets must never be formatted as diagnostic messages.
@@ -41,6 +42,9 @@ message LocalDiscoveredPairingHost {
 }
 message LocalPairingDiscoveryReply { repeated LocalDiscoveredPairingHost hosts = 1; uint32 next_offset = 2; }
 
+message LocalActivatePeerRequest { string peer_host_id = 1; string reachable_host = 2; uint32 peer_port = 3; }
+message LocalActivatePeerReply { PeerActivationResult result = 1; }
+
 service LocalSecurityProtocol {
   rpc Negotiate(Handshake) returns (LocalHandshakeReply);
   rpc IssueChallenge(LocalPrincipalRequest) returns (LocalChallenge);
@@ -56,4 +60,5 @@ service LocalSecurityProtocol {
   rpc CancelPairingInvitation(LocalPairingInvitationRequest) returns (LocalEmpty);
   rpc DiscoverPairingHosts(LocalPairingDiscoveryRequest) returns (LocalPairingDiscoveryReply);
   rpc PairHost(LocalPairHostRequest) returns (LocalPairHostReply);
+  rpc ActivatePeer(LocalActivatePeerRequest) returns (LocalActivatePeerReply);
 }
