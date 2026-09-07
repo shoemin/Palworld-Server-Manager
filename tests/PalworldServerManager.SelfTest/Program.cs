@@ -17,6 +17,17 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--generation-construction-probe"])
+    { await HostNetworkGenerationTests.RuntimeConstructionFailureCleansEarlierTimer(); Console.WriteLine("PASS runtime construction cleanup."); return 0; }
+    if (args is ["--host-generation-probe"])
+    {
+        await HostNetworkGenerationTests.RuntimeConstructionFailureCleansEarlierTimer();
+        await HostNetworkGenerationTests.ActualNetworkWorkAndClosedAdmission(); await HostNetworkGenerationTests.StopWaitsForWorkAndRejectsPrematureCutover();
+        await HostNetworkGenerationTests.PartialStartupAndCancellationReleaseOwnedResources(); await HostNetworkGenerationTests.AuditCleanupFailureCannotAuthorizeCutover();
+        await HostNetworkGenerationTests.StopDuringActualStartupWaitsBeforeCredentialDisposal(); await HostNetworkGenerationTests.DrainCallbackFailureStillCleansEveryOwnedResource();
+        await HostNetworkGenerationTests.OwnedStopThenActualCutoverAndNewGenerationReceipts();
+        Console.WriteLine("PASS Host generation resources, whole-operation shutdown, failure closure and actual rotation handoff."); return 0;
+    }
     if (args is ["--host-traffic-probe"])
     {
         await HostTrafficLifetimeTests.CancellationWaitsForWholeOperationCleanup(); await HostTrafficLifetimeTests.ConcurrentWorkAndTerminalAdmission();
@@ -263,6 +274,15 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Failed pairing runtime construction cleans its previously created audit timer", HostNetworkGenerationTests.RuntimeConstructionFailureCleansEarlierTimer),
+    ("Host generation owns actual network work and closes every outgoing helper", HostNetworkGenerationTests.ActualNetworkWorkAndClosedAdmission),
+    ("Host generation stop waits for work before releasing the credential", HostNetworkGenerationTests.StopWaitsForWorkAndRejectsPrematureCutover),
+    ("Host generation startup refusal and cancellation clean partial resources", HostNetworkGenerationTests.PartialStartupAndCancellationReleaseOwnedResources),
+    ("Host generation audit cleanup failure never supplies cutover readiness", HostNetworkGenerationTests.AuditCleanupFailureCannotAuthorizeCutover),
+    ("Host generation stop during actual startup waits for resource ownership", HostNetworkGenerationTests.StopDuringActualStartupWaitsBeforeCredentialDisposal),
+    ("Host generation drain callback failure still cleans every owned resource", HostNetworkGenerationTests.DrainCallbackFailureStillCleansEveryOwnedResource),
+    ("Owned generation shutdown precedes actual cutover New TLS and receipt", HostNetworkGenerationTests.OwnedStopThenActualCutoverAndNewGenerationReceipts),
+
     ("Host traffic draining waits for canceled whole-operation cleanup", HostTrafficLifetimeTests.CancellationWaitsForWholeOperationCleanup),
     ("Host traffic lifetime closes concurrent admission permanently", HostTrafficLifetimeTests.ConcurrentWorkAndTerminalAdmission),
     ("Host traffic callback failure cannot bypass active work draining", HostTrafficLifetimeTests.CancellationCallbackFailureStillWaitsForWork),

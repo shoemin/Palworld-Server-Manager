@@ -11,6 +11,7 @@ using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Host.Persistence.Migrations;
 using PalworldServerManager.Platform.Windows;
+using PalworldServerManager.Platform.Contracts;
 
 namespace PalworldServerManager.Host;
 
@@ -57,24 +58,69 @@ public static class WindowsHostComposition
         var publication = HostTrustPlanning.Build(snapshot).Publication
             ?? throw new InvalidOperationException("Privileged machine bootstrap is required.");
         await new WindowsHostCredentialMaterial(store).ValidateAsync(snapshot.CurrentReference!, publication.CurrentFingerprint, stop).ConfigureAwait(false);
-        using var certificate = await native.LoadAsync(snapshot.CurrentReference!, stop).ConfigureAwait(false);
-        await using var traffic = new HostTrafficLifetime();
         var groupSid = (SecurityIdentifier)new NTAccount(Environment.MachineName, WindowsHostPlatform.ProductActivationGroup).Translate(typeof(SecurityIdentifier));
         var rpc = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { });
-        await using var app = BuildLocalApplication(rpc, serviceSid, groupSid, certificate, PipeName, traffic.BindConnection);
+        var certificate = await native.LoadAsync(snapshot.CurrentReference!, stop).ConfigureAwait(false);
+        await using var generation = await CreateLocalGenerationAsync(rpc, serviceSid, groupSid, certificate, PipeName, stop).ConfigureAwait(false);
+        using var wait = CancellationTokenSource.CreateLinkedTokenSource(stop);
         try
         {
-            await app.StartAsync(stop).ConfigureAwait(false);
-            using var ended = CancellationTokenSource.CreateLinkedTokenSource(stop, app.Lifetime.ApplicationStopping);
-            try { await Task.Delay(Timeout.Infinite, ended.Token).ConfigureAwait(false); }
-            catch (OperationCanceledException) when (ended.IsCancellationRequested) { }
+            var canceled = Task.Delay(Timeout.Infinite, wait.Token);
+            await Task.WhenAny(canceled, generation.ListenerStopped).ConfigureAwait(false);
         }
-        finally
+        finally { wait.Cancel(); await generation.StopAsync().ConfigureAwait(false); }
+        // The generation has released listeners, work and its credential before lease disposal.
+    }
+
+    // These factories take ownership of certificate immediately, including any startup failure.
+    internal static async Task<HostNetworkGeneration> CreateLocalGenerationAsync(LocalSecurityRpcRuntime rpc, SecurityIdentifier serviceSid,
+        SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe, CancellationToken ct = default)
+    {
+        var generation = new HostNetworkGeneration(certificate);
+        try
         {
-            try { await traffic.DrainAsync().ConfigureAwait(false); }
-            finally { await app.StopAsync(CancellationToken.None).ConfigureAwait(false); }
+            generation.AddListener(BuildLocalApplication(rpc, serviceSid, groupSid, certificate, pipe, generation.BindConnection));
+            await generation.StartAsync(ct).ConfigureAwait(false); return generation;
         }
-        // App and traffic disposal precede certificate disposal, then lease disposal.
+        catch (Exception startup)
+        {
+            try { await generation.StopAsync().ConfigureAwait(false); }
+            catch (Exception cleanup) { throw new AggregateException("Host generation startup and cleanup failed.", startup, cleanup); }
+            throw;
+        }
+    }
+    // Explicit trusted full-network composition. Installed RunAsync remains local-only until
+    // authorized dispatch/configuration and the mandatory #45 activation hook are composed.
+    internal static async Task<HostNetworkGeneration> CreateNetworkGenerationAsync(HostDatabase database, Guid hostId, ISecureCredentialStore store,
+        SecurityIdentifier serviceSid, SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe,
+        System.Net.IPEndPoint peerEndpoint, System.Net.IPEndPoint pairingEndpoint, IPairingKeyExchangeFactory pairingFactory,
+        IPeerActivationHook activationHook, CancellationToken ct = default, TimeProvider? time = null)
+    {
+        var generation = new HostNetworkGeneration(certificate);
+        try
+        {
+            var state = new HostCredentialStateRepository(database, hostId).Read();
+            var plan = HostTrustPlanning.Build(state);
+            if (!state.Initialized || plan.Publication?.CurrentFingerprint != WindowsPeerTls.PublicFingerprint(certificate))
+                throw new System.Security.Authentication.AuthenticationException("Current initialized Host credential is required.");
+            var local = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { }, time);
+            var peer = new PeerSecurityRpcRuntime(database, hostId, activationHook, time);
+            byte[] publicKey;
+            using (var key = certificate.GetECDsaPublicKey()!) publicKey = key.ExportSubjectPublicKeyInfo();
+            var pairing = new PeerPairingRpcRuntime(database, hostId, publicKey, pairingFactory, (_, _) => { }, time);
+            generation.SetPeerWork(peer, pairing, new WindowsPeerHttpTransportFactory(certificate));
+            generation.AddListener(BuildLocalApplication(local, serviceSid, groupSid, certificate, pipe, generation.BindConnection));
+            var peerApp = BuildPeerApplication(peer, certificate, peerEndpoint, generation.BindConnection); generation.AddListener(peerApp);
+            var pairingApp = BuildPairingApplication(pairing, certificate, pairingEndpoint, generation.BindConnection); generation.AddListener(pairingApp);
+            await generation.StartAsync(ct).ConfigureAwait(false);
+            generation.SetBoundEndpoints(new(peerApp.Urls.Single()), new(pairingApp.Urls.Single())); return generation;
+        }
+        catch (Exception startup)
+        {
+            try { await generation.StopAsync().ConfigureAwait(false); }
+            catch (Exception cleanup) { throw new AggregateException("Host generation startup and cleanup failed.", startup, cleanup); }
+            throw;
+        }
     }
 
     // Trusted composition/test seam only. Empty hosting avoids loading environment/appsettings
