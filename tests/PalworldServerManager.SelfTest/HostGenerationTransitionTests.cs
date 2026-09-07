@@ -6,6 +6,7 @@ using System.Security.Principal;
 using Grpc.Core;
 using PalworldServerManager.Client.Platform.Contracts;
 using PalworldServerManager.Core.Security;
+using PalworldServerManager.Contracts;
 using PalworldServerManager.Host;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Platform.Contracts;
@@ -42,6 +43,7 @@ internal static class HostGenerationTransitionTests
         internal readonly List<X509Certificate2> Borrowed = [];
         internal readonly List<LocalHostTrustPublication> Publications = [];
         internal Func<HostNetworkGeneration, CancellationToken, Task>? AfterStart;
+        internal Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>>? DiscoveryFactory;
         internal bool FailNewPublication, FailPendingPublication, FailReconcile;
         internal int Starts, Reconciliations, FailStartNumber;
         internal HostCredentialStateRepository State => F.Runtime.Credentials;
@@ -65,7 +67,7 @@ internal static class HostGenerationTransitionTests
                 Borrowed.Add(certificate); using var identity = WindowsIdentity.GetCurrent();
                 var generation = await WindowsHostComposition.CreateNetworkGenerationAsync(F.State.Database, F.State.HostId,
                     new LocalEnrollmentTests.Store(new byte[32]), identity.User!, identity.User!, certificate, Pipe,
-                    new(IPAddress.Loopback, 0), new(IPAddress.Loopback, 0), new RefusingFactory(), F.Runtime.Hook, ct, Time);
+                    new(IPAddress.Loopback, 0), new(IPAddress.Loopback, 0), new RefusingFactory(), F.Runtime.Hook, ct, Time, DiscoveryFactory);
                 Generations.Add(generation);
                 // The test may hold return after actual startup; if its own callback fails it still owns cleanup.
                 try { if (AfterStart is not null) await AfterStart(generation, ct); return generation; }
@@ -125,6 +127,32 @@ internal static class HostGenerationTransitionTests
         Check(b.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint == a.NextPin);
         await Reject<AuthenticationException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, Routes(b)));
         Check(a.Starts == 2 && a.State.Read().Credentials.All(c => !c.Retired) && a.F.State.Count("HostCapabilityGrants") == 0);
+    }
+    public static async Task DiscoveryDrainPrecedesCutoverAndFreshGeneration()
+    {
+        await using var a = new Rig(); var probes = new List<HostGenerationDiscoveryTests.Probe>();
+        a.DiscoveryFactory = async (ad, token) =>
+        {
+            if (probes.Count > 0) Check(probes[^1].Runtime.Completion.IsCompletedSuccessfully);
+            var probe = new HostGenerationDiscoveryTests.Probe { BlockSend = probes.Count == 0 }; probes.Add(probe);
+            return await probe.CreateAsync(ad, token);
+        };
+        await a.Actions.StartAsync(); var old = probes.Single();
+        try
+        {
+            await Bounded(old.Sent.Task);
+            await old.Receiver.Emit(HostDiscoveryCodec.Encode(old.Advertisement with { ClaimedHostId = Guid.NewGuid() }));
+            Check((await a.Actions.DiscoverAsync()).Count == 1);
+            var p = a.Prepare(); var cutover = a.Actions.CutOverAsync(a.Owner, p.RotationId, new Dictionary<Guid, Uri>());
+            await Bounded(old.Receiver.Disposing.Task);
+            Check(!cutover.IsCompleted && a.Starts == 1 && a.State.Read().CurrentReference == p.OldReference && a.Borrowed[0].Handle != IntPtr.Zero);
+            old.ReleaseSend.SetResult(); var result = await cutover.WaitAsync(TimeSpan.FromSeconds(15));
+            Check(result.State == HostCredentialRotationState.CutOver && a.Starts == 2 && probes.Count == 2 && old.Runtime.Completion.IsCompletedSuccessfully);
+            Check(!ReferenceEquals(old.Runtime, probes[1].Runtime) && old.Receiver.Disposes == 1 && a.Borrowed[0].Handle == IntPtr.Zero);
+            Check((await a.Actions.DiscoverAsync()).Count == 0 && a.State.Read().Credentials.All(c => !c.Retired));
+            await a.LocalNegotiation(a.NextPin); Check(a.F.State.Count("HostCapabilityGrants") == 0);
+        }
+        finally { old.ReleaseSend.TrySetResult(); }
     }
     public static async Task PreflightRefusalLeavesGenerationServing()
     {

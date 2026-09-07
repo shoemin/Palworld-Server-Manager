@@ -1,6 +1,7 @@
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
+using PalworldServerManager.Contracts;
 using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Platform.Contracts;
@@ -29,13 +30,36 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
     private RoutineRotationAcceptanceCollector? collector;
     private RoutineRotationCutoverCoordinator? cutover;
     private HostCredentialStateRepository? credentialState;
+    private Func<(Uri Peer, Uri Pairing)>? readEndpoints;
+    private Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>>? startDiscovery;
+    private HostDiscoveryRuntime? discovery;
+    private Task discoveryObservation = Task.CompletedTask;
+    private Exception? discoveryFailure;
 
     internal Task ListenerStopped => listenerStopped.Task;
     internal Guid? HostId { get; private set; }
     internal string? LocalFingerprint => pairing?.LocalFingerprint;
     internal (Uri Peer, Uri Pairing)? Endpoints { get; private set; }
-    internal void SetBoundEndpoints(Uri peer, Uri pairingAddress)
-    { lock (gate) { if (!ready || closing) throw new InvalidOperationException("Generation is not serving."); Endpoints = (peer, pairingAddress); } }
+    internal void ConfigurePeerEndpoints(Func<(Uri Peer, Uri Pairing)> read)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        lock (gate)
+        {
+            if (sealedConfiguration || readEndpoints is not null || pairing is null)
+                throw new InvalidOperationException("Generation peer endpoints cannot be configured.");
+            readEndpoints = read;
+        }
+    }
+    internal void ConfigureDiscovery(Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>> start)
+    {
+        ArgumentNullException.ThrowIfNull(start);
+        lock (gate)
+        {
+            if (sealedConfiguration || startDiscovery is not null || readEndpoints is null || pairing is null)
+                throw new InvalidOperationException("Generation discovery cannot be configured.");
+            startDiscovery = start;
+        }
+    }
     internal ConnectionDelegate BindConnection(ConnectionDelegate next) => traffic.BindConnection(next);
     internal void AddListener(WebApplication app)
     {
@@ -73,10 +97,43 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
             {
                 foreach (var app in listeners) { token.ThrowIfCancellationRequested(); await app.StartAsync(token).ConfigureAwait(false); }
                 token.ThrowIfCancellationRequested();
+                if (readEndpoints is not null)
+                {
+                    var bound = readEndpoints();
+                    ValidateEndpoint(bound.Peer); ValidateEndpoint(bound.Pairing);
+                    Endpoints = bound;
+                }
+                if (startDiscovery is not null)
+                {
+                    var protocol = PeerPairingRpcRuntime.Hello().Protocol;
+                    var bound = Endpoints!.Value;
+                    var advertisement = new UnverifiedHostAdvertisement(HostId!.Value, protocol.Major, protocol.Minor, bound.Peer.Port, bound.Pairing.Port);
+                    // Transfer before any cancellation/readiness check: Stop waits startFinished
+                    // and must own even a successfully returned runtime that raced cancellation.
+                    discovery = await startDiscovery(advertisement, token).ConfigureAwait(false)
+                        ?? throw new InvalidOperationException("Discovery factory returned no owner.");
+                    discoveryObservation = ObserveDiscoveryAsync(discovery);
+                }
+                token.ThrowIfCancellationRequested();
                 lock (gate) { if (closing) throw new OperationCanceledException(token); ready = true; }
             }, ct).ConfigureAwait(false);
         }
         finally { finished.TrySetResult(); }
+    }
+    private static void ValidateEndpoint(Uri address)
+    {
+        if (address is null || !address.IsAbsoluteUri || address.Scheme != Uri.UriSchemeHttps || address.Port is < 1 or > 65535
+            || address.UserInfo.Length != 0 || address.AbsolutePath != "/" || address.Query.Length != 0 || address.Fragment.Length != 0)
+            throw new InvalidOperationException("A bound root HTTPS endpoint is required.");
+    }
+    private async Task ObserveDiscoveryAsync(HostDiscoveryRuntime runtime)
+    {
+        Exception failure;
+        try { await runtime.Completion.ConfigureAwait(false); failure = new IOException("Host discovery stopped unexpectedly."); }
+        catch (Exception ex) { failure = ex; }
+        lock (gate) { if (closing) return; discoveryFailure = failure; }
+        listenerStopped.TrySetResult();
+        _ = StopAsync(); // Never await the stop that will in turn observe this task.
     }
     internal Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken ct = default)
     {
@@ -86,6 +143,8 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
     internal Task RunAsync(Func<CancellationToken, Task> work, CancellationToken ct = default)
         => RunAsync(async token => { await work(token).ConfigureAwait(false); return true; }, ct);
     private static T Required<T>(T? value) where T : class => value ?? throw new InvalidOperationException("Peer networking is not configured.");
+    internal Task<IReadOnlyList<UnverifiedHostEndpoint>> DiscoverAsync(CancellationToken ct = default)
+        => RunAsync(_ => Task.FromResult(Required(discovery).Snapshot()), ct);
     internal Task<PeerActivationDisposition> ActivateAsync(Guid peer, Uri address, CancellationToken ct = default)
         => RunAsync(token => Required(activation).FinalizeAsync(peer, address, token), ct);
     internal Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)
@@ -135,10 +194,13 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
         {
             var drain = traffic.DrainAsync(); // closes admission and cancels in-progress startup/work
             await startFinished.ConfigureAwait(false);
+            var discoveryStop = Capture(() => discovery?.DisposeAsync().AsTask() ?? Task.CompletedTask);
             // Start every stop before waiting for drain: even an abort callback failure must not
             // prevent the other applications from closing their connections.
             var stops = listeners.Select(app => Capture(() => app.StopAsync(CancellationToken.None))).ToArray();
-            await Capture(() => drain).ConfigureAwait(false); await Task.WhenAll(stops).ConfigureAwait(false);
+            await Capture(() => drain).ConfigureAwait(false); await Task.WhenAll(stops.Append(discoveryStop)).ConfigureAwait(false);
+            await Capture(() => discoveryObservation).ConfigureAwait(false);
+            if (discoveryFailure is not null) lock (failures) if (!failures.Contains(discoveryFailure)) failures.Add(discoveryFailure);
             foreach (var app in listeners) await Capture(() => app.DisposeAsync().AsTask()).ConfigureAwait(false);
             await Capture(() => { pairing?.Dispose(); return Task.CompletedTask; }).ConfigureAwait(false);
             foreach (var signal in listenerSignals) signal.Dispose();

@@ -49,6 +49,8 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
     { get { lock (gate) return !stopRequested && phase == HostGenerationPhase.Serving ? current?.Endpoints : null; } }
     internal Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken ct = default)
         => OnCurrentAsync((_, token) => work(token), ct);
+    internal Task<IReadOnlyList<UnverifiedHostEndpoint>> DiscoverAsync(CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.DiscoverAsync(token), ct);
     internal Task<PeerActivationDisposition> ActivateAsync(Guid peer, Uri address, CancellationToken ct = default)
         => OnCurrentAsync((generation, token) => generation.ActivateAsync(peer, address, token), ct);
     internal Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)

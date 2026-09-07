@@ -7,6 +7,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PalworldServerManager.Contracts;
 using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Host.Persistence.Migrations;
@@ -130,7 +131,8 @@ public static class WindowsHostComposition
     internal static async Task<HostNetworkGeneration> CreateNetworkGenerationAsync(HostDatabase database, Guid hostId, ISecureCredentialStore store,
         SecurityIdentifier serviceSid, SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe,
         System.Net.IPEndPoint peerEndpoint, System.Net.IPEndPoint pairingEndpoint, IPairingKeyExchangeFactory pairingFactory,
-        IPeerActivationHook activationHook, CancellationToken ct = default, TimeProvider? time = null)
+        IPeerActivationHook activationHook, CancellationToken ct = default, TimeProvider? time = null,
+        Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>>? discoveryFactory = null)
     {
         var generation = new HostNetworkGeneration(certificate);
         try
@@ -148,8 +150,9 @@ public static class WindowsHostComposition
             generation.AddListener(BuildLocalApplication(local, serviceSid, groupSid, certificate, pipe, generation.BindConnection));
             var peerApp = BuildPeerApplication(peer, certificate, peerEndpoint, generation.BindConnection); generation.AddListener(peerApp);
             var pairingApp = BuildPairingApplication(pairing, certificate, pairingEndpoint, generation.BindConnection); generation.AddListener(pairingApp);
-            await generation.StartAsync(ct).ConfigureAwait(false);
-            generation.SetBoundEndpoints(new(peerApp.Urls.Single()), new(pairingApp.Urls.Single())); return generation;
+            generation.ConfigurePeerEndpoints(() => (new(peerApp.Urls.Single()), new(pairingApp.Urls.Single())));
+            if (discoveryFactory is not null) generation.ConfigureDiscovery(discoveryFactory);
+            await generation.StartAsync(ct).ConfigureAwait(false); return generation;
         }
         catch (Exception startup)
         {
