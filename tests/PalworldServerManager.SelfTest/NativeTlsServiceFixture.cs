@@ -9,12 +9,12 @@ using static PalworldServerManager.SelfTest.WindowsPlatformTests;
 
 namespace PalworldServerManager.SelfTest;
 
-// Synthetic workload using production material/cache/publication adapters. Full authoritative
-// executable composition and principal ceremonies remain #42d2c/d3.
+// Synthetic workload using production material/cache/publication adapters, including rotation.
+// Separate executable/ceremony qualification does not turn this fixture into a live Owner action.
 internal sealed class NativeTlsServiceFixture : IDisposable
 {
-    internal sealed record Config(Guid HostId, string GroupSid, string PublicDirectory);
-    internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin);
+    internal sealed record Config(Guid HostId, Guid RotationHostId, string GroupSid, string PublicDirectory);
+    internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin, bool RotationQualified);
     private readonly IDisposable _runtime;
     private readonly Task _worker;
     internal NativeTlsServiceFixture(string service, string root, IDisposable runtime, CancellationToken stop)
@@ -36,6 +36,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 }
                 var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
                 using var identity = WindowsIdentity.GetCurrent();
+                await WindowsRotationCutoverQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 var store = new WindowsSecureCredentialStore(root, identity.User!);
                 var material = new WindowsHostCredentialMaterial(store);
                 // Actual service-account protected storage; this is a reload fixture, not a crash claim.
@@ -60,7 +61,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await new WindowsLocalHostTrustPublisher(config.PublicDirectory, identity.User!).PublishAsync(new LocalHostTrustPublication(config.HostId, publicKeyPin), stop);
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin);
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin, true);
                 File.WriteAllText(Path.Combine(root, "tls-ready.tmp"), JsonSerializer.Serialize(ready));
                 File.Move(Path.Combine(root, "tls-ready.tmp"), Path.Combine(root, "tls-ready.json"), true);
                 await Task.Delay(Timeout.Infinite, stop);
@@ -79,7 +80,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
         var startedPid = File.ReadAllLines(Path.Combine(root, "identity.txt"))[1];
         File.WriteAllText(Path.Combine(root, "tls-started.tmp"), startedPid);
         File.Move(Path.Combine(root, "tls-started.tmp"), Path.Combine(root, "tls-started.txt"), true);
-        var deadline = DateTime.UtcNow.AddSeconds(30);
+        var deadline = DateTime.UtcNow.AddSeconds(60);
         while (DateTime.UtcNow < deadline)
         {
             var error = Path.Combine(root, "tls-error.txt");
@@ -89,7 +90,11 @@ internal sealed class NativeTlsServiceFixture : IDisposable
             {
                 var ready = JsonSerializer.Deserialize<Ready>(File.ReadAllText(path))!;
                 var pid = int.Parse(File.ReadAllLines(Path.Combine(root, "identity.txt"))[1]);
-                if (ready.ProcessId == pid) return ready;
+                if (ready.ProcessId == pid)
+                {
+                    if (!ready.RotationQualified) throw new Exception("Service rotation qualification was skipped.");
+                    return ready;
+                }
             }
             await Task.Delay(50);
         }

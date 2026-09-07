@@ -170,6 +170,7 @@ public static partial class WindowsIntegration
         var publicDirectory = Path.Combine(root, "PublicTrust");
         var platform = new WindowsHostPlatform(service, group, hostRoot);
         var tlsHostId = Guid.NewGuid();
+        var rotationHostId = Guid.NewGuid();
         SecurityIdentifier? serviceSid = null;
         bool nativeGrantAdded = false;
         string? staleNativeName = null;
@@ -205,7 +206,7 @@ public static partial class WindowsIntegration
                 finally { File.Delete(publicPath); }
                 Check(!File.Exists(missingTarget), "Rejected trust symlink touched its destination.");
             }
-            File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, groupSid.Value, publicDirectory)));
+            File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, rotationHostId, groupSid.Value, publicDirectory)));
             var aces = descriptor.DiscretionaryAcl!.Cast<CommonAce>().ToArray();
             Check(aces.Length == 3 && aces.Single(a => a.SecurityIdentifier == groupSid).AccessMask == 0x14, "SCM DACL read-back failed.");
             Check(!await platform.IsEnabledAsync(), "Default boot-start not Manual.");
@@ -339,6 +340,13 @@ public static partial class WindowsIntegration
                 using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
                 Check(lease is not null, "Native cleanup lacks machine lease.");
                 new WindowsHostTlsCredentialCache(tlsHostId, serviceSid, new WindowsSecureCredentialStore(hostRoot, serviceSid)).ReconcileAsync([]).GetAwaiter().GetResult();
+            });
+            if (serviceSid is not null) Cleanup(() =>
+            {
+                using var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex);
+                Check(lease is not null, "Rotation native cleanup lacks machine lease.");
+                // Distinct tracked prefix, including cleanup after an interrupted fixture worker.
+                new WindowsHostTlsCredentialCache(rotationHostId, serviceSid, new WindowsSecureCredentialStore(hostRoot, serviceSid)).ReconcileAsync([]).GetAwaiter().GetResult();
             });
             if (serviceSid is not null) Cleanup(() =>
             {
