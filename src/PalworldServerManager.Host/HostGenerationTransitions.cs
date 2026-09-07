@@ -39,12 +39,30 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
         Require(HostGenerationPhase.New); lock (gate) phase = HostGenerationPhase.Transitioning;
         await StartCurrentAsync(token).ConfigureAwait(false); return true;
     }, ct);
-    internal Task<T> RunAsync<T>(Func<HostNetworkGeneration, CancellationToken, Task<T>> work, CancellationToken ct = default)
+    private Task<T> OnCurrentAsync<T>(Func<HostNetworkGeneration, CancellationToken, Task<T>> work, CancellationToken ct)
         => Serialized(async token =>
         {
             Require(HostGenerationPhase.Serving);
             return await current!.RunAsync(inner => work(current, inner), token).ConfigureAwait(false);
         }, ct);
+    internal (Uri Peer, Uri Pairing)? Endpoints
+    { get { lock (gate) return !stopRequested && phase == HostGenerationPhase.Serving ? current?.Endpoints : null; } }
+    internal Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> work, CancellationToken ct = default)
+        => OnCurrentAsync((_, token) => work(token), ct);
+    internal Task<PeerActivationDisposition> ActivateAsync(Guid peer, Uri address, CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.ActivateAsync(peer, address, token), ct);
+    internal Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.PairAsync(address, invitation, code, token), ct);
+    internal Task<PairingInvitation> CreateInvitationAsync(CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.CreateInvitationAsync(token), ct);
+    internal Task CancelInvitationAsync(Guid invitation, CancellationToken ct = default)
+        => OnCurrentAsync(async (generation, token) => { await generation.CancelInvitationAsync(invitation, token).ConfigureAwait(false); return true; }, ct);
+    internal Task<PeerRotationStatusExchange> CheckRotationAsync(Guid peer, Uri address, LocalPrincipalMutationActor? owner = null, CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.CheckRotationAsync(peer, address, owner, token), ct);
+    internal Task<PeerRotationProposalExchange> StageRotationAsync(Guid peer, Uri address, Guid rotation, CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.StageRotationAsync(peer, address, rotation, token), ct);
+    internal Task<PeerRotationReceiptExchange> ConfirmRotationAsync(Guid peer, Uri address, CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.ConfirmRotationAsync(peer, address, token), ct);
     internal Task<RoutineRotationPreparation> CutOverAsync(LocalPrincipalMutationActor owner, Guid rotation,
         IReadOnlyDictionary<Guid, Uri> addresses, CancellationToken ct = default) => Serialized(async token =>
     {

@@ -47,7 +47,7 @@ internal static class HostGenerationTransitionTests
         internal HostCredentialStateRepository State => F.Runtime.Credentials;
         internal LocalPrincipalMutationActor Owner => new(F.State.HostId, F.State.OwnerId, "native-owner", "fixture-public");
         internal string NextPin => WindowsPeerTls.PublicFingerprint(Next.Value);
-        internal Uri Address => Generations.Last().Endpoints!.Value.Peer;
+        internal Uri Address => Actions.Endpoints!.Value.Peer;
         internal Rig()
         {
             F.State.Time.Now = DateTimeOffset.UtcNow;
@@ -104,7 +104,7 @@ internal static class HostGenerationTransitionTests
     private static async Task Bind(Rig a, Rig b)
     {
         a.F.Bind(b.F); b.F.Bind(a.F);
-        Check(await a.Actions.RunAsync((g, ct) => g.ActivateAsync(b.F.State.HostId, b.Address, ct)) == PeerActivationDisposition.Activated);
+        Check(await a.Actions.ActivateAsync(b.F.State.HostId, b.Address) == PeerActivationDisposition.Activated);
     }
     private static Dictionary<Guid, Uri> Routes(Rig peer) => new() { [peer.F.State.HostId] = peer.Address };
 
@@ -112,13 +112,16 @@ internal static class HostGenerationTransitionTests
     {
         await using var a = new Rig(); await using var b = new Rig(); await a.Actions.StartAsync(); await b.Actions.StartAsync(); await Bind(a, b);
         var p = a.Prepare(); var old = a.Generations.Single();
+        using var invitation = await a.Actions.CreateInvitationAsync(); await a.Actions.CancelInvitationAsync(invitation.Id);
+        Check((await a.Actions.StageRotationAsync(b.F.State.HostId, b.Address, p.RotationId)).PeerHostId == b.F.State.HostId);
+        Check(await b.Actions.CheckRotationAsync(a.F.State.HostId, a.Address) == PeerRotationStatusExchange.Unchanged);
         var first = a.Actions.CutOverAsync(a.Owner, p.RotationId, Routes(b));
         var competing = a.Actions.CutOverAsync(a.Owner, p.RotationId, Routes(b));
         var result = await first; await Reject<AuthenticationException>(() => competing);
         Check(result.State == HostCredentialRotationState.CutOver && a.Actions.Phase == HostGenerationPhase.Serving && a.Starts == 2 && a.Reconciliations == 2);
         Check(a.Borrowed[0].Handle == IntPtr.Zero && old.ListenerStopped.IsCompleted);
         await a.LocalNegotiation(a.NextPin);
-        Check(await b.Actions.RunAsync((g, ct) => g.ConfirmRotationAsync(a.F.State.HostId, a.Address, ct)) == PeerRotationReceiptExchange.Confirmed);
+        Check(await b.Actions.ConfirmRotationAsync(a.F.State.HostId, a.Address) == PeerRotationReceiptExchange.Confirmed);
         Check(b.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint == a.NextPin);
         await Reject<AuthenticationException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, Routes(b)));
         Check(a.Starts == 2 && a.State.Read().Credentials.All(c => !c.Retired) && a.F.State.Count("HostCapabilityGrants") == 0);
@@ -129,7 +132,7 @@ internal static class HostGenerationTransitionTests
         await Reject<AuthenticationException>(() => a.Actions.CutOverAsync(a.Owner with { PublicVerificationKey = "stale" }, p.RotationId, Routes(b)));
         a.F.Bind(b.F); b.F.Bind(a.F);
         await Reject<AuthenticationException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, Routes(b)));
-        await a.Actions.RunAsync((g, ct) => g.ActivateAsync(b.F.State.HostId, b.Address, ct));
+        await a.Actions.ActivateAsync(b.F.State.HostId, b.Address);
         await Reject<AuthenticationException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, new Dictionary<Guid, Uri>()));
         Check(a.Starts == 1 && a.Actions.Phase == HostGenerationPhase.Serving && a.Borrowed.Single().Handle != IntPtr.Zero);
         Check(a.State.Read().CurrentReference == p.OldReference); await a.LocalNegotiation(a.F.Pin);
@@ -143,7 +146,7 @@ internal static class HostGenerationTransitionTests
             await Reject<IOException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, new Dictionary<Guid, Uri>()));
             Check(a.Actions.Phase == HostGenerationPhase.Quiesced && a.Starts == 1 && a.Borrowed.Single().Handle == IntPtr.Zero);
             Check(a.State.Read().CurrentReference == (afterCommit ? p.NewReference : p.OldReference));
-            await Reject<InvalidOperationException>(() => a.Actions.RunAsync((g, ct) => g.CreateInvitationAsync(ct)));
+            await Reject<InvalidOperationException>(() => a.Actions.CreateInvitationAsync());
             a.FailNewPublication = a.FailPendingPublication = false; await a.Actions.RecoverAsync();
             Check(a.Starts == 2 && a.Actions.Phase == HostGenerationPhase.Serving);
             await a.LocalNegotiation(afterCommit ? a.NextPin : a.F.Pin);
@@ -184,16 +187,25 @@ internal static class HostGenerationTransitionTests
         Check(a.Actions.Phase == HostGenerationPhase.Stopped && a.Borrowed.Single().Handle == IntPtr.Zero);
         await Reject<OperationCanceledException>(() => a.Actions.StartAsync());
         await Reject<OperationCanceledException>(() => a.Actions.RecoverAsync());
+        Check(a.Actions.Endpoints is null);
+        using var code = new RedactedSecret(new byte[10]); var address = new Uri("https://127.0.0.1:1"); var peer = Guid.NewGuid();
+        await Reject<OperationCanceledException>(() => a.Actions.ActivateAsync(peer, address));
+        await Reject<OperationCanceledException>(() => a.Actions.PairAsync(address, peer, code));
+        await Reject<OperationCanceledException>(() => a.Actions.CreateInvitationAsync());
+        await Reject<OperationCanceledException>(() => a.Actions.CancelInvitationAsync(peer));
+        await Reject<OperationCanceledException>(() => a.Actions.CheckRotationAsync(peer, address));
+        await Reject<OperationCanceledException>(() => a.Actions.StageRotationAsync(peer, address, Guid.NewGuid()));
+        await Reject<OperationCanceledException>(() => a.Actions.ConfirmRotationAsync(peer, address));
     }
     public static async Task ConcurrentWorkAndStopWaitForFailureCleanup()
     {
         var a = new Rig(); await a.Actions.StartAsync(); var entered = Signal(); var canceled = Signal(); var release = Signal(); int second = 0;
-        var first = a.Actions.RunAsync(async (_, ct) =>
+        var first = a.Actions.RunAsync(async ct =>
         {
             using var r = ct.Register(() => { canceled.TrySetResult(); throw new IOException("Injected action cancellation failure."); });
             entered.TrySetResult(); await release.Task; a.F.State.Execute("CREATE TABLE TransitionFinished (Value INTEGER); INSERT INTO TransitionFinished VALUES(1);"); return true;
         });
-        var queued = a.Actions.RunAsync((_, _) => { Interlocked.Increment(ref second); return Task.FromResult(true); });
+        var queued = a.Actions.RunAsync(_ => { Interlocked.Increment(ref second); return Task.FromResult(true); });
         try
         {
             await Bounded(entered.Task); var stops = Enumerable.Range(0, 8).Select(_ => a.Actions.StopAsync()).ToArray();
@@ -210,7 +222,7 @@ internal static class HostGenerationTransitionTests
         var a = new Rig(); await a.Actions.StartAsync(); await a.Generations.Single().StopAsync();
         await Reject<AggregateException>(() => a.Actions.Completion);
         Check(a.Actions.Phase == HostGenerationPhase.Faulted && a.Borrowed.Single().Handle == IntPtr.Zero);
-        await Reject<OperationCanceledException>(() => a.Actions.RunAsync((g, ct) => g.CreateInvitationAsync(ct)));
+        await Reject<OperationCanceledException>(() => a.Actions.CreateInvitationAsync());
         await a.DisposeFailed();
     }
     public static async Task ReplacementOrReconciliationFailureNeverRestoresOld()
@@ -241,8 +253,8 @@ internal static class HostGenerationTransitionTests
         try
         {
             a.F.State.Execute("CREATE TRIGGER transition_audit_failure BEFORE INSERT ON AuditEvents WHEN NEW.EventKind='PairingAttemptFailed' BEGIN SELECT RAISE(ABORT,'fixture'); END;");
-            using var invitation = await b.Actions.RunAsync((g, ct) => g.CreateInvitationAsync(ct));
-            await Reject<RpcException>(() => a.Actions.RunAsync((g, ct) => g.PairAsync(b.Generations.Single().Endpoints!.Value.Pairing, invitation.Id, invitation.Code, ct)));
+            using var invitation = await b.Actions.CreateInvitationAsync();
+            await Reject<RpcException>(() => a.Actions.PairAsync(b.Actions.Endpoints!.Value.Pairing, invitation.Id, invitation.Code));
             var p = a.Prepare();
             await Reject<AggregateException>(() => a.Actions.CutOverAsync(a.Owner, p.RotationId, new Dictionary<Guid, Uri>()));
             Check(a.Actions.Phase == HostGenerationPhase.Faulted && a.Starts == 1 && a.Reconciliations == 1 && a.State.Read().CurrentReference == p.OldReference);

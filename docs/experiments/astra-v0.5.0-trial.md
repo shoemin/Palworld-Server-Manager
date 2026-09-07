@@ -2226,3 +2226,8 @@ All forty registry entries audited across the full resulting graph: ARCH-001/002
 ### #44w Review Pass A completion
 
 Exact executable/test HEAD `3637b90cb8d241435867cae711ffa081af611986`: CI `34086930933` PASS for all three required jobs and Docs `34086932746` PASS. Local zero-warning Release build, 333/333 ordinary tests, nine focused transition scenarios, actual UI and strict Docs PASS. All eleven changed files, forty invariants and stale-scope checks reviewed; subsequent deltas are the reviewed documentation/ledger only. One correction/verification cycle, no failed check or new product escape. A clean before PR creation. Full #44, installed initiation/configuration, retirement and required crash/physical acceptance remain incomplete.
+
+
+### #44w Review Pass B finding and correction
+
+Fresh exact-PR review began at `3ff43d36d115a067c04b5300f273beb0b5bbe4fb` against unchanged base `63902737a5c6b0cb4bc21d07609fadb77eaaa641`. B1 found that the generic work callback received the current generation object, allowing trusted callers to retain/reuse it despite the preflight's private-generation contract. Replaced that exposed callback with cancellation-only work and named pairing/activation/status/proposal/receipt/invitation helpers; only public endpoint metadata leaves the owner. The generation-taking adapter is private. Updated actual tests to use the narrowed API. This is an unmerged B finding, not a post-merge escape. Two correction/verification cycles total; corrected full local/remote validation and fresh B completion remain required.
