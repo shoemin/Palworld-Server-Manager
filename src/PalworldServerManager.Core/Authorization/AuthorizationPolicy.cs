@@ -81,6 +81,25 @@ public sealed class AuthorizationPolicy
         var ss=preset.Servers.Select(p=>IssueServer(issuer,p.GrantId,p.Grantee,p.Capability,p.Target,p.Rights,root?null:p.SourceGrantId,utc)).ToArray();
         return new(Array.AsReadOnly(hs),Array.AsReadOnly(ss));
     }
+    // Historical selection is audit context, never a parent or a revived grant. This is
+    // ordinary Owner issuance; credential replacement itself is a separate workflow.
+    private void RequireHistoricalRoot(ActorRef issuer,Guid peerId,CapabilityGrant? old)
+    {
+        var peer=ActorRef.RemoteManager(peerId);
+        if(!IsOwner(issuer)||!IsActive(peer)||old is null||old.GranteeActor!=peer||
+            old.DerivedFromGrantId is not null||old.InvalidatedUtc is null)
+            throw new UnauthorizedAccessException("Owner historical root reissue refused.");
+    }
+    public HostCapabilityGrant ReissueHostRoot(ActorRef issuer,Guid id,Guid peerId,Guid historicalId,DateTimeOffset utc)
+    {
+        hosts.TryGetValue(historicalId,out var old);RequireHistoricalRoot(issuer,peerId,old);
+        return IssueHost(issuer,id,old!.GranteeActor,old.Capability,old.TargetHostId,old.Rights,null,utc);
+    }
+    public ServerCapabilityGrant ReissueServerRoot(ActorRef issuer,Guid id,Guid peerId,Guid historicalId,DateTimeOffset utc)
+    {
+        servers.TryGetValue(historicalId,out var old);RequireHistoricalRoot(issuer,peerId,old);
+        return IssueServer(issuer,id,old!.GranteeActor,old.Capability,old.Target,old.Rights,null,utc);
+    }
     // Precise per-type effect plans, not writes. The later persistence unit must apply each
     // plan atomically with its audit/revision under a fresh policy transaction.
     private static IReadOnlyList<Guid> Subtree<T>(Guid root,Dictionary<Guid,T> forest) where T:CapabilityGrant

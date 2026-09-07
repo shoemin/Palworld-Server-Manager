@@ -13,6 +13,17 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--historical-reissue-probe"])
+    {
+        await HistoricalGrantReissueTests.PureRulesRequireOwnerAndHistoricalRoots();
+        await HistoricalGrantReissueTests.NewRootsPreserveHistoryAndActualAudit();
+        await HistoricalGrantReissueTests.InvalidSelectionsAndNonOwnerHaveNoEffects();
+        await HistoricalGrantReissueTests.CurrentPeerStateIsRequired();
+        await HistoricalGrantReissueTests.LaterAuditAndAuthorityMutationRollBack();
+        await HistoricalGrantReissueTests.ConcurrentSelectionAndFreshExplicitRepeat();
+        await HistoricalGrantReissueTests.EmptyAndCancelledCallsDoNotWrite();
+        Console.WriteLine("PASS canonical historical grant reissue."); return 0;
+    }
     if (args is ["--role-preset-probe"])
     {
         await RolePresetTests.ImmutableShapesAndPureCanonicalExpansion();
@@ -592,6 +603,13 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Historical reissue PureRulesRequireOwnerAndHistoricalRoots", HistoricalGrantReissueTests.PureRulesRequireOwnerAndHistoricalRoots),
+    ("Historical reissue NewRootsPreserveHistoryAndActualAudit", HistoricalGrantReissueTests.NewRootsPreserveHistoryAndActualAudit),
+    ("Historical reissue InvalidSelectionsAndNonOwnerHaveNoEffects", HistoricalGrantReissueTests.InvalidSelectionsAndNonOwnerHaveNoEffects),
+    ("Historical reissue CurrentPeerStateIsRequired", HistoricalGrantReissueTests.CurrentPeerStateIsRequired),
+    ("Historical reissue LaterAuditAndAuthorityMutationRollBack", HistoricalGrantReissueTests.LaterAuditAndAuthorityMutationRollBack),
+    ("Historical reissue ConcurrentSelectionAndFreshExplicitRepeat", HistoricalGrantReissueTests.ConcurrentSelectionAndFreshExplicitRepeat),
+    ("Historical reissue EmptyAndCancelledCallsDoNotWrite", HistoricalGrantReissueTests.EmptyAndCancelledCallsDoNotWrite),
     ("Role presets ImmutableShapesAndPureCanonicalExpansion", RolePresetTests.ImmutableShapesAndPureCanonicalExpansion),
     ("Role presets MixedPresetPersistsExactRowsAndAudit", RolePresetTests.MixedPresetPersistsExactRowsAndAudit),
     ("Role presets AnyUnauthorizedEntryRejectsWholePreset", RolePresetTests.AnyUnauthorizedEntryRejectsWholePreset),
