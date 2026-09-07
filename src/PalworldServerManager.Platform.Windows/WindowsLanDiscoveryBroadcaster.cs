@@ -11,7 +11,7 @@ public sealed class WindowsLanDiscoveryBroadcaster : ILanDiscoveryBroadcaster
     private readonly int port;
     public WindowsLanDiscoveryBroadcaster(int port) { ValidatePort(port); this.port = port; }
     public ValueTask<int> BroadcastAsync(ReadOnlyMemory<byte> publicPacket, CancellationToken cancellationToken) =>
-        RoundAsync(port, publicPacket, new WindowsLanInterfaceSource().Read,
+        RoundAsync(port, publicPacket, WindowsLanAvailability.ReadLinks,
             link => new DatagramSender(link.LocalAddress, link.InterfaceIndex), cancellationToken);
 
     internal interface IDatagramSender : IDisposable
@@ -48,7 +48,7 @@ public sealed class WindowsLanDiscoveryBroadcaster : ILanDiscoveryBroadcaster
             }
             catch (Exception ex) { failure = ex; }
             try { sender?.Dispose(); }
-            catch (Exception ex) { failure = failure is null ? ex : new AggregateException(failure, ex); }
+            catch (Exception ex) { failure = failure is null ? new AggregateException("Discovery sender cleanup failed.", ex) : new AggregateException(failure, ex); }
             if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
         }
         token.ThrowIfCancellationRequested(); return accepted;
@@ -61,33 +61,34 @@ public sealed class WindowsLanDiscoveryBroadcaster : ILanDiscoveryBroadcaster
     {
         private readonly Socket socket;
         internal int SourcePort { get; }
-        internal SocketConfiguration Configuration => new(Read(SocketOptionLevel.IP, (SocketOptionName)UnicastInterfaceOption),
-            Read(SocketOptionLevel.IP, SocketOptionName.IpTimeToLive), Read(SocketOptionLevel.Socket, SocketOptionName.DontRoute) != 0,
-            Read(SocketOptionLevel.Socket, SocketOptionName.Broadcast) != 0, Read(SocketOptionLevel.IP, SocketOptionName.DontFragment) != 0);
+        internal SocketConfiguration Configuration => ReadConfiguration(socket);
+        private static SocketConfiguration ReadConfiguration(Socket socket) => new(Read(socket, SocketOptionLevel.IP, (SocketOptionName)UnicastInterfaceOption),
+            Read(socket, SocketOptionLevel.IP, SocketOptionName.IpTimeToLive), Read(socket, SocketOptionLevel.Socket, SocketOptionName.DontRoute) != 0,
+            Read(socket, SocketOptionLevel.Socket, SocketOptionName.Broadcast) != 0, Read(socket, SocketOptionLevel.IP, SocketOptionName.DontFragment) != 0);
         internal DatagramSender(IPAddress source, int index)
         {
             ArgumentNullException.ThrowIfNull(source);
             if (source.AddressFamily != AddressFamily.InterNetwork || source.Equals(IPAddress.Any) || source.GetAddressBytes()[0] is 0 or >= 224 || index is < 1 or > 0x00ffffff)
                 throw new ArgumentException("An explicit IPv4 source and interface are required.");
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            try
+            var sourcePort = 0;
+            socket = WindowsLanAvailability.CreateSocket(() => new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp), candidate =>
             {
-                socket.ExclusiveAddressUse = true;
-                socket.SetSocketOption(SocketOptionLevel.IP, (SocketOptionName)UnicastInterfaceOption, IPAddress.HostToNetworkOrder(index));
-                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.IpTimeToLive, 1);
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontRoute, true);
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
-                socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
-                socket.Bind(new IPEndPoint(new IPAddress(source.GetAddressBytes()), 0));
-                if (Configuration != new SocketConfiguration(index, 1, true, true, true))
+                candidate.ExclusiveAddressUse = true;
+                candidate.SetSocketOption(SocketOptionLevel.IP, (SocketOptionName)UnicastInterfaceOption, IPAddress.HostToNetworkOrder(index));
+                candidate.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.IpTimeToLive, 1);
+                candidate.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontRoute, true);
+                candidate.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Broadcast, true);
+                candidate.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, true);
+                candidate.Bind(new IPEndPoint(new IPAddress(source.GetAddressBytes()), 0));
+                if (ReadConfiguration(candidate) != new SocketConfiguration(index, 1, true, true, true))
                     throw new IOException("Required LAN discovery send constraints are unavailable.");
-                SourcePort = ((IPEndPoint)socket.LocalEndPoint!).Port;
-            }
-            catch { socket.Dispose(); throw; }
+                sourcePort = ((IPEndPoint)candidate.LocalEndPoint!).Port;
+            });
+            SourcePort = sourcePort;
         }
-        private int Read(SocketOptionLevel level, SocketOptionName name) => Convert.ToInt32(socket.GetSocketOption(level, name));
+        private static int Read(Socket socket, SocketOptionLevel level, SocketOptionName name) => Convert.ToInt32(socket.GetSocketOption(level, name));
         public ValueTask<int> SendAsync(ReadOnlyMemory<byte> payload, IPEndPoint destination, CancellationToken cancellationToken) =>
-            socket.SendToAsync(payload, SocketFlags.None, destination, cancellationToken);
+            WindowsLanAvailability.InvokeAsync(() => socket.SendToAsync(payload, SocketFlags.None, destination, cancellationToken));
         public void Dispose() => socket.Dispose();
     }
 }

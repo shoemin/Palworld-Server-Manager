@@ -137,6 +137,12 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--windows-lan-availability-probe"])
+    {
+        await WindowsLanAvailabilityTests.ExactOriginsAndSocketSetupCleanup(); await WindowsLanAvailabilityTests.ReceiverKeepsCallbackAndCleanupFailuresFatal();
+        await WindowsLanAvailabilityTests.RoundRequiresCleanOwnedTemporaryFailure();
+        Console.WriteLine("Windows LAN availability probe passed."); return 0;
+    }
     if (args is ["--windows-lan-broadcaster-probe"])
     {
         await WindowsLanBroadcasterTests.BoundedFreshRoundAndPublicPacket(); await WindowsLanBroadcasterTests.FailureCancellationAndOwnedCleanup();
@@ -425,6 +431,9 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
     ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
     ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
+    ("Windows discovery classifies exact IO errors only after socket setup cleanup", WindowsLanAvailabilityTests.ExactOriginsAndSocketSetupCleanup),
+    ("Windows discovery never downgrades callback or cancellation cleanup failures", WindowsLanAvailabilityTests.ReceiverKeepsCallbackAndCleanupFailuresFatal),
+    ("Windows discovery temporary send failure requires clean owned disposal", WindowsLanAvailabilityTests.RoundRequiresCleanOwnedTemporaryFailure),
     ("Windows discovery rounds copy public data and refresh exact bounded LAN links", WindowsLanBroadcasterTests.BoundedFreshRoundAndPublicPacket),
     ("Windows discovery sends preserve failure cancellation and owned cleanup", WindowsLanBroadcasterTests.FailureCancellationAndOwnedCleanup),
     ("Windows discovery sender constrains the real interface and loopback datagram", WindowsLanBroadcasterTests.ActualWindowsSocketConstraints),
