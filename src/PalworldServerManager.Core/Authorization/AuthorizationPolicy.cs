@@ -70,6 +70,17 @@ public sealed class AuthorizationPolicy
         var grant=new ServerCapabilityGrant(id,grantee,capability,target,rights,issuer,sourceGrantId,utc);
         if(!MayIssue(issuer,grant,servers))throw new UnauthorizedAccessException("Grant issuance refused.");return grant;
     }
+    public PresetExpansion ExpandPreset(ActorRef issuer,RolePreset preset,DateTimeOffset utc)
+    {
+        ArgumentNullException.ThrowIfNull(preset);
+        if(!IsActive(issuer))throw new UnauthorizedAccessException("Active preset applier required.");
+        // Owner entries are roots by contract. A non-Owner must use an exact source already
+        // held in THIS snapshot; no new candidate can bootstrap another entry's authority.
+        var root=IsOwner(issuer);
+        var hs=preset.Hosts.Select(p=>IssueHost(issuer,p.GrantId,p.Grantee,p.Capability,p.TargetHostId,p.Rights,root?null:p.SourceGrantId,utc)).ToArray();
+        var ss=preset.Servers.Select(p=>IssueServer(issuer,p.GrantId,p.Grantee,p.Capability,p.Target,p.Rights,root?null:p.SourceGrantId,utc)).ToArray();
+        return new(Array.AsReadOnly(hs),Array.AsReadOnly(ss));
+    }
     // Precise per-type effect plans, not writes. The later persistence unit must apply each
     // plan atomically with its audit/revision under a fresh policy transaction.
     private static IReadOnlyList<Guid> Subtree<T>(Guid root,Dictionary<Guid,T> forest) where T:CapabilityGrant

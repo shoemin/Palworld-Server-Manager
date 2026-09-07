@@ -1,0 +1,37 @@
+using PalworldServerManager.Core.Authorization;
+using PalworldServerManager.Core.Security;
+
+namespace PalworldServerManager.Host.Persistence;
+
+public sealed record PresetGrantResult(Guid? AuditBatchId,long Revision,IReadOnlyList<Guid> HostGrantIds,IReadOnlyList<Guid> ServerGrantIds);
+
+public sealed partial class GrantPolicyRepository
+{
+    public PresetGrantResult ApplyPreset(LocalPrincipalMutationActor actor,long expectedRevision,RolePreset preset,CancellationToken ct=default)
+    {
+        ArgumentNullException.ThrowIfNull(actor);ArgumentNullException.ThrowIfNull(preset);ct.ThrowIfCancellationRequested();
+        using var c=Open();using var tx=c.BeginTransaction(deferred:false);
+        var before=Read(c,tx);RequireLocal(c,tx,actor,before);RequireRevision(expectedRevision,before.Revision);
+        var now=time.GetUtcNow();var actual=ActorRef.LocalPrincipal(actor.LocalPrincipalId);
+        var expansion=before.Policy.ExpandPreset(actual,preset,now);
+        var grants=expansion.Hosts.Cast<CapabilityGrant>().Concat(expansion.Servers).ToArray();
+        ct.ThrowIfCancellationRequested();
+        if(grants.Length==0)return new(null,before.Revision,Array.Empty<Guid>(),Array.Empty<Guid>());
+        var batch=Guid.NewGuid();
+        foreach(var grant in grants)
+        {
+            Insert(c,tx,grant);
+            // Correlation only, not a stored role or a long-running operation identity.
+            // Never include the caller's free-text presentation label in audit/diagnostics.
+            Audit(c,tx,actual,grant,"CapabilityGrantIssued",now,1,"RolePreset:"+Id(batch));
+        }
+        var after=Read(c,tx);RequireLocal(c,tx,actor,after);RequireRevision(checked(before.Revision+grants.Length),after.Revision);
+        foreach(var grant in grants)
+        {
+            CapabilityGrant saved=grant is HostCapabilityGrant?after.HostGrants.Single(g=>g.GrantId==grant.GrantId):after.ServerGrants.Single(g=>g.GrantId==grant.GrantId);
+            if(saved!=grant)throw new UnauthorizedAccessException("Preset grant changed before commit.");
+        }
+        ct.ThrowIfCancellationRequested();tx.Commit();
+        return new(batch,after.Revision,Array.AsReadOnly(expansion.Hosts.Select(g=>g.GrantId).ToArray()),Array.AsReadOnly(expansion.Servers.Select(g=>g.GrantId).ToArray()));
+    }
+}
