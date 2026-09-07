@@ -422,9 +422,16 @@ internal static class ApplicationUpdateServiceTests
             var profile = new ServerProfile { Name = "Running Alone Test", InstallPath = installPath };
             await registry.AddAsync(profile);
 
-            using var fake = SyntheticPalServerHarness.Start(installPath, waitSeconds: 10, exitCode: 0);
+            using var fake = SyntheticPalServerHarness.Start(installPath, waitSeconds: 30, exitCode: 0);
             try
             {
+                // Process.Start can return before Windows exposes the new process's module
+                // path to ProcessInspection. Establish the real fixture precondition first.
+                var readiness = System.Diagnostics.Stopwatch.StartNew();
+                while (!processes.IsRunning(profile) && !fake.HasExited && readiness.Elapsed < TimeSpan.FromSeconds(5))
+                    await Task.Delay(25);
+                True(!fake.HasExited, "the synthetic process exited before readiness" + (fake.HasExited ? $" (exit {fake.ExitCode})" : ""));
+                True(processes.IsRunning(profile), "the synthetic process was not observable within its readiness deadline");
                 var handoff = new RuntimeHandoffService(paths, logger);
                 var backend = new FakeUpdateBackend
                 {

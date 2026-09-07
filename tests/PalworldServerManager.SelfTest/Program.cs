@@ -11,6 +11,12 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--update-running-probe"])
+    {
+        await ApplicationUpdateServiceTests.TestARunningServerAloneDoesNotBlockApply();
+        await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
+        Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
+    }
     if (args is ["--rotation-staging-probe"])
     {
         await RotationStagingTests.SenderSequenceAndOwnerGate(); await RotationStagingTests.ReceiverOrderingReplayAndRollback();
