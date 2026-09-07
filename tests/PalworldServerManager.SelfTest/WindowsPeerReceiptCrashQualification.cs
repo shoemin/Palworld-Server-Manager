@@ -157,7 +157,7 @@ internal static partial class WindowsPeerReceiptCrashQualification
             Check(promoted.CurrentPeerPin == proposal.NewFingerprint && promoted.PendingRotation == rotation.RotationId,
                 "Actual New TLS did not leave an undelivered receipt.");
             await SecureStoreTests.Reject<AuthenticationException>(() => sender.CompleteRotationAsync(a.Actor, rotation.RotationId, ct));
-            await receiver.Kill(); // Actual owned process termination, without Host/generation Dispose.
+            await receiver.Kill(requireRunning: true); // Actual termination, without Host/generation Dispose.
             using (var lease = Lease(b.Config))
             {
                 b.RequireFixture(); b.RequireNoGrants(); var persisted = b.Peers.Read(aId)!;
@@ -165,7 +165,8 @@ internal static partial class WindowsPeerReceiptCrashQualification
                     persisted.PendingRotationId == rotation.RotationId && persisted.PendingFingerprint is null && persisted.PendingRotationExpiresUtc is null,
                     "Process exit lost durable promotion or retained receipt.");
             }
-            receiver.Dispose(); receiver = new Child(b.Config); var restarted = await receiver.Read(ct);
+            receiver.Dispose(); receiver = null;
+            receiver = new Child(b.Config); var restarted = await receiver.Read(ct);
             Check(restarted.Kind == "ready" && restarted.Instance != first.Instance && restarted.Pin == first.Pin && restarted.Key == first.Key &&
                 restarted.CurrentPeerPin == proposal.NewFingerprint && restarted.PendingRotation == rotation.RotationId,
                 "Fresh process changed protected/native identity or lost receipt.");
@@ -185,8 +186,8 @@ internal static partial class WindowsPeerReceiptCrashQualification
         finally
         {
             // Failure to observe exit/closure must stop cleanup; never delete possibly borrowed material.
-            if (receiver is not null) { await receiver.Kill(); receiver.Dispose(); }
-            if (sender is not null) await sender.StopAsync();
+            try { if (receiver is not null) { await receiver.Kill(); receiver.Dispose(); } }
+            finally { if (sender is not null) await sender.StopAsync(); }
             if (initialized)
             {
                 using var lease = Lease(b.Config); await b.Cleanup(); await a.Cleanup();

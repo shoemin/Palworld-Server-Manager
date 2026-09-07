@@ -21,7 +21,11 @@ internal static partial class WindowsPeerReceiptCrashQualification
         var line = new StringBuilder(); var one = new char[1];
         while (line.Length <= 4096)
         {
-            if (await reader.ReadAsync(one.AsMemory(), ct) == 0) throw new EndOfStreamException("Fixture control ended.");
+            if (await reader.ReadAsync(one.AsMemory(), ct) == 0)
+            {
+                if (line.Length != 0) throw new InvalidDataException("Truncated fixture control.");
+                throw new EndOfStreamException("Fixture control ended.");
+            }
             if (one[0] == '\n') return line.ToString().TrimEnd('\r');
             line.Append(one[0]);
         }
@@ -64,9 +68,14 @@ internal static partial class WindowsPeerReceiptCrashQualification
             RequireLoopback(address); await process.StandardInput.WriteLineAsync(JsonSerializer.Serialize(new CommandFrame(action, address)).AsMemory(), ct);
             await process.StandardInput.FlushAsync(ct); return await Read(ct);
         }
-        internal async Task Kill()
+        internal async Task Kill(bool requireRunning = false)
         {
-            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            if (requireRunning)
+            {
+                Check(!process.HasExited, "Crash target exited before explicit termination.");
+                process.Kill(entireProcessTree: true);
+            }
+            else if (!process.HasExited) process.Kill(entireProcessTree: true);
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
             Check(process.HasExited, "Termination did not finish."); await stderr.WaitAsync(TimeSpan.FromSeconds(2));
         }
