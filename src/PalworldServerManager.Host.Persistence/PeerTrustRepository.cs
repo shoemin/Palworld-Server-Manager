@@ -90,11 +90,14 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
         return false;
     }
     public PeerBindingResult RecordVerifiedBinding(Guid peer, string peerFingerprint, string verifiedLocalFingerprint)
+        => RecordBindingCore(peer, peerFingerprint, verifiedLocalFingerprint, null);
+    private PeerBindingResult RecordBindingCore(Guid peer, string peerFingerprint, string verifiedLocalFingerprint, LocalPrincipalMutationActor? owner)
     {
         Id(peer); Fingerprint(peerFingerprint); Fingerprint(verifiedLocalFingerprint);
         if (peer == hostId) throw new ArgumentException("A Host cannot pair with itself.");
         using var c = Open(); using var tx = c.BeginTransaction(deferred: false);
         if (RequireHost(c, tx) != verifiedLocalFingerprint) throw new InvalidOperationException("Local credential changed during pairing.");
+        if (owner is not null) RequirePairingOwner(c, tx, owner);
         var now = time.GetUtcNow(); Expire(c, tx, now);
         var existing = Read(c, tx, peer); PeerBindingResult result;
         if (existing is null)

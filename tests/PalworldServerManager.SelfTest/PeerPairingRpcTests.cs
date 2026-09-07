@@ -166,6 +166,55 @@ internal static class PeerPairingRpcTests
         Check(failingFactory.Created == 1 && failingFactory.Disposed == 0);
         Check(HostDatabase.QueryScalarLong(initialization.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
     }
+    // The wrapper returns only the genuine provider's verified identity; it never creates proof.
+    private sealed class OwnerChangeFactory(IPairingKeyExchangeFactory inner) : IPairingKeyExchangeFactory
+    {
+        internal Action AfterVerification = () => { };
+        public IPairingKeyExchange Start(PairingRole role, byte[] code, byte[] nonce, CancellationToken ct = default)
+            => new Exchange(inner.Start(role, code, nonce, ct), this);
+        private sealed class Exchange(IPairingKeyExchange inner, OwnerChangeFactory owner) : IPairingKeyExchange
+        {
+            public PairingExchangeState State => inner.State;
+            public byte[] InitialMessage => inner.InitialMessage;
+            public byte[] ReceivePeerMessage(byte[] value, CancellationToken ct = default) => inner.ReceivePeerMessage(value, ct);
+            public byte[] ConfirmPeer(byte[] value, CancellationToken ct = default) => inner.ConfirmPeer(value, ct);
+            public byte[] CreateIdentityBinding(Guid host, byte[] key, CancellationToken ct = default) => inner.CreateIdentityBinding(host, key, ct);
+            public VerifiedPairingIdentity VerifyIdentityBinding(byte[] value, CancellationToken ct = default)
+            { var verified = inner.VerifyIdentityBinding(value, ct); owner.AfterVerification(); return verified; }
+            public void Dispose() => inner.Dispose();
+        }
+    }
+    private static async Task NativeOwnerAuthorization(IPairingKeyExchangeFactory provider)
+    {
+        foreach (var changeOwner in new[] { false, true })
+        {
+            var wrapper = new OwnerChangeFactory(provider);
+            await using var a = new Fixture(wrapper); await using var b = new Fixture(provider);
+            var verified = 0;
+            wrapper.AfterVerification = () =>
+            {
+                Interlocked.Increment(ref verified);
+                if (changeOwner) a.State.Execute("UPDATE LocalPrincipals SET PublicVerificationKey='changed' WHERE IsOwner=1;");
+            };
+            await b.Start(); using var invitation = b.Runtime.CreateInvitation();
+            var client = WindowsHostComposition.CreatePeerPairingClient(a.Runtime, a.Certificate.Value);
+            if (changeOwner)
+            {
+                try { await client.PairForOwnerAsync(b.Address, invitation.Code, LocalOwnerPairingTests.Actor(a.State)); throw new Exception("Changed Owner retained pairing permission."); }
+                catch (System.Security.Authentication.AuthenticationException) { }
+                Check(a.State.Count("TrustedManagers") == 0 && b.State.Count("TrustedManagers") == 0);
+            }
+            else
+            {
+                var result = await client.PairForOwnerAsync(b.Address, invitation.Code, LocalOwnerPairingTests.Actor(a.State));
+                Check(result.Local.Disposition == PeerBindingDisposition.PeerBoundCreated && result.Remote == PeerPairingResult.PeerBound);
+                Check(a.State.Repository.Read(b.State.HostId)!.CurrentFingerprint == b.Pin && b.State.Repository.Read(a.State.HostId)!.CurrentFingerprint == a.Pin);
+            }
+            Check(verified == 1 && a.State.Count("HostCapabilityGrants") == 0 && a.State.Count("ServerCapabilityGrants") == 0
+                && b.State.Count("HostCapabilityGrants") == 0 && b.State.Count("ServerCapabilityGrants") == 0);
+        }
+        Console.WriteLine("PASS actual native Owner pairing: exact verified proof, fresh final Owner credential check, no binding after credential change and zero grants.");
+    }
     public static async Task Native(string path)
     {
         using var provider = new WindowsSpake2Provider(path, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))));
@@ -208,6 +257,7 @@ internal static class PeerPairingRpcTests
             Check(HostDatabase.QueryScalarLong(a.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
             Check(HostDatabase.QueryScalarLong(b.State.Writer, "SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PairingAttemptFailed';") == 1);
         }
+        await NativeOwnerAuthorization(provider);
         await InvalidVerifiedBinding(provider, false); await InvalidVerifiedBinding(provider, true);
         await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
         {
