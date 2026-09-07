@@ -2239,3 +2239,10 @@ B rereview of corrected executable/test HEAD `4c6824e592406ab80d790946af6f9b97d3
 ### #44w Review Pass B completion
 
 Corrected executable/test HEAD `4c6824e592406ab80d790946af6f9b97d3da88ff`: all-three-job CI `34087837351` and Docs `34087838844` PASS. Corrected local 333/333, nine focused transition scenarios including every named helper's closed admission, actual UI, strict Docs and zero-warning build PASS. Full corrected eleven-file/all-forty review and stale-reference checks clean. B1 is resolved; two total correction/verification cycles, no failed check or new escaped product defect. B clean. Only this reviewed ledger delta follows corrected executable/test qualification; final exact-HEAD Docs and unchanged base/HEAD gate remain before merge. Concrete Windows transition composition/service qualification is next; full #44 is not complete.
+
+
+### #44w merged checkpoint
+
+PR #113 final HEAD `d890ebee9ff69b24c3e7b99a5bdb2838271abeea` merged as `d554552c57d95fb5691889e52331658e3e5f660d` after corrected all-three-job CI `34087837351` at executable/test HEAD `4c6824e592406ab80d790946af6f9b97d3da88ff`, final Docs `34088165032` at exact final PR HEAD and unchanged base/HEAD gate PASS. Corrected local 333/333, nine focused scenarios, UI, strict Docs and zero-warning build PASS. #44w is SHADOW DONE for serialized generation transition and explicit recovery. Two correction/verification cycles (A1/B1), no failed check or new product escape; B's callback-handle exposure was corrected before merge and fully requalified.
+
+Fifty-three PRs #61-#113 merged; ten canonical children complete; cumulative correction/verification cycles 143. #44 body unchanged and all 39 Project items read-only (#44 Todo/Backlog). #44 remains IN PROGRESS. Next is concrete Windows transition composition and actual service-account qualification, then installed local initiation/address foundations, retirement and required integration/field evidence. No outside reviewer/contact or repeated approval required. #52 accessibility stays WAIVED; Linux/release gates unchanged.
