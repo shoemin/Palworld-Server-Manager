@@ -35,8 +35,8 @@ internal static class PeerRotationCompletionTests
     public static async Task PromotionReceiptAndConcurrentReplay()
     {
         using var f = new PeerTrustTests.Fixture(); var rotation = Stage(f);
-        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Old, rotation));
-        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation));
+        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Old, rotation, Local));
+        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation, Local));
         Check(f.Repository.Read(f.PeerId)!.CurrentFingerprint == Old);
         Check(new PeerTransportAuthentication(f.Repository, f.Time).AdmitHandshake(f.PeerId, New, PeerTrafficPurpose.OrdinaryManagement));
         Check(f.Repository.Read(f.PeerId)!.CurrentFingerprint == Old && f.Count("TrustedManagerCredentialHistory") == 0);
@@ -50,10 +50,10 @@ internal static class PeerRotationCompletionTests
         var auth = new PeerTransportAuthentication(f.Repository, f.Time);
         Reject<AuthenticationException>(() => auth.Authenticate(f.PeerId, Old, PeerTrafficPurpose.OrdinaryManagement));
         Check(!auth.Authenticate(f.PeerId, New, PeerTrafficPurpose.OrdinaryManagement).PromotedCredential);
-        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, Guid.NewGuid()));
-        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Old, rotation));
-        Check(f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation));
-        Check(!f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation) && f.Repository.Read(f.PeerId)!.PendingRotationId is null);
+        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, Guid.NewGuid(), Local));
+        Reject<AuthenticationException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, Old, rotation, Local));
+        Check(f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation, Local));
+        Check(!f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation, Local) && f.Repository.Read(f.PeerId)!.PendingRotationId is null);
         Check(Count(f, "EventKind='PeerRotationReceiptConfirmed'") == 1); GrantUnchanged(f);
     }
     public static Task LapseAndTransactionalRollback()
@@ -75,9 +75,9 @@ internal static class PeerRotationCompletionTests
         FailAudit(); Reject<SqliteException>(() => auth.Authenticate(f.PeerId, New, PeerTrafficPurpose.OrdinaryManagement));
         Check(f.Repository.Read(f.PeerId)!.CurrentFingerprint == Old && f.Count("TrustedManagerCredentialHistory") == 0); AllowAudit();
         Check(auth.Authenticate(f.PeerId, New, PeerTrafficPurpose.OrdinaryManagement).PromotedCredential);
-        FailAudit(); Reject<SqliteException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation));
+        FailAudit(); Reject<SqliteException>(() => f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation, Local));
         Check(f.Repository.Read(f.PeerId)!.PendingRotationId == rotation); AllowAudit();
-        f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation); GrantUnchanged(f); return Task.CompletedTask;
+        f.Repository.ConfirmPeerRotationReceipt(f.PeerId, New, rotation, Local); GrantUnchanged(f); return Task.CompletedTask;
     }
     public static Task InvalidAndRecoveryStates()
     {

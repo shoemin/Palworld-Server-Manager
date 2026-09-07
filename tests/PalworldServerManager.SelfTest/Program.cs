@@ -17,6 +17,14 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--rotation-receipt-rpc-probe"])
+    {
+        await ProtocolTests.SchemaEvolution(); await PeerRotationReceiptRpcTests.ActualObservationAndConcurrentReceipt();
+        await PeerRotationReceiptRpcTests.LostReceiptAndReceiverAuditRetryAfterReopen(); await PeerRotationReceiptRpcTests.SenderAuditFailureKeepsPromotionRetryable();
+        await PeerRotationReceiptRpcTests.ForgedReplyAndStaleReceiverStateCannotClear(); await PeerRotationReceiptRpcTests.CapabilityIdentityCurrentAndTrustGates();
+        await PeerRotationReceiptRpcTests.LegacyReceiptDoesNotInventStagingHistory(); await PeerRotationReceiptRpcTests.OldPresentationIncompleteProofAndChangedReceipt();
+        Console.WriteLine("PASS actual promotion receipts, independent durable commits, exact proof and retry gates."); return 0;
+    }
     if (args is ["--rotation-proposal-rpc-probe"])
     {
         await ProtocolTests.SchemaEvolution(); await PeerRotationProposalRpcTests.ActualConcurrentProposalAndClockOffset();
@@ -218,6 +226,13 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Old TLS and incomplete proof cannot report promotion or clear a changed receipt", PeerRotationReceiptRpcTests.OldPresentationIncompleteProofAndChangedReceipt),
+    ("Actual New observation and concurrent receipt commit exactly once without changing grants", PeerRotationReceiptRpcTests.ActualObservationAndConcurrentReceipt),
+    ("Lost promotion reply and receiver audit failure preserve durable retry across reopen", PeerRotationReceiptRpcTests.LostReceiptAndReceiverAuditRetryAfterReopen),
+    ("Rotating Host audit failure keeps peer promotion receipt retryable", PeerRotationReceiptRpcTests.SenderAuditFailureKeepsPromotionRetryable),
+    ("Forged promotion reply and changed current receiver state cannot erase receipt", PeerRotationReceiptRpcTests.ForgedReplyAndStaleReceiverStateCannotClear),
+    ("Receipt RPC requires negotiated capability exact current rotation and Active trust", PeerRotationReceiptRpcTests.CapabilityIdentityCurrentAndTrustGates),
+    ("Legacy completed rotation receipt does not invent absent staging acknowledgement history", PeerRotationReceiptRpcTests.LegacyReceiptDoesNotInventStagingHistory),
     ("Actual concurrent rotation proposals preserve deadlines across unrelated Host clocks", PeerRotationProposalRpcTests.ActualConcurrentProposalAndClockOffset),
     ("Lost rotation replies and sender audit failure resume from receiver durable staging", PeerRotationProposalRpcTests.LostReplyAndAuditFailureResumeDurably),
     ("Actual proposals cannot overwrite lapsed staging or pending promotion receipts", PeerRotationProposalRpcTests.LapsedAndReceiptStateCannotBeOverwritten),

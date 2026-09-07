@@ -47,10 +47,11 @@ public sealed partial class PeerTrustRepository
     }
     // Only after the remote Host has confirmed durable receipt for this exact RotationId on
     // the authenticated connection. This primitive does not itself send/receive that RPC.
-    public bool ConfirmPeerRotationReceipt(Guid peer, string actualFingerprint, Guid rotationId)
+    public bool ConfirmPeerRotationReceipt(Guid peer, string actualFingerprint, Guid rotationId, string actualLocalFingerprint)
     {
         Id(peer); Id(rotationId); Fingerprint(actualFingerprint);
         using var c = Open(); using var tx = c.BeginTransaction(deferred: false);
+        if (RequireHost(c, tx) != actualLocalFingerprint) throw RotationRefused();
         var trust = RequireObservedActivePeer(c, tx, peer, actualFingerprint);
         if (trust.CurrentFingerprint != actualFingerprint || trust.PendingFingerprint is not null) throw RotationRefused();
         if (trust.PendingRotationId is null) return false; // Already cleared: replay has no effect.
