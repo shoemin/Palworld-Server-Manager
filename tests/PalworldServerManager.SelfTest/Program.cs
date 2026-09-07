@@ -17,6 +17,13 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--rotation-reconfirmation-probe"])
+    {
+        await RotationReconfirmationTests.RenewalRequiresLiveIntentAndFreshOwner(); await RotationReconfirmationTests.AbandonmentAndUntrustedCutoverClaims();
+        await RotationReconfirmationTests.QueryScopeReplayDeadlineAndChangedTuple(); await RotationReconfirmationTests.ConcurrentRenewalAndAuditRollback();
+        await RotationReconfirmationTests.SenderStatusBindsTupleAndPresentedCurrent(); await RotationReconfirmationTests.DeadlineCrossingDuringAuditRollsBack();
+        Console.WriteLine("PASS retained rotation live status, Owner renewal, stale query refusal and abandonment."); return 0;
+    }
     if (args is ["--rotation-staging-probe"])
     {
         await RotationStagingTests.SenderSequenceAndOwnerGate(); await RotationStagingTests.ReceiverOrderingReplayAndRollback();
@@ -196,6 +203,12 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Rotation query expiry before commit rolls back renewal and its audit", RotationReconfirmationTests.DeadlineCrossingDuringAuditRollsBack),
+    ("Retained rotation renewal requires fresh Owner intent and live exact status", RotationReconfirmationTests.RenewalRequiresLiveIntentAndFreshOwner),
+    ("Old-key status claims never promote and live abandonment preserves grants", RotationReconfirmationTests.AbandonmentAndUntrustedCutoverClaims),
+    ("Rotation status query scope monotonic expiry and changed tuples deny replay", RotationReconfirmationTests.QueryScopeReplayDeadlineAndChangedTuple),
+    ("Rotation renewal serializes concurrent replies and rolls back failed audits", RotationReconfirmationTests.ConcurrentRenewalAndAuditRollback),
+    ("Sender rotation status binds immutable proposal and actually presented current key", RotationReconfirmationTests.SenderStatusBindsTupleAndPresentedCurrent),
     ("Routine rotation proposals retain a monotonic identity with current Owner and audit gates", RotationStagingTests.SenderSequenceAndOwnerGate),
     ("Peer rotation staging serializes replay and rejects stale or changed proposals", RotationStagingTests.ReceiverOrderingReplayAndRollback),
     ("Peer rotation proposals cannot overwrite lapsed staging or an unconfirmed promotion receipt", RotationStagingTests.LapseAndReceiptCannotBeOverwritten),
