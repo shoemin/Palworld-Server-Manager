@@ -48,18 +48,10 @@ public sealed partial class GrantPolicyRepository
     // Outgoing local-user permission checks and RPC integration remain Host obligations.
     public GrantMutationResult IssueRemoteHost(PeerGrantMutationActor actor,long expectedRevision,Guid grantId,ActorRef grantee,
         HostCapability capability,Guid targetHostId,DelegationRights rights,Guid? sourceGrantId,CancellationToken ct=default)
-        =>Issue(PeerWriter(actor),expectedRevision,(policy,utc)=>
-        {
-            RequireIncomingTarget(targetHostId);
-            return policy.IssueHost(ActorRef.RemoteManager(actor.PeerHostId),grantId,grantee,capability,targetHostId,rights,sourceGrantId,utc);
-        },ct);
+        =>Issue(PeerWriter(actor),expectedRevision,new HostGrantRequest(grantId,grantee,capability,targetHostId,rights,sourceGrantId),ct);
     public GrantMutationResult IssueRemoteServer(PeerGrantMutationActor actor,long expectedRevision,Guid grantId,ActorRef grantee,
         ServerCapability capability,ServerRef target,DelegationRights rights,Guid? sourceGrantId,CancellationToken ct=default)
-        =>Issue(PeerWriter(actor),expectedRevision,(policy,utc)=>
-        {
-            ArgumentNullException.ThrowIfNull(target);RequireIncomingTarget(target.AuthoritativeHostId);
-            return policy.IssueServer(ActorRef.RemoteManager(actor.PeerHostId),grantId,grantee,capability,target,rights,sourceGrantId,utc);
-        },ct);
+        =>Issue(PeerWriter(actor),expectedRevision,new ServerGrantRequest(grantId,grantee,capability,target,rights,sourceGrantId),ct);
     public PresetGrantResult ApplyRemotePreset(PeerGrantMutationActor actor,long expectedRevision,RolePreset preset,CancellationToken ct=default)
         =>ApplyPreset(PeerWriter(actor),expectedRevision,preset,ct);
 }

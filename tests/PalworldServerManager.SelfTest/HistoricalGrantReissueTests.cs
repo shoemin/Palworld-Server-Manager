@@ -98,7 +98,7 @@ internal static class HistoricalGrantReissueTests
         Reject<ArgumentException>(()=>r.Repo.ReissueHistoricalPeerRoots(r.Owner,before,r.F.PeerId,[r.Root,r.Root],[]));
         Reject<ArgumentException>(()=>r.Repo.ReissueHistoricalPeerRoots(r.Owner,before,r.F.PeerId,[],[Guid.Empty]));
         Reject<StaleAuthorizationRevisionException>(()=>r.Apply(before-1));
-        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits&&r.F.Count("HostCapabilityGrants")==grants&&r.F.Count("ServerCapabilityGrants")==1);
+        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits+5&&r.F.Count("HostCapabilityGrants")==grants&&r.F.Count("ServerCapabilityGrants")==1);
         return Task.CompletedTask;
     }
     public static Task CurrentPeerStateIsRequired()
@@ -109,7 +109,7 @@ internal static class HistoricalGrantReissueTests
             var before=r.Revision;var audits=r.F.Count("AuditEvents");
             Reject<UnauthorizedAccessException>(()=>r.Apply());
             Reject<UnauthorizedAccessException>(()=>r.Repo.ReissueHistoricalPeerRoots(r.Owner,before,r.F.PeerId,[],[]));
-            Check(r.Revision==before&&r.F.Count("AuditEvents")==audits);
+            Check(r.Revision==before&&r.F.Count("AuditEvents")==audits+2);
         }
         return Task.CompletedTask;
     }
@@ -156,7 +156,7 @@ internal static class HistoricalGrantReissueTests
         Reject<StaleAuthorizationRevisionException>(()=>r.Repo.ReissueHistoricalPeerRoots(r.Owner,before-1,r.F.PeerId,[],[]));
         using var ct=new CancellationTokenSource();var repo=new GrantPolicyRepository(r.F.Database,r.F.HostId,new CancelAtWrite(r.F.Time,ct));
         Reject<OperationCanceledException>(()=>repo.ReissueHistoricalPeerRoots(r.Owner,before,r.F.PeerId,[r.Root],[r.Root],ct.Token));
-        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits);
+        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits+1);
         return Task.CompletedTask;
     }
 }

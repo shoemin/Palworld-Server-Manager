@@ -26,21 +26,28 @@ public sealed partial class GrantPolicyRepository
     // actor comes from the authenticated local channel, never a deserialized request field.
     public GrantMutationResult IssueHost(LocalPrincipalMutationActor actor,long expectedRevision,Guid grantId,ActorRef grantee,
         HostCapability capability,Guid targetHostId,DelegationRights rights,Guid? sourceGrantId,CancellationToken ct=default)
-        =>Issue(actor,expectedRevision,(policy,utc)=>policy.IssueHost(ActorRef.LocalPrincipal(actor.LocalPrincipalId),grantId,grantee,capability,targetHostId,rights,sourceGrantId,utc),ct);
+        =>Issue(LocalWriter(actor),expectedRevision,new HostGrantRequest(grantId,grantee,capability,targetHostId,rights,sourceGrantId),ct);
     public GrantMutationResult IssueServer(LocalPrincipalMutationActor actor,long expectedRevision,Guid grantId,ActorRef grantee,
         ServerCapability capability,ServerRef target,DelegationRights rights,Guid? sourceGrantId,CancellationToken ct=default)
-        =>Issue(actor,expectedRevision,(policy,utc)=>policy.IssueServer(ActorRef.LocalPrincipal(actor.LocalPrincipalId),grantId,grantee,capability,target,rights,sourceGrantId,utc),ct);
-    private GrantMutationResult Issue(LocalPrincipalMutationActor actor,long expectedRevision,
-        Func<AuthorizationPolicy,DateTimeOffset,CapabilityGrant> create,CancellationToken ct)
-        =>Issue(LocalWriter(actor),expectedRevision,create,ct);
-    private GrantMutationResult Issue(GrantWriter actor,long expectedRevision,
-        Func<AuthorizationPolicy,DateTimeOffset,CapabilityGrant> create,CancellationToken ct)
+        =>Issue(LocalWriter(actor),expectedRevision,new ServerGrantRequest(grantId,grantee,capability,target,rights,sourceGrantId),ct);
+    private GrantMutationResult Issue(GrantWriter actor,long expectedRevision,GrantRequest request,CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
         var before=Read(c,tx);actor.Require(c,tx,before);RequireRevision(expectedRevision,before.Revision);
-        var now=time.GetUtcNow();var grant=create(before.Policy,now);Insert(c,tx,grant);
-        Audit(c,tx,actor.Actual,grant,"CapabilityGrantIssued",now,1,"Direct");
+        var now=time.GetUtcNow();
+        var grant=AuthorizeOrAudit<CapabilityGrant>(c,tx,actor,before.Revision,GrantAttempt(request),()=>
+        {
+            if(actor.Actual.Kind==ActorKind.RemoteManager)
+                RequireIncomingTarget(request is HostGrantRequest h?h.TargetHostId:((ServerGrantRequest)request).Target.AuthoritativeHostId);
+            return request switch
+            {
+                HostGrantRequest h=>before.Policy.IssueHost(actor.Actual,h.GrantId,h.Grantee,h.Capability,h.TargetHostId,h.Rights,h.SourceGrantId,now),
+                ServerGrantRequest s=>before.Policy.IssueServer(actor.Actual,s.GrantId,s.Grantee,s.Capability,s.Target,s.Rights,s.SourceGrantId,now),
+                _=>throw new ArgumentException("Unknown grant request.")
+            };
+        },ct);
+        Insert(c,tx,grant);Audit(c,tx,actor.Actual,grant,"CapabilityGrantIssued",now,1,"Direct");
         var after=Read(c,tx);actor.Require(c,tx,after);RequireRevision(checked(before.Revision+1),after.Revision);
         CapabilityGrant persisted=grant is HostCapabilityGrant?after.HostGrants.Single(g=>g.GrantId==grant.GrantId):after.ServerGrants.Single(g=>g.GrantId==grant.GrantId);
         if(persisted!=grant)throw new UnauthorizedAccessException("Grant effect changed before commit.");
@@ -92,9 +99,13 @@ public sealed partial class GrantPolicyRepository
         ArgumentNullException.ThrowIfNull(owner);Id(root);ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
         var before=Read(c,tx);RequireLocal(c,tx,owner,before);RequireRevision(expectedRevision,before.Revision);
-        if(!before.Policy.IsOwner(ActorRef.LocalPrincipal(owner.LocalPrincipalId)))throw new UnauthorizedAccessException("Owner authorization required.");
         var grants=server?before.ServerGrants.Cast<CapabilityGrant>().ToArray():before.HostGrants.Cast<CapabilityGrant>().ToArray();
-        var rootGrant=grants.SingleOrDefault(g=>g.GrantId==root)??throw new UnauthorizedAccessException("Grant subtree unavailable.");
+        var rootGrant=AuthorizeOrAudit(c,tx,LocalWriter(owner),before.Revision,
+            new(server?"InvalidateServerSubtree":"InvalidateHostSubtree",hostId,null,"Root="+Id(root)),()=>
+        {
+            if(!before.Policy.IsOwner(ActorRef.LocalPrincipal(owner.LocalPrincipalId)))throw new UnauthorizedAccessException("Owner authorization required.");
+            return grants.SingleOrDefault(g=>g.GrantId==root)??throw new UnauthorizedAccessException("Grant subtree unavailable.");
+        },ct);
         var ids=(server?before.Policy.ServerSubtree(root):before.Policy.HostSubtree(root)).ToHashSet();
         var changed=grants.Where(g=>ids.Contains(g.GrantId)&&g.InvalidatedUtc is null).ToArray();
         if(changed.Length==0)return new(root,before.Revision,0);

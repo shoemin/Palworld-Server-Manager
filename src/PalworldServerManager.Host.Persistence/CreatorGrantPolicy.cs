@@ -27,10 +27,15 @@ public sealed partial class GrantPolicyRepository
         ArgumentNullException.ThrowIfNull(creator);ArgumentNullException.ThrowIfNull(target);ArgumentNullException.ThrowIfNull(recordConfirmedCreation);
         ct.ThrowIfCancellationRequested();using var c=Open();using var tx=c.BeginTransaction(deferred:false);
         var before=Read(c,tx);RequirePeer(c,tx,creator,before);RequireRevision(expectedRevision,before.Revision);
-        if(target.AuthoritativeHostId!=hostId||!before.Policy.CanUseHost(ActorRef.RemoteManager(creator.PeerHostId),HostCapability.CreateServer,hostId))
-            throw new UnauthorizedAccessException("Authorized remote creator required.");
-        if(ReadCreationInventory(c,tx,target) is not null||before.ServerGrants.Any(g=>g.Target==target))
-            throw new UnauthorizedAccessException("Creator grants require a new server identity.");
+        AuthorizeOrAudit(c,tx,PeerWriter(creator),before.Revision,
+            new("FinalizeRemoteCreation",target.AuthoritativeHostId,target.ServerProfileId,"Capability=CreateServer"),()=>
+        {
+            if(target.AuthoritativeHostId!=hostId||!before.Policy.CanUseHost(ActorRef.RemoteManager(creator.PeerHostId),HostCapability.CreateServer,hostId))
+                throw new UnauthorizedAccessException("Authorized remote creator required.");
+            if(ReadCreationInventory(c,tx,target) is not null||before.ServerGrants.Any(g=>g.Target==target))
+                throw new UnauthorizedAccessException("Creator grants require a new server identity.");
+            return true;
+        },ct);
         recordConfirmedCreation(c,tx);ct.ThrowIfCancellationRequested();
         var inventory=ReadCreationInventory(c,tx,target)??throw new InvalidOperationException("Host creation confirmation did not register the new server.");
         var confirmed=Read(c,tx);RequirePeer(c,tx,creator,confirmed);RequireRevision(before.Revision,confirmed.Revision);

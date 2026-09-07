@@ -78,7 +78,7 @@ internal static class RolePresetTests
         var missingServer=new ServerGrantRequest(Guid.NewGuid(),r.Grantee,ServerCapability.ViewServer,new(r.F.HostId,Guid.NewGuid()),Use,root);
         Reject<UnauthorizedAccessException>(()=>r.Repo.ApplyPreset(r.Applier,before,new("mixed invalid",[r.Host(root)],[missingServer])));
         Reject<AuthenticationException>(()=>r.Repo.ApplyPreset(r.Applier with {PublicVerificationKey="stale"},before,new("stale proof",[r.Host(root)],[])));
-        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits&&r.Repo.Read().HostGrants.Count==2&&r.Repo.Read().ServerGrants.Count==0);
+        Check(r.Revision==before&&r.F.Count("AuditEvents")==audits+6&&HostDatabase.QueryScalarLong(r.F.Writer,"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PermissionPolicyDenied';")==6&&r.Repo.Read().HostGrants.Count==2&&r.Repo.Read().ServerGrants.Count==0);
         return Task.CompletedTask;
     }
     public static Task AuditAndSourceChangesRollBackWholeBatch()

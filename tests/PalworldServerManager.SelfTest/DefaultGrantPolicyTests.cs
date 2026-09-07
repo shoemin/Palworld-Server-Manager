@@ -59,7 +59,7 @@ internal static class DefaultGrantPolicyTests
         Reject<AuthenticationException>(()=>r.Repo.ConfigureDefaults(r.Owner with {PublicVerificationKey="wrong"},before.Revision,DefaultGrantTemplate.Factory));
         Reject<StaleAuthorizationRevisionException>(()=>r.Repo.ConfigureDefaults(r.Owner,before.Revision-1,DefaultGrantTemplate.Factory));
         Reject<ArgumentException>(()=>r.Configure(new([],[new(ServerCapability.ViewServer,new(r.F.PeerId,Guid.NewGuid()),Use)])));
-        Check(r.Repo.Read().Revision==before.Revision&&r.F.Count("AuditEvents")==audits&&!r.Repo.ReadDefaults().IsConfigured);
+        Check(r.Repo.Read().Revision==before.Revision&&r.F.Count("AuditEvents")==audits+1&&!r.Repo.ReadDefaults().IsConfigured);
         r.Bind(r.F.PeerId);r.Configure(HostOnly(HostCapability.CreateServer));
         r.F.Repository.AcceptOwnerActivationAcknowledgement(r.Owner,r.F.PeerId,Peer,Local,new(r.F.PeerId,r.F.HostId,Local),r.Repo.CreateDefaultActivationHook());
         Check(HostDatabase.QueryScalarText(r.F.Writer,"SELECT ActorKind FROM AuditEvents WHERE EventKind='DefaultGrantApplied';")=="LocalPrincipal");
