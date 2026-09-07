@@ -17,6 +17,14 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--host-traffic-probe"])
+    {
+        await HostTrafficLifetimeTests.CancellationWaitsForWholeOperationCleanup(); await HostTrafficLifetimeTests.ConcurrentWorkAndTerminalAdmission();
+        await HostTrafficLifetimeTests.CancellationCallbackFailureStillWaitsForWork(); await HostTrafficLifetimeTests.ActualLocalConnectionsCloseAndNewTrafficIsRefused();
+        await HostTrafficLifetimeTests.ActualPeerAndOutgoingPostReplyWorkAreOwned(); await HostTrafficLifetimeTests.ActualAbortedConnectionWaitsForItsDatabaseMutation();
+        await HostTrafficLifetimeTests.PartialHandshakesAcrossAllThreeListenersAreDrained();
+        Console.WriteLine("PASS Host traffic admission, complete-work drain, actual connections and partial TLS lifetime."); return 0;
+    }
     if (args is ["--rotation-cutover-probe"])
     {
         await RotationCutoverTests.ActualProposalCutoverNewProofAndReceipts(); await RotationCutoverTests.PublicationTimeTrustOwnerAndProposalChangesRefuseCutover();
@@ -255,6 +263,14 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Host traffic draining waits for canceled whole-operation cleanup", HostTrafficLifetimeTests.CancellationWaitsForWholeOperationCleanup),
+    ("Host traffic lifetime closes concurrent admission permanently", HostTrafficLifetimeTests.ConcurrentWorkAndTerminalAdmission),
+    ("Host traffic callback failure cannot bypass active work draining", HostTrafficLifetimeTests.CancellationCallbackFailureStillWaitsForWork),
+    ("Actual local Host connections close and new traffic is refused", HostTrafficLifetimeTests.ActualLocalConnectionsCloseAndNewTrafficIsRefused),
+    ("Actual peer and post-reply outgoing work remain lifetime-owned", HostTrafficLifetimeTests.ActualPeerAndOutgoingPostReplyWorkAreOwned),
+    ("Aborted actual peer connections wait for their in-flight Host mutation", HostTrafficLifetimeTests.ActualAbortedConnectionWaitsForItsDatabaseMutation),
+    ("Partial TLS across local peer and pairing listeners is drained", HostTrafficLifetimeTests.PartialHandshakesAcrossAllThreeListenersAreDrained),
+
     ("Cutover refuses initial Owner mismatch and rolls back audit-triggered trust changes", RotationCutoverTests.TransactionTriggerChangesAndInitialOwnerRefusal),
     ("Actual multi-peer proposal acceptance cuts over before New proof and receipts", RotationCutoverTests.ActualProposalCutoverNewProofAndReceipts),
     ("Cutover rechecks peer trust Owner and proposal after staged publication", RotationCutoverTests.PublicationTimeTrustOwnerAndProposalChangesRefuseCutover),
