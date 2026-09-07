@@ -32,13 +32,16 @@ public sealed partial class GrantPolicyRepository
         =>Issue(actor,expectedRevision,(policy,utc)=>policy.IssueServer(ActorRef.LocalPrincipal(actor.LocalPrincipalId),grantId,grantee,capability,target,rights,sourceGrantId,utc),ct);
     private GrantMutationResult Issue(LocalPrincipalMutationActor actor,long expectedRevision,
         Func<AuthorizationPolicy,DateTimeOffset,CapabilityGrant> create,CancellationToken ct)
+        =>Issue(LocalWriter(actor),expectedRevision,create,ct);
+    private GrantMutationResult Issue(GrantWriter actor,long expectedRevision,
+        Func<AuthorizationPolicy,DateTimeOffset,CapabilityGrant> create,CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(actor);ct.ThrowIfCancellationRequested();
+        ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
-        var before=Read(c,tx);RequireLocal(c,tx,actor,before);RequireRevision(expectedRevision,before.Revision);
+        var before=Read(c,tx);actor.Require(c,tx,before);RequireRevision(expectedRevision,before.Revision);
         var now=time.GetUtcNow();var grant=create(before.Policy,now);Insert(c,tx,grant);
-        Audit(c,tx,actor,grant,"CapabilityGrantIssued",now);
-        var after=Read(c,tx);RequireLocal(c,tx,actor,after);RequireRevision(checked(before.Revision+1),after.Revision);
+        Audit(c,tx,actor.Actual,grant,"CapabilityGrantIssued",now,1,"Direct");
+        var after=Read(c,tx);actor.Require(c,tx,after);RequireRevision(checked(before.Revision+1),after.Revision);
         CapabilityGrant persisted=grant is HostCapabilityGrant?after.HostGrants.Single(g=>g.GrantId==grant.GrantId):after.ServerGrants.Single(g=>g.GrantId==grant.GrantId);
         if(persisted!=grant)throw new UnauthorizedAccessException("Grant effect changed before commit.");
         ct.ThrowIfCancellationRequested();tx.Commit();return new(grant.GrantId,after.Revision,1);

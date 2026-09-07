@@ -1,33 +1,13 @@
-using System.Security.Authentication;
 using Microsoft.Data.Sqlite;
 using PalworldServerManager.Core.Authorization;
 using PalworldServerManager.Core.Security;
 
 namespace PalworldServerManager.Host.Persistence;
 
-// Trusted completed TLS/negotiation evidence from Host composition, NEVER a request DTO.
-public sealed record PeerGrantMutationActor(Guid HostId,Guid PeerHostId,string PeerFingerprint,string LocalFingerprint,long Incarnation);
 public sealed record CreatorGrantResult(Guid CreationEventId,long Revision,IReadOnlyList<Guid> GrantIds);
 
 public sealed partial class GrantPolicyRepository
 {
-    private void RequirePeer(SqliteConnection c,SqliteTransaction tx,PeerGrantMutationActor actor,AuthorizationSnapshot snapshot)
-    {
-        if(actor.HostId!=hostId||actor.PeerHostId==Guid.Empty||actor.PeerHostId==hostId||actor.Incarnation<=0||
-            !HostTrustPlanning.Fingerprint(actor.PeerFingerprint)||!HostTrustPlanning.Fingerprint(actor.LocalFingerprint)||
-            !snapshot.Policy.IsActive(ActorRef.RemoteManager(actor.PeerHostId)))throw new AuthenticationException("Current peer identity required.");
-        using var cmd=Command(c,tx,"""
-            SELECT COUNT(*) FROM TrustedManagers t CROSS JOIN HostIdentity h
-                JOIN SecureCredentialReferences s ON s.CredentialRef=h.CurrentCredentialRef
-            WHERE t.PeerHostId=$peer AND t.State='Active' AND t.PeerRecoveryRequired=0
-                AND (t.CurrentTrustedPublicKeyFingerprint=$remote OR
-                    (t.PendingTrustedPublicKeyFingerprint=$remote AND t.PendingRotationId IS NOT NULL AND t.PendingRotationExpiresUtc IS NOT NULL))
-                AND h.Id=1 AND h.HostId=$host AND h.HostBootstrapState='Initialized'
-                AND s.PublicKeyFingerprint=$local AND s.Purpose='HostTlsV1' AND s.RetiredUtc IS NULL;
-            """,("$peer",Id(actor.PeerHostId)),("$remote",actor.PeerFingerprint),("$host",Id(hostId)),("$local",actor.LocalFingerprint));
-        if(Convert.ToInt32(cmd.ExecuteScalar())!=1||PeerRelationshipIncarnation.Read(c,tx,actor.PeerHostId)!=actor.Incarnation)
-            throw new AuthenticationException("Current peer identity required.");
-    }
     private sealed record CreationInventory(string Name,string? Path,int GamePort,int RestPort,string? Import,string Created);
     private static CreationInventory? ReadCreationInventory(SqliteConnection c,SqliteTransaction tx,ServerRef target)
     {

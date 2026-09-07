@@ -8,11 +8,18 @@ public sealed record PresetGrantResult(Guid? AuditBatchId,long Revision,IReadOnl
 public sealed partial class GrantPolicyRepository
 {
     public PresetGrantResult ApplyPreset(LocalPrincipalMutationActor actor,long expectedRevision,RolePreset preset,CancellationToken ct=default)
+        =>ApplyPreset(LocalWriter(actor),expectedRevision,preset,ct);
+    private PresetGrantResult ApplyPreset(GrantWriter actor,long expectedRevision,RolePreset preset,CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(actor);ArgumentNullException.ThrowIfNull(preset);ct.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(preset);ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
-        var before=Read(c,tx);RequireLocal(c,tx,actor,before);RequireRevision(expectedRevision,before.Revision);
-        var now=time.GetUtcNow();var actual=ActorRef.LocalPrincipal(actor.LocalPrincipalId);
+        var before=Read(c,tx);actor.Require(c,tx,before);RequireRevision(expectedRevision,before.Revision);
+        if(actor.Actual.Kind==ActorKind.RemoteManager)
+        {
+            foreach(var entry in preset.Hosts)RequireIncomingTarget(entry.TargetHostId);
+            foreach(var entry in preset.Servers)RequireIncomingTarget(entry.Target.AuthoritativeHostId);
+        }
+        var now=time.GetUtcNow();var actual=actor.Actual;
         var expansion=before.Policy.ExpandPreset(actual,preset,now);
         var grants=expansion.Hosts.Cast<CapabilityGrant>().Concat(expansion.Servers).ToArray();
         ct.ThrowIfCancellationRequested();
@@ -25,7 +32,7 @@ public sealed partial class GrantPolicyRepository
             // Never include the caller's free-text presentation label in audit/diagnostics.
             Audit(c,tx,actual,grant,"CapabilityGrantIssued",now,1,"RolePreset:"+Id(batch));
         }
-        var after=Read(c,tx);RequireLocal(c,tx,actor,after);RequireRevision(checked(before.Revision+grants.Length),after.Revision);
+        var after=Read(c,tx);actor.Require(c,tx,after);RequireRevision(checked(before.Revision+grants.Length),after.Revision);
         foreach(var grant in grants)
         {
             CapabilityGrant saved=grant is HostCapabilityGrant?after.HostGrants.Single(g=>g.GrantId==grant.GrantId):after.ServerGrants.Single(g=>g.GrantId==grant.GrantId);

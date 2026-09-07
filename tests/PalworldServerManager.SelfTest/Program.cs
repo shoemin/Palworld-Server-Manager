@@ -13,6 +13,17 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--remote-grants-probe"])
+    {
+        await RemoteGrantPolicyTests.ExactDelegationPersistsRealPeerAndProvenance();
+        await RemoteGrantPolicyTests.RootsScopeAndRightsCannotBeManufactured();
+        await RemoteGrantPolicyTests.AllEntryPointsRequireCurrentTransportAndRevision();
+        await RemoteGrantPolicyTests.LateAuditMutationsRollBackSingleAndPresetWrites();
+        await RemoteGrantPolicyTests.PresetValidatesEveryOriginalSourceBeforeWriting();
+        await RemoteGrantPolicyTests.ConcurrentRemoteWritersAndExactRevocation();
+        await RemoteGrantPolicyTests.EmptyCancellationAndTrustedPendingEvidence();
+        Console.WriteLine("PASS authenticated remote grant writers."); return 0;
+    }
     if (args is ["--creator-grants-probe"])
     {
         await CreatorGrantPolicyTests.SixCanonicalCandidatesHaveExactScopeAndNoDelegation();
@@ -615,6 +626,13 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Remote grants ExactDelegationPersistsRealPeerAndProvenance", RemoteGrantPolicyTests.ExactDelegationPersistsRealPeerAndProvenance),
+    ("Remote grants RootsScopeAndRightsCannotBeManufactured", RemoteGrantPolicyTests.RootsScopeAndRightsCannotBeManufactured),
+    ("Remote grants AllEntryPointsRequireCurrentTransportAndRevision", RemoteGrantPolicyTests.AllEntryPointsRequireCurrentTransportAndRevision),
+    ("Remote grants LateAuditMutationsRollBackSingleAndPresetWrites", RemoteGrantPolicyTests.LateAuditMutationsRollBackSingleAndPresetWrites),
+    ("Remote grants PresetValidatesEveryOriginalSourceBeforeWriting", RemoteGrantPolicyTests.PresetValidatesEveryOriginalSourceBeforeWriting),
+    ("Remote grants ConcurrentRemoteWritersAndExactRevocation", RemoteGrantPolicyTests.ConcurrentRemoteWritersAndExactRevocation),
+    ("Remote grants EmptyCancellationAndTrustedPendingEvidence", RemoteGrantPolicyTests.EmptyCancellationAndTrustedPendingEvidence),
     ("Creator grants SixCanonicalCandidatesHaveExactScopeAndNoDelegation", CreatorGrantPolicyTests.SixCanonicalCandidatesHaveExactScopeAndNoDelegation),
     ("Creator grants ConfirmedCreationCommitsSixWithRealActorAudit", CreatorGrantPolicyTests.ConfirmedCreationCommitsSixWithRealActorAudit),
     ("Creator grants FailedMissingAndExistingCreationNeverGrant", CreatorGrantPolicyTests.FailedMissingAndExistingCreationNeverGrant),
