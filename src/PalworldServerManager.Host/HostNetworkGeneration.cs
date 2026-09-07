@@ -31,6 +31,8 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
     private HostCredentialStateRepository? credentialState;
 
     internal Task ListenerStopped => listenerStopped.Task;
+    internal Guid? HostId { get; private set; }
+    internal string? LocalFingerprint => pairing?.LocalFingerprint;
     internal (Uri Peer, Uri Pairing)? Endpoints { get; private set; }
     internal void SetBoundEndpoints(Uri peer, Uri pairingAddress)
     { lock (gate) { if (!ready || closing) throw new InvalidOperationException("Generation is not serving."); Endpoints = (peer, pairingAddress); } }
@@ -52,7 +54,7 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
         {
             if (sealedConfiguration || pairing is not null) throw new InvalidOperationException("Generation peer work is already configured.");
             if (runtime.HostId != pairingRuntime.HostId) throw new ArgumentException("Generation Host identities differ.");
-            pairing = pairingRuntime; credentialState = runtime.Credentials;
+            pairing = pairingRuntime; credentialState = runtime.Credentials; HostId = runtime.HostId;
             activation = new(runtime, transport); pairingClient = new(pairingRuntime, transport);
             status = new(runtime, transport); proposal = new(runtime, transport); receipt = new(runtime, transport); collector = new(runtime, transport);
         }
@@ -100,6 +102,7 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
         => RunAsync(token => Required(receipt).ConfirmAsync(peer, address, token), ct);
     internal Task<RotationAcceptanceCollection> CollectRotationAsync(Guid rotation, IReadOnlyDictionary<Guid, Uri> addresses, CancellationToken ct = default)
         => RunAsync(token => Required(collector).CollectAsync(rotation, addresses, token), ct);
+    internal RotationAcceptanceAssessment AssessRotation(RotationAcceptanceCollection collection) => Required(collector).Recheck(collection);
 
     // No public snapshots or timeout can manufacture this handoff. The existing coordinator
     // still validates the exact collection, Owner, current proposal and every peer in its transaction.
