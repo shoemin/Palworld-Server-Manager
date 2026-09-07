@@ -12,9 +12,16 @@ namespace PalworldServerManager.Host;
 internal sealed record PeerPairingCompletion(PeerBindingResult Local, PeerPairingResult Remote);
 internal sealed class PeerPairingRpcClient(PeerPairingRpcRuntime runtime, IPeerHttpTransportFactory transport)
 {
-    internal async Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)
+    internal Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)
     {
-        if (invitation == Guid.Empty || !address.IsAbsoluteUri || address.Scheme != "https" || address.UserInfo.Length != 0 ||
+        if (invitation == Guid.Empty) throw new ArgumentException("An explicit invitation identity is required.");
+        return PairCoreAsync(address, invitation, false, code, ct);
+    }
+    internal Task<PeerPairingCompletion> PairAsync(Uri address, RedactedSecret code, CancellationToken ct = default)
+        => PairCoreAsync(address, Guid.Empty, true, code, ct);
+    private async Task<PeerPairingCompletion> PairCoreAsync(Uri address, Guid invitation, bool advertisedInvitation, RedactedSecret code, CancellationToken ct)
+    {
+        if (!address.IsAbsoluteUri || address.Scheme != "https" || address.UserInfo.Length != 0 ||
             address.AbsolutePath != "/" || address.Query.Length != 0 || address.Fragment.Length != 0) throw new ArgumentException("A reachable pairing HTTPS address is required.");
         using var admission = runtime.Enter();
         var attemptId = Guid.NewGuid(); var stored = false;
@@ -31,9 +38,9 @@ internal sealed class PeerPairingRpcClient(PeerPairingRpcRuntime runtime, IPeerH
                 MaxSendMessageSize = PeerPairingRpcService.MaximumMessageBytes, MaxReceiveMessageSize = PeerPairingRpcService.MaximumMessageBytes
             });
             using var call = new PeerPairingProtocol.PeerPairingProtocolClient(channel).Pair(cancellationToken: ct);
-            await call.RequestStream.WriteAsync(new() { Start = new() { Handshake = PeerPairingRpcRuntime.Hello(), InvitationId = invitation.ToString("D") } }, ct).ConfigureAwait(false);
+            await call.RequestStream.WriteAsync(new() { Start = new() { Handshake = PeerPairingRpcRuntime.Hello(), InvitationId = advertisedInvitation ? "" : invitation.ToString("D"), UseAdvertisedInvitation = advertisedInvitation } }, ct).ConfigureAwait(false);
             var challenge = (await PeerPairingRpcService.Read(call.ResponseStream, PeerPairingFrame.FrameOneofCase.Challenge, ct).ConfigureAwait(false)).Challenge;
-            PeerPairingRpcService.Negotiate(challenge.Handshake);
+            PeerPairingRpcService.Negotiate(challenge.Handshake, advertisedInvitation);
             if (challenge.Nonce.Length != 32 || challenge.Share.Length != 65 || connection.Identity.LocalFingerprint != runtime.LocalFingerprint) throw new AuthenticationException("Pairing challenge refused.");
             var bytes = code.CopyBytes(); IPairingKeyExchange exchange;
             try { exchange = runtime.Factory.Start(PairingRole.Initiator, bytes, challenge.Nonce.ToByteArray(), ct); }

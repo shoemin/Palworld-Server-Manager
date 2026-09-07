@@ -4,7 +4,12 @@ option csharp_namespace = "PalworldServerManager.Contracts.Wire";
 import "Protos/host.proto";
 
 // No code or private credential is transmitted. Frame order is enforced by the Host.
-message PeerPairingStart { Handshake handshake = 1; string invitation_id = 2; }
+message PeerPairingStart {
+  Handshake handshake = 1;
+  string invitation_id = 2;
+  // Requires PeerPairingAdvertisedInvitation; mutually exclusive with invitation_id.
+  bool use_advertised_invitation = 3;
+}
 message PeerPairingChallenge { Handshake handshake = 1; bytes nonce = 2; bytes share = 3; }
 enum PeerPairingResult {
   PEER_PAIRING_RESULT_UNSPECIFIED = 0;

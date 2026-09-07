@@ -57,6 +57,8 @@ public sealed class PeerPairingRpcRuntime : IDisposable
     }
     internal PairingInvitation CreateInvitation() { Audit.RequireHealthy(); return Attempts.CreateInvitation(); }
     internal void CancelInvitation(Guid id) => Attempts.CancelInvitation(id);
+    internal PairingAttemptCoordinator.Attempt BeginAdvertised(IPAddress source, CancellationToken ct)
+    { Audit.RequireHealthy(); return Attempts.BeginAdvertised(source, ct); }
     internal PairingAttemptCoordinator.Attempt Begin(Guid invitation, IPAddress source, CancellationToken ct)
     { Audit.RequireHealthy(); return Attempts.Begin(invitation, source, ct); }
     internal IDisposable Enter()
@@ -70,8 +72,9 @@ public sealed class PeerPairingRpcRuntime : IDisposable
     internal void Failed(Guid id) => Audit.Record(id, PairingTerminalOutcome.Failed);
     internal static Handshake Hello()
     {
-        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 3 }, ProductVersion = "0.5.0-astra" };
-        hello.Capabilities.Add(FeatureCapability.PeerPairing); return hello;
+        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 7 }, ProductVersion = "0.5.0-astra" };
+        hello.Capabilities.Add(FeatureCapability.PeerPairing);
+        hello.Capabilities.Add(FeatureCapability.PeerPairingAdvertisedInvitation); return hello;
     }
     internal PeerBindingResult Store(VerifiedPairingIdentity peer, PeerTlsConnectionIdentity tls)
     {

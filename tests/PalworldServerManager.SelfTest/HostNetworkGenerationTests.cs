@@ -91,7 +91,7 @@ internal static class HostNetworkGenerationTests
         Check(await ga.ActivateAsync(b.State.HostId, gb.Endpoints!.Value.Peer) == PeerActivationDisposition.Activated);
         Check(await ga.ConfirmRotationAsync(b.State.HostId, gb.Endpoints.Value.Peer) == PeerRotationReceiptExchange.NoReceiptPending);
         using var invitation = await gb.CreateInvitationAsync();
-        await Reject<RpcException>(() => ga.PairAsync(gb.Endpoints.Value.Pairing, invitation.Id, invitation.Code));
+        await Reject<RpcException>(() => ga.PairAsync(gb.Endpoints.Value.Pairing, invitation.Code));
         await gb.CancelInvitationAsync(invitation.Id);
         var stops = Enumerable.Range(0, 8).Select(_ => ga.StopAsync()).ToArray();
         Check(stops.All(t => ReferenceEquals(t, stops[0]))); await Bounded(stops[0]);
@@ -101,6 +101,7 @@ internal static class HostNetworkGenerationTests
         var address = gb.Endpoints.Value.Peer;
         await Reject<InvalidOperationException>(() => ga.ActivateAsync(b.State.HostId, address));
         await Reject<InvalidOperationException>(() => ga.PairAsync(address, Guid.NewGuid(), invitation.Code));
+        await Reject<InvalidOperationException>(() => ga.PairAsync(address, invitation.Code));
         await Reject<InvalidOperationException>(() => ga.CreateInvitationAsync());
         await Reject<InvalidOperationException>(() => ga.CancelInvitationAsync(Guid.NewGuid()));
         await Reject<InvalidOperationException>(() => ga.CheckRotationAsync(b.State.HostId, address));
@@ -160,7 +161,7 @@ internal static class HostNetworkGenerationTests
         {
             a.State.Execute("CREATE TRIGGER generation_audit_failure BEFORE INSERT ON AuditEvents WHEN NEW.EventKind='PairingAttemptFailed' BEGIN SELECT RAISE(ABORT,'fixture'); END;");
             using var invitation = await gb.CreateInvitationAsync();
-            await Reject<RpcException>(() => ga.PairAsync(gb.Endpoints!.Value.Pairing, invitation.Id, invitation.Code));
+            await Reject<RpcException>(() => ga.PairAsync(gb.Endpoints!.Value.Pairing, invitation.Code));
             await Reject<AggregateException>(() => Bounded(ga.StopAsync()));
             Check(clock.Active == 0 && a.Certificate.Value.Handle == IntPtr.Zero); QuiescenceRefused(ga);
             await Reject<InvalidOperationException>(() => ga.CreateInvitationAsync());

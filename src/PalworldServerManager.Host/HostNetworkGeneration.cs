@@ -90,6 +90,8 @@ internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsy
         => RunAsync(token => Required(activation).FinalizeAsync(peer, address, token), ct);
     internal Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)
         => RunAsync(token => Required(pairingClient).PairAsync(address, invitation, code, token), ct);
+    internal Task<PeerPairingCompletion> PairAsync(Uri address, RedactedSecret code, CancellationToken ct = default)
+        => RunAsync(token => Required(pairingClient).PairAsync(address, code, token), ct);
     internal Task<PairingInvitation> CreateInvitationAsync(CancellationToken ct = default)
         => RunAsync(_ => Task.FromResult(Required(pairing).CreateInvitation()), ct);
     internal Task CancelInvitationAsync(Guid invitation, CancellationToken ct = default)

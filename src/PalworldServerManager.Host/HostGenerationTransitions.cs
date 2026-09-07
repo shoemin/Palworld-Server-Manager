@@ -53,6 +53,8 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
         => OnCurrentAsync((generation, token) => generation.ActivateAsync(peer, address, token), ct);
     internal Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)
         => OnCurrentAsync((generation, token) => generation.PairAsync(address, invitation, code, token), ct);
+    internal Task<PeerPairingCompletion> PairAsync(Uri address, RedactedSecret code, CancellationToken ct = default)
+        => OnCurrentAsync((generation, token) => generation.PairAsync(address, code, token), ct);
     internal Task<PairingInvitation> CreateInvitationAsync(CancellationToken ct = default)
         => OnCurrentAsync((generation, token) => generation.CreateInvitationAsync(token), ct);
     internal Task CancelInvitationAsync(Guid invitation, CancellationToken ct = default)

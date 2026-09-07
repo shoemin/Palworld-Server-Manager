@@ -17,10 +17,12 @@ public sealed class PeerPairingRpcService(PeerPairingRpcRuntime runtime) : PeerP
         if (!await stream.MoveNext(ct).ConfigureAwait(false) || stream.Current.FrameCase != expected) throw new ArgumentException("Invalid pairing frame order.");
         return stream.Current;
     }
-    internal static void Negotiate(Handshake? hello)
+    internal static void Negotiate(Handshake? hello, bool advertisedInvitation = false)
     {
         if (hello is null || hello.Capabilities.Count > 64 || hello.ProductVersion.Length > 256) throw new ArgumentException();
-        NegotiatedProtocol.Negotiate(PeerPairingRpcRuntime.Hello(), hello).Require(FeatureCapability.PeerPairing);
+        var protocol = NegotiatedProtocol.Negotiate(PeerPairingRpcRuntime.Hello(), hello);
+        protocol.Require(FeatureCapability.PeerPairing);
+        if (advertisedInvitation) protocol.Require(FeatureCapability.PeerPairingAdvertisedInvitation);
     }
     internal static PeerPairingResult Wire(PeerBindingDisposition disposition) => disposition switch
     {
@@ -45,8 +47,11 @@ public sealed class PeerPairingRpcService(PeerPairingRpcRuntime runtime) : PeerP
             if (!http.Request.IsHttps || http.Request.Protocol != "HTTP/2") throw new AuthenticationException();
             var connection = http.Features.Get<PeerPairingConnection>() ?? throw new AuthenticationException(); connection.Begin();
             var start = (await Read(input, PeerPairingFrame.FrameOneofCase.Start, ct).ConfigureAwait(false)).Start;
-            Negotiate(start.Handshake);
-            attempt = runtime.Begin(PeerSecurityRpcService.Id(start.InvitationId), connection.Source, ct);
+            if (start.UseAdvertisedInvitation && start.InvitationId.Length != 0) throw new ArgumentException("Ambiguous pairing selector.");
+            Negotiate(start.Handshake, start.UseAdvertisedInvitation);
+            attempt = start.UseAdvertisedInvitation
+                ? runtime.BeginAdvertised(connection.Source, ct)
+                : runtime.Begin(PeerSecurityRpcService.Id(start.InvitationId), connection.Source, ct);
             await output.WriteAsync(new() { Challenge = new() { Handshake = PeerPairingRpcRuntime.Hello(), Nonce = ByteString.CopyFrom(attempt.SessionNonce), Share = ByteString.CopyFrom(attempt.InitialMessage) } }, ct).ConfigureAwait(false);
             var share = await Read(input, PeerPairingFrame.FrameOneofCase.Share, ct).ConfigureAwait(false);
             if (share.Share.Length != 65) throw new ArgumentException(); attempt.ReceivePeerMessage(share.Share.ToByteArray(), ct);

@@ -26,6 +26,7 @@ internal sealed class PairingAttemptCoordinator : IDisposable
     private readonly Dictionary<string, SourceState> sources = [];
     private readonly ITimer timer;
     private bool disposed;
+    private Guid advertisedInvitation;
 
     internal sealed class InvitationState(Guid id, long issued, RedactedSecret code)
     {
@@ -63,10 +64,17 @@ internal sealed class PairingAttemptCoordinator : IDisposable
                 for (var i = 0; i < bytes.Length; i++) bytes[i] = (byte)('0' + RandomNumberGenerator.GetInt32(10));
                 var id = Guid.NewGuid();
                 invitations.Add(id, new(id, time.GetTimestamp(), new RedactedSecret(bytes)));
+                advertisedInvitation = id;
                 return new(id, time.GetUtcNow() + Lifetime, new RedactedSecret(bytes));
             }
             finally { CryptographicOperations.ZeroMemory(bytes); }
         }
+    }
+
+    // Selection and ordinary source/invitation admission are one atomic operation.
+    internal Attempt BeginAdvertised(IPAddress trustedSource, CancellationToken ct = default)
+    {
+        lock (gate) return Begin(advertisedInvitation, trustedSource, ct);
     }
 
     internal Attempt Begin(Guid invitationId, IPAddress trustedSource, CancellationToken ct = default)
@@ -127,6 +135,7 @@ internal sealed class PairingAttemptCoordinator : IDisposable
     private void Remove(InvitationState invitation, PairingAttemptOutcome outcome)
     {
         invitations.Remove(invitation.Id); invitation.Code.Dispose();
+        ClearAdvertisement(invitation.Id);
         if (invitation.Active is { } attempt) Finish(attempt, outcome);
         else Report(invitation.Id, outcome);
     }
@@ -150,16 +159,20 @@ internal sealed class PairingAttemptCoordinator : IDisposable
         if (outcome == PairingAttemptOutcome.IdentityVerified)
         {
             invitations.Remove(attempt.invitation.Id); attempt.invitation.Code.Dispose();
+            ClearAdvertisement(attempt.invitation.Id);
             attempt.source.Last = time.GetTimestamp(); attempt.source.Delay = TimeSpan.FromSeconds(1);
         }
         else
         {
             Penalize(attempt.source);
-            if (++attempt.invitation.Failures >= 10) attempt.invitation.Code.Dispose();
+            if (++attempt.invitation.Failures >= 10)
+            { attempt.invitation.Code.Dispose(); ClearAdvertisement(attempt.invitation.Id); }
         }
         // A broken audit consumer cannot retain cryptographic state or revive an attempt.
         Report(attempt.Id, outcome);
     }
+    private void ClearAdvertisement(Guid invitation)
+    { if (advertisedInvitation == invitation) advertisedInvitation = Guid.Empty; }
     private void Report(Guid id, PairingAttemptOutcome outcome) { try { report(id, outcome); } catch { } }
     private void CheckAlive() => ObjectDisposedException.ThrowIf(disposed, this);
     private static CryptographicException Refused() => new("Pairing attempt rejected.");

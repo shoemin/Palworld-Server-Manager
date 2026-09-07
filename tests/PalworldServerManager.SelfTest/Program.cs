@@ -168,7 +168,7 @@ if (args.Length > 0)
     }
     if (args is ["--pairing-lifecycle-probe"])
     {
-        await PairingAttemptTests.Lifecycle(); await PairingAttemptTests.ExpiryAndCleanup(); await PairingAttemptTests.BoundsAndCancellation();
+        await PairingAttemptTests.Lifecycle(); await PairingAttemptTests.ExpiryAndCleanup(); await PairingAttemptTests.BoundsAndCancellation(); await PairingAttemptTests.AdvertisedSelection(); await PairingAttemptTests.AdvertisedAdmissionIsAtomic();
         Console.WriteLine("PASS Host pairing lifecycle probes."); return 0;
     }
     if (args is ["--peer-trust-probe"])
@@ -401,6 +401,8 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
     ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
     ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
+    ("Address/code selects only the latest live invitation without fallback", PairingAttemptTests.AdvertisedSelection),
+    ("Advertised invitation selection and admission serialize with creation and cancellation", PairingAttemptTests.AdvertisedAdmissionIsAtomic),
     ("Shell uses exact Host-qualified identity and separates focus from selection", ShellStateTests.ExactIdentityAndFocus),
     ("Shell inventory changes preserve aliases and remove hidden targets", ShellStateTests.InventoryAndAliases),
     ("Shell rejects stale, denied and canceled selection replies", ShellStateTests.StaleSelection),
