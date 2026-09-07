@@ -14,7 +14,7 @@ namespace PalworldServerManager.SelfTest;
 internal sealed class NativeTlsServiceFixture : IDisposable
 {
     internal sealed record Config(Guid HostId, Guid RotationHostId, string GroupSid, string PublicDirectory);
-    internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin, bool RotationQualified);
+    internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin, bool RotationQualified, bool ReceiptCrashQualified);
     private readonly IDisposable _runtime;
     private readonly Task _worker;
     internal NativeTlsServiceFixture(string service, string root, IDisposable runtime, CancellationToken stop)
@@ -38,6 +38,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 using var identity = WindowsIdentity.GetCurrent();
                 await WindowsRotationCutoverQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 await WindowsGenerationTransitionQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
+                await WindowsPeerReceiptCrashQualification.Run(root, identity.User!, stop);
                 var store = new WindowsSecureCredentialStore(root, identity.User!);
                 var material = new WindowsHostCredentialMaterial(store);
                 // Actual service-account protected storage; this is a reload fixture, not a crash claim.
@@ -62,7 +63,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await new WindowsLocalHostTrustPublisher(config.PublicDirectory, identity.User!).PublishAsync(new LocalHostTrustPublication(config.HostId, publicKeyPin), stop);
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin, true);
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin, true, true);
                 File.WriteAllText(Path.Combine(root, "tls-ready.tmp"), JsonSerializer.Serialize(ready));
                 File.Move(Path.Combine(root, "tls-ready.tmp"), Path.Combine(root, "tls-ready.json"), true);
                 await Task.Delay(Timeout.Infinite, stop);
@@ -94,6 +95,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 if (ready.ProcessId == pid)
                 {
                     if (!ready.RotationQualified) throw new Exception("Service rotation qualification was skipped.");
+                    if (!ready.ReceiptCrashQualified) throw new Exception("Service receipt process qualification was skipped.");
                     return ready;
                 }
             }
