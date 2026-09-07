@@ -307,11 +307,23 @@ internal static class HostGenerationTransitionTests
     }
     public static async Task CompletionPreflightAndReconciliationRecovery()
     {
-        await using var a=new Rig();await using var b=new Rig();await a.Actions.StartAsync();await b.Actions.StartAsync();await Bind(a,b);
-        var p=a.Prepare();await a.Actions.CutOverAsync(a.Owner,p.RotationId,Routes(b));
+        await using var a=new Rig();await using var b=new Rig();await using var c=new Rig();
+        await a.Actions.StartAsync();await b.Actions.StartAsync();await c.Actions.StartAsync();await Bind(a,b);await Bind(a,c);
+        var p=a.Prepare();var routes=Routes(b);routes.Add(c.F.State.HostId,c.Address);
+        await a.Actions.CutOverAsync(a.Owner,p.RotationId,routes);
+        Check(await a.Actions.ConfirmCurrentCredentialAsync(b.F.State.HostId,b.Address,p.RotationId));
+        // The second peer has not contacted New. Advance its own trust clock and run its actual lapse writer.
+        c.F.State.Time.Now+=TimeSpan.FromDays(3650);c.F.State.Repository.MaintainPendingPairingTrust();
+        Check(c.F.State.Repository.Read(a.F.State.HostId) is {PendingReconfirmationRequired:true} &&
+            c.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint==a.F.Pin);
         await Reject<AuthenticationException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
         Check(a.Actions.Phase==HostGenerationPhase.Serving && a.Starts==2 && a.State.Read().Rotations.Single().State==HostCredentialRotationState.CutOver);
-        Check(await a.Actions.ConfirmCurrentCredentialAsync(b.F.State.HostId,b.Address,p.RotationId));
+        // An actual authenticated contact promotes the second peer locally, but sends no promotion receipt.
+        await c.Actions.ActivateAsync(a.F.State.HostId,a.Address);
+        Check(c.F.State.Repository.Read(a.F.State.HostId)!.CurrentFingerprint==a.NextPin &&
+            c.F.State.Repository.Read(a.F.State.HostId)!.PendingRotationId==p.RotationId);
+        await Reject<AuthenticationException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
+        Check(await c.Actions.ConfirmRotationAsync(a.F.State.HostId,a.Address)==PeerRotationReceiptExchange.Confirmed);
         a.FailReconcile=true;await Reject<IOException>(()=>a.Actions.CompleteRotationAsync(a.Owner,p.RotationId));
         Check(a.Actions.Phase==HostGenerationPhase.Quiesced && a.Starts==2 && a.Borrowed.All(c=>c.Handle==IntPtr.Zero));
         Check(a.State.Read().Rotations.Single().State==HostCredentialRotationState.Completed && a.State.Read().CurrentReference==p.NewReference);

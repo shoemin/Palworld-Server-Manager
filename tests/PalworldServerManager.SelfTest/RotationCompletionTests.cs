@@ -52,7 +52,7 @@ internal static class RotationCompletionTests
         {
             using var r=new Rig();r.Receipt(r.A);
             Check(r.Inspect().UnresolvedPeers.SequenceEqual(new[]{r.B}));Reject<AuthenticationException>(()=>r.Complete());
-            r.F.Time.Now+=TimeSpan.FromDays(3650);r.F.Execute("UPDATE TrustedManagers SET PendingReconfirmationRequired=1,PendingRotationExpiresUtc='2000-01-01T00:00:00.0000000+00:00';");
+            r.F.Time.Now+=TimeSpan.FromDays(3650); // Sender time alone never supplies remote proof.
             Check(!r.Inspect().Ready);Reject<AuthenticationException>(()=>r.Complete());r.Retained();
             // Peer-local promotion alone/lost receipt has no Host evidence; only the durable receipt below resolves it.
             if(revoke)r.F.Execute($"UPDATE TrustedManagers SET State='Revoked',CurrentTrustedPublicKeyFingerprint=NULL,PendingTrustedPublicKeyFingerprint=NULL,PendingRotationId=NULL,PendingRotationExpiresUtc=NULL,PendingReconfirmationRequired=0,PeerRecoveryRequired=0,RevokedUtc='fixture' WHERE PeerHostId='{r.B:D}';");
