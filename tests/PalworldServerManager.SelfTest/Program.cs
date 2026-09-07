@@ -13,6 +13,16 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--role-preset-probe"])
+    {
+        await RolePresetTests.ImmutableShapesAndPureCanonicalExpansion();
+        await RolePresetTests.MixedPresetPersistsExactRowsAndAudit();
+        await RolePresetTests.AnyUnauthorizedEntryRejectsWholePreset();
+        await RolePresetTests.AuditAndSourceChangesRollBackWholeBatch();
+        await RolePresetTests.ConcurrentPresetsOwnerRootsAndExactRevocation();
+        await RolePresetTests.EmptyAndCancelledPresetHaveNoEffects();
+        Console.WriteLine("PASS canonical role presets."); return 0;
+    }
     if (args is ["--default-grants-probe"])
     {
         await DefaultGrantPolicyTests.FactoryShapesAndUpgrade();
@@ -582,6 +592,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Role presets ImmutableShapesAndPureCanonicalExpansion", RolePresetTests.ImmutableShapesAndPureCanonicalExpansion),
+    ("Role presets MixedPresetPersistsExactRowsAndAudit", RolePresetTests.MixedPresetPersistsExactRowsAndAudit),
+    ("Role presets AnyUnauthorizedEntryRejectsWholePreset", RolePresetTests.AnyUnauthorizedEntryRejectsWholePreset),
+    ("Role presets AuditAndSourceChangesRollBackWholeBatch", RolePresetTests.AuditAndSourceChangesRollBackWholeBatch),
+    ("Role presets ConcurrentPresetsOwnerRootsAndExactRevocation", RolePresetTests.ConcurrentPresetsOwnerRootsAndExactRevocation),
+    ("Role presets EmptyAndCancelledPresetHaveNoEffects", RolePresetTests.EmptyAndCancelledPresetHaveNoEffects),
     ("Default grants FactoryShapesAndUpgrade", DefaultGrantPolicyTests.FactoryShapesAndUpgrade),
     ("Default grants OnlyFreshOwnerMayConfigure", DefaultGrantPolicyTests.OnlyFreshOwnerMayConfigure),
     ("Default grants CurrentActivationDefaultsAndNoRetroactivity", DefaultGrantPolicyTests.CurrentActivationDefaultsAndNoRetroactivity),
