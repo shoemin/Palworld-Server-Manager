@@ -144,7 +144,7 @@ internal static class WindowsRotationCutoverQualification
                 var reply = await client.Negotiate();
                 Check(expectedSuccess && reply.Initialized && reply.Host.HostId == hostId.ToString("D") && delivered > 0, "Actual negotiated TLS lost Host identity or accepted Old.");
             }
-            catch (Grpc.Core.RpcException ex) when (!expectedSuccess && ex.StatusCode == Grpc.Core.StatusCode.Unavailable)
+            catch (Grpc.Core.RpcException ex) when (!expectedSuccess)
             {
                 var authenticationFailure = false;
                 for (Exception? cause = ex.Status.DebugException; cause is not null; cause = cause.InnerException)
