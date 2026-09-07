@@ -5,7 +5,7 @@ using PalworldServerManager.Host.Persistence;
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class RotationCompletionTests
+internal static partial class RotationCompletionTests
 {
     private static readonly string Old=new('A',64), Peer=new('B',64), New=new('C',64);
     private static void Check(bool value) {if(!value)throw new Exception("Rotation completion assertion failed.");}
@@ -37,7 +37,7 @@ internal static class RotationCompletionTests
         internal void Receipt(Guid peer)=>State.RecordRoutineRotationPromotionReceipt(new(Guid.NewGuid(),F.HostId,Rotation.RotationId,New),peer,Peer,New,Version(peer));
         internal void Confirm(Guid peer)=>State.RecordCurrentCredentialConfirmation(State.PrepareCurrentCredentialConfirmation(Rotation.RotationId,New),peer,Peer,New,Version(peer));
         internal RoutineRotationCompletionAssessment Inspect()=>State.InspectRoutineRotationCompletion(Owner,Rotation.RotationId,New);
-        internal RoutineRotationPreparation Complete(CancellationToken ct=default)=>State.CommitRoutineRotationCompletionWhileQuiesced(Owner,Rotation.RotationId,New,ct);
+        internal RoutineRotationPreparation Complete(CancellationToken ct=default)=>State.AuthorizeRoutineRotationRetirementWhileQuiesced(Owner,Rotation.RotationId,New,ct);
         internal void Retained()
         {
             Check(State.Read().Rotations.Single().State==HostCredentialRotationState.CutOver);
@@ -57,13 +57,20 @@ internal static class RotationCompletionTests
             // Peer-local promotion alone/lost receipt has no Host evidence; only the durable receipt below resolves it.
             if(revoke)r.F.Execute($"UPDATE TrustedManagers SET State='Revoked',CurrentTrustedPublicKeyFingerprint=NULL,PendingTrustedPublicKeyFingerprint=NULL,PendingRotationId=NULL,PendingRotationExpiresUtc=NULL,PendingReconfirmationRequired=0,PeerRecoveryRequired=0,RevokedUtc='fixture' WHERE PeerHostId='{r.B:D}';");
             else r.Receipt(r.B);
-            Check(r.Inspect().Ready && r.Complete().State==HostCredentialRotationState.Completed);
+            Check(r.Inspect().Ready && r.Complete().State==HostCredentialRotationState.CutOver);
+            Check(r.State.Read().Rotations.Single().RetirementAuthorized);
+            Check(r.State.Read().Credentials.All(c=>!c.Retired));
+            Check(HostDatabase.QueryScalarLong(r.F.Writer,"SELECT COUNT(*) FROM HostCredentialRotations WHERE CompletedUtc IS NOT NULL;")==0);
+            Check(r.Complete().State==HostCredentialRotationState.CutOver);
+            // Explicit post-deletion persistence fixture; actual protected/native deletion is
+            // exercised by reconciliation fault tests and the disposable service scenario.
+            r.State.RecordRetired(r.Rotation.OldReference);
             Check(HostTrustPlanning.Build(r.State.Read()).Retire.Contains(r.Rotation.OldReference));
             var stamp=HostDatabase.QueryScalarText(r.F.Writer,"SELECT CompletedUtc FROM HostCredentialRotations;");
             Check(r.Complete().State==HostCredentialRotationState.Completed && HostDatabase.QueryScalarText(r.F.Writer,"SELECT CompletedUtc FROM HostCredentialRotations;")==stamp);
             Check(HostDatabase.QueryScalarLong(r.F.Writer,"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='HostRoutineRotationCompleted';")==1);
-            Reject<AuthenticationException>(()=>r.State.CommitRoutineRotationCompletionWhileQuiesced(r.Owner with {PublicVerificationKey="stale"},r.Rotation.RotationId,New));
-            Check(r.State.Read().Credentials.All(c=>!c.Retired)); // Eligibility is not actual protected deletion.
+            Reject<AuthenticationException>(()=>r.State.AuthorizeRoutineRotationRetirementWhileQuiesced(r.Owner with {PublicVerificationKey="stale"},r.Rotation.RotationId,New));
+            Check(r.State.Read().Credentials.Single(c=>c.Reference==r.Rotation.OldReference).Retired);
         }
         return Task.CompletedTask;
     }
@@ -79,7 +86,7 @@ internal static class RotationCompletionTests
         Check(r.Inspect().UnresolvedPeers.SequenceEqual(new[]{fresh}));r.Confirm(fresh);Check(r.Inspect().Ready);
         r.F.Execute("DELETE FROM HostRotationPromotionEvidence; DELETE FROM HostRotationCurrentCredentialEvidence;");
         Check(r.Inspect().UnresolvedPeers.Count==3);Reject<AuthenticationException>(()=>r.Complete());r.Retained();
-        r.Confirm(r.A);r.Confirm(r.B);r.Confirm(fresh);Check(r.Complete().State==HostCredentialRotationState.Completed);
+        r.Confirm(r.A);r.Confirm(r.B);r.Confirm(fresh);Check(r.Complete().State==HostCredentialRotationState.CutOver);
         Check(HostDatabase.QueryScalarLong(r.F.Writer,$"SELECT COUNT(*) FROM HostCredentialRotationPeers WHERE PeerHostId='{fresh:D}' AND PromotedUtc IS NULL;")==1);
         return Task.CompletedTask;
     }
@@ -95,10 +102,10 @@ internal static class RotationCompletionTests
                 3=>$"INSERT INTO TrustedManagers (PeerHostId,State,CurrentTrustedPublicKeyFingerprint,CreatedUtc) VALUES ('{Guid.NewGuid():D}','Active','{Peer}','fixture');",
                 _=>"DELETE FROM HostRotationCurrentCredentialEvidence;"
             };
-            r.F.Execute("CREATE TRIGGER ChangeCompletion AFTER INSERT ON AuditEvents WHEN NEW.EventKind='HostRoutineRotationCompleted' BEGIN "+action+" END;");
+            r.F.Execute("CREATE TRIGGER ChangeCompletion AFTER INSERT ON AuditEvents WHEN NEW.EventKind='HostRoutineRotationRetirementAuthorized' BEGIN "+action+" END;");
             var refused=false;try {r.Complete();}catch(Exception ex)when(ex is AuthenticationException or SqliteException){refused=true;}
             Check(refused);r.Retained();Check(HostDatabase.QueryScalarLong(r.F.Writer,"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='HostRoutineRotationCompleted';")==0);
-            r.F.Execute("DROP TRIGGER ChangeCompletion;");Check(r.Complete().State==HostCredentialRotationState.Completed);
+            r.F.Execute("DROP TRIGGER ChangeCompletion;");Check(r.Complete().State==HostCredentialRotationState.CutOver);
         }
         return Task.CompletedTask;
     }

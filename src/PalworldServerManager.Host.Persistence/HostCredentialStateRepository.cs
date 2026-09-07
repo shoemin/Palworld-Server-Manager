@@ -42,12 +42,18 @@ public sealed partial class HostCredentialStateRepository(HostDatabase database,
         var identity=Identity(c,tx); var credentials=new List<HostCredentialMetadata>(); var rotations=new List<HostRotationMetadata>();
         using (var command=Command(c,tx,"SELECT CredentialRef,PublicKeyFingerprint,RetiredUtc FROM SecureCredentialReferences WHERE Purpose=$purpose;",("$purpose",TlsPurpose)))
         using (var r=command.ExecuteReader()) while(r.Read()) credentials.Add(new(Reference(r.GetString(0)),r.IsDBNull(1)?null:r.GetString(1),!r.IsDBNull(2)));
-        using (var command=Command(c,tx,"SELECT RotationId,OldCredentialRef,NewCredentialRef,State FROM HostCredentialRotations;"))
+        // Historical readers remain conservative: schema2-8 cannot carry retirement intent.
+        // Select by the durable schema version, never catch a malformed current-schema query.
+        int version;using(var schema=Command(c,tx,"PRAGMA user_version;"))version=Convert.ToInt32(schema.ExecuteScalar());
+        var rotationSql=version>=9
+            ? "SELECT RotationId,OldCredentialRef,NewCredentialRef,State,RetirementAuthorized FROM HostCredentialRotations;"
+            : "SELECT RotationId,OldCredentialRef,NewCredentialRef,State,0 FROM HostCredentialRotations;";
+        using (var command=Command(c,tx,rotationSql))
         using (var r=command.ExecuteReader()) while(r.Read())
         {
             if (!Guid.TryParseExact(r.GetString(0),"D",out var id) || id==Guid.Empty || !Enum.TryParse<HostCredentialRotationState>(r.GetString(3),out var state) || !Enum.IsDefined(state))
                 throw new InvalidDataException("Invalid persisted rotation state.");
-            rotations.Add(new(id,r.IsDBNull(1)?null:Reference(r.GetString(1)),r.IsDBNull(2)?null:Reference(r.GetString(2)),state));
+            rotations.Add(new(id,r.IsDBNull(1)?null:Reference(r.GetString(1)),r.IsDBNull(2)?null:Reference(r.GetString(2)),state,r.GetInt32(4)==1));
         }
         return new(_hostId,identity.Initialized,identity.Current,credentials.AsReadOnly(),rotations.AsReadOnly());
     }
@@ -102,7 +108,7 @@ public sealed partial class HostCredentialStateRepository(HostDatabase database,
         Execute(c,tx,"""
             UPDATE HostIdentity SET CurrentCredentialRef=$ref WHERE Id=1;
             UPDATE SecureCredentialReferences SET ActivatedUtc=$now WHERE CredentialRef=$ref;
-            UPDATE HostCredentialRotations SET State='Aborted',CompletedUtc=$now WHERE State IN ('Prepared','Staging','ReadyForCutover','CutOver');
+            UPDATE HostCredentialRotations SET State='Aborted',CompletedUtc=$now,RetirementAuthorized=0 WHERE State IN ('Prepared','Staging','ReadyForCutover','CutOver');
             UPDATE TrustedManagers SET PeerRecoveryRequired=1 WHERE State IN ('PeerBound','Active');
             UPDATE PendingCredentialReplacements SET InvalidatedUtc=$now WHERE InvalidatedUtc IS NULL;
             """,("$ref",reference),("$now",DateTimeOffset.UtcNow.ToString("O")));
@@ -113,7 +119,8 @@ public sealed partial class HostCredentialStateRepository(HostDatabase database,
         using var c=Open(); using var tx=c.BeginTransaction(deferred:false); var plan=HostTrustPlanning.Build(Read(c,tx));
         if(plan.Retained.Contains(reference,StringComparer.Ordinal)) throw new InvalidOperationException("Cannot retire an authoritative retained credential.");
         Execute(c,tx,"UPDATE SecureCredentialReferences SET RetiredUtc=COALESCE(RetiredUtc,$now) WHERE CredentialRef=$ref AND Purpose=$purpose;",
-            ("$ref",Reference(reference)),("$purpose",TlsPurpose),("$now",DateTimeOffset.UtcNow.ToString("O"))); tx.Commit();
+            ("$ref",Reference(reference)),("$purpose",TlsPurpose),("$now",DateTimeOffset.UtcNow.ToString("O")));
+        CompleteRetiredRotations(c,tx,reference); tx.Commit();
     }
     public bool HasEnrollmentHistory()
     {

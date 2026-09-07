@@ -110,11 +110,13 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
         try
         {
             await generation.StopAsync().ConfigureAwait(false);drained=true;lock(gate)current=null;
-            var result=await generation.QuiescedCompletion().CompleteWhileQuiescedAsync(owner,rotation,token).ConfigureAwait(false);
+            await generation.QuiescedCompletion().CompleteWhileQuiescedAsync(owner,rotation,token).ConfigureAwait(false);
             // Still quiesced: a failed publication/native cleanup/secret deletion is retryable
             // from durable Current. Only successful reconciliation proceeds to listener startup.
             await reconcile(token).ConfigureAwait(false);
-            await StartCurrentAsync(token,trustAlreadyReconciled:true).ConfigureAwait(false);return result;
+            var completed=state.InspectRoutineRotationCompletion(owner,rotation,generation.LocalFingerprint!).Rotation;
+            if(completed.State!=HostCredentialRotationState.Completed)throw new InvalidOperationException("Credential retirement is incomplete.");
+            await StartCurrentAsync(token,trustAlreadyReconciled:true).ConfigureAwait(false);return completed;
         }
         catch(Exception error)
         {
@@ -140,7 +142,10 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
         {
             ct.ThrowIfCancellationRequested();
             if(!trustAlreadyReconciled)await reconcile(ct).ConfigureAwait(false);
-            var snapshot = state.Read(); var projection = HostTrustPlanning.Build(snapshot).Publication;
+            var snapshot = state.Read();
+            if(snapshot.Rotations.Any(r=>r.RetirementAuthorized && r.State==HostCredentialRotationState.CutOver))
+                throw new InvalidOperationException("Credential retirement is incomplete.");
+            var projection = HostTrustPlanning.Build(snapshot).Publication;
             if (!snapshot.Initialized || projection is null) throw new AuthenticationException("Initialized Host trust is required.");
             candidate = await start(snapshot, ct).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();

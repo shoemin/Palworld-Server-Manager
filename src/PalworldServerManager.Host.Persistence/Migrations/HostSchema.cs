@@ -439,5 +439,6 @@ public static class HostSchema
         new Migration006PeerRelationshipIncarnation(),
         new Migration007CurrentCredentialEvidence(),
         new Migration008PeerLocalBindingEvidence(),
+        new Migration009RotationRetirementIntent(),
     ];
 }

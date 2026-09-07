@@ -15,6 +15,9 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--rotation-completion-probe"])
     {
+        await RotationCompletionTests.DeletionFailureAndCompletionAuditRecover();
+        await RotationCompletionTests.UpgradePreservesIntentWithoutInventingDeletion();
+        await RotationCompletionTests.RecoverySupersedesIntentAndFinalAuditRollsBack();
         await RotationCompletionTests.EveryPeerMustResolveAndExpiryIsNotProof();
         await RotationCompletionTests.CurrentIncarnationAndFirstNewProof();
         await RotationCompletionTests.FinalAuditAndScopeRollback();
@@ -546,6 +549,9 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Retirement failures and final audit retry before terminal rotation completion", RotationCompletionTests.DeletionFailureAndCompletionAuditRecover),
+    ("Retirement schema upgrade preserves intent without inventing deletion", RotationCompletionTests.UpgradePreservesIntentWithoutInventingDeletion),
+    ("Offline recovery supersedes retirement intent and final audit changes roll back", RotationCompletionTests.RecoverySupersedesIntentAndFinalAuditRollsBack),
     ("Rotation completion EveryPeerMustResolveAndExpiryIsNotProof", RotationCompletionTests.EveryPeerMustResolveAndExpiryIsNotProof),
     ("Rotation completion CurrentIncarnationAndFirstNewProof", RotationCompletionTests.CurrentIncarnationAndFirstNewProof),
     ("Rotation completion FinalAuditAndScopeRollback", RotationCompletionTests.FinalAuditAndScopeRollback),
