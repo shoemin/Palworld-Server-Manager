@@ -11,6 +11,11 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--rotation-material-probe"])
+    {
+        await RoutineRotationMaterialTests.DurableWriteRetryAndSerialization(); await RoutineRotationMaterialTests.CancellationAuthorizationAndAuditRollback(); await RoutineRotationMaterialTests.InvalidExistingMaterialNeverReplaced();
+        Console.WriteLine("PASS recoverable rotation material, current Owner/audit commit gates and invalid-material refusal."); return 0;
+    }
     if (args is ["--rotation-preparation-probe"])
     {
         await RoutineRotationPreparationTests.SerializedAndResumable(); await RoutineRotationPreparationTests.OwnerFreshnessAndRollback(); await RoutineRotationPreparationTests.AbortRetentionAndCutoverGate();
@@ -171,6 +176,9 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Routine rotation material recovers durable writes and serializes retries without changing identity", RoutineRotationMaterialTests.DurableWriteRetryAndSerialization),
+    ("Routine rotation material preserves reservations on cancellation and rejects stale Owner or audit failure", RoutineRotationMaterialTests.CancellationAuthorizationAndAuditRollback),
+    ("Routine rotation never replaces corrupt, missing recorded or unusable existing key material", RoutineRotationMaterialTests.InvalidExistingMaterialNeverReplaced),
     ("Routine rotation preparation is serialized and preserves a reserved credential across reopen", RoutineRotationPreparationTests.SerializedAndResumable),
     ("Routine rotation rechecks Owner identity and rolls back every transition on audit failure", RoutineRotationPreparationTests.OwnerFreshnessAndRollback),
     ("Routine rotation abort preserves current trust and cannot bypass CutOver retention", RoutineRotationPreparationTests.AbortRetentionAndCutoverGate),

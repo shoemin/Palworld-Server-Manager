@@ -49,6 +49,26 @@ public sealed partial class HostCredentialStateRepository
         RotationAudit(c, tx, owner, requestId, "HostRoutineRotationPrepared", now);
         tx.Commit(); return new(requestId, current, next, HostCredentialRotationState.Prepared, false);
     }
+    // Trusted material consumer provides a validated fingerprint, never caller-submitted key data.
+    public RoutineRotationPreparation RecordRoutineRotationMaterial(LocalPrincipalMutationActor owner, Guid rotationId, string fingerprint)
+    {
+        if (!HostTrustPlanning.Fingerprint(fingerprint)) throw new ArgumentException("Invalid public fingerprint.");
+        using var c = Open(); using var tx = c.BeginTransaction(deferred: false); var snapshot = RequireRoutineOwner(c, tx, owner);
+        var rotation = snapshot.Rotations.SingleOrDefault(r => r.RotationId == rotationId) ?? throw RoutineDenied();
+        if (rotation.State != HostCredentialRotationState.Prepared || snapshot.CurrentReference != rotation.OldReference || rotation.NewReference is null)
+            throw RoutineDenied();
+        var material = snapshot.Credentials.Single(m => m.Reference == rotation.NewReference);
+        if (material.Retired || fingerprint == snapshot.Credentials.Single(m => m.Reference == rotation.OldReference).PublicKeyFingerprint ||
+            (material.PublicKeyFingerprint is not null && material.PublicKeyFingerprint != fingerprint)) throw RoutineDenied();
+        if (material.PublicKeyFingerprint == fingerprint) return RotationResult(snapshot, rotation);
+        using var update = Command(c, tx, """
+            UPDATE SecureCredentialReferences SET PublicKeyFingerprint=$fp WHERE CredentialRef=$ref AND Purpose=$purpose
+                AND RetiredUtc IS NULL AND ActivatedUtc IS NULL AND PublicKeyFingerprint IS NULL;
+            """, ("$ref", rotation.NewReference), ("$purpose", TlsPurpose), ("$fp", fingerprint));
+        if (update.ExecuteNonQuery() != 1) throw RoutineDenied();
+        RotationAudit(c, tx, owner, rotationId, "HostRoutineRotationMaterialPrepared", DateTimeOffset.UtcNow.ToString("O"));
+        tx.Commit(); return new(rotationId, rotation.OldReference!, rotation.NewReference, rotation.State, true);
+    }
     // Material generation/validation belongs to the existing secure-store platform flow.
     // This method only makes ready public metadata eligible for local descriptor/peer staging.
     public RoutineRotationPreparation BeginRoutineRotationStaging(LocalPrincipalMutationActor owner, Guid rotationId)

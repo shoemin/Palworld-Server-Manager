@@ -38,6 +38,12 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 using var identity = WindowsIdentity.GetCurrent();
                 var store = new WindowsSecureCredentialStore(root, identity.User!);
                 var material = new WindowsHostCredentialMaterial(store);
+                // Actual service-account protected storage; this is a reload fixture, not a crash claim.
+                var preparedPin = await material.EnsurePreparedAsync(config.HostId, "tls-rotation", null, stop);
+                var recoveredPin = await new WindowsHostCredentialMaterial(store).EnsurePreparedAsync(config.HostId, "tls-rotation", null, stop);
+                var verifiedPin = await material.EnsurePreparedAsync(config.HostId, "tls-rotation", preparedPin, stop);
+                if (preparedPin != recoveredPin || preparedPin != verifiedPin) throw new Exception("Rotation material changed during protected-store reload.");
+                await store.DeleteAsync("tls-rotation", stop);
                 var existing = await store.RetrieveAsync("tls-current", stop);
                 if (existing is null)
                 {
