@@ -137,6 +137,12 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--windows-discovery-configuration-probe"])
+    {
+        await WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings();
+        await WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation();
+        Console.WriteLine("Windows discovery configuration probe passed."); return 0;
+    }
     if (args is ["--generation-discovery-probe"])
     {
         await HostGenerationDiscoveryTests.ActualBoundMetadataAndSealedConfiguration();
@@ -464,6 +470,8 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("LAN discovery source policy requires the exact interface and subnet host", WindowsLanInterfaceTests.LinkSourcePolicy),
     ("Windows LAN eligibility rejects virtual tunnels and changed adapter identity", WindowsLanInterfaceTests.HardwareEligibilityAndCorrelation),
     ("Windows LAN native layout and read-only adapter inventory match the SDK", WindowsLanInterfaceTests.NativeLayoutAndReadOnlyInventory),
+    ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
+    ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
     ("Generation discovery ActualBoundMetadataAndSealedConfiguration", HostGenerationDiscoveryTests.ActualBoundMetadataAndSealedConfiguration),
     ("Generation discovery StopStartsDiscoveryBeforeTrafficDrain", HostGenerationDiscoveryTests.StopStartsDiscoveryBeforeTrafficDrain),
