@@ -13,6 +13,16 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--capability-use-probe"])
+    {
+        await CapabilityUseTests.EveryTypedCapabilityUsesOnlyItsExactGrant();
+        await CapabilityUseTests.QualifiedTargetsAndRevocationInvalidateEarlierObservations();
+        await CapabilityUseTests.TwoHostCeilingsAreIndependentForHostAndServer();
+        await CapabilityUseTests.EveryEntryRequiresCurrentProofAndClosedInputs();
+        await CapabilityUseTests.UseDenialsRecordRealActorTargetAndSurviveContention();
+        await CapabilityUseTests.UseAuditFaultsAndLateProofChangesRollBack();
+        Console.WriteLine("PASS authenticated current capability use."); return 0;
+    }
     if (args is ["--permission-denial-probe"])
     {
         await PermissionDenialAuditTests.EveryPreWritePathRecordsActualActorWithoutEffects();
@@ -636,6 +646,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Capability use EveryTypedCapabilityUsesOnlyItsExactGrant", CapabilityUseTests.EveryTypedCapabilityUsesOnlyItsExactGrant),
+    ("Capability use QualifiedTargetsAndRevocationInvalidateEarlierObservations", CapabilityUseTests.QualifiedTargetsAndRevocationInvalidateEarlierObservations),
+    ("Capability use TwoHostCeilingsAreIndependentForHostAndServer", CapabilityUseTests.TwoHostCeilingsAreIndependentForHostAndServer),
+    ("Capability use EveryEntryRequiresCurrentProofAndClosedInputs", CapabilityUseTests.EveryEntryRequiresCurrentProofAndClosedInputs),
+    ("Capability use UseDenialsRecordRealActorTargetAndSurviveContention", CapabilityUseTests.UseDenialsRecordRealActorTargetAndSurviveContention),
+    ("Capability use UseAuditFaultsAndLateProofChangesRollBack", CapabilityUseTests.UseAuditFaultsAndLateProofChangesRollBack),
     ("Permission denial EveryPreWritePathRecordsActualActorWithoutEffects", PermissionDenialAuditTests.EveryPreWritePathRecordsActualActorWithoutEffects),
     ("Permission denial AuthenticationMalformedStaleAndCancellationAreNotPolicyDenials", PermissionDenialAuditTests.AuthenticationMalformedStaleAndCancellationAreNotPolicyDenials),
     ("Permission denial DenialAuditFailureRemovalMutationAndIdentityRaceRollBack", PermissionDenialAuditTests.DenialAuditFailureRemovalMutationAndIdentityRaceRollBack),
