@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.AccessControl;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -60,6 +61,12 @@ internal static partial class WindowsPeerReceiptCrashQualification
         internal async Task<string> Initialize(CancellationToken ct)
         {
             Check(!Directory.Exists(Config.Root) && !File.Exists(Config.Root), "Refusing existing fixture state.");
+            // A nested directory inherits permissions but is not itself protected from
+            // inheritance. Provision the new fixture root explicitly before the database;
+            // the production store must continue refusing unprotected roots.
+            Directory.CreateDirectory(Path.GetDirectoryName(Config.Root)!);
+            var acl = WindowsHostPlatform.BuildHostDirectoryAcl(new(Config.Sid));
+            acl.SetOwner(new SecurityIdentifier(Config.Sid)); new DirectoryInfo(Config.Root).Create(acl);
             using var c = Database.OpenConnection(); new HostSchemaMigrationRunner(HostSchema.AllMigrations()).Migrate(c);
             var identity = new HostIdentityRepository(Database);
             identity.EnsureHostIdentity(c, hostIdFactory: () => Config.Host.ToString("D"));
