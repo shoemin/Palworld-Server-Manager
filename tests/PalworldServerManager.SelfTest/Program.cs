@@ -13,6 +13,14 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--bound-peer-observation-probe"])
+    {
+        await BoundPeerObservationTests.CurrentLapsedAndPendingPreserveIdentityAndExactEffects();
+        await BoundPeerObservationTests.WrongConnectionAndInactiveTrustNeverObserve();
+        await BoundPeerObservationTests.AuditHistoryAndLateProofMutationsRollBack();
+        await BoundPeerObservationTests.CancellationConcurrencyAndMissingRevisionFailClosed();
+        Console.WriteLine("PASS original connection bound peer observation."); return 0;
+    }
     if (args is ["--capability-use-probe"])
     {
         await CapabilityUseTests.EveryTypedCapabilityUsesOnlyItsExactGrant();
@@ -646,6 +654,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Bound peer observation CurrentLapsedAndPendingPreserveIdentityAndExactEffects", BoundPeerObservationTests.CurrentLapsedAndPendingPreserveIdentityAndExactEffects),
+    ("Bound peer observation WrongConnectionAndInactiveTrustNeverObserve", BoundPeerObservationTests.WrongConnectionAndInactiveTrustNeverObserve),
+    ("Bound peer observation AuditHistoryAndLateProofMutationsRollBack", BoundPeerObservationTests.AuditHistoryAndLateProofMutationsRollBack),
+    ("Bound peer observation CancellationConcurrencyAndMissingRevisionFailClosed", BoundPeerObservationTests.CancellationConcurrencyAndMissingRevisionFailClosed),
     ("Capability use EveryTypedCapabilityUsesOnlyItsExactGrant", CapabilityUseTests.EveryTypedCapabilityUsesOnlyItsExactGrant),
     ("Capability use QualifiedTargetsAndRevocationInvalidateEarlierObservations", CapabilityUseTests.QualifiedTargetsAndRevocationInvalidateEarlierObservations),
     ("Capability use TwoHostCeilingsAreIndependentForHostAndServer", CapabilityUseTests.TwoHostCeilingsAreIndependentForHostAndServer),

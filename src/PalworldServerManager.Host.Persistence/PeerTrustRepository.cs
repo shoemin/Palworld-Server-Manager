@@ -197,12 +197,16 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
         }
         return expired.Count;
     }
-    private void Audit(SqliteConnection c, SqliteTransaction tx, Guid peer, string kind, DateTimeOffset now)
-        => Execute(c, tx, """
+    private Guid Audit(SqliteConnection c, SqliteTransaction tx, Guid peer, string kind, DateTimeOffset now)
+    {
+        var id = Guid.NewGuid();
+        Execute(c, tx, """
             INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorPeerHostId,AffectedHostId,Summary)
             VALUES ($id,$now,$kind,$actorKind,$actorPeer,$host,$summary);
-            """, ("$id", Id(Guid.NewGuid())), ("$now", Stamp(now)), ("$kind", kind),
+            """, ("$id", Id(id)), ("$now", Stamp(now)), ("$kind", kind),
             ("$actorKind", kind is "PeerBoundExpired" or "PeerRotationReconfirmationRequired" ? null : "RemoteManager"),
             ("$actorPeer", kind is "PeerBoundExpired" or "PeerRotationReconfirmationRequired" ? null : Id(peer)), ("$host", Id(hostId)),
             ("$summary", $"{kind}: peer {Id(peer)}."));
+        return id;
+    }
 }
