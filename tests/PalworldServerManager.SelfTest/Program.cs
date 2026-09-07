@@ -13,6 +13,17 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--grant-persistence-probe"])
+    {
+        await GrantPolicyPersistenceTests.CanonicalWritesAndRealAudit();
+        await GrantPolicyPersistenceTests.DenialsAndFreshLocalProof();
+        await GrantPolicyPersistenceTests.ExactOwnerSubtreeAndExistingRevocation();
+        await GrantPolicyPersistenceTests.AuditFailureAndPostAuditMutationRollback();
+        await GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation();
+        await GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions();
+        await GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed();
+        Console.WriteLine("PASS transactional grant persistence."); return 0;
+    }
     if (args is ["--authorization-foundation-probe"])
     {
         await AuthorizationPolicyTests.ModelsAndProtocolMapping();
@@ -559,6 +570,13 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Grant persistence CanonicalWritesAndRealAudit", GrantPolicyPersistenceTests.CanonicalWritesAndRealAudit),
+    ("Grant persistence DenialsAndFreshLocalProof", GrantPolicyPersistenceTests.DenialsAndFreshLocalProof),
+    ("Grant persistence ExactOwnerSubtreeAndExistingRevocation", GrantPolicyPersistenceTests.ExactOwnerSubtreeAndExistingRevocation),
+    ("Grant persistence AuditFailureAndPostAuditMutationRollback", GrantPolicyPersistenceTests.AuditFailureAndPostAuditMutationRollback),
+    ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
+    ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
+    ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
     ("Authorization ModelsAndProtocolMapping", AuthorizationPolicyTests.ModelsAndProtocolMapping),
     ("Authorization ExhaustiveDelegationRightsAndTypedScope", AuthorizationPolicyTests.ExhaustiveDelegationRightsAndTypedScope),
     ("Authorization ForestValidityAndExactSubtrees", AuthorizationPolicyTests.ForestValidityAndExactSubtrees),

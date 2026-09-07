@@ -440,5 +440,6 @@ public static class HostSchema
         new Migration007CurrentCredentialEvidence(),
         new Migration008PeerLocalBindingEvidence(),
         new Migration009RotationRetirementIntent(),
+        new Migration010AuthorizationRevision(),
     ];
 }
