@@ -2987,3 +2987,6 @@ Five new persistence and three new generation scenarios plus extended actual TLS
 
 
 Review A found the expiry test changed the rotating Host's unrelated incoming peer-rotation metadata, which did not directly prove the intended receiving-peer deadline case. Removed that misleading fixture write and expanded actual generation qualification to three Hosts: one peer resolves, the second's own pending-trust deadline lapses and its actual maintenance writer marks reconfirmation; completion still refuses. Actual New TLS then promotes that second peer locally without delivering its receipt, and completion must still refuse until its ordinary receipt commits. This is one A validation correction cycle (two pre-A plus A1 = three total), no escaped product defect. Fresh focused/full and exact executable/test CI required.
+
+
+A second documentation review correction updates the Windows composition's stale scenario description: both keys remain at CutOver, then the newly extended completion/recovery qualification actually retires Old. The lifecycle document now distinguishes recoverable completion reconciliation failure from existing terminal initial/cutover/recovery reconciliation failures. No code/test change. Total four correction/verification cycles: two pre-A, A2, B pending. Nineteen changed files; no escaped product defect.
