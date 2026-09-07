@@ -17,6 +17,13 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--rotation-status-rpc-probe"])
+    {
+        await ProtocolTests.SchemaEvolution(); await PeerRotationStatusRpcTests.ActualRenewalAbortAndFreshRetry();
+        await PeerRotationStatusRpcTests.ActualNewProofPromotesWithoutStatusClaim(); await PeerRotationStatusRpcTests.NegotiationActiveAndFreshTrustGates();
+        await PeerRotationStatusRpcTests.WireClosedEnumsAndLocalCredentialChange(); await PeerRotationStatusRpcTests.ActualReplyForgeryAndStaleOwnerAreRefused();
+        Console.WriteLine("PASS actual pinned rotation status RPC, Owner renewal, live New proof and protocol/trust gates."); return 0;
+    }
     if (args is ["--rotation-reconfirmation-probe"])
     {
         await RotationReconfirmationTests.RenewalRequiresLiveIntentAndFreshOwner(); await RotationReconfirmationTests.AbandonmentAndUntrustedCutoverClaims();
@@ -203,6 +210,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Actual rotation status replies cannot replay correlation forge cutover or reuse stale Owner authority", PeerRotationStatusRpcTests.ActualReplyForgeryAndStaleOwnerAreRefused),
+    ("Actual pinned rotation status renews with Owner intent and recovers abort after failed contact", PeerRotationStatusRpcTests.ActualRenewalAbortAndFreshRetry),
+    ("Rotation status connection promotes only with actual New possession proof", PeerRotationStatusRpcTests.ActualNewProofPromotesWithoutStatusClaim),
+    ("Rotation status RPC requires negotiation Active trust and fresh identity checks", PeerRotationStatusRpcTests.NegotiationActiveAndFreshTrustGates),
+    ("Rotation status denies unknown wire states and changed local connection credentials", PeerRotationStatusRpcTests.WireClosedEnumsAndLocalCredentialChange),
     ("Rotation query expiry before commit rolls back renewal and its audit", RotationReconfirmationTests.DeadlineCrossingDuringAuditRollsBack),
     ("Retained rotation renewal requires fresh Owner intent and live exact status", RotationReconfirmationTests.RenewalRequiresLiveIntentAndFreshOwner),
     ("Old-key status claims never promote and live abandonment preserves grants", RotationReconfirmationTests.AbandonmentAndUntrustedCutoverClaims),

@@ -40,7 +40,7 @@ internal static class PeerSecurityRpcTests
             command.Parameters.AddWithValue("$peer", activation.PeerHostId.ToString("D")); command.ExecuteNonQuery();
         }
     }
-    private sealed class Fixture : IAsyncDisposable
+    internal sealed class Fixture : IAsyncDisposable
     {
         internal readonly PeerTrustTests.Fixture State = new();
         internal readonly PeerTlsTests.Certificate Certificate = new();
@@ -55,9 +55,9 @@ internal static class PeerSecurityRpcTests
             Runtime = new(State.Database, State.HostId, new Hook(), State.Time);
         }
         internal void Bind(Fixture peer) => State.Repository.RecordVerifiedBinding(peer.State.HostId, peer.Pin, Pin);
-        internal async Task Start()
+        internal async Task Start(System.Security.Cryptography.X509Certificates.X509Certificate2? presented = null)
         {
-            app = WindowsHostComposition.BuildPeerApplication(Runtime, Certificate.Value, new(IPAddress.Loopback, 0));
+            app = WindowsHostComposition.BuildPeerApplication(Runtime, presented ?? Certificate.Value, new(IPAddress.Loopback, 0));
             Check(app.Configuration["urls"] is null && app.Environment.EnvironmentName == "Production");
             await app.StartAsync(); Check(app.Urls.Count == 1 && Address.Scheme == "https");
         }
@@ -68,7 +68,7 @@ internal static class PeerSecurityRpcTests
         public async ValueTask DisposeAsync()
         { try { await Stop(); } finally { Certificate.Dispose(); State.Dispose(); } }
     }
-    private sealed class RawClient : IDisposable
+    internal sealed class RawClient : IDisposable
     {
         private readonly SocketsHttpHandler handler;
         private readonly GrpcChannel channel;
@@ -91,7 +91,7 @@ internal static class PeerSecurityRpcTests
     }
     private static PeerActivationAck Ack(Fixture sender, Fixture receiver) => PeerSecurityRpcService.Wire(
         sender.State.Repository.PrepareActivationAcknowledgement(receiver.State.HostId, receiver.Pin, sender.Pin));
-    private sealed class UnprovenTransport(string advertisedPin) : IPeerHttpTransportFactory
+    internal sealed class UnprovenTransport(string advertisedPin) : IPeerHttpTransportFactory
     {
         internal bool Admitted;
         public IPeerHttpTransport Create(Func<string, bool> acceptsServerPin, Action<PeerTlsConnectionIdentity>? observed = null)

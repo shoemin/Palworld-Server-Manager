@@ -13,7 +13,25 @@ enum PeerActivationResult {
   PEER_ACTIVATION_RESULT_ALREADY_ACTIVE = 2;
 }
 message PeerActivationReply { PeerActivationAck acknowledgement = 1; PeerActivationResult result = 2; }
+message PeerRotationStatusRequest {
+  string query_id = 1;
+  string host_id = 2;
+  string rotation_id = 3;
+  string old_fingerprint = 4;
+  string new_fingerprint = 5;
+}
+enum PeerRotationLiveState {
+  PEER_ROTATION_LIVE_STATE_UNSPECIFIED = 0;
+  PEER_ROTATION_LIVE_STATE_UNKNOWN = 1;
+  PEER_ROTATION_LIVE_STATE_STAGING = 2;
+  PEER_ROTATION_LIVE_STATE_READY_FOR_CUTOVER = 3;
+  PEER_ROTATION_LIVE_STATE_CUT_OVER = 4;
+  PEER_ROTATION_LIVE_STATE_COMPLETED = 5;
+  PEER_ROTATION_LIVE_STATE_ABORTED = 6;
+}
+message PeerRotationStatusReply { PeerRotationStatusRequest request = 1; PeerRotationLiveState state = 2; }
 service PeerSecurityProtocol {
   rpc Negotiate(PeerHello) returns (PeerHello);
   rpc Activate(PeerActivationAck) returns (PeerActivationReply);
+  rpc ReadRotationStatus(PeerRotationStatusRequest) returns (PeerRotationStatusReply);
 }

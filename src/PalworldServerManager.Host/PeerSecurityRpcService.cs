@@ -14,7 +14,8 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
     internal static PeerActivationAck Wire(PeerActivationAcknowledgement ack) => new()
     { FromHostId = ack.FromHostId.ToString("D"), RecordedHostId = ack.RecordedHostId.ToString("D"), RecordedFingerprint = ack.RecordedFingerprint };
     internal static PeerActivationAcknowledgement Durable(PeerActivationAck ack) => new(Id(ack.FromHostId), Id(ack.RecordedHostId), ack.RecordedFingerprint);
-    private async Task<T> Dispatch<T>(ServerCallContext context, bool negotiation, Func<PeerSecurityRpcConnection, T> action)
+    private async Task<T> Dispatch<T>(ServerCallContext context, bool negotiation, Func<PeerSecurityRpcConnection, T> action,
+        FeatureCapability feature = FeatureCapability.PeerTrustActivation, PeerTrafficPurpose purpose = PeerTrafficPurpose.PairingFinalization)
     {
         try
         {
@@ -26,8 +27,8 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
                 if (!negotiation)
                 {
                     if (session.Protocol is null) throw new InvalidOperationException();
-                    session.Protocol.Require(FeatureCapability.PeerTrustActivation);
-                    runtime.Authentication.Authenticate(session.PeerId, session.PeerFingerprint, PeerTrafficPurpose.PairingFinalization);
+                    session.Protocol.Require(feature);
+                    runtime.Authentication.Authenticate(session.PeerId, session.PeerFingerprint, purpose);
                 }
                 return action(session);
             }, context.CancellationToken).ConfigureAwait(false);
@@ -64,4 +65,7 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
             _ => throw new InvalidOperationException()
         } };
     });
+    public override Task<PeerRotationStatusReply> ReadRotationStatus(PeerRotationStatusRequest request, ServerCallContext context) => Dispatch(context, false, session =>
+        PeerRotationStatusWire.Wire(runtime.Credentials.ReadRoutineRotationStatus(PeerRotationStatusWire.Durable(request), session.LocalFingerprint)),
+        FeatureCapability.PeerRotationStatus, PeerTrafficPurpose.TrustMaintenance);
 }
