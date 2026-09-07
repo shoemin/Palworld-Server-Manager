@@ -30,18 +30,18 @@ public sealed class WindowsLanDiscoveryReceiver : ILanDiscoveryReceiver
     {
         ArgumentNullException.ThrowIfNull(received); ArgumentNullException.ThrowIfNull(admits);
         this.received = received; this.admits = admits;
-        socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        stopping = new(); token = stopping.Token;
-        try
+        var actualPort = 0;
+        socket = WindowsLanAvailability.CreateSocket(() => new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp), candidate =>
         {
-            socket.ExclusiveAddressUse = true;
-            socket.ReceiveBufferSize = 64 * 1024;
-            socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
-            if (Convert.ToInt32(socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation)) == 0)
+            candidate.ExclusiveAddressUse = true;
+            candidate.ReceiveBufferSize = 64 * 1024;
+            candidate.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+            if (Convert.ToInt32(candidate.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation)) == 0)
                 throw new IOException("IPv4 packet information is required for LAN discovery.");
-            socket.Bind(endpoint); Port = ((IPEndPoint)socket.LocalEndPoint!).Port;
-            Completion = Task.Run(RunAsync);
-        }
+            candidate.Bind(endpoint); actualPort = ((IPEndPoint)candidate.LocalEndPoint!).Port;
+        });
+        Port = actualPort; stopping = new(); token = stopping.Token;
+        try { Completion = Task.Run(RunAsync); }
         catch { try { socket.Dispose(); } finally { stopping.Dispose(); } throw; }
     }
 
@@ -51,7 +51,7 @@ public sealed class WindowsLanDiscoveryReceiver : ILanDiscoveryReceiver
         return new(IPAddress.Any, port);
     }
     private static bool ProductionAdmission(int index, IPAddress source) =>
-        new WindowsLanInterfaceSource().Read().Any(link => link.AdmitsSource(index, source));
+        WindowsLanAvailability.ReadLinks().Any(link => link.AdmitsSource(index, source));
 
     private async Task RunAsync()
     {
@@ -65,7 +65,7 @@ public sealed class WindowsLanDiscoveryReceiver : ILanDiscoveryReceiver
                 // Even malformed/oversize traffic pays this interval; no cached eligibility authority.
                 await Task.Delay(ReceiveInterval, token).ConfigureAwait(false);
                 SocketReceiveMessageFromResult packet;
-                try { packet = await socket.ReceiveMessageFromAsync(buffer.AsMemory(), SocketFlags.None, anySource, token).ConfigureAwait(false); }
+                try { packet = await WindowsLanAvailability.InvokeAsync(() => socket.ReceiveMessageFromAsync(buffer.AsMemory(), SocketFlags.None, anySource, token)).ConfigureAwait(false); }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize) { continue; }
                 catch (Exception ex) when (IsStopping() && ex is SocketException or ObjectDisposedException) { break; }
                 if (packet.ReceivedBytes is < 1 or > MaximumPacketBytes || (packet.SocketFlags & (SocketFlags.Truncated | SocketFlags.ControlDataTruncated)) != 0 ||
@@ -74,8 +74,13 @@ public sealed class WindowsLanDiscoveryReceiver : ILanDiscoveryReceiver
                 if (!admits(packet.PacketInformation.Interface, source.Address)) continue;
                 // Admission is serialized with stop. An already admitted callback belongs to the drain.
                 lock (gate) { if (stopRequested) break; }
-                await received(packet.PacketInformation.Interface, new IPAddress(source.Address.GetAddressBytes()),
-                    buffer.AsMemory(0, packet.ReceivedBytes).ToArray(), token).ConfigureAwait(false);
+                try
+                {
+                    await received(packet.PacketInformation.Interface, new IPAddress(source.Address.GetAddressBytes()),
+                        buffer.AsMemory(0, packet.ReceivedBytes).ToArray(), token).ConfigureAwait(false);
+                }
+                catch (LanDiscoveryUnavailableException ex)
+                { throw new IOException("A discovery callback failed outside the Windows availability boundary.", ex); }
             }
         }
         catch (OperationCanceledException ex) when (IsStopping() && ex.CancellationToken == token) { }
@@ -97,9 +102,9 @@ public sealed class WindowsLanDiscoveryReceiver : ILanDiscoveryReceiver
     private async Task CloseAsync()
     {
         Exception? failure = null;
-        try { socket.Dispose(); } catch (Exception ex) { failure = ex; }
+        try { socket.Dispose(); } catch (Exception ex) { failure = new AggregateException("Discovery receiver socket cleanup failed.", ex); }
         try { await stopping.CancelAsync().ConfigureAwait(false); }
-        catch (Exception ex) { failure = failure is null ? ex : new AggregateException(failure, ex); }
+        catch (Exception ex) { failure = failure is null ? new AggregateException("Discovery cancellation cleanup failed.", ex) : new AggregateException(failure, ex); }
         if (failure is not null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
     }
     public ValueTask DisposeAsync()
