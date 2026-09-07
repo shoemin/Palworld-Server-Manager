@@ -11,7 +11,7 @@ namespace PalworldServerManager.SelfTest;
 
 internal static class WindowsPeerPrecommitCrashQualification
 {
-    private static void Unbound(FixtureHost host, string peerPin)
+    internal static void Unbound(FixtureHost host, string peerPin)
     {
         host.RequireFixture(); host.RequireNoGrants(0);
         Check(host.Peers.Read(host.Config.Peer) is null, "An interrupted exchange persisted trust.");
