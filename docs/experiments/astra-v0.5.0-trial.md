@@ -2118,3 +2118,8 @@ All forty invariants evaluated across the full affected graph: ARCH-001/002 PASS
 
 
 A2 actual Windows run `34082339071` (job `101619884018`) failed at the deliberate Old-key refusal oracle: the existing local transport reports gRPC Internal for failure starting a TLS-authenticated call, while the new fixture caught only Unavailable. The actual inner AuthenticationException confirmed certificate rejection; this was a test expectation error, not a product trust failure. Corrected the catch to inspect any negative-case RpcException and still require an actual AuthenticationException in its cause chain plus zero request delivery. Arbitrary network/RPC failure cannot satisfy it. Three total correction/verification cycles now (compile, A1, A2). Initial local 309/309 and UI/strict Docs passed; required checks will rerun against the corrected content. No new escaped product defect.
+
+
+### #44t Review Pass A completion
+
+Exact executable/test HEAD `5ab2a67131b8f85978c42780cc0bea57e828ed26`: all-three-job CI `34082543588` and Docs `34082545459` PASS. Actual Windows service/multi-user run completes with mandatory per-process cutover qualification, protected material/publication, retained native keys, Old refusal, New negotiation and fixture cleanup. Corrected local 309/309, actual UI, strict Docs and zero-warning build PASS. All seven changed files and affected production boundaries reviewed; full forty-invariant audit and stale sibling scan completed. Three correction/verification cycles, with initial compile and first Windows-oracle failures recorded; no new product escape. A clean before PR creation. Full all-listener ownership, installed initiation, retirement and complete field qualification remain outstanding.
