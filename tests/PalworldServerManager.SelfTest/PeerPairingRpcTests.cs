@@ -130,10 +130,11 @@ internal static class PeerPairingRpcTests
     }
     private sealed class Hook : IPeerActivationHook
     {
-        public void Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
+        public Action Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
         {
             using var cmd = c.CreateCommand(); cmd.Transaction = tx; cmd.CommandText = "INSERT INTO PairingActivationEffects VALUES ($peer);";
             cmd.Parameters.AddWithValue("$peer", activation.PeerHostId.ToString("D")); cmd.ExecuteNonQuery();
+            return static()=>{}; // Explicit synthetic effect; production defaults supply a real final guard.
         }
     }
     public static async Task AuditFailureBlocksAdmission()

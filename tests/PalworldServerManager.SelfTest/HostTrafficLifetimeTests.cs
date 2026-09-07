@@ -140,11 +140,12 @@ internal static class HostTrafficLifetimeTests
     {
         internal readonly TaskCompletionSource Entered = Signal();
         internal readonly ManualResetEventSlim Release = new();
-        public void Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
+        public Action Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
         {
             Entered.TrySetResult();
             if (!Release.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException("Blocked mutation was not released.");
             HostDatabase.Execute(c, "INSERT INTO ActivationRpcEffects VALUES ('blocked-incoming');", tx);
+            return static()=>{}; // Explicit synthetic effect; production defaults supply a real final guard.
         }
         public void Dispose() => Release.Dispose();
     }

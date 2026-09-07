@@ -64,14 +64,18 @@ public sealed partial class GrantPolicyRepository
     }
     private static void Audit(SqliteConnection c,SqliteTransaction tx,LocalPrincipalMutationActor actor,CapabilityGrant grant,
         string kind,DateTimeOffset now,int changed=1)
+        =>Audit(c,tx,ActorRef.LocalPrincipal(actor.LocalPrincipalId),grant,kind,now,changed,"Direct");
+    private static void Audit(SqliteConnection c,SqliteTransaction tx,ActorRef actor,CapabilityGrant grant,
+        string kind,DateTimeOffset now,int changed,string origin)
     {
         var host=grant as HostCapabilityGrant;var server=grant as ServerCapabilityGrant;
-        var summary=$"Grant={Id(grant.GrantId)}; Source={grant.DerivedFromGrantId?.ToString("D")??"OwnerRoot"}; Grantee={grant.GranteeActor.Kind}:{Id(grant.GranteeActor.Id)}; Capability={host?.Capability.ToString()??server!.Capability.ToString()}; Delegate={grant.Rights.CanDelegate}; Onward={grant.Rights.CanDelegateOnwardDelegation}; Changed={changed}.";
+        var summary=$"Grant={Id(grant.GrantId)}; Source={grant.DerivedFromGrantId?.ToString("D")??"OwnerRoot"}; Grantee={grant.GranteeActor.Kind}:{Id(grant.GranteeActor.Id)}; Capability={host?.Capability.ToString()??server!.Capability.ToString()}; Delegate={grant.Rights.CanDelegate}; Onward={grant.Rights.CanDelegateOnwardDelegation}; Changed={changed}; Issuer={grant.GrantedByActor.Kind}:{Id(grant.GrantedByActor.Id)}; Origin={origin}.";
         Execute(c,tx,"""
-            INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorLocalPrincipalId,
+            INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorLocalPrincipalId,ActorPeerHostId,
                 AffectedHostId,AffectedServerProfileId,IsOfflineRecovery,Summary)
-            VALUES ($id,$now,$kind,'LocalPrincipal',$actor,$host,$server,0,$summary);
-            """,("$id",Id(Guid.NewGuid())),("$now",Stamp(now)),("$kind",kind),("$actor",Id(actor.LocalPrincipalId)),
+            VALUES ($id,$now,$kind,$actorKind,$actor,$peer,$host,$server,0,$summary);
+            """,("$id",Id(Guid.NewGuid())),("$now",Stamp(now)),("$kind",kind),("$actorKind",actor.Kind.ToString()),
+            ("$actor",actor.Kind==ActorKind.LocalPrincipal?Id(actor.Id):null),("$peer",actor.Kind==ActorKind.RemoteManager?Id(actor.Id):null),
             ("$host",Id(host?.TargetHostId??server!.Target.AuthoritativeHostId)),("$server",server?.Target.ServerProfileId.ToString("D")),("$summary",summary));
     }
     // This bounded primitive requires structural Owner. It grants no new revocation semantics

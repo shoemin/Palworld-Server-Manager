@@ -27,7 +27,7 @@ internal static class WindowsGenerationTransitionQualification
     }
     private sealed class RefusingActivation : IPeerActivationHook
     {
-        public void Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext context)
+        public Action Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext context)
             => throw new InvalidOperationException("Empty-peer fixture cannot grant activation authority.");
     }
     private sealed class PublicationFault(WindowsLocalHostTrustPublisher actual) : ILocalHostTrustPublisher

@@ -14,7 +14,9 @@ public sealed record PeerActivationContext(Guid AuthoritativeHostId, Guid PeerHo
 // effects: a rollback must undo every effect. There is deliberately no default/no-op hook.
 public interface IPeerActivationHook
 {
-    void Apply(SqliteConnection connection, SqliteTransaction transaction, PeerActivationContext activation);
+    // The per-call guard runs AFTER the enclosing trust audit, still before commit. It must
+    // validate these exact effects without committing or retaining state across activations.
+    Action Apply(SqliteConnection connection, SqliteTransaction transaction, PeerActivationContext activation);
 }
 
 public sealed partial class PeerTrustRepository
@@ -83,9 +85,11 @@ public sealed partial class PeerTrustRepository
         Execute(c, tx, """
             UPDATE TrustedManagers SET State='Active',PairedUtc=$now WHERE PeerHostId=$peer AND State='PeerBound';
             """, ("$now", Stamp(now)), ("$peer", Id(peer)));
-        hook.Apply(c, tx, new(hostId, peer, now));
+        var validateEffects = hook.Apply(c, tx, new(hostId, peer, now))
+            ?? throw new InvalidOperationException("Activation effect validation is required.");
         Audit(c, tx, peer, "PeerActivated", now);
-        // A slow hook/audit cannot extend the original pending window. The transaction
+        validateEffects();
+        // A slow hook, audit or final validator cannot extend the original pending window. The transaction
         // prevents other writers from changing trust while these effects are prepared.
         if (trust.ExpiresUtc <= time.GetUtcNow()) throw ActivationRefused();
         if (owner is not null) RequirePairingOwner(c, tx, owner);

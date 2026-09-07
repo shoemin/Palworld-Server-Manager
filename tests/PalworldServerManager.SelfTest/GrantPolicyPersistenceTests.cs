@@ -171,7 +171,8 @@ internal static class GrantPolicyPersistenceTests
         using(var f=new PeerTrustTests.Fixture(schemaVersion:9))
         {
             var grant=Guid.NewGuid();f.Execute($"INSERT INTO HostCapabilityGrants (GrantId,TargetHostId,Capability,GranteeActorKind,GranteeLocalPrincipalId,GrantedByActorKind,GrantedByLocalPrincipalId,CanDelegate,CanDelegateOnwardDelegation,CreatedUtc) VALUES ('{grant:D}','{f.HostId:D}','CreateServer','LocalPrincipal','{f.OwnerId:D}','LocalPrincipal','{f.OwnerId:D}',0,0,'{f.Time.Now:O}');");
-            var audits=f.Count("AuditEvents");Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer)==1);Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer)==0);
+            var audits=f.Count("AuditEvents");var throughRevision=new HostSchemaMigrationRunner(HostSchema.AllMigrations().Take(10));
+            Check(throughRevision.Migrate(f.Writer)==1);Check(throughRevision.Migrate(f.Writer)==0);
             var s=new GrantPolicyRepository(f.Database,f.HostId).Read();Check(s.Revision==0&&s.HostGrants.Single().GrantId==grant&&f.Count("AuditEvents")==audits);
         }
         foreach(var missing in new[]{false,true})
