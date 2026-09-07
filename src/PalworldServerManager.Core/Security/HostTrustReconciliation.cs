@@ -36,7 +36,19 @@ public static class HostTrustPlanning
             if (active.SingleOrDefault() is { } rotation)
             {
                 if (rotation.RotationId == Guid.Empty || rotation.OldReference == rotation.NewReference) throw new InvalidDataException("Invalid rotation identity.");
-                Require(rotation.OldReference); var next = Require(rotation.NewReference);
+                var old = Require(rotation.OldReference); string? next;
+                if (rotation.State == HostCredentialRotationState.Prepared)
+                {
+                    // Prepared also reserves a not-yet-materialized reference. Preserve it
+                    // across restart, but never publish it before public metadata is ready.
+                    if (rotation.NewReference is null || !references.TryGetValue(rotation.NewReference, out var reserved) || reserved.Retired)
+                        throw new InvalidDataException("Prepared credential reference is invalid.");
+                    next = reserved.PublicKeyFingerprint;
+                    if (next is not null && !Fingerprint(next)) throw new HostTrustMetadataUnavailableException();
+                    retained.Add(rotation.NewReference);
+                }
+                else next = Require(rotation.NewReference);
+                if (rotation.State != HostCredentialRotationState.Prepared && next == old) throw new InvalidDataException("Rotation requires a fresh credential.");
                 if (rotation.State == HostCredentialRotationState.CutOver)
                 { if (current != rotation.NewReference) throw new InvalidDataException("Cutover disagrees with current credential."); }
                 else

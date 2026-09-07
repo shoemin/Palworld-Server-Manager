@@ -4,7 +4,7 @@ using PalworldServerManager.Core.Security;
 namespace PalworldServerManager.Host.Persistence;
 
 // Trusted Host/offline persistence seam. Caller owns the machine lease; no private material.
-public sealed class HostCredentialStateRepository(HostDatabase database, Guid hostId)
+public sealed partial class HostCredentialStateRepository(HostDatabase database, Guid hostId)
 {
     public const string TlsPurpose = "HostTlsV1";
     private readonly HostDatabase _database = database ?? throw new ArgumentNullException(nameof(database));

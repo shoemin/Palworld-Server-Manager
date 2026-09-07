@@ -11,6 +11,11 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--rotation-preparation-probe"])
+    {
+        await RoutineRotationPreparationTests.SerializedAndResumable(); await RoutineRotationPreparationTests.OwnerFreshnessAndRollback(); await RoutineRotationPreparationTests.AbortRetentionAndCutoverGate();
+        Console.WriteLine("PASS serialized routine rotation preparation, current Owner checks and safe abort/retention."); return 0;
+    }
     if (args is ["--pairing-audit-probe"])
     {
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
@@ -166,6 +171,9 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Routine rotation preparation is serialized and preserves a reserved credential across reopen", RoutineRotationPreparationTests.SerializedAndResumable),
+    ("Routine rotation rechecks Owner identity and rolls back every transition on audit failure", RoutineRotationPreparationTests.OwnerFreshnessAndRollback),
+    ("Routine rotation abort preserves current trust and cannot bypass CutOver retention", RoutineRotationPreparationTests.AbortRetentionAndCutoverGate),
     ("Pairing terminal audits are idempotent public records with no claimed actor", PairingAuditTests.IdempotenceAndPrivacy),
     ("Pairing audit retries preserve outcome time and pending expiry commits atomically", PairingAuditTests.RetryAndPendingCleanup),
     ("Pairing audit overflow stays failed closed and shutdown reports unavailable storage", PairingAuditTests.CapacityAndShutdownFailure),
