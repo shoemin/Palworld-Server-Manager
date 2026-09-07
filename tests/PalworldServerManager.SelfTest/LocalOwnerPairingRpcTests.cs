@@ -15,7 +15,7 @@ using PalworldServerManager.Platform.Contracts;
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class LocalOwnerPairingRpcTests
+internal static partial class LocalOwnerPairingRpcTests
 {
     private static void Check(bool value) { if (!value) throw new Exception("Local pairing RPC assertion failed."); }
     private static async Task Refused<T>(Task<T> action, StatusCode status)
@@ -35,7 +35,7 @@ internal static class LocalOwnerPairingRpcTests
         internal Guid Principal;
         internal HostNetworkGeneration Generation = null!;
         internal string Native { get { using var identity = WindowsIdentity.GetCurrent(); return identity.User!.Value; } }
-        internal async Task Start(IPairingKeyExchangeFactory factory)
+        internal async Task Start(IPairingKeyExchangeFactory factory, IPeerActivationHook? hook = null)
         {
             State.State.Time.Now = DateTimeOffset.UtcNow;
             Principal = owner ? State.State.OwnerId : Guid.NewGuid(); var key = Convert.ToBase64String(Key.PublicKey);
@@ -43,7 +43,7 @@ internal static class LocalOwnerPairingRpcTests
             else State.State.Execute($"INSERT INTO LocalPrincipals (LocalPrincipalId,OsPrincipalRef,PublicVerificationKey,IsOwner,State,CreatedUtc) VALUES ('{Principal:D}','{Native}','{key}',0,'Active','fixture');");
             using var identity = WindowsIdentity.GetCurrent();
             Generation = await WindowsHostComposition.CreateNetworkGenerationAsync(State.State.Database, State.State.HostId, new LocalEnrollmentTests.Store(new byte[32]),
-                identity.User!, identity.User!, State.Certificate.Value, Pipe, new(IPAddress.Loopback,0), new(IPAddress.Loopback,0), factory, State.Runtime.Hook,
+                identity.User!, identity.User!, State.Certificate.Value, Pipe, new(IPAddress.Loopback,0), new(IPAddress.Loopback,0), factory, hook ?? State.Runtime.Hook,
                 discoveryFactory: Probe.CreateAsync);
         }
         internal LocalSecurityRpcTests.Client Client() => new(State.State.HostId, Pipe, new LocalSecurityRpcTests.Reader(LocalHostTrustAnchor.Parse(JsonSerializer.SerializeToUtf8Bytes(

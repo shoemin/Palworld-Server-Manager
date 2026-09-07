@@ -54,6 +54,13 @@ internal sealed partial class HostNetworkGeneration
             PairingOwner(connection); token.ThrowIfCancellationRequested();
             Required(pairing).CancelInvitation(invitation); return Task.CompletedTask;
         }, ct);
+    internal Task<PeerActivationDisposition> ActivateForOwnerAsync(LocalPrincipalConnectionAuthentication connection, Guid peer,
+        HostReachableAddress address, CancellationToken ct = default)
+        => RunAsync(token =>
+        {
+            var owner = PairingOwner(connection); ArgumentNullException.ThrowIfNull(address); token.ThrowIfCancellationRequested();
+            return Required(activation).FinalizeForOwnerAsync(peer, address.HttpsAddress, owner, token);
+        }, ct);
     internal Task<PeerPairingCompletion> PairForOwnerAsync(LocalPrincipalConnectionAuthentication connection, HostReachableAddress address,
         RedactedSecret code, CancellationToken ct = default)
         => RunAsync(token =>

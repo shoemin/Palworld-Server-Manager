@@ -259,6 +259,7 @@ internal static class PeerPairingRpcTests
         }
         await NativeOwnerAuthorization(provider);
         await LocalOwnerPairingRpcTests.Native(provider);
+        await LocalOwnerPairingRpcTests.NativeActivation(provider);
         await InvalidVerifiedBinding(provider, false); await InvalidVerifiedBinding(provider, true);
         await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
         {
