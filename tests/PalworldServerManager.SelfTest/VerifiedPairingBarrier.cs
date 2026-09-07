@@ -4,7 +4,7 @@ namespace PalworldServerManager.SelfTest;
 
 // Qualification only: every byte and proof comes from the actual selected provider.
 // The verified result cannot return to the production persistence caller in this process.
-internal sealed class VerifiedPairingBarrier(IPairingKeyExchangeFactory provider) : IPairingKeyExchangeFactory
+internal sealed class VerifiedPairingBarrier(IPairingKeyExchangeFactory provider, PairingRole expectedRole = PairingRole.Initiator) : IPairingKeyExchangeFactory
 {
     private Func<VerifiedPairingIdentity, CancellationToken, Task>? signal;
     internal void Arm(Func<VerifiedPairingIdentity, CancellationToken, Task> value)
@@ -14,7 +14,7 @@ internal sealed class VerifiedPairingBarrier(IPairingKeyExchangeFactory provider
     }
     public IPairingKeyExchange Start(PairingRole role, byte[] code, byte[] nonce, CancellationToken ct = default)
     {
-        if (role != PairingRole.Initiator || signal is null) throw new InvalidOperationException("Only the armed initiator may use this barrier.");
+        if (role != expectedRole || signal is null) throw new InvalidOperationException("Only the armed role may use this barrier.");
         return new Exchange(provider.Start(role, code, nonce, ct), signal);
     }
     private sealed class Exchange(IPairingKeyExchange inner, Func<VerifiedPairingIdentity, CancellationToken, Task> signal) : IPairingKeyExchange
