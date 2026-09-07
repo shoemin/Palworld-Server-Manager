@@ -25,11 +25,11 @@ internal static class PeerTrustTests
         internal readonly Clock Time = new();
         private readonly HostExclusivityLock lease;
         internal PeerTrustRepository Repository => new(Database, HostId, Time);
-        internal Fixture(bool priorVersion = false)
+        internal Fixture(bool priorVersion = false, int? schemaVersion = null)
         {
             lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, @"Global\PSMPeer" + Guid.NewGuid().ToString("N"))!;
             Database = new(new HostDataRoot(root)); Writer = Database.OpenConnection();
-            new HostSchemaMigrationRunner(HostSchema.AllMigrations().Where(m => !priorVersion || m.Version <= 2)).Migrate(Writer);
+            new HostSchemaMigrationRunner(HostSchema.AllMigrations().Where(m => m.Version <= (schemaVersion ?? (priorVersion ? 2 : int.MaxValue)))).Migrate(Writer);
             var identity = new HostIdentityRepository(Database); identity.EnsureHostIdentity(Writer, hostIdFactory: () => HostId.ToString("D"));
             using var tx = Writer.BeginTransaction(); identity.InitializeWithOwner(Writer, tx, OwnerId.ToString("D"), "native-owner", "fixture-public");
             using var command = Writer.CreateCommand(); command.Transaction = tx;
@@ -126,7 +126,7 @@ internal static class PeerTrustTests
     {
         using var f = new Fixture(priorVersion: true);
         f.Execute($"INSERT INTO TrustedManagers (PeerHostId,State,CurrentTrustedPublicKeyFingerprint,CreatedUtc) VALUES ('{f.PeerId:D}','PeerBound','{Peer}','{f.Time.Now:O}');");
-        Check(HostSchemaMigrationRunner.Default().Migrate(f.Writer) == 1);
+        Check(new HostSchemaMigrationRunner(HostSchema.AllMigrations().Where(m => m.Version <= 3)).Migrate(f.Writer) == 1);
         var row = f.Repository.Read(f.PeerId)!;
         Check(row.LocalBoundFingerprint is null && row.ExpiresUtc == f.Time.Now.AddMinutes(30));
         Reject<InvalidDataException>(() => f.Repository.RecordVerifiedBinding(f.PeerId, Peer, Local));

@@ -11,6 +11,12 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--rotation-staging-probe"])
+    {
+        await RotationStagingTests.SenderSequenceAndOwnerGate(); await RotationStagingTests.ReceiverOrderingReplayAndRollback();
+        await RotationStagingTests.LapseAndReceiptCannotBeOverwritten(); await RotationStagingTests.ClosedStatesAndIdentity(); await RotationStagingTests.UpgradeDoesNotInventOrdering();
+        Console.WriteLine("PASS durable ordered proposals, receiver staging/replay gates and additive upgrade."); return 0;
+    }
     if (args is ["--peer-rotation-completion-probe"])
     {
         await PeerRotationCompletionTests.PromotionReceiptAndConcurrentReplay(); await PeerRotationCompletionTests.LapseAndTransactionalRollback();
@@ -184,6 +190,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Routine rotation proposals retain a monotonic identity with current Owner and audit gates", RotationStagingTests.SenderSequenceAndOwnerGate),
+    ("Peer rotation staging serializes replay and rejects stale or changed proposals", RotationStagingTests.ReceiverOrderingReplayAndRollback),
+    ("Peer rotation proposals cannot overwrite lapsed staging or an unconfirmed promotion receipt", RotationStagingTests.LapseAndReceiptCannotBeOverwritten),
+    ("Peer rotation staging refuses invalid sequences identities and inactive or recovery trust", RotationStagingTests.ClosedStatesAndIdentity),
+    ("Rotation proposal metadata upgrade preserves existing trust without inventing ordering", RotationStagingTests.UpgradeDoesNotInventOrdering),
     ("Peer rotation promotion and durable receipt retries serialize without changing grants", PeerRotationCompletionTests.PromotionReceiptAndConcurrentReplay),
     ("Peer rotation lapse retains live pins and every transition rolls back on failed audit", PeerRotationCompletionTests.LapseAndTransactionalRollback),
     ("Peer rotation refuses incomplete metadata and inactive or recovery-required trust", PeerRotationCompletionTests.InvalidAndRecoveryStates),
