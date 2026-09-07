@@ -134,15 +134,16 @@ internal static class WindowsGenerationTransitionQualification
     }
     private static async Task RequireClosed(string pipe, Uri peer, Uri pairing, CancellationToken ct)
     {
+        Check(peer.Port > 0 && pairing.Port > 0 && peer != pairing, "Distinct actual bound endpoints are required.");
         using var local = new NamedPipeClientStream(".", pipe, PipeDirection.InOut, PipeOptions.Asynchronous);
         await SecureStoreTests.Reject<TimeoutException>(() => local.ConnectAsync(250, ct));
         foreach (var address in new[] { peer, pairing })
         {
-            using var socket = new TcpClient(); using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            deadline.CancelAfter(TimeSpan.FromSeconds(2));
-            try { await socket.ConnectAsync(address.Host, address.Port, deadline.Token); }
-            catch (SocketException error) when (error.SocketErrorCode == SocketError.ConnectionRefused) { continue; }
-            throw new Exception("Quiesced generation still accepted a TCP connection.");
+            ct.ThrowIfCancellationRequested();
+            // Windows may delay a connect-to-closed-port failure. Require an actual exclusive
+            // bind instead: neither a timeout nor the owner's phase can pass this assertion.
+            using var probe = new TcpListener(IPAddress.Parse(address.Host), address.Port) { ExclusiveAddressUse = true };
+            probe.Start();
         }
     }
 }
