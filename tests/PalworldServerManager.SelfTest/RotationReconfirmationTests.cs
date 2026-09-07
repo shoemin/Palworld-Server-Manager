@@ -21,7 +21,7 @@ internal static class RotationReconfirmationTests
                 GrantedByActorKind,GrantedByLocalPrincipalId,CanDelegate,CanDelegateOnwardDelegation,CreatedUtc)
                 VALUES ('custom','{f.HostId:D}','ViewHost','RemoteManager','{f.PeerId:D}','LocalPrincipal','{f.OwnerId:D}',1,0,'retained');
             """);
-        repo.StagePeerRotation(new(f.PeerId, Guid.NewGuid(), 1, Old, Next), Old); return repo;
+        repo.StagePeerRotation(new(f.PeerId, Guid.NewGuid(), 1, Old, Next), Old, Local); return repo;
     }
     private static RoutineRotationStatusReply Reply(PeerTrustRepository.RotationStatusQuery query, RoutineRotationLiveState state) => new(query.Request, state);
     private static void Preserved(PeerTrustTests.Fixture f)
@@ -97,7 +97,7 @@ internal static class RotationReconfirmationTests
         Reject<AuthenticationException>(() => repo.BeginPeerRotationStatusQuery(f.PeerId, Owner(f)));
         f.Execute("UPDATE TrustedManagers SET PeerRecoveryRequired=0;");
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
-        repo.StagePeerRotation(new(f.PeerId, Guid.NewGuid(), 2, Old, Later), Old);
+        repo.StagePeerRotation(new(f.PeerId, Guid.NewGuid(), 2, Old, Later), Old, Local);
         Reject<AuthenticationException>(() => repo.CompletePeerRotationStatusQuery(query, Reply(query, RoutineRotationLiveState.Unknown), Old, Local));
         Check(repo.Read(f.PeerId)!.PendingFingerprint == Later);
         query = repo.BeginPeerRotationStatusQuery(f.PeerId);
