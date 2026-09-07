@@ -44,8 +44,8 @@ internal static class PermissionDenialAuditTests
     }
     public static Task EveryPreWritePathRecordsActualActorWithoutEffects()
     {
-        using var r=new Rig();var before=r.Revision;bool callback=false;
-        Action[] attempts=[()=>r.DenyLocal(),()=>r.Repo.IssueServer(r.Local,before,Guid.NewGuid(),r.Grantee,ServerCapability.ViewServer,r.Target,Use,null),
+        using var r=new Rig();var before=r.Revision;bool callback=false;var requestedGrant=Guid.NewGuid();
+        Action[] attempts=[()=>r.Repo.IssueHost(r.Local,before,requestedGrant,r.Grantee,HostCapability.CreateServer,r.F.HostId,Use,null),()=>r.Repo.IssueServer(r.Local,before,Guid.NewGuid(),r.Grantee,ServerCapability.ViewServer,r.Target,Use,null),
             ()=>r.Repo.IssueRemoteHost(r.Peer,before,Guid.NewGuid(),r.Grantee,HostCapability.CreateServer,r.F.HostId,Use,null),()=>r.DenyPeer(),
             ()=>r.Repo.ApplyPreset(r.Local,before,r.Preset()),()=>r.Repo.ApplyRemotePreset(r.Peer,before,r.Preset()),
             ()=>r.Repo.ConfigureDefaults(r.Local,before,DefaultGrantTemplate.Factory),
@@ -55,7 +55,7 @@ internal static class PermissionDenialAuditTests
         foreach(var attempt in attempts)Reject<UnauthorizedAccessException>(attempt);
         Check(r.Denials==11&&r.Revision==before&&!callback&&r.F.Count("HostCapabilityGrants")==0&&r.F.Count("ServerCapabilityGrants")==0&&r.F.Count("ServerInventory")==0&&!r.Repo.ReadDefaults().IsConfigured);
         using var cmd=r.F.Writer.CreateCommand();cmd.CommandText="SELECT ActorKind,ActorLocalPrincipalId,ActorPeerHostId,AffectedHostId,AffectedServerProfileId,Summary FROM AuditEvents WHERE EventKind='PermissionPolicyDenied';";
-        using var reader=cmd.ExecuteReader();int local=0,peer=0,server=0;
+        using var reader=cmd.ExecuteReader();int local=0,peer=0,server=0;var actions=new Dictionary<string,int>();bool exactRequest=false;
         while(reader.Read())
         {
             if(reader.GetString(0)=="LocalPrincipal"){Check(reader.GetString(1)==r.User.ToString("D")&&reader.IsDBNull(2));local++;}
@@ -63,8 +63,19 @@ internal static class PermissionDenialAuditTests
             Check(reader.GetString(3)==r.F.HostId.ToString("D"));
             if(!reader.IsDBNull(4)){Check(reader.GetString(4)==r.Target.ServerProfileId.ToString("D"));server++;}
             var summary=reader.GetString(5);Check(summary.Contains("Outcome=PolicyDenied")&&!summary.Contains("private-")&&!summary.Contains("fixture-public")&&!summary.Contains(new string('B',64)));
+            var action=summary.Split(';')[0];actions[action]=actions.GetValueOrDefault(action)+1;
+            if(action is "Action=IssueHostGrant" or "Action=IssueServerGrant")
+            {
+                Check(summary.Contains("Source=RootRequested;")&&summary.Contains("Delegate=False; Onward=False;")&&summary.Contains("Grantee=RemoteManager:"+r.F.PeerId.ToString("D")));
+                Check(summary.Contains(action=="Action=IssueHostGrant"?"Capability=CreateServer;":"Capability=ViewServer;"));
+                if(reader.GetString(0)=="LocalPrincipal"&&action=="Action=IssueHostGrant")
+                    exactRequest=summary.Contains("Grant="+requestedGrant.ToString("D")+";");
+            }
         }
-        Check(local==7&&peer==4&&server==3);return Task.CompletedTask;
+        Check(local==7&&peer==4&&server==3&&exactRequest&&actions.Count==8);
+        foreach(var action in new[]{"IssueHostGrant","IssueServerGrant","ApplyPreset"})Check(actions["Action="+action]==2);
+        foreach(var action in new[]{"ConfigureDefaults","InvalidateHostSubtree","InvalidateServerSubtree","ReissueHistoricalRoots","FinalizeRemoteCreation"})Check(actions["Action="+action]==1);
+        return Task.CompletedTask;
     }
     public static Task AuthenticationMalformedStaleAndCancellationAreNotPolicyDenials()
     {
