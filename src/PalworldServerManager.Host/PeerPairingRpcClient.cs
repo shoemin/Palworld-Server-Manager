@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using Google.Protobuf;
 using Grpc.Net.Client;
 using PalworldServerManager.Contracts.Wire;
+using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Platform.Contracts;
 
@@ -15,11 +16,18 @@ internal sealed class PeerPairingRpcClient(PeerPairingRpcRuntime runtime, IPeerH
     internal Task<PeerPairingCompletion> PairAsync(Uri address, Guid invitation, RedactedSecret code, CancellationToken ct = default)
     {
         if (invitation == Guid.Empty) throw new ArgumentException("An explicit invitation identity is required.");
-        return PairCoreAsync(address, invitation, false, code, ct);
+        return PairCoreAsync(address, invitation, false, code, null, ct);
     }
     internal Task<PeerPairingCompletion> PairAsync(Uri address, RedactedSecret code, CancellationToken ct = default)
-        => PairCoreAsync(address, Guid.Empty, true, code, ct);
-    private async Task<PeerPairingCompletion> PairCoreAsync(Uri address, Guid invitation, bool advertisedInvitation, RedactedSecret code, CancellationToken ct)
+        => PairCoreAsync(address, Guid.Empty, true, code, null, ct);
+    internal Task<PeerPairingCompletion> PairForOwnerAsync(Uri address, RedactedSecret code, LocalPrincipalMutationActor owner, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(owner); ct.ThrowIfCancellationRequested();
+        runtime.Repository.AuthorizePairingOwner(owner); ct.ThrowIfCancellationRequested();
+        return PairCoreAsync(address, Guid.Empty, true, code, owner, ct);
+    }
+    private async Task<PeerPairingCompletion> PairCoreAsync(Uri address, Guid invitation, bool advertisedInvitation, RedactedSecret code,
+        LocalPrincipalMutationActor? owner, CancellationToken ct)
     {
         if (!address.IsAbsoluteUri || address.Scheme != "https" || address.UserInfo.Length != 0 ||
             address.AbsolutePath != "/" || address.Query.Length != 0 || address.Fragment.Length != 0) throw new ArgumentException("A reachable pairing HTTPS address is required.");
@@ -56,7 +64,7 @@ internal sealed class PeerPairingRpcClient(PeerPairingRpcRuntime runtime, IPeerH
                 var received = await PeerPairingRpcService.Read(call.ResponseStream, PeerPairingFrame.FrameOneofCase.Binding, ct).ConfigureAwait(false);
                 if (received.Binding.Length is 0 or > 1200) throw new ArgumentException();
                 var peer = exchange.VerifyIdentityBinding(received.Binding.ToByteArray(), ct);
-                ct.ThrowIfCancellationRequested(); var local = runtime.Store(peer, connection.Identity);
+                ct.ThrowIfCancellationRequested(); var local = runtime.Store(peer, connection.Identity, owner);
                 stored = true;
                 await call.RequestStream.WriteAsync(new() { Binding = ByteString.CopyFrom(binding) }, ct).ConfigureAwait(false);
                 await call.RequestStream.CompleteAsync().ConfigureAwait(false);

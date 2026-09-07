@@ -3,6 +3,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Connections;
 using PalworldServerManager.Contracts.Wire;
+using PalworldServerManager.Core.Security;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Platform.Contracts;
 
@@ -76,11 +77,13 @@ public sealed class PeerPairingRpcRuntime : IDisposable
         hello.Capabilities.Add(FeatureCapability.PeerPairing);
         hello.Capabilities.Add(FeatureCapability.PeerPairingAdvertisedInvitation); return hello;
     }
-    internal PeerBindingResult Store(VerifiedPairingIdentity peer, PeerTlsConnectionIdentity tls)
+    internal PeerBindingResult Store(VerifiedPairingIdentity peer, PeerTlsConnectionIdentity tls, LocalPrincipalMutationActor? localOwner = null)
     {
         var pin = Convert.ToHexString(SHA256.HashData(peer.PublicCredential));
         if (tls.LocalFingerprint != LocalFingerprint || pin != tls.PeerFingerprint) throw new AuthenticationException("Pairing identity does not match TLS.");
-        return Audit.WithHealthyStorage(() => Repository.RecordVerifiedBinding(peer.HostId, pin, tls.LocalFingerprint));
+        return Audit.WithHealthyStorage(() => localOwner is null
+            ? Repository.RecordVerifiedBinding(peer.HostId, pin, tls.LocalFingerprint)
+            : Repository.RecordOwnerVerifiedBinding(localOwner, peer.HostId, pin, tls.LocalFingerprint));
     }
     internal Func<ConnectionDelegate, ConnectionDelegate> BindConnection(string local,
         Func<ConnectionContext, string> readRemote, Func<ConnectionContext, IPAddress> readSource) => next => async connection =>

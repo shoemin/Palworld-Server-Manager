@@ -10,7 +10,7 @@ namespace PalworldServerManager.Host;
 
 // Construct only in the trusted composition root under the machine lease. Owns the supplied
 // certificate from construction, including startup failure. Never deletes protected/native keys.
-internal sealed class HostNetworkGeneration(X509Certificate2 certificate) : IAsyncDisposable
+internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate) : IAsyncDisposable
 {
     private readonly X509Certificate2 certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
     private readonly HostTrafficLifetime traffic = new();

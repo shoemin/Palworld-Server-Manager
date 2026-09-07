@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--local-owner-pairing-probe"])
+    {
+        await LocalOwnerPairingTests.RepositoryBoundaries();
+        await LocalOwnerPairingTests.WriterQueueFreshness();
+        await LocalOwnerPairingTests.AuthenticatedGenerationActions();
+        await LocalOwnerPairingTests.UnreturnedInvitationCleanup();
+        Console.WriteLine("PASS local Owner pairing foundations."); return 0;
+    }
     if (args is ["--update-running-probe"])
     {
         await ApplicationUpdateServiceTests.TestARunningServerAloneDoesNotBlockApply();
@@ -473,6 +481,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Windows discovery requires explicit port and compatible listener bindings", WindowsDiscoveryConfigurationTests.ExplicitPortAndCompatibleBindings),
     ("Windows concrete discovery refuses port collision and pre-cancellation", WindowsDiscoveryConfigurationTests.ActualPortCollisionAndPreCancellation),
     ("Discovery drain precedes actual cutover and fresh generation", HostGenerationTransitionTests.DiscoveryDrainPrecedesCutoverAndFreshGeneration),
+    ("Local Owner pairing RepositoryBoundaries", LocalOwnerPairingTests.RepositoryBoundaries),
+    ("Local Owner pairing WriterQueueFreshness", LocalOwnerPairingTests.WriterQueueFreshness),
+    ("Local Owner pairing AuthenticatedGenerationActions", LocalOwnerPairingTests.AuthenticatedGenerationActions),
+    ("Local Owner pairing UnreturnedInvitationCleanup", LocalOwnerPairingTests.UnreturnedInvitationCleanup),
     ("Generation discovery ActualBoundMetadataAndSealedConfiguration", HostGenerationDiscoveryTests.ActualBoundMetadataAndSealedConfiguration),
     ("Generation discovery StopStartsDiscoveryBeforeTrafficDrain", HostGenerationDiscoveryTests.StopStartsDiscoveryBeforeTrafficDrain),
     ("Generation discovery StartupCancellationOwnsReturnedDiscovery", HostGenerationDiscoveryTests.StartupCancellationOwnsReturnedDiscovery),
