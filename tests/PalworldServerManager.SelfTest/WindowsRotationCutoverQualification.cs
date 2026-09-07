@@ -20,7 +20,7 @@ internal static class WindowsRotationCutoverQualification
     { if (!value) throw new Exception("Service rotation qualification: " + message); }
     private sealed class NoActivation : IPeerActivationHook
     {
-        public void Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
+        public Action Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
             => throw new Exception("Empty-peer qualification unexpectedly activated trust.");
     }
     private sealed class FailFinalPublication(ILocalHostTrustPublisher actual, string next) : ILocalHostTrustPublisher

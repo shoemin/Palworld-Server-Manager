@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using PalworldServerManager.Core.Security;
+using Authority=PalworldServerManager.Core.Authorization;
 
 namespace PalworldServerManager.Host.Persistence;
 
@@ -7,14 +8,18 @@ namespace PalworldServerManager.Host.Persistence;
 // pinned mutual TLS, with both actual connection fingerprints supplied separately.
 public sealed record PeerActivationAcknowledgement(Guid FromHostId, Guid RecordedHostId, string RecordedFingerprint);
 public enum PeerActivationDisposition { Activated = 1, AlreadyActive = 2 }
-public sealed record PeerActivationContext(Guid AuthoritativeHostId, Guid PeerHostId, DateTimeOffset ActivatedUtc);
+// Trusted caller provenance, never a request-body claim or an authentication substitute.
+public sealed record PeerActivationContext(Guid AuthoritativeHostId, Guid PeerHostId, DateTimeOffset ActivatedUtc,
+    Authority.ActorRef InitiatingActor);
 
 // Trusted Host composition only. #45 must apply configured defaults through canonical
 // issuance using this SAME transaction. No network calls, nested commit or external side
 // effects: a rollback must undo every effect. There is deliberately no default/no-op hook.
 public interface IPeerActivationHook
 {
-    void Apply(SqliteConnection connection, SqliteTransaction transaction, PeerActivationContext activation);
+    // The per-call guard runs AFTER the enclosing trust audit, still before commit. It must
+    // validate these exact effects without committing or retaining state across activations.
+    Action Apply(SqliteConnection connection, SqliteTransaction transaction, PeerActivationContext activation);
 }
 
 public sealed partial class PeerTrustRepository
@@ -83,9 +88,12 @@ public sealed partial class PeerTrustRepository
         Execute(c, tx, """
             UPDATE TrustedManagers SET State='Active',PairedUtc=$now WHERE PeerHostId=$peer AND State='PeerBound';
             """, ("$now", Stamp(now)), ("$peer", Id(peer)));
-        hook.Apply(c, tx, new(hostId, peer, now));
+        var initiator=owner is null?Authority.ActorRef.RemoteManager(peer):Authority.ActorRef.LocalPrincipal(owner.LocalPrincipalId);
+        var validateEffects = hook.Apply(c, tx, new(hostId, peer, now, initiator))
+            ?? throw new InvalidOperationException("Activation effect validation is required.");
         Audit(c, tx, peer, "PeerActivated", now);
-        // A slow hook/audit cannot extend the original pending window. The transaction
+        validateEffects();
+        // A slow hook, audit or final validator cannot extend the original pending window. The transaction
         // prevents other writers from changing trust while these effects are prepared.
         if (trust.ExpiresUtc <= time.GetUtcNow()) throw ActivationRefused();
         if (owner is not null) RequirePairingOwner(c, tx, owner);

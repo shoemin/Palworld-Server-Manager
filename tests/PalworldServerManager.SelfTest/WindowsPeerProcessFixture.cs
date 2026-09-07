@@ -38,11 +38,12 @@ internal static partial class WindowsPeerProcessFixture
     }
     private sealed class Activation : IPeerActivationHook
     {
-        public void Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext context)
+        public Action Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext context)
         {
             using var q = c.CreateCommand(); q.Transaction = tx;
             q.CommandText = "INSERT INTO PeerProcessFixtureActivation VALUES ($peer);";
             q.Parameters.AddWithValue("$peer", context.PeerHostId.ToString("D")); q.ExecuteNonQuery();
+            return static()=>{}; // Explicit synthetic effect; production defaults supply a real final guard.
         }
     }
     internal sealed class FixtureHost(Config config)

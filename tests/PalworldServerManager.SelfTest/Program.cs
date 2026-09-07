@@ -13,6 +13,18 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--default-grants-probe"])
+    {
+        await DefaultGrantPolicyTests.FactoryShapesAndUpgrade();
+        await DefaultGrantPolicyTests.OnlyFreshOwnerMayConfigure();
+        await DefaultGrantPolicyTests.CurrentActivationDefaultsAndNoRetroactivity();
+        await DefaultGrantPolicyTests.ConfigurationAuditAndMutationRollback();
+        await DefaultGrantPolicyTests.InnerAndOuterActivationAuditRollback();
+        await DefaultGrantPolicyTests.ExpiryCancellationAndMissingFinalGuard();
+        await DefaultGrantPolicyTests.ConcurrentActivationUsesIndependentGuards();
+        await DefaultGrantPolicyTests.TwoHostActivationIsIndependent();
+        Console.WriteLine("PASS configured default grants."); return 0;
+    }
     if (args is ["--grant-persistence-probe"])
     {
         await GrantPolicyPersistenceTests.CanonicalWritesAndRealAudit();
@@ -570,6 +582,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Default grants FactoryShapesAndUpgrade", DefaultGrantPolicyTests.FactoryShapesAndUpgrade),
+    ("Default grants OnlyFreshOwnerMayConfigure", DefaultGrantPolicyTests.OnlyFreshOwnerMayConfigure),
+    ("Default grants CurrentActivationDefaultsAndNoRetroactivity", DefaultGrantPolicyTests.CurrentActivationDefaultsAndNoRetroactivity),
+    ("Default grants ConfigurationAuditAndMutationRollback", DefaultGrantPolicyTests.ConfigurationAuditAndMutationRollback),
+    ("Default grants InnerAndOuterActivationAuditRollback", DefaultGrantPolicyTests.InnerAndOuterActivationAuditRollback),
+    ("Default grants ExpiryCancellationAndMissingFinalGuard", DefaultGrantPolicyTests.ExpiryCancellationAndMissingFinalGuard),
+    ("Default grants ConcurrentActivationUsesIndependentGuards", DefaultGrantPolicyTests.ConcurrentActivationUsesIndependentGuards),
+    ("Default grants TwoHostActivationIsIndependent", DefaultGrantPolicyTests.TwoHostActivationIsIndependent),
     ("Grant persistence CanonicalWritesAndRealAudit", GrantPolicyPersistenceTests.CanonicalWritesAndRealAudit),
     ("Grant persistence DenialsAndFreshLocalProof", GrantPolicyPersistenceTests.DenialsAndFreshLocalProof),
     ("Grant persistence ExactOwnerSubtreeAndExistingRevocation", GrantPolicyPersistenceTests.ExactOwnerSubtreeAndExistingRevocation),

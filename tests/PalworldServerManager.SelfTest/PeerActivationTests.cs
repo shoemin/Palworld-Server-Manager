@@ -12,7 +12,7 @@ internal static class PeerActivationTests
     // Records a transaction-local test effect. This is not a shipped grant/default provider.
     private sealed class Hook(bool fail = false, Action? afterWrite = null) : IPeerActivationHook
     {
-        public void Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
+        public Action Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
         {
             using var command = c.CreateCommand(); command.Transaction = tx;
             command.CommandText = "INSERT INTO ActivationTestEffects VALUES ($peer,$host,$now);";
@@ -21,6 +21,7 @@ internal static class PeerActivationTests
             command.Parameters.AddWithValue("$now", activation.ActivatedUtc.ToString("O")); command.ExecuteNonQuery();
             afterWrite?.Invoke();
             if (fail) throw new InvalidOperationException("Synthetic hook failure.");
+            return static()=>{}; // Explicit synthetic effect; production defaults supply a real final guard.
         }
     }
     private static void Setup(PeerTrustTests.Fixture f, Guid peer, string peerFingerprint, string localFingerprint)

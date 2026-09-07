@@ -13,10 +13,11 @@ internal static class LocalOwnerActivationTests
     { try { action(); } catch(T) { return; } throw new Exception("Expected Owner activation refusal: "+typeof(T).Name); }
     internal sealed class Hook(Action<SqliteConnection,SqliteTransaction>? after=null):IPeerActivationHook
     {
-        public void Apply(SqliteConnection c,SqliteTransaction tx,PeerActivationContext activation)
+        public Action Apply(SqliteConnection c,SqliteTransaction tx,PeerActivationContext activation)
         {
             using var command=c.CreateCommand();command.Transaction=tx;command.CommandText="INSERT INTO ActivationRpcEffects VALUES ($peer);";
             command.Parameters.AddWithValue("$peer",activation.PeerHostId.ToString("D"));command.ExecuteNonQuery();after?.Invoke(c,tx);
+            return static()=>{}; // Explicit synthetic effect; production defaults supply a real final guard.
         }
     }
     private static void Setup(PeerTrustTests.Fixture f)

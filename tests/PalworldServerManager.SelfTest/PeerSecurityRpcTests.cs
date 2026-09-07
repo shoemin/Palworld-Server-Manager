@@ -33,11 +33,12 @@ internal static class PeerSecurityRpcTests
     }
     private sealed class Hook : IPeerActivationHook
     {
-        public void Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
+        public Action Apply(SqliteConnection c, SqliteTransaction tx, PeerActivationContext activation)
         {
             using var command = c.CreateCommand(); command.Transaction = tx;
             command.CommandText = "INSERT INTO ActivationRpcEffects VALUES ($peer);";
             command.Parameters.AddWithValue("$peer", activation.PeerHostId.ToString("D")); command.ExecuteNonQuery();
+            return static()=>{}; // Explicit synthetic effect; production defaults supply a real final guard.
         }
     }
     internal sealed class Fixture : IAsyncDisposable
