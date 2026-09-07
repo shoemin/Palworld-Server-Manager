@@ -17,6 +17,14 @@ if (args.Length > 0)
         await ApplicationUpdateServiceTests.TestApplyingDoesNotStopASyntheticRunningServer();
         Console.WriteLine("PASS update eligibility with an observed synthetic server and apply preserves it."); return 0;
     }
+    if (args is ["--rotation-cutover-probe"])
+    {
+        await RotationCutoverTests.ActualProposalCutoverNewProofAndReceipts(); await RotationCutoverTests.PublicationTimeTrustOwnerAndProposalChangesRefuseCutover();
+        await RotationCutoverTests.MarginAndCancellationAreCheckedAfterAudit(); await RotationCutoverTests.AuditRollbackAndSerializedRetry();
+        await RotationCutoverTests.MaterialPublicationFailureAndCommittedRetry(); await RotationCutoverTests.ReconciliationAfterCommitAndScopeRefusal();
+        await RotationCutoverTests.TransactionTriggerChangesAndInitialOwnerRefusal();
+        Console.WriteLine("PASS atomic cutover, ordered publication, real New proof and failure/retry gates."); return 0;
+    }
     if (args is ["--peer-transport-lifetime-probe"])
     {
         await RotationAcceptanceCollectorTests.DisposalDrainsActualTlsTrustCallbacks();
@@ -247,6 +255,13 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Cutover refuses initial Owner mismatch and rolls back audit-triggered trust changes", RotationCutoverTests.TransactionTriggerChangesAndInitialOwnerRefusal),
+    ("Actual multi-peer proposal acceptance cuts over before New proof and receipts", RotationCutoverTests.ActualProposalCutoverNewProofAndReceipts),
+    ("Cutover rechecks peer trust Owner and proposal after staged publication", RotationCutoverTests.PublicationTimeTrustOwnerAndProposalChangesRefuseCutover),
+    ("Cutover rechecks elapsed margin and cancellation after audit before commit", RotationCutoverTests.MarginAndCancellationAreCheckedAfterAudit),
+    ("Cutover audit failure rolls back and serialized retries record one transition", RotationCutoverTests.AuditRollbackAndSerializedRetry),
+    ("Cutover material and publication failures preserve durable truth across retry", RotationCutoverTests.MaterialPublicationFailureAndCommittedRetry),
+    ("Cutover restart reconciliation retains both keys and wrong collection scope is refused", RotationCutoverTests.ReconciliationAfterCommitAndScopeRefusal),
     ("Transport disposal drains in-flight actual TLS trust callbacks", RotationAcceptanceCollectorTests.DisposalDrainsActualTlsTrustCallbacks),
     ("Actual multi-peer acceptance covers every peer and history cannot replace a fresh round", RotationAcceptanceCollectorTests.ActualAllPeerCollectionAndHistoryIsNotFreshEvidence),
     ("Missing and unreachable peers block acceptance until a fresh actual retry", RotationAcceptanceCollectorTests.MissingAddressUnreachableAndFreshRetry),

@@ -10,7 +10,7 @@ namespace PalworldServerManager.Host;
 
 internal enum PeerRotationProposalOutcome { Acknowledged = 1, ReconfirmationRequired = 2, PromotionReceiptPending = 3 }
 // Public acknowledgement evidence with a decreasing conservative bound, not permission to
-// cut over. The future global engine must freshly verify its full dynamic peer set.
+// cut over. The cutover engine must freshly verify its full dynamic peer set.
 internal sealed class PeerRotationProposalExchange(PeerRotationProposalOutcome outcome, Guid retainedRotationId,
     long remoteRemainingMilliseconds, TimeProvider clock, long started, Guid peerHostId = default,
     string? actualPeerFingerprint = null, HostRotationProposal? proposal = null)

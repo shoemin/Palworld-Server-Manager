@@ -19,6 +19,10 @@ public sealed partial class HostCredentialStateRepository
     public RoutineRotationPeerSet ReadRoutineRotationPeerSet(Guid rotationId)
     {
         using var c = Open(); using var tx = c.BeginTransaction(deferred: true);
+        return ReadRoutineRotationPeerSet(c, tx, rotationId);
+    }
+    private RoutineRotationPeerSet ReadRoutineRotationPeerSet(SqliteConnection c, SqliteTransaction tx, Guid rotationId)
+    {
         var revision = PeerRevision(c, tx);
         var pins = ProposalPins(Read(c, tx), rotationId);
         var proposal = ReadProposal(c, tx, rotationId, pins) ?? throw new InvalidOperationException("Rotation proposal has not been prepared.");

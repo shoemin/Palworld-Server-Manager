@@ -5,7 +5,7 @@ namespace PalworldServerManager.Host.Persistence;
 public sealed partial class HostCredentialStateRepository
 {
     // Historical evidence of a peer's durable acceptance, never a fresh cutover predicate.
-    // The future cutover engine must revalidate all remaining peers and bounded live leases.
+    // The cutover engine must revalidate all remaining peers and bounded live leases.
     public bool RecordRoutineRotationPeerAcknowledgement(HostRotationProposal proposal, Guid peer, string actualLocalFingerprint, string actualPeerFingerprint)
     {
         ArgumentNullException.ThrowIfNull(proposal);
