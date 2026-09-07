@@ -137,6 +137,12 @@ if (args.Length > 0)
         await PairingAuditTests.IdempotenceAndPrivacy(); await PairingAuditTests.RetryAndPendingCleanup(); await PairingAuditTests.CapacityAndShutdownFailure(); await PeerPairingRpcTests.AuditFailureBlocksAdmission();
         Console.WriteLine("PASS durable pairing terminal audit, storage retry and pending cleanup."); return 0;
     }
+    if (args is ["--windows-lan-receiver-probe"])
+    {
+        await WindowsLanReceiverTests.ActualPacketsAndFreshAdmission(); await WindowsLanReceiverTests.StopDrainsSerializedCallback();
+        await WindowsLanReceiverTests.WorkerAndCancellationFailures(); await WindowsLanReceiverTests.ExplicitPortAndExclusiveOwnership();
+        Console.WriteLine("Windows LAN receiver probe passed."); return 0;
+    }
     if (args is ["--windows-lan-interfaces-probe"])
     {
         await WindowsLanInterfaceTests.LinkSourcePolicy(); await WindowsLanInterfaceTests.HardwareEligibilityAndCorrelation();
@@ -413,6 +419,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Host pairing codes enforce global failure limits and trusted-source backoff", PairingAttemptTests.Lifecycle),
     ("Host pairing expiry is monotonic and disconnect/restart clear transient exchanges", PairingAttemptTests.ExpiryAndCleanup),
     ("Host pairing residency, cancellation and broken audit sinks preserve cleanup", PairingAttemptTests.BoundsAndCancellation),
+    ("Windows discovery uses actual packet metadata and fresh bounded admission", WindowsLanReceiverTests.ActualPacketsAndFreshAdmission),
+    ("Windows discovery shutdown drains its serialized callback", WindowsLanReceiverTests.StopDrainsSerializedCallback),
+    ("Windows discovery preserves worker and cancellation failures after cleanup", WindowsLanReceiverTests.WorkerAndCancellationFailures),
+    ("Windows discovery requires an explicit exclusive production port", WindowsLanReceiverTests.ExplicitPortAndExclusiveOwnership),
     ("LAN discovery source policy requires the exact interface and subnet host", WindowsLanInterfaceTests.LinkSourcePolicy),
     ("Windows LAN eligibility rejects virtual tunnels and changed adapter identity", WindowsLanInterfaceTests.HardwareEligibilityAndCorrelation),
     ("Windows LAN native layout and read-only adapter inventory match the SDK", WindowsLanInterfaceTests.NativeLayoutAndReadOnlyInventory),
