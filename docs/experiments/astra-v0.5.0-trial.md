@@ -6060,3 +6060,29 @@ All current recovery component links refreshed, historical claims preserved. Pub
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28t / PR176 — Review B clean
+
+Separate post-PR review of exact headb0dba69fec95838b3fe0e620aa12ce23a5c06bf4, executable30e9f119af0c58ca18299ede2773294d230a4881, basec511f7ebb99802d98fe50571a1e662062402fae0; live PR base/head/open state and all17-file inventory equal local diff. Re-read every source/test delta, all current docs/ledger deltas and all40 registry; compare original child binary control, native credential cache, generation Start/Stop and canonical sender/pull state transitions. No executable changes since required tested candidate. Final diff before B17 files316 insertions/15 deletions.
+
+Fresh adverse-path walkthrough: failing startup retains state instead of deleting possibly borrowed native material; local optional environment failures remain unqualified. Actual child barrier reports canonical public state, and parent verifies pending client, then kills the retained Process handle. Modes2/4 use a non-expanding body adapter so completed handler cannot deliver its reply before termination. Mode5 deliberately ignores client disconnection, is independently probeable after the real deadline, and is explicitly killed. New instance and unchanged native identity distinguish durable restart from PID/listener reuse. Exact receipt/approval and audit counts prevent duplicate effect claims; each recovery direction preserves the other's obligation. New mode rejects PAKE/provider combinations and fixed state probe cannot execute generic work.
+
+Required Windows job102076235563 at CI34230829259 PASS: all five cases on four service starts, previous genuine PAKE/process scenarios, shipped Host/CLI/Avalonia and unique service/group/users/profiles/files cleanup. Native job102076235118 PASS with Rust2/native16/all ceremonies; local corrected661/661, zero-warning build/native/UI/SDK/strict Docs PASS. Remaining ordinary CI job and final exact Docs/base/head gates remain required before merge. All current recovery docs link the separately qualified receiving-process evidence; historical controlled-callback claims remain accurately scoped. No physical/power-loss/Palworld/parity/Linux/release claim.
+
+B0; A0 after two pre-A correction/verification rounds; cumulative253 cycles on acceptance, no new accepted escape. Public initiating commands remain #28 work. Automatic approval review still blocks deletion of the two failed optional local probe roots documented above; verified no live process/held lease/native key, and no workaround attempted. This local cleanup hold is independent of the passing disposable CI cleanup and is retained in report/PR. No pending product permission or external reviewer/contact; creator six/limits approved, accessibility WAIVED never PASS.
+
+| Invariants | Fresh Review B cross-check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,MIG-001,LINUX-001 | Live PR inventory matches all17 local files. Production delta is only two fixed Host transition wrappers; no frozen legacy, migration or Linux change. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Followed actual child launch through its nonce/root/SID validation and lease. Control reports are produced inside child; parent database snapshot/restart config only while child stopped and parent holds its lease. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | OnCurrentAsync serializes and gates serving generation; existing generation RunAsync retains actual native clients through disposal. No ordinary client assembly or machine credential surface changes. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Parent checks original semantic Host/approval, native key name/public pin and distinct Instance on restart. Exact server scopes/capability rules are not touched. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Explicit historical SQL state is test-only, followed by real canonical Owner approval. No receipt can approve a new key or revive grants. Prior genuine PAKE/own-key repair still passes separately. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Actual current service SID/protected store/native key with explicit single Owner setup. New optional probe refuses non-elevated users before setup; no enrollment or Owner-authority shortcut. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003 | Forward and reverse cases assert different independent recovery flags. Client failure plus remote confirmed marker is valid; retry must yield NoPending. No ordinary pre-denial network contact or cross-Host atomicity assumed. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Every public state snapshot checks zero grants/activation effects under empty factory defaults. Canonical approval/root/provenance/creator policies unchanged; actual approved creator decision retained. | PASS |
+| PROTO-001,SEC-001 | Reviewed fixed tag6 parser and bounded JSON/URI/body storage. Invalid mode combinations refuse. Existing normal command loop remains separate. No new product RPC, generic fault hook, secrets or provider path. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001,PLATFORM-001,PLATFORM-002 | Real client task must be pending at barrier; actual process remains alive through deadline case before owned kill. Watchdog and released-lease restart bound ownership; failed drain never triggers native deletion. Remote required readiness and all disposal checks pass; local policy-blocked residue is explicitly not successful cleanup. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
