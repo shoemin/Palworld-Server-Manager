@@ -15,6 +15,17 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--reciprocal-unpair-probe"])
+    {
+        await PeerTrustRevocationTests.ReciprocalNoticeIsSelfOnlyAndAtomic();
+        await PeerTrustRevocationTests.ReciprocalDuplicatePreservesNewPendingIntent();
+        await PeerTrustRevocationTests.ReciprocalReceiptNeverRestoresOrdinaryOrLaterTrust();
+        await PeerTrustRevocationTests.ReciprocalReceiptAndAuditFaultsRollback();
+        await PeerTrustRevocationTests.ReciprocalConcurrencyAndLateCancellation();
+        await PeerTrustRevocationTests.ReciprocalSchemaUpgradeAndIncarnationCascade();
+        await PeerTrustRevocationTests.ReciprocalNonActiveAndAbsentEvidenceRefuse();
+        Console.WriteLine("PASS seven reciprocal unpair receipt scenarios."); return 0;
+    }
     if (args is ["--remote-trust-revocation-probe"])
     {
         await PeerTrustRevocationTests.RemoteAdministratorTargetsOnlyItsSelectedPeer();
@@ -847,6 +858,13 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Reciprocal unpair ReciprocalNoticeIsSelfOnlyAndAtomic", PeerTrustRevocationTests.ReciprocalNoticeIsSelfOnlyAndAtomic),
+    ("Reciprocal unpair ReciprocalDuplicatePreservesNewPendingIntent", PeerTrustRevocationTests.ReciprocalDuplicatePreservesNewPendingIntent),
+    ("Reciprocal unpair ReciprocalReceiptNeverRestoresOrdinaryOrLaterTrust", PeerTrustRevocationTests.ReciprocalReceiptNeverRestoresOrdinaryOrLaterTrust),
+    ("Reciprocal unpair ReciprocalReceiptAndAuditFaultsRollback", PeerTrustRevocationTests.ReciprocalReceiptAndAuditFaultsRollback),
+    ("Reciprocal unpair ReciprocalConcurrencyAndLateCancellation", PeerTrustRevocationTests.ReciprocalConcurrencyAndLateCancellation),
+    ("Reciprocal unpair ReciprocalSchemaUpgradeAndIncarnationCascade", PeerTrustRevocationTests.ReciprocalSchemaUpgradeAndIncarnationCascade),
+    ("Reciprocal unpair ReciprocalNonActiveAndAbsentEvidenceRefuse", PeerTrustRevocationTests.ReciprocalNonActiveAndAbsentEvidenceRefuse),
     ("Remote trust revocation RemoteAdministratorTargetsOnlyItsSelectedPeer", PeerTrustRevocationTests.RemoteAdministratorTargetsOnlyItsSelectedPeer),
     ("Remote trust revocation RemoteSelfRevocationCannotReuseItsOldProof", PeerTrustRevocationTests.RemoteSelfRevocationCannotReuseItsOldProof),
     ("Remote trust revocation RemoteProofAndExactCapabilityRefusals", PeerTrustRevocationTests.RemoteProofAndExactCapabilityRefusals),
