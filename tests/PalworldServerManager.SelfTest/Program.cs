@@ -15,6 +15,21 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--offline-recovery-continuity-probe"])
+    {
+        await PeerTrustRevocationTests.OfflineRecoveryAuditDeletionRollsBack();
+        await PeerTrustRevocationTests.OfflineRecoveryCarriesExactApprovalThroughRepeatedRecovery();
+        await PeerTrustRevocationTests.OfflineRecoveryNeverRevivesIneligibleMarkers();
+        await PeerTrustRevocationTests.OfflineRecoveryContinuityStillCancelsOnRevokeAndReplacement();
+        await PeerTrustRevocationTests.OfflineRecoveryLateEffectsRollBackWholeWriter();
+        await HostTrustReconciliationTests.RecoveryMetadataAndRollback();
+        Console.WriteLine("PASS five offline recovery continuity scenarios and existing recovery metadata regression."); return 0;
+    }
+    if (args is ["--offline-recovery-regression-probe"])
+    {
+        await PeerTrustRevocationTests.OfflineRecoveryAuditDeletionRollsBack();
+        Console.WriteLine("PASS offline recovery final-audit rollback regression."); return 0;
+    }
     if (args is ["--recovery-receipt-probe"])
     {
         await PeerTrustRevocationTests.RecoveryReceiptClearsExactKeyWithoutNewGrants();
@@ -933,6 +948,11 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Offline recovery OfflineRecoveryAuditDeletionRollsBack", PeerTrustRevocationTests.OfflineRecoveryAuditDeletionRollsBack),
+    ("Offline recovery OfflineRecoveryCarriesExactApprovalThroughRepeatedRecovery", PeerTrustRevocationTests.OfflineRecoveryCarriesExactApprovalThroughRepeatedRecovery),
+    ("Offline recovery OfflineRecoveryNeverRevivesIneligibleMarkers", PeerTrustRevocationTests.OfflineRecoveryNeverRevivesIneligibleMarkers),
+    ("Offline recovery OfflineRecoveryContinuityStillCancelsOnRevokeAndReplacement", PeerTrustRevocationTests.OfflineRecoveryContinuityStillCancelsOnRevokeAndReplacement),
+    ("Offline recovery OfflineRecoveryLateEffectsRollBackWholeWriter", PeerTrustRevocationTests.OfflineRecoveryLateEffectsRollBackWholeWriter),
     ("Recovery receipt RecoveryReceiptClearsExactKeyWithoutNewGrants", PeerTrustRevocationTests.RecoveryReceiptClearsExactKeyWithoutNewGrants),
     ("Recovery receipt RecoveryReceiptDuplicateAndNoOpAreBounded", PeerTrustRevocationTests.RecoveryReceiptDuplicateAndNoOpAreBounded),
     ("Recovery receipt RecoveryReceiptMismatchAndSecondRecoveryCannotUnlock", PeerTrustRevocationTests.RecoveryReceiptMismatchAndSecondRecoveryCannotUnlock),
