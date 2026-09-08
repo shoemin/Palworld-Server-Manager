@@ -9,6 +9,33 @@ namespace PalworldServerManager.Host;
 // Fixed intrinsic security surface, owned by one runtime and actual TLS connection.
 internal sealed class PeerRecoveryCompletionReceiver(PeerSecurityRpcRuntime runtime,GrantPolicyRepository repository)
 {
+    private PeerGrantMutationActor OfferProof(PeerSecurityRpcConnection session)
+    {
+        if(session.Protocol is null)throw new InvalidOperationException("Negotiate this connection first.");
+        session.Protocol.Require(FeatureCapability.PeerRecoveryCompletion);
+        session.Protocol.Require(FeatureCapability.PeerRecoveryCompletionOffer);
+        return new(runtime.HostId,session.PeerId,session.PeerFingerprint,session.LocalFingerprint,session.PeerIncarnation);
+    }
+    internal Task<PeerRecoveryOfferReply> Offer(HttpContext context,PeerRecoveryOfferRequest request,CancellationToken ct)
+        =>Invoke(context,ct,(session,token)=>
+        {
+            var proof=OfferProof(session);
+            if(PeerRecoveryOfferWire.ValidateRequest(request)!=runtime.HostId)throw new AuthenticationException("Recovery offering Host refused.");
+            var pending=repository.ReadPendingRecoveryCompletion(proof,token);
+            var reply=new PeerRecoveryOfferReply {OfferingHostId=runtime.HostId.ToString("D")};
+            if(pending is not null)reply.Acknowledgment=new() {ReceivingHostId=session.PeerId.ToString("D"),
+                ApprovalId=pending.ApprovalId.ToString("D"),AcknowledgedFingerprint=pending.ApprovedPeerFingerprint};
+            return reply;
+        });
+    internal Task<PeerRecoveryOfferConfirmationReply> ConfirmOffer(HttpContext context,PeerRecoveryCompletionReply request,CancellationToken ct)
+        =>Invoke(context,ct,(session,token)=>
+        {
+            var proof=OfferProof(session);
+            var approval=PeerRecoveryOfferWire.ValidatePositiveReceipt(request,runtime.HostId,session.PeerId,session.PeerFingerprint);
+            var result=repository.ConfirmAuthenticatedRecoveryCompletion(proof,approval,token);
+            return new PeerRecoveryOfferConfirmationReply {Receipt=request.Clone(),Result=result.Changed
+                ?PeerRecoveryOfferConfirmationResult.Confirmed:PeerRecoveryOfferConfirmationResult.AlreadyConfirmed};
+        });
     private async Task<T> Invoke<T>(HttpContext context,CancellationToken ct,Func<PeerSecurityRpcConnection,CancellationToken,T> action)
     {
         PermissionDispatchChannel.Require(context);

@@ -90,6 +90,8 @@ message PeerUnpairReply {
 service PeerSecurityProtocol {
   rpc NegotiateRecovery(PeerHello) returns (PeerHello);
   rpc ReceiveRecoveryCompletion(PeerRecoveryCompletionRequest) returns (PeerRecoveryCompletionReply);
+  rpc ReadRecoveryCompletionOffer(PeerRecoveryOfferRequest) returns (PeerRecoveryOfferReply);
+  rpc ConfirmRecoveryCompletionOffer(PeerRecoveryCompletionReply) returns (PeerRecoveryOfferConfirmationReply);
   rpc ReceiveUnpair(PeerUnpairNotice) returns (PeerUnpairReply);
   rpc Negotiate(PeerHello) returns (PeerHello);
   rpc Activate(PeerActivationAck) returns (PeerActivationReply);
@@ -116,4 +118,19 @@ message PeerRecoveryCompletionReply {
   string approval_id = 3;
   string acknowledged_fingerprint = 4;
   PeerRecoveryCompletionResult result = 5;
+}
+// Fixed reverse acknowledgment. The receiving peer is only the actual TLS caller.
+message PeerRecoveryOfferRequest { string offering_host_id = 1; }
+message PeerRecoveryOfferReply {
+  string offering_host_id = 1;
+  PeerRecoveryCompletionRequest acknowledgment = 2; // absent when no pending obligation
+}
+enum PeerRecoveryOfferConfirmationResult {
+  PEER_RECOVERY_OFFER_CONFIRMATION_RESULT_UNSPECIFIED = 0;
+  PEER_RECOVERY_OFFER_CONFIRMATION_RESULT_CONFIRMED = 1;
+  PEER_RECOVERY_OFFER_CONFIRMATION_RESULT_ALREADY_CONFIRMED = 2;
+}
+message PeerRecoveryOfferConfirmationReply {
+  PeerRecoveryCompletionReply receipt = 1;
+  PeerRecoveryOfferConfirmationResult result = 2;
 }

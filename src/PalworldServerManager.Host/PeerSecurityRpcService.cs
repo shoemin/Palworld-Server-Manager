@@ -49,6 +49,10 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
         => GuardErrors(()=>runtime.Recovery.Negotiate(context.GetHttpContext(),request,context.CancellationToken));
     public override Task<PeerRecoveryCompletionReply> ReceiveRecoveryCompletion(PeerRecoveryCompletionRequest request,ServerCallContext context)
         => GuardErrors(()=>runtime.Recovery.Receive(context.GetHttpContext(),request,context.CancellationToken));
+    public override Task<PeerRecoveryOfferReply> ReadRecoveryCompletionOffer(PeerRecoveryOfferRequest request,ServerCallContext context)
+        => GuardErrors(()=>runtime.Recovery.Offer(context.GetHttpContext(),request,context.CancellationToken));
+    public override Task<PeerRecoveryOfferConfirmationReply> ConfirmRecoveryCompletionOffer(PeerRecoveryCompletionReply request,ServerCallContext context)
+        => GuardErrors(()=>runtime.Recovery.ConfirmOffer(context.GetHttpContext(),request,context.CancellationToken));
     public override Task<PeerHello> Negotiate(PeerHello request, ServerCallContext context) => Dispatch(context, true, session =>
     {
         if (session.NegotiationAttempted) throw new InvalidOperationException(); session.NegotiationAttempted = true;

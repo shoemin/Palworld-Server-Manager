@@ -95,7 +95,7 @@ internal static class PeerRecoveryRpcTests
             Bad(()=>PeerRecoveryCompletionWire.ValidateReply(bad,request,a));
         }
         Bad(()=>PeerRecoveryCompletionWire.ValidateReply(reply,request,b));
-        var hello=PeerSecurityRpcRuntime.RecoveryHello(a);Check(hello.Handshake.Protocol.Minor==13&&hello.Handshake.Capabilities.SequenceEqual(new[]{FeatureCapability.PeerRecoveryCompletion}));
+        var hello=PeerSecurityRpcRuntime.RecoveryHello(a);Check(hello.Handshake.Protocol.Minor==14&&hello.Handshake.Capabilities.SequenceEqual(new[]{FeatureCapability.PeerRecoveryCompletion,FeatureCapability.PeerRecoveryCompletionOffer}));
         Check(!PeerSecurityRpcRuntime.Hello(a).Handshake.Capabilities.Contains(FeatureCapability.PeerRecoveryCompletion));
     }
     public static async Task BothRecoveryExactReceiptAndLostReplyDuplicate()
@@ -118,7 +118,7 @@ internal static class PeerRecoveryRpcTests
         using(var ordinary=new RawClient(f.A,f.B))await Refused(ordinary.Negotiate(PeerSecurityRpcRuntime.Hello(f.A.State.HostId)),StatusCode.Unauthenticated);
         Check(snapshot==f.Snapshot());using var client=new RawClient(f.A,f.B);
         var all=PeerSecurityRpcRuntime.Hello(f.A.State.HostId);all.Handshake.Capabilities.Add(FeatureCapability.PeerRecoveryCompletion);
-        var hello=await f.Negotiate(client,all);Check(hello.Handshake.Capabilities.SequenceEqual(new[]{FeatureCapability.PeerRecoveryCompletion}));
+        var hello=await f.Negotiate(client,all);Check(hello.Handshake.Capabilities.SequenceEqual(new[]{FeatureCapability.PeerRecoveryCompletion,FeatureCapability.PeerRecoveryCompletionOffer}));
         async Task OrdinaryRefused()
         {
             await Refused(client.Activate(new()),StatusCode.FailedPrecondition);
@@ -151,7 +151,7 @@ internal static class PeerRecoveryRpcTests
         using(var large=new RawClient(f.A,f.B,unboundedSend:true))
         {var hello=PeerSecurityRpcRuntime.RecoveryHello(f.A.State.HostId);hello.Handshake.ProductVersion=new string('X',20000);await Refused(f.Negotiate(large,hello),StatusCode.ResourceExhausted);}
         using var good=new RawClient(f.A,f.B);var backport=PeerSecurityRpcRuntime.RecoveryHello(f.A.State.HostId);backport.Handshake.Protocol.Minor=1;backport.Handshake.Capabilities.Add((FeatureCapability)999);
-        var reply=await f.Negotiate(good,backport);Check(reply.Handshake.Protocol.Minor==1&&reply.Handshake.Capabilities.Count==1);
+        var reply=await f.Negotiate(good,backport);Check(reply.Handshake.Protocol.Minor==1&&reply.Handshake.Capabilities.Count==2);
         var bad=f.Request;bad.ReceivingHostId=f.A.State.HostId.ToString("D");await Refused(f.Send(good,bad),StatusCode.Unauthenticated);
         bad=f.Request;bad.ApprovalId="bad";await Refused(f.Send(good,bad),StatusCode.InvalidArgument);
         bad=f.Request;bad.AcknowledgedFingerprint="bad";await Refused(f.Send(good,bad),StatusCode.InvalidArgument);

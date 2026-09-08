@@ -9,8 +9,8 @@ public sealed record PeerRecoveryConfirmationResult(Guid PeerHostId,Guid Approva
 
 public sealed partial class GrantPolicyRepository
 {
-    // Trusted completed TLS proof only. The future Host sender must correlate a positive
-    // wire reply before calling confirmation; neither seam is a public request adapter.
+    // Trusted completed TLS proof only. Host adapters must correlate a positive
+    // wire receipt before confirmation; neither seam accepts untrusted request proof.
     public PendingPeerRecoveryCompletion? ReadPendingRecoveryCompletion(PeerGrantMutationActor actor,CancellationToken ct=default)
     {
         ct.ThrowIfCancellationRequested();using var c=Open(true);using var tx=c.BeginTransaction(deferred:true);

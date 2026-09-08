@@ -44,7 +44,7 @@ public sealed class PeerSecurityRpcRuntime
     internal static PeerHello Hello(Guid hostId)
     {
         var hello = new PeerHello { Host = new() { HostId = hostId.ToString("D") },
-            Handshake = new() { Protocol = new() { Major = 1, Minor = 13 }, ProductVersion = "0.5.0-astra" } };
+            Handshake = new() { Protocol = new() { Major = 1, Minor = 14 }, ProductVersion = "0.5.0-astra" } };
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustActivation);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationStatus);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationProposal);
@@ -55,7 +55,8 @@ public sealed class PeerSecurityRpcRuntime
     internal static PeerHello RecoveryHello(Guid hostId)
     {
         var hello=Hello(hostId);hello.Handshake.Capabilities.Clear();
-        hello.Handshake.Capabilities.Add(FeatureCapability.PeerRecoveryCompletion);return hello;
+        hello.Handshake.Capabilities.Add(FeatureCapability.PeerRecoveryCompletion);
+        hello.Handshake.Capabilities.Add(FeatureCapability.PeerRecoveryCompletionOffer);return hello;
     }
     internal Func<ConnectionDelegate, ConnectionDelegate> BindConnection(string local, Func<ConnectionContext, string> readRemoteFingerprint)
     {
