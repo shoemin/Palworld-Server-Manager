@@ -13,6 +13,16 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--configuration-revision-probe"])
+    {
+        await ConfigurationRevisionTests.QualifiedResourcesRemainIndependentAfterReopen();
+        await ConfigurationRevisionTests.ConcurrentWritersRejectStaleBeforeAction();
+        await ConfigurationRevisionTests.ActionAndFinalValidationFailuresRollBack();
+        await ConfigurationRevisionTests.RevisionTriggerFaultsCannotCommitPartialData();
+        await ConfigurationRevisionTests.InvalidStorageHostAndCancellationNeverRunAction();
+        await ConfigurationRevisionTests.ReadersSeeCommittedStateAndLateHostChangesRollBack();
+        Console.WriteLine("PASS transactional resource revisions."); return 0;
+    }
     if (args is ["--operation-definition-probe"])
     {
         await OperationDefinitionTests.FixedConflictHierarchyAndIndependentTargets();
@@ -749,6 +759,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Resource revision QualifiedResourcesRemainIndependentAfterReopen", ConfigurationRevisionTests.QualifiedResourcesRemainIndependentAfterReopen),
+    ("Resource revision ConcurrentWritersRejectStaleBeforeAction", ConfigurationRevisionTests.ConcurrentWritersRejectStaleBeforeAction),
+    ("Resource revision ActionAndFinalValidationFailuresRollBack", ConfigurationRevisionTests.ActionAndFinalValidationFailuresRollBack),
+    ("Resource revision RevisionTriggerFaultsCannotCommitPartialData", ConfigurationRevisionTests.RevisionTriggerFaultsCannotCommitPartialData),
+    ("Resource revision InvalidStorageHostAndCancellationNeverRunAction", ConfigurationRevisionTests.InvalidStorageHostAndCancellationNeverRunAction),
+    ("Resource revision ReadersSeeCommittedStateAndLateHostChangesRollBack", ConfigurationRevisionTests.ReadersSeeCommittedStateAndLateHostChangesRollBack),
     ("Operations FixedConflictHierarchyAndIndependentTargets", OperationDefinitionTests.FixedConflictHierarchyAndIndependentTargets),
     ("Operations ClosedIdentityAndLockInputs", OperationDefinitionTests.ClosedIdentityAndLockInputs),
     ("Operations ExplicitPerKindRecoveryAndTransitions", OperationDefinitionTests.ExplicitPerKindRecoveryAndTransitions),
