@@ -15,6 +15,18 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--local-trust-revocation-probe"])
+    {
+        await PeerTrustRevocationTests.AtomicForestsTombstoneAndAudit();
+        await PeerTrustRevocationTests.LocalCapabilityAndIdentityBoundaries();
+        await PeerTrustRevocationTests.IdempotenceAndFreshPairingGate();
+        await PeerTrustRevocationTests.StaleRequestAndCancellationRollback();
+        await PeerTrustRevocationTests.EveryLateEffectAndAuditFailureRollsBack();
+        await PeerTrustRevocationTests.ConcurrentRevocationsHaveOneWinner();
+        await PeerTrustRevocationTests.HistoricalInvalidationRemainsPermanent();
+        await PeerTrustRevocationTests.PeerBoundAndRecoveryStatesAreRevocable();
+        Console.WriteLine("PASS eight local trust revocation scenarios."); return 0;
+    }
     if (args is ["--operation-cross-host-probe"])
     {
         await OperationCrossHostTests.DestinationOwnershipVisibilityAndDisconnectAcrossScopes();
@@ -823,6 +835,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Local trust revocation AtomicForestsTombstoneAndAudit", PeerTrustRevocationTests.AtomicForestsTombstoneAndAudit),
+    ("Local trust revocation LocalCapabilityAndIdentityBoundaries", PeerTrustRevocationTests.LocalCapabilityAndIdentityBoundaries),
+    ("Local trust revocation IdempotenceAndFreshPairingGate", PeerTrustRevocationTests.IdempotenceAndFreshPairingGate),
+    ("Local trust revocation StaleRequestAndCancellationRollback", PeerTrustRevocationTests.StaleRequestAndCancellationRollback),
+    ("Local trust revocation EveryLateEffectAndAuditFailureRollsBack", PeerTrustRevocationTests.EveryLateEffectAndAuditFailureRollsBack),
+    ("Local trust revocation ConcurrentRevocationsHaveOneWinner", PeerTrustRevocationTests.ConcurrentRevocationsHaveOneWinner),
+    ("Local trust revocation HistoricalInvalidationRemainsPermanent", PeerTrustRevocationTests.HistoricalInvalidationRemainsPermanent),
+    ("Local trust revocation PeerBoundAndRecoveryStatesAreRevocable", PeerTrustRevocationTests.PeerBoundAndRecoveryStatesAreRevocable),
     ("Cross-Host operations DestinationOwnershipVisibilityAndDisconnectAcrossScopes", OperationCrossHostTests.DestinationOwnershipVisibilityAndDisconnectAcrossScopes),
     ("Host operation lifetime BootstrapThenConcurrentReadyUsesOneRuntime", HostOperationLifetimeTests.BootstrapThenConcurrentReadyUsesOneRuntime),
     ("Host operation lifetime EmptyProductionRegistryPreservesEveryTarget", HostOperationLifetimeTests.EmptyProductionRegistryPreservesEveryTarget),
