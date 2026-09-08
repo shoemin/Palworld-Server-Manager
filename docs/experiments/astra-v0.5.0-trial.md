@@ -4236,3 +4236,35 @@ Acceptance/test plan: exact qualified resources and independent aggregate revisi
 ### #46b implementation and qualification candidate
 
 Implemented the qualified editable-resource identity and same-transaction revision repository, with six ordinary SQLite scenarios. No correction cycle so far. Zero-warning build, focused6/6, actual UI, Windows SDK ABI and strict Docs PASS. The focused fault matrix rejects all14 insert/update trigger effects with exact rollback snapshots and successful retries. Eight actual connections produce one successful action and seven stale refusals before callbacks. Fixture values/events and proof refusal are explicitly representative; this is not a newly authenticated business writer or a general filesystem rollback mechanism. Full self-test and exact CI qualification follow, with A/B and final gates still required.
+
+Pre-A evidence clarification1: made the trusted callback contract explicit in the developer page. The repository owns transaction completion; actions may not commit/rollback/dispose the supplied connection/transaction, final validators are read-only, and the rollback guarantee assumes that contract. Raw SQLite callbacks are trusted Host integration code, not an arbitrary-code sandbox. This documents the existing bounded API accurately; no production/test change or new accepted escape. Unit1 pre-A documentation cycle, executable remains1dbb9868821f5bd3b6a3da4aab513f62b6b911eb.
+
+### #46b Review A — complete transactional revision unit
+
+After local488/488, inspected all6 changed files againstae8a26eae63a32336fc58fc2479bd2a5b5566464. Reviewed key collision resistance, immutable aggregate target, exact initialized Host condition, immediate transaction lifetime, stale comparison before callback, checked increment and UTC/type parsing, action-side revision comparison, conditional upsert, final validator/Host/revision/cancellation order and every disposal/error path. No A finding. Pre-A documentation clarification1 remains the unit correction count; no code/test changes since1dbb9868821f5bd3b6a3da4aab513f62b6b911eb.
+
+Verified test evidence rather than inferring business behavior: same-kind Host/server and cross-Host equal-profile resources are independent; old unqualified history remains untouched; repository calls reopen real connections; eight writers give one action/seven pre-action stale refusals; six-table rollback snapshots and retries cover action/validator/revision faults,14 insert/update trigger effects, late cancellation and Host change; separate WAL readers see committed data. Fixture event/proof checks are representative and explicitly not actual permission authentication. The callback contract requires Host-owned SQL transaction completion and read-only final validation, not sandboxing arbitrary code.
+
+| Invariant | Whole-unit evidence / consequence | Result |
+|---|---|---|
+| ARCH-001, ARCH-002 | BCL Core model and existing Host.Persistence edge only; WPF/Lan/legacy services and all project references unchanged; architecture suite passes. | PASS |
+| HOST-001, HOST-002, PERSIST-001 | Trusted Host-only DB edit seam under caller-held lease; immediate transaction owns revision plus action; no client executor; rollback and independent-reader evidence. | PASS |
+| CLIENT-001, CLIENT-002, CLIENT-003 | No ordinary-client/Contracts dependency, credential or local-channel change; callbacks are not request fields. | PASS |
+| IDENT-001, IDENT-002 | Current semantic Host plus qualified discriminated target; same IDs/different Hosts and Host/server target separation tested. | PASS |
+| IDENT-003, IDENT-004 | No credential rotation/replacement/recovery writer changes; full prior regression preserved. | PASS, unchanged |
+| LOCAL-001 | Initialized Host and exactly one active Owner required on read/write and before commit; uninitialized/missing Owner/Host and late change tests. | PASS |
+| LOCAL-002, LOCAL-003, LOCAL-004 | No verifier/private-key/enrollment/transport change or implicit authentication by metadata check. | PASS, unchanged |
+| OWNER-001, OWNER-002 | No Owner establishment/replacement path; trusted resource callback must enforce its actual actor policy independently. | PASS, unchanged |
+| REMOTE-001, REMOTE-002 | No remote routing or ceiling bypass; foreign authoritative resource rejected; revision is no authority permit. | PASS |
+| PAIR-001, PAIR-002, PAIR-003, PAIR-004 | No trust/default/grant creation or cross-Host transaction. Each repository owns its destination database only. | PASS, unchanged |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | Existing canonical authorization/revision engine unchanged. No indirect grant path or permission inference; future authenticated business writer must authorize within the supplied transaction. | PASS |
+| PROTO-001 | No new wire surface/enum/version or client-registered kind; structured stale exception will be mapped in later integration. | PASS, unchanged |
+| OPS-001 | Compare-before-action and checked conditional advance in one immediate transaction; exact postcheck, eight-writer conflict,14 fault cases and retry evidence. | PASS for infrastructure |
+| OPS-002, OPS-003, OPS-004 | No operation lock/executor/lifetime change or synthetic scope; atomic lock lifecycle and connection independence remain later46 work. | PASS, unchanged |
+| RECOVERY-001 | SQL rollback is not destructive-operation recovery; no default resume, filesystem callback or phase guess. | PASS, unchanged |
+| SEC-001 | Bounded code-defined metadata and fixed errors; no new secret fields/logging; fixture snapshot comparisons never print values. Business audit remains trusted writer responsibility with mandatory validator. | PASS |
+| MIG-001 | Existing table reused, no schema or data migration; old unqualified row preserved explicitly. | PASS |
+| PLATFORM-001, PLATFORM-002 | No OS checks, interactive service code or dependency change; actual UI/SDK regression preserved. | PASS |
+| LINUX-001 | No Linux production or physical/parity/release inference. | PASS, gate retained |
+
+All40 normative definitions audited. Source/developer reference search confirms only the new storage seam and tests use this API; no stale claim of completed46, actual settings RPC or generic rollback of external effects. Local488/488, focused6/6, zero-warning build, actual UI/SDK/strict Docs and candidate Docs34174190182 PASS. A clean; CI34174189031 remains an exact executable merge gate while PR/B proceed. Canonical Issue/Project unchanged, accessibility WAIVED and physical/parity/Palworld/Linux/release gates retained.
