@@ -51,6 +51,7 @@ public sealed partial class GrantPolicyRepository
         var trust=RevocationRows(c,tx,"TrustedManagers",TrustRevocationColumns);
         if(!trust.TryGetValue(Id(peerHostId),out var target))throw new InvalidOperationException("Peer relationship unavailable.");
         var pending=RevocationRows(c,tx,"PendingCredentialReplacements",ReplacementRevocationColumns);
+        var completions=RevocationRows(c,tx,"PeerReplacementCompletions",ReplacementCompletionColumns);
         var revoked=ActorRef.RemoteManager(peerHostId);
         var hostIds=before.HostGrants.Where(g=>g.GranteeActor==revoked||g.GrantedByActor==revoked)
             .SelectMany(g=>before.Policy.HostSubtree(g.GrantId)).ToHashSet();
@@ -59,8 +60,9 @@ public sealed partial class GrantPolicyRepository
         var hs=before.HostGrants.Where(g=>hostIds.Contains(g.GrantId)&&g.InvalidatedUtc is null).ToArray();
         var ss=before.ServerGrants.Where(g=>serverIds.Contains(g.GrantId)&&g.InvalidatedUtc is null).ToArray();
         var candidates=pending.Values.Where(row=>Equals(row[1],Id(peerHostId))&&row[10] is DBNull).ToArray();
+        var completionMarkers=completions.Values.Where(row=>Equals(row[0],Id(peerHostId))&&row[9] is DBNull).ToArray();
         var trustChanged=!Equals(target[1],"Revoked")||target[12] is DBNull;
-        if(!trustChanged&&hs.Length==0&&ss.Length==0&&candidates.Length==0)
+        if(!trustChanged&&hs.Length==0&&ss.Length==0&&candidates.Length==0&&completionMarkers.Length==0)
         {ct.ThrowIfCancellationRequested();tx.Commit();return new(peerHostId,before.Revision,expectedIncarnation,false,0,0,expectedIncarnation);}
 
         var now=time.GetUtcNow();var stamp=Stamp(now);
@@ -70,6 +72,11 @@ public sealed partial class GrantPolicyRepository
         {
             Execute(c,tx,"UPDATE PendingCredentialReplacements SET InvalidatedUtc=$now WHERE ReplacementId=$id AND InvalidatedUtc IS NULL;",
                 ("$now",stamp),("$id",row[0]));row[10]=stamp;
+        }
+        foreach(var row in completionMarkers)
+        {
+            Execute(c,tx,"UPDATE PeerReplacementCompletions SET InvalidatedUtc=$now WHERE PeerHostId=$peer AND InvalidatedUtc IS NULL;",
+                ("$now",stamp),("$peer",row[0]));row[9]=stamp;
         }
         if(trustChanged)
         {
@@ -90,7 +97,7 @@ public sealed partial class GrantPolicyRepository
         var changed=checked(hs.Length+ss.Length);
         var receiptCheck=receivedNotice is null?null:WriteReceivedUnpair(c,tx,receivedNotice,incarnation,stamp);
         var audit=WriteSuccessAudit(c,tx,writer.Actual,hostId,null,"PeerTrustRevoked",now,
-            $"Peer={Id(peerHostId)}; PreviousIncarnation={expectedIncarnation}; Incarnation={incarnation}; InvalidatedGrants={changed}; InvalidatedReplacements={candidates.Length}; Origin={(receivedNotice is null?"Administration":"ReceivedUnpair")}.");
+            $"Peer={Id(peerHostId)}; PreviousIncarnation={expectedIncarnation}; Incarnation={incarnation}; InvalidatedGrants={changed}; InvalidatedReplacements={candidates.Length}; InvalidatedCompletions={completionMarkers.Length}; Origin={(receivedNotice is null?"Administration":"ReceivedUnpair")}.");
         var after=Read(c,tx);
         // Only the authenticated peer revoking ITSELF intentionally loses Active proof.
         // Its complete expected tombstone and new incarnation are verified below. All
@@ -109,6 +116,7 @@ public sealed partial class GrantPolicyRepository
             throw new InvalidOperationException("Revocation grant effects changed before commit.");
         RequireRevocationRows(trust,RevocationRows(c,tx,"TrustedManagers",TrustRevocationColumns));
         RequireRevocationRows(pending,RevocationRows(c,tx,"PendingCredentialReplacements",ReplacementRevocationColumns));
+        RequireRevocationRows(completions,RevocationRows(c,tx,"PeerReplacementCompletions",ReplacementCompletionColumns));
         if(PeerRelationshipIncarnation.Read(c,tx,peerHostId)!=incarnation)
             throw new InvalidOperationException("Revocation relationship changed before commit.");
         if(RevocationCredential(c,tx)!=credential)throw new InvalidOperationException("Host credential changed before commit.");

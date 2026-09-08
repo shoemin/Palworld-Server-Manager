@@ -20,7 +20,7 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
     private readonly HostDatabase database = database ?? throw new ArgumentNullException(nameof(database));
     private readonly Guid hostId = hostId != Guid.Empty ? hostId : throw new ArgumentException("Host identity required.");
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
-    private static readonly TimeSpan PendingLifetime = TimeSpan.FromMinutes(30);
+    internal static readonly TimeSpan PendingLifetime = TimeSpan.FromMinutes(30);
     private static string Id(Guid id) => id != Guid.Empty ? id.ToString("D") : throw new ArgumentException("Identity required.");
     private static string Fingerprint(string value) => HostTrustPlanning.Fingerprint(value) ? value : throw new ArgumentException("Invalid public fingerprint.");
     private static string Stamp(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
