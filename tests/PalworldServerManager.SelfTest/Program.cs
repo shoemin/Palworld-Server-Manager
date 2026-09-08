@@ -13,6 +13,14 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--operation-definition-probe"])
+    {
+        await OperationDefinitionTests.FixedConflictHierarchyAndIndependentTargets();
+        await OperationDefinitionTests.ClosedIdentityAndLockInputs();
+        await OperationDefinitionTests.ExplicitPerKindRecoveryAndTransitions();
+        await OperationDefinitionTests.InvalidDefinitionsAndCallerMutationCannotSupplyFallbacks();
+        Console.WriteLine("PASS explicit operation definitions."); return 0;
+    }
     if (args is ["--permission-success-audit-probe"])
     {
         await PermissionSuccessAuditTests.RemovedAuditRollsBackGrant();
@@ -741,6 +749,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Operations FixedConflictHierarchyAndIndependentTargets", OperationDefinitionTests.FixedConflictHierarchyAndIndependentTargets),
+    ("Operations ClosedIdentityAndLockInputs", OperationDefinitionTests.ClosedIdentityAndLockInputs),
+    ("Operations ExplicitPerKindRecoveryAndTransitions", OperationDefinitionTests.ExplicitPerKindRecoveryAndTransitions),
+    ("Operations InvalidDefinitionsAndCallerMutationCannotSupplyFallbacks", OperationDefinitionTests.InvalidDefinitionsAndCallerMutationCannotSupplyFallbacks),
     ("Authorization ModelsAndProtocolMapping", AuthorizationPolicyTests.ModelsAndProtocolMapping),
     ("Authorization ExhaustiveDelegationRightsAndTypedScope", AuthorizationPolicyTests.ExhaustiveDelegationRightsAndTypedScope),
     ("Authorization ForestValidityAndExactSubtrees", AuthorizationPolicyTests.ForestValidityAndExactSubtrees),
