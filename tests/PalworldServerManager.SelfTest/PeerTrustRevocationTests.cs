@@ -7,7 +7,7 @@ using PalworldServerManager.Host.Persistence;
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class PeerTrustRevocationTests
+internal static partial class PeerTrustRevocationTests
 {
     private static readonly DelegationRights Use=new(false,false),Onward=new(true,true);
     private static void Check(bool value){if(!value)throw new Exception("Trust revocation assertion failed.");}

@@ -105,6 +105,8 @@ internal sealed class LocalPermissionCall(GrantPolicyRepository repository, Loca
     { Guard(); return repository.InvalidateHostSubtree(actor, revision, root, Cancellation); }
     internal GrantMutationResult InvalidateServer(long revision, Guid root)
     { Guard(); return repository.InvalidateServerSubtree(actor, revision, root, Cancellation); }
+    internal PeerTrustRevocationResult RevokePeer(long revision, Guid peer, long incarnation)
+    { Guard(); return repository.RevokeLocalPeerTrust(actor, revision, peer, incarnation, Cancellation); }
 }
 
 internal sealed class PeerPermissionCall(GrantPolicyRepository repository, PeerGrantMutationActor actor, CancellationToken ct) : PermissionCall(ct)
@@ -127,4 +129,6 @@ internal sealed class PeerPermissionCall(GrantPolicyRepository repository, PeerG
     { Guard(); return repository.ApplyRemotePreset(actor, revision, preset, Cancellation); }
     internal CreatorGrantResult CommitConfirmedCreation(long revision, ServerRef target, Action<SqliteConnection,SqliteTransaction> recordConfirmedCreation)
     { Guard(); return repository.CommitConfirmedRemoteCreation(actor, revision, target, recordConfirmedCreation, Cancellation); }
+    internal PeerTrustRevocationResult RevokePeer(long revision, Guid peer, long incarnation)
+    { Guard(); return repository.RevokeRemotePeerTrust(actor, revision, peer, incarnation, Cancellation); }
 }

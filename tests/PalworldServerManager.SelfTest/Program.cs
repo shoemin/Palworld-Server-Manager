@@ -15,6 +15,18 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--remote-trust-revocation-probe"])
+    {
+        await PeerTrustRevocationTests.RemoteAdministratorTargetsOnlyItsSelectedPeer();
+        await PeerTrustRevocationTests.RemoteSelfRevocationCannotReuseItsOldProof();
+        await PeerTrustRevocationTests.RemoteProofAndExactCapabilityRefusals();
+        await PeerTrustRevocationTests.RemoteLateIdentityAndAuditEffectsRollback();
+        await PeerTrustRevocationTests.RemoteRevocationMayRemoveItsOwnDelegatedCapability();
+        await AuthenticatedPermissionDispatchTests.LocalRevocationDispatchBindsActorAndLifetime();
+        await AuthenticatedPermissionDispatchTests.RemoteRevocationDispatchBindsOriginalProof();
+        await AuthenticatedPermissionDispatchTests.RevocationAfterStagedPromotionNeedsFreshRevision();
+        Console.WriteLine("PASS eight remote revocation and dispatch scenarios."); return 0;
+    }
     if (args is ["--local-trust-revocation-probe"])
     {
         await PeerTrustRevocationTests.AtomicForestsTombstoneAndAudit();
@@ -835,6 +847,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Remote trust revocation RemoteAdministratorTargetsOnlyItsSelectedPeer", PeerTrustRevocationTests.RemoteAdministratorTargetsOnlyItsSelectedPeer),
+    ("Remote trust revocation RemoteSelfRevocationCannotReuseItsOldProof", PeerTrustRevocationTests.RemoteSelfRevocationCannotReuseItsOldProof),
+    ("Remote trust revocation RemoteProofAndExactCapabilityRefusals", PeerTrustRevocationTests.RemoteProofAndExactCapabilityRefusals),
+    ("Remote trust revocation RemoteLateIdentityAndAuditEffectsRollback", PeerTrustRevocationTests.RemoteLateIdentityAndAuditEffectsRollback),
+    ("Remote trust revocation RemoteRevocationMayRemoveItsOwnDelegatedCapability", PeerTrustRevocationTests.RemoteRevocationMayRemoveItsOwnDelegatedCapability),
+    ("Remote trust revocation LocalRevocationDispatchBindsActorAndLifetime", AuthenticatedPermissionDispatchTests.LocalRevocationDispatchBindsActorAndLifetime),
+    ("Remote trust revocation RemoteRevocationDispatchBindsOriginalProof", AuthenticatedPermissionDispatchTests.RemoteRevocationDispatchBindsOriginalProof),
+    ("Remote trust revocation RevocationAfterStagedPromotionNeedsFreshRevision", AuthenticatedPermissionDispatchTests.RevocationAfterStagedPromotionNeedsFreshRevision),
     ("Local trust revocation AtomicForestsTombstoneAndAudit", PeerTrustRevocationTests.AtomicForestsTombstoneAndAudit),
     ("Local trust revocation LocalCapabilityAndIdentityBoundaries", PeerTrustRevocationTests.LocalCapabilityAndIdentityBoundaries),
     ("Local trust revocation IdempotenceAndFreshPairingGate", PeerTrustRevocationTests.IdempotenceAndFreshPairingGate),

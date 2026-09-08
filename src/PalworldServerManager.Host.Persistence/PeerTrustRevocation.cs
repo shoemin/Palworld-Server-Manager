@@ -13,8 +13,18 @@ public sealed partial class GrantPolicyRepository
     // guard, not authority. No transport callback can hold up this local transaction.
     public PeerTrustRevocationResult RevokeLocalPeerTrust(LocalPrincipalMutationActor actor,long expectedRevision,
         Guid peerHostId,long expectedIncarnation,CancellationToken ct=default)
+        =>RevokePeerTrust(LocalWriter(actor),expectedRevision,peerHostId,expectedIncarnation,ct);
+
+    // Original completed TLS/negotiation proof, never a request-selected identity. The
+    // originating local user's independent ceiling remains an outbound Host obligation.
+    public PeerTrustRevocationResult RevokeRemotePeerTrust(PeerGrantMutationActor actor,long expectedRevision,
+        Guid peerHostId,long expectedIncarnation,CancellationToken ct=default)
+        =>RevokePeerTrust(PeerWriter(actor),expectedRevision,peerHostId,expectedIncarnation,ct);
+
+    private PeerTrustRevocationResult RevokePeerTrust(GrantWriter writer,long expectedRevision,
+        Guid peerHostId,long expectedIncarnation,CancellationToken ct)
     {
-        var writer=LocalWriter(actor);Id(peerHostId);
+        Id(peerHostId);
         if(peerHostId==hostId||expectedIncarnation<=0)throw new ArgumentException("A current remote relationship is required.");
         ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
@@ -71,11 +81,15 @@ public sealed partial class GrantPolicyRepository
         var changed=checked(hs.Length+ss.Length);
         var audit=WriteSuccessAudit(c,tx,writer.Actual,hostId,null,"PeerTrustRevoked",now,
             $"Peer={Id(peerHostId)}; PreviousIncarnation={expectedIncarnation}; Incarnation={incarnation}; InvalidatedGrants={changed}; InvalidatedReplacements={candidates.Length}.");
-        var after=Read(c,tx);writer.Require(c,tx,after);
+        var after=Read(c,tx);
+        // Only the authenticated peer revoking ITSELF intentionally loses Active proof.
+        // Its complete expected tombstone and new incarnation are verified below. All
+        // other actors retain current identity; callers cannot supply this exception.
+        if(writer.Actual!=revoked)writer.Require(c,tx,after);
         RequireRevision(checked(before.Revision+changed+(trustChanged?1:0)),after.Revision);
         // Revoking a peer may intentionally remove the administrator's own delegated
         // capability. Authorization is checked before mutation; exact effects plus current
-        // local identity protect this commit without demanding the removed grant afterward.
+        // actor/relationship checks protect this commit without demanding the removed grant afterward.
         var expectedHosts=before.HostGrants.Select(g=>hostIds.Contains(g.GrantId)&&g.InvalidatedUtc is null?
             new HostCapabilityGrant(g.GrantId,g.GranteeActor,g.Capability,g.TargetHostId,g.Rights,g.GrantedByActor,g.DerivedFromGrantId,g.GrantedUtc,now):g);
         var expectedServers=before.ServerGrants.Select(g=>serverIds.Contains(g.GrantId)&&g.InvalidatedUtc is null?
