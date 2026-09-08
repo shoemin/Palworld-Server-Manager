@@ -13,6 +13,20 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
+        return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--operation-lifecycle-probe"])
+    {
+        await OperationLifecycleTests.FingerprintsAndQualifiedTargets();
+        await OperationLifecycleTests.ConflictMatrixAndReadOnlyVisibility();
+        await OperationLifecycleTests.ContendingAdmissionAndStaleTransitions();
+        await OperationLifecycleTests.FaultMatricesRollBackAndRetry();
+        await OperationLifecycleTests.AuthorityCancellationAndClosedInputs();
+        await OperationLifecycleTests.HistoricalAndChangedDefinitionsRequireRecovery();
+        await OperationLifecycleTests.RevisionIntegrityAndCollateralMutation();
+        await OperationCrashTests.RealProcessTerminationPreservesAtomicPairs();
+        Console.WriteLine("PASS atomic durable operation lifecycle."); return 0;
+    }
     if (args is ["--configuration-revision-probe"])
     {
         await ConfigurationRevisionTests.QualifiedResourcesRemainIndependentAfterReopen();
@@ -759,6 +773,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Operation lifecycle FingerprintsAndQualifiedTargets", OperationLifecycleTests.FingerprintsAndQualifiedTargets),
+    ("Operation lifecycle ConflictMatrixAndReadOnlyVisibility", OperationLifecycleTests.ConflictMatrixAndReadOnlyVisibility),
+    ("Operation lifecycle ContendingAdmissionAndStaleTransitions", OperationLifecycleTests.ContendingAdmissionAndStaleTransitions),
+    ("Operation lifecycle FaultMatricesRollBackAndRetry", OperationLifecycleTests.FaultMatricesRollBackAndRetry),
+    ("Operation lifecycle AuthorityCancellationAndClosedInputs", OperationLifecycleTests.AuthorityCancellationAndClosedInputs),
+    ("Operation lifecycle HistoricalAndChangedDefinitionsRequireRecovery", OperationLifecycleTests.HistoricalAndChangedDefinitionsRequireRecovery),
+    ("Operation lifecycle RevisionIntegrityAndCollateralMutation", OperationLifecycleTests.RevisionIntegrityAndCollateralMutation),
+    ("Operation lifecycle RealProcessTerminationPreservesAtomicPairs", OperationCrashTests.RealProcessTerminationPreservesAtomicPairs),
     ("Resource revision QualifiedResourcesRemainIndependentAfterReopen", ConfigurationRevisionTests.QualifiedResourcesRemainIndependentAfterReopen),
     ("Resource revision ConcurrentWritersRejectStaleBeforeAction", ConfigurationRevisionTests.ConcurrentWritersRejectStaleBeforeAction),
     ("Resource revision ActionAndFinalValidationFailuresRollBack", ConfigurationRevisionTests.ActionAndFinalValidationFailuresRollBack),
