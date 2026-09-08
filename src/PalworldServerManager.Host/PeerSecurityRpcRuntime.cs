@@ -16,6 +16,9 @@ public sealed class PeerSecurityRpcRuntime
     internal PeerTransportAuthentication Authentication { get; }
     internal PeerPermissionDispatcher Permissions { get; }
     internal PeerUnpairReceiver Unpair { get; }
+    private readonly GrantPolicyRepository grants;
+    internal void RequireCommittedUnpair(PeerGrantMutationActor original,PeerTrustRevocationResult revoked,CancellationToken ct)
+        =>grants.RequireCommittedUnpair(original,revoked,ct);
     public PeerSecurityRpcRuntime(HostDatabase database, Guid hostId, IPeerActivationHook hook, TimeProvider? time = null)
     {
         if (hostId == Guid.Empty) throw new ArgumentException("Host identity required.");
@@ -23,7 +26,7 @@ public sealed class PeerSecurityRpcRuntime
         Repository = new(database, hostId, time); Authentication = new(Repository, time);
         Credentials = new(database, hostId);
         Clock = time ?? TimeProvider.System;
-        var grants = new GrantPolicyRepository(database, hostId, time);
+        grants = new GrantPolicyRepository(database, hostId, time);
         Permissions = new(this, grants); Unpair = new(this, grants);
     }
     internal static PeerHello Hello(Guid hostId)
