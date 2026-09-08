@@ -24,7 +24,8 @@ internal static partial class WindowsPeerProcessFixture
     // receives ten code bytes on private stdin; command 4 returns ten on private stdout,
     // followed by a public cleanup acknowledgement. Neither code enters JSON/argv/config/logs.
     internal sealed record Report(string Kind, int Pid, Guid Instance, Guid Host, string Pin, string Key,
-        Uri Address, string? CurrentPeerPin, Guid? PendingRotation, string? PeerState, DateTimeOffset? BindingExpiry, string? VerifiedPeerPin = null, Uri? PairingAddress = null, Guid? Invitation = null);
+        Uri Address, string? CurrentPeerPin, Guid? PendingRotation, string? PeerState, DateTimeOffset? BindingExpiry, string? VerifiedPeerPin = null, Uri? PairingAddress = null, Guid? Invitation = null,
+        RecoveryProcessState? Recovery = null);
     private static async Task<string> Line(Stream reader, CancellationToken ct)
     {
         // Never use StreamReader here: read-ahead could decode the next private code
@@ -75,7 +76,7 @@ internal static partial class WindowsPeerProcessFixture
         }
         internal async Task<Report> Command(string action, Uri address, CancellationToken ct)
         {
-            var tag = action switch { "activate" => (byte)1, "receipt" => (byte)2, "refuse-activation" => (byte)5, _ => throw new ArgumentException("Unknown control action.") };
+            var tag = action switch { "activate" => (byte)1, "receipt" => (byte)2, "refuse-activation" => (byte)5, "recovery-state" => (byte)6, _ => throw new ArgumentException("Unknown control action.") };
             await Send(tag, address, ct); return await Read(ct);
         }
         private async Task Send(byte tag, Uri address, CancellationToken ct)
@@ -151,6 +152,8 @@ internal static partial class WindowsPeerProcessFixture
             // orphaned child if the parent service itself terminates before closing control.
             using var watchdog = ct.Register(() => Environment.Exit(2));
             using var lease = Lease(config); var host = new FixtureHost(config); host.RequireFixture();
+            Check(config.RecoveryFault is >=0 and <=6,"Unknown recovery fixture mode.");
+            if(config.RecoveryFault!=0)return await RunRecoveryChild(host,ct);
             Check((config.NativePath is null) == (config.NativeHash is null), "Incomplete native fixture selection.");
             // Native provider lifetime encloses every generation/attempt. Null deliberately
             // supplies the refusing provider, including the post-PeerBound recovery process.

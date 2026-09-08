@@ -16,7 +16,8 @@ internal sealed class NativeTlsServiceFixture : IDisposable
     internal sealed record Config(Guid HostId, Guid RotationHostId, string GroupSid, string PublicDirectory,
         string? PairingProviderPath = null, string? PairingProviderHash = null);
     internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin, bool RotationQualified,
-        bool ReceiptCrashQualified, bool PairingCrashQualified, bool PrecommitCrashQualified, bool ResponderCrashQualified);
+        bool ReceiptCrashQualified, bool PairingCrashQualified, bool PrecommitCrashQualified, bool ResponderCrashQualified,
+        bool RecoveryProcessQualified);
     private readonly IDisposable _runtime;
     private readonly Task _worker;
     internal NativeTlsServiceFixture(string service, string root, IDisposable runtime, CancellationToken stop)
@@ -41,6 +42,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await WindowsRotationCutoverQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 await WindowsGenerationTransitionQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 await WindowsPeerReceiptCrashQualification.Run(root, identity.User!, stop);
+                await WindowsRecoveryProcessQualification.Run(root, identity.User!, stop);
                 if ((config.PairingProviderPath is null) != (config.PairingProviderHash is null)) throw new InvalidDataException("Incomplete fixture provider selection.");
                 if (config.PairingProviderPath is not null)
                 {
@@ -73,7 +75,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin, true, true,
-                    config.PairingProviderPath is not null, config.PairingProviderPath is not null, config.PairingProviderPath is not null);
+                    config.PairingProviderPath is not null, config.PairingProviderPath is not null, config.PairingProviderPath is not null, true);
                 File.WriteAllText(Path.Combine(root, "tls-ready.tmp"), JsonSerializer.Serialize(ready));
                 File.Move(Path.Combine(root, "tls-ready.tmp"), Path.Combine(root, "tls-ready.json"), true);
                 await Task.Delay(Timeout.Infinite, stop);
@@ -92,7 +94,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
         var startedPid = File.ReadAllLines(Path.Combine(root, "identity.txt"))[1];
         File.WriteAllText(Path.Combine(root, "tls-started.tmp"), startedPid);
         File.Move(Path.Combine(root, "tls-started.tmp"), Path.Combine(root, "tls-started.txt"), true);
-        var deadline = DateTime.UtcNow.AddSeconds(60);
+        var deadline = DateTime.UtcNow.AddSeconds(120);
         while (DateTime.UtcNow < deadline)
         {
             var error = Path.Combine(root, "tls-error.txt");
@@ -106,10 +108,12 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 {
                     if (!ready.RotationQualified) throw new Exception("Service rotation qualification was skipped.");
                     if (!ready.ReceiptCrashQualified) throw new Exception("Service receipt process qualification was skipped.");
+                    if (!ready.RecoveryProcessQualified) throw new Exception("Service recovery process qualification was skipped.");
                     var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
                     if (config.PairingProviderPath is not null && !ready.PairingCrashQualified) throw new Exception("Requested native pairing process qualification was skipped.");
                     if (config.PairingProviderPath is not null && !ready.PrecommitCrashQualified) throw new Exception("Requested native precommit crash qualification was skipped.");
                     if (config.PairingProviderPath is not null && !ready.ResponderCrashQualified) throw new Exception("Requested native responder crash qualification was skipped.");
+                    Console.WriteLine("PASS service recovery process qualification: five actual child fault/restart cases and complete cleanup.");
                     return ready;
                 }
             }
