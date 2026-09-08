@@ -5916,3 +5916,9 @@ No B findings, A0/B0 after one pre-A test cleanup correction;248 cumulative corr
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28r / PR174 — accepted bounded reverse recovery client
+
+PR174 merged only into experiment/astra-v0.5.0 at 701bf9d4bd7c4f4fb5d88e9090b0ccb5030eb4e8; final head522bcfb6a033d559492b9e86c37bc7288f67bd3e, executable7d51db1821086eecf1c920160bba64029a0c3df2. All-three CI34223874238, candidate Docs34223877424 and exact final Docs34225390489 PASS. Actual native Rust/16-wrapper tests and genuine PAKE/repair/own-key recovery, remote652/652 ordinary/UI, privileged Windows service/multi-user and unique service/group/users/profiles/files cleanup logs inspected. Exact live base/head/clean/executable-equivalence gate PASS. Twelve files441 insertions/6 deletions; local zero-warning build,652/652, ten focused pull groups, native16/16/all ceremonies, UI/Windows SDK/strict Docs PASS.
+
+One pre-A correction round: deadline-test early-failure cleanup now drains the actual call before fixture credential disposal. No production correction, compiler/test failure, A/B findings or new accepted escape. Accepted114 experimental PRs61–174,13 canonical children SHADOW DONE,652 ordinary tests,248 cumulative correction/verification cycles; all nine identified accepted escapes remain corrected, ninth explicitly test-only. Parent28 remains IN PROGRESS for automatic authenticated-contact retry, public initiating commands and actual remote process/network hang/drop. No unresolved product approval; six creator permissions and limits remain approved, accessibility WAIVED never PASS. Canonical Issue/Project and normal lane unchanged; no main/physical/parity/Linux/release claim. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
