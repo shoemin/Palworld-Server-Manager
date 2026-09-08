@@ -145,6 +145,15 @@ internal static class HostOperationWorkerTests
         Check(missing.Read().Operations.All(o => o.Status == HostOperationStatus.RecoveryRequired) && calls == 0);
         Reject<ArgumentException>(() => new HostOperationRuntime(f.Database, f.HostId,
             [new(definitions[0], (_, _) => Task.CompletedTask), new(definitions[0], (_, _) => Task.CompletedTask)], f.Time));
+        using var damaged = new PeerTrustTests.Fixture();
+        var damagedDefinition = Definition("WorkerFixture", LockRequirement.HostExclusive);
+        var damagedRepository = new OperationRepository(damaged.Database, damaged.HostId, [damagedDefinition], damaged.Time);
+        damagedRepository.Start(Guid.NewGuid(), damagedDefinition.Kind, new HostTarget(damaged.HostId), Admit);
+        damaged.Execute("UPDATE OperationRecords SET IsTerminal=1,Phase='Done',RecoveryDisposition=NULL,RecordRevision=RecordRevision+1;");
+        await using var damagedRuntime = Runtime(damaged, (_, _) => Task.CompletedTask, LockRequirement.HostExclusive);
+        var damagedState = damagedRuntime.Read();
+        Check(damagedState.DurableState.HasUnqualifiedState && damagedState.DurableState.Locks.Count == 1);
+        Check(damagedState.Operations.Single().Status == HostOperationStatus.RecoveryRequired);
     }
 
     public static async Task StaleExternalTransitionDoesNotOverwriteOrRelease()

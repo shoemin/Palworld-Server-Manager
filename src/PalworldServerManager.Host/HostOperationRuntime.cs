@@ -62,7 +62,8 @@ internal sealed class HostOperationRuntime : IAsyncDisposable
             PruneCompletedTasks();
             returnedWorkers.ExceptWith(state.Operations.Where(o => o.Operation.IsTerminal).Select(o => o.Operation.OperationId));
             var observations = state.Operations.Select(o => new HostOperationObservation(o.Operation,
-                o.Operation.IsTerminal ? HostOperationStatus.Resolved :
+                o.Operation.IsTerminal ? (state.Locks.Any(l => l.OwningOperationId == o.Operation.OperationId)
+                    ? HostOperationStatus.RecoveryRequired : HostOperationStatus.Resolved) :
                 state.HasUnqualifiedState || !o.PolicyIsCurrent ? HostOperationStatus.RecoveryRequired :
                 returnedWorkers.Contains(o.Operation.OperationId) ? HostOperationStatus.RecoveryRequired :
                 workers.ContainsKey(o.Operation.OperationId) ? HostOperationStatus.Running :
