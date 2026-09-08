@@ -88,6 +88,8 @@ message PeerUnpairReply {
   PeerUnpairResult result = 3;
 }
 service PeerSecurityProtocol {
+  rpc NegotiateRecovery(PeerHello) returns (PeerHello);
+  rpc ReceiveRecoveryCompletion(PeerRecoveryCompletionRequest) returns (PeerRecoveryCompletionReply);
   rpc ReceiveUnpair(PeerUnpairNotice) returns (PeerUnpairReply);
   rpc Negotiate(PeerHello) returns (PeerHello);
   rpc Activate(PeerActivationAck) returns (PeerActivationReply);
@@ -95,4 +97,23 @@ service PeerSecurityProtocol {
   rpc StageRotation(PeerRotationProposalRequest) returns (PeerRotationProposalReply);
   rpc ConfirmRotationPromotion(PeerRotationReceiptRequest) returns (PeerRotationReceiptReply);
   rpc ConfirmCurrentCredential(PeerCurrentCredentialRequest) returns (PeerCurrentCredentialReply);
+}
+// The approving peer is derived only from the actual authenticated connection.
+message PeerRecoveryCompletionRequest {
+  string receiving_host_id = 1;
+  string approval_id = 2;
+  string acknowledged_fingerprint = 3;
+}
+enum PeerRecoveryCompletionResult {
+  PEER_RECOVERY_COMPLETION_RESULT_UNSPECIFIED = 0;
+  PEER_RECOVERY_COMPLETION_RESULT_RECORDED = 1;
+  PEER_RECOVERY_COMPLETION_RESULT_ALREADY_RECORDED = 2;
+  PEER_RECOVERY_COMPLETION_RESULT_KEY_MISMATCH = 3;
+}
+message PeerRecoveryCompletionReply {
+  string receiving_host_id = 1;
+  string approving_host_id = 2;
+  string approval_id = 3;
+  string acknowledged_fingerprint = 4;
+  PeerRecoveryCompletionResult result = 5;
 }

@@ -15,6 +15,19 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-rpc-probe"])
+    {
+        await PeerRecoveryRpcTests.WireAndImmutableHistory();
+        await PeerRecoveryRpcTests.BothRecoveryExactReceiptAndLostReplyDuplicate();
+        await PeerRecoveryRpcTests.RecoverySessionCannotBecomeOrdinary();
+        await PeerRecoveryRpcTests.ProtocolBoundsAndRecipientRefusals();
+        await PeerRecoveryRpcTests.UnknownRevokedAndBoundRecoveryKeysFailTls();
+        await PeerRecoveryRpcTests.HeldKeysAndIncarnationCannotOutliveState();
+        await PeerRecoveryRpcTests.OldAndPendingKeyDoNotPromoteDuringRecovery();
+        await PeerRecoveryRpcTests.AuditFaultRollsBackAndErrorsAreBounded();
+        await PeerRecoveryRpcTests.OwnedAdapterCancellationAndLifetime();
+        Console.WriteLine("PASS nine fixed recovery RPC scenarios and immutable protocol history."); return 0;
+    }
     if (args is ["--offline-recovery-continuity-probe"])
     {
         await PeerTrustRevocationTests.OfflineRecoveryAuditDeletionRollsBack();
@@ -997,6 +1010,15 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
     ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
     ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
+    ("Recovery RPC WireAndImmutableHistory", PeerRecoveryRpcTests.WireAndImmutableHistory),
+    ("Recovery RPC BothRecoveryExactReceiptAndLostReplyDuplicate", PeerRecoveryRpcTests.BothRecoveryExactReceiptAndLostReplyDuplicate),
+    ("Recovery RPC RecoverySessionCannotBecomeOrdinary", PeerRecoveryRpcTests.RecoverySessionCannotBecomeOrdinary),
+    ("Recovery RPC ProtocolBoundsAndRecipientRefusals", PeerRecoveryRpcTests.ProtocolBoundsAndRecipientRefusals),
+    ("Recovery RPC UnknownRevokedAndBoundRecoveryKeysFailTls", PeerRecoveryRpcTests.UnknownRevokedAndBoundRecoveryKeysFailTls),
+    ("Recovery RPC HeldKeysAndIncarnationCannotOutliveState", PeerRecoveryRpcTests.HeldKeysAndIncarnationCannotOutliveState),
+    ("Recovery RPC OldAndPendingKeyDoNotPromoteDuringRecovery", PeerRecoveryRpcTests.OldAndPendingKeyDoNotPromoteDuringRecovery),
+    ("Recovery RPC AuditFaultRollsBackAndErrorsAreBounded", PeerRecoveryRpcTests.AuditFaultRollsBackAndErrorsAreBounded),
+    ("Recovery RPC OwnedAdapterCancellationAndLifetime", PeerRecoveryRpcTests.OwnedAdapterCancellationAndLifetime),
     ("Unpair RPC WireAndFeatureAreClosed", PeerUnpairRpcTests.WireAndFeatureAreClosed),
     ("Unpair RPC ActualReceiptDuplicatesAndStaleHandshake", PeerUnpairRpcTests.ActualReceiptDuplicatesAndStaleHandshake),
     ("Unpair RPC ProtocolRecipientAndNonActiveRefusals", PeerUnpairRpcTests.ProtocolRecipientAndNonActiveRefusals),
