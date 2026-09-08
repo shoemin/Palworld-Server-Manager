@@ -76,8 +76,13 @@ internal static class PeerPairingRpcTests
     {
         using var channel = Channel(a, b, out var transport, unbounded); using var owner = transport;
         using var call = new PeerPairingProtocol.PeerPairingProtocolClient(channel).Pair(deadline: DateTime.UtcNow.AddSeconds(5));
-        await call.RequestStream.WriteAsync(frame); await call.RequestStream.CompleteAsync();
-        await Refused(async () => { await call.ResponseStream.MoveNext(CancellationToken.None); }, status);
+        // A server-side admission refusal may reach the duplex caller during either
+        // request writing or response reading. Require the exact status throughout.
+        await Refused(async () =>
+        {
+            await call.RequestStream.WriteAsync(frame); await call.RequestStream.CompleteAsync();
+            await call.ResponseStream.MoveNext(CancellationToken.None);
+        }, status);
     }
     public static async Task AdmissionAndFrameOrder()
     {
