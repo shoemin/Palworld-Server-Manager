@@ -4485,3 +4485,12 @@ All40 registry entries rechecked against the final paths and sibling documentati
 
 
 Stale-reference search finds only the trusted coordinator calling PrepareRecovery; production composition remains subsequent46. Recovery documentation explicitly preserves handler business authority/audit responsibilities and all manual/missing/changed-state holds. Accessibility WAIVED; physical reboot/PCs, installed business operations, Palworld, Windows parity, Linux and release are not claimed. Canonical Issue/Project unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #46e / PR153 — accepted in the shadow lane
+
+PR153 merged only into experiment/astra-v0.5.0 at b55393a5329881320c1c120dd2144348ffbbab90; final PR head c3fbd4b00f175fdc9dacd11ddafc4ae59145dd6e, qualified executable fc12c779d45fcbca2474dff23aa1504e4ea2a2e8. Exact final Docs34180611443 and all-three CI34179901357 PASS; actual remote513/513, native and privileged Windows service/multi-user/cleanup logs inspected. Final live base/head/clean/executable-equivalence gate PASS. Twelve files479 insertions/14 deletions; local build0 warnings/errors, full513, focused9, actual UI/SDK and strict Docs PASS.
+
+Two pre-A test-evidence improvements, A0/B0; no implementation/test failure and no new accepted escape. Accepted93 experimental PRs61-153,12 canonical children SHADOW DONE,513 ordinary tests,214 cumulative correction/verification cycles. Seven older accepted escapes remain corrected. Parent46 remains IN PROGRESS for client Activity/status contracts and Host composition. Explicit startup recovery now retains exact operation/lock identity, dispatches only declared current handlers and holds uncertain work; no installed business-operation RPC or concrete destructive policy is claimed.
+
+Continue46f after fresh Issue46/Project inspection. Preserve caller authorization, exact Host/ServerRef identity, independent lock scope, runtime-only status freshness and machine-lease ownership through shutdown. Canonical Issue/Project unchanged; accessibility WAIVED and physical/parity/Palworld/Linux/release limits retained. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
