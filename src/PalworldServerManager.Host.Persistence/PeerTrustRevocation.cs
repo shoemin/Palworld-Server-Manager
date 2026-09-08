@@ -21,16 +21,23 @@ public sealed partial class GrantPolicyRepository
         Guid peerHostId,long expectedIncarnation,CancellationToken ct=default)
         =>RevokePeerTrust(PeerWriter(actor),expectedRevision,peerHostId,expectedIncarnation,ct);
 
-    private PeerTrustRevocationResult RevokePeerTrust(GrantWriter writer,long expectedRevision,
-        Guid peerHostId,long expectedIncarnation,CancellationToken ct)
+    private PeerTrustRevocationResult RevokePeerTrust(GrantWriter writer,long? expectedRevision,
+        Guid peerHostId,long expectedIncarnation,CancellationToken ct,PeerGrantMutationActor? receivedNotice=null)
     {
         Id(peerHostId);
         if(peerHostId==hostId||expectedIncarnation<=0)throw new ArgumentException("A current remote relationship is required.");
         ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
-        var before=Read(c,tx);writer.Require(c,tx,before);RequireRevision(expectedRevision,before.Revision);
+        var before=Read(c,tx);
+        if(receivedNotice is not null&&TryReceivedUnpair(c,tx,receivedNotice,out var previousIncarnation))
+        {
+            ct.ThrowIfCancellationRequested();tx.Commit();
+            return new(peerHostId,before.Revision,previousIncarnation,false,0,0);
+        }
+        writer.Require(c,tx,before);
+        if(expectedRevision is {} expected)RequireRevision(expected,before.Revision);
         var credential=RevocationCredential(c,tx);
-        AuthorizeOrAudit(c,tx,writer,before.Revision,new("RevokePeerTrust",hostId,null,"Peer="+Id(peerHostId)),()=>
+        if(receivedNotice is null)AuthorizeOrAudit(c,tx,writer,before.Revision,new("RevokePeerTrust",hostId,null,"Peer="+Id(peerHostId)),()=>
         {
             if(!before.Policy.CanUseHost(writer.Actual,HostCapability.ManageTrustedManagers,hostId))
                 throw new UnauthorizedAccessException("Trust revocation refused.");
@@ -79,8 +86,9 @@ public sealed partial class GrantPolicyRepository
             foreach(var id in ids)Execute(c,tx,$"UPDATE {table} SET InvalidatedUtc=$now WHERE GrantId=$id AND InvalidatedUtc IS NULL;",
                 ("$now",stamp),("$id",Id(id)));
         var changed=checked(hs.Length+ss.Length);
+        var receiptCheck=receivedNotice is null?null:WriteReceivedUnpair(c,tx,receivedNotice,incarnation,stamp);
         var audit=WriteSuccessAudit(c,tx,writer.Actual,hostId,null,"PeerTrustRevoked",now,
-            $"Peer={Id(peerHostId)}; PreviousIncarnation={expectedIncarnation}; Incarnation={incarnation}; InvalidatedGrants={changed}; InvalidatedReplacements={candidates.Length}.");
+            $"Peer={Id(peerHostId)}; PreviousIncarnation={expectedIncarnation}; Incarnation={incarnation}; InvalidatedGrants={changed}; InvalidatedReplacements={candidates.Length}; Origin={(receivedNotice is null?"Administration":"ReceivedUnpair")}.");
         var after=Read(c,tx);
         // Only the authenticated peer revoking ITSELF intentionally loses Active proof.
         // Its complete expected tombstone and new incarnation are verified below. All
@@ -102,7 +110,7 @@ public sealed partial class GrantPolicyRepository
         if(PeerRelationshipIncarnation.Read(c,tx,peerHostId)!=incarnation)
             throw new InvalidOperationException("Revocation relationship changed before commit.");
         if(RevocationCredential(c,tx)!=credential)throw new InvalidOperationException("Host credential changed before commit.");
-        audit();ct.ThrowIfCancellationRequested();tx.Commit();
+        receiptCheck?.Invoke();audit();ct.ThrowIfCancellationRequested();tx.Commit();
         return new(peerHostId,after.Revision,incarnation,true,changed,candidates.Length);
     }
 
