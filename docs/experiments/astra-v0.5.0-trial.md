@@ -4896,3 +4896,9 @@ Acceptance and negative evidence reviewed independently: seven ordinary scenario
 | MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | Additive empty schema13, source v0.4 untouched, actual schema12 upgrade/idempotence verified. Receipt FK cascades on later incarnation. No platform/UI/Linux change or parity claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28c / PR159 — accepted reciprocal receiving transaction
+
+PR159 merged only into experiment/astra-v0.5.0 at6ff62ea268b534bc64b117db2a7185c9ba877d3f; final head79c5e7399463c0299b5d2cce6d93287b9a58fe2b, qualified executable530c434b3bbe26fdd9638e021ca906fe79f67fab. All-three CI34188104719, candidate Docs34188106441 and exact final Docs34188288728 PASS. Actual Rust/native, remote547/547 including all seven receipt cases, UI, privileged installed Windows/multi-user and unique service/group/users/profiles/files cleanup logs inspected. Exact live base/head/clean/executable-equivalence gate PASS. Eleven files305 insertions/9 deletions; local build0 warnings/errors, focused7/full547/UI/SDK/strict Docs PASS.
+
+One pre-A actual-current-local-key evidence refinement,A0/B0, no build/test failure or new accepted escape. Accepted99 experimental PRs61-159,13 canonical children SHADOW DONE,547 ordinary tests,225 cumulative correction/verification cycles. Seven older accepted escapes remain corrected. Parent28 remains IN PROGRESS for negotiated reciprocal RPC, best-effort sender and full online/offline/re-pair qualification. No new product approval required; six creator permissions/limits unchanged, accessibility WAIVED. Canonical Issue/Project and normal lane untouched. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
