@@ -15,6 +15,19 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--host-operation-worker-probe"])
+    {
+        await HostOperationWorkerTests.DisconnectAndWaitCancellationDoNotCancelWork();
+        await HostOperationWorkerTests.ShutdownDrainsWorkersAndRetainsUnfinishedState();
+        await HostOperationWorkerTests.FailedAndUnfinishedWorkersNeverReleaseLocks();
+        await HostOperationWorkerTests.FailedAndContendingAdmissionsDispatchExactlyOnce();
+        await HostOperationWorkerTests.WorkerDoesNotInheritAmbientRequestContext();
+        await HostOperationWorkerTests.StartupInspectsEveryTargetWithoutImplicitDispatch();
+        await HostOperationWorkerTests.StaleExternalTransitionDoesNotOverwriteOrRelease();
+        await HostOperationWorkerTests.ThrowingShutdownCallbackStillDrains();
+        await HostOperationWorkerTests.ConcurrentShutdownCannotLoseAnAdmittedWorker();
+        Console.WriteLine("PASS Host-owned operation workers."); return 0;
+    }
     if (args is ["--operation-lifecycle-probe"])
     {
         await OperationLifecycleTests.FingerprintsAndQualifiedTargets();
@@ -773,6 +786,15 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Host operation worker DisconnectAndWaitCancellationDoNotCancelWork", HostOperationWorkerTests.DisconnectAndWaitCancellationDoNotCancelWork),
+    ("Host operation worker ShutdownDrainsWorkersAndRetainsUnfinishedState", HostOperationWorkerTests.ShutdownDrainsWorkersAndRetainsUnfinishedState),
+    ("Host operation worker FailedAndUnfinishedWorkersNeverReleaseLocks", HostOperationWorkerTests.FailedAndUnfinishedWorkersNeverReleaseLocks),
+    ("Host operation worker FailedAndContendingAdmissionsDispatchExactlyOnce", HostOperationWorkerTests.FailedAndContendingAdmissionsDispatchExactlyOnce),
+    ("Host operation worker WorkerDoesNotInheritAmbientRequestContext", HostOperationWorkerTests.WorkerDoesNotInheritAmbientRequestContext),
+    ("Host operation worker StartupInspectsEveryTargetWithoutImplicitDispatch", HostOperationWorkerTests.StartupInspectsEveryTargetWithoutImplicitDispatch),
+    ("Host operation worker StaleExternalTransitionDoesNotOverwriteOrRelease", HostOperationWorkerTests.StaleExternalTransitionDoesNotOverwriteOrRelease),
+    ("Host operation worker ThrowingShutdownCallbackStillDrains", HostOperationWorkerTests.ThrowingShutdownCallbackStillDrains),
+    ("Host operation worker ConcurrentShutdownCannotLoseAnAdmittedWorker", HostOperationWorkerTests.ConcurrentShutdownCannotLoseAnAdmittedWorker),
     ("Operation lifecycle FingerprintsAndQualifiedTargets", OperationLifecycleTests.FingerprintsAndQualifiedTargets),
     ("Operation lifecycle ConflictMatrixAndReadOnlyVisibility", OperationLifecycleTests.ConflictMatrixAndReadOnlyVisibility),
     ("Operation lifecycle ContendingAdmissionAndStaleTransitions", OperationLifecycleTests.ContendingAdmissionAndStaleTransitions),
