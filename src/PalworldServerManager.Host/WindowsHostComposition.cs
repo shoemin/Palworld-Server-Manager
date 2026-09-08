@@ -168,12 +168,13 @@ public static class WindowsHostComposition
             var plan = HostTrustPlanning.Build(state);
             if (!state.Initialized || plan.Publication?.CurrentFingerprint != WindowsPeerTls.PublicFingerprint(certificate))
                 throw new System.Security.Authentication.AuthenticationException("Current initialized Host credential is required.");
-            var local = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { }, time) { Pairing = generation };
             var peer = new PeerSecurityRpcRuntime(database, hostId, activationHook, time);
             byte[] publicKey;
             using (var key = certificate.GetECDsaPublicKey()!) publicKey = key.ExportSubjectPublicKeyInfo();
             var pairing = new PeerPairingRpcRuntime(database, hostId, publicKey, pairingFactory, (_, _) => { }, time);
             generation.SetPeerWork(peer, pairing, new WindowsPeerHttpTransportFactory(certificate));
+            var local = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { }, time)
+                { Pairing = generation,UnpairNotifications=peer.UnpairNotifications };
             generation.AddListener(BuildLocalApplication(local, serviceSid, groupSid, certificate, pipe, generation.BindConnection));
             var peerApp = BuildPeerApplication(peer, certificate, peerEndpoint, generation.BindConnection); generation.AddListener(peerApp);
             var pairingApp = BuildPairingApplication(pairing, certificate, pairingEndpoint, generation.BindConnection); generation.AddListener(pairingApp);

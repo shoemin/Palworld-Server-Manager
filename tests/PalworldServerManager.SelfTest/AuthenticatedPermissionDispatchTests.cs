@@ -14,7 +14,7 @@ using ServerRef = PalworldServerManager.Core.Authorization.ServerRef;
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class AuthenticatedPermissionDispatchTests
+internal static partial class AuthenticatedPermissionDispatchTests
 {
     private static readonly DelegationRights Use=new(false,false),Onward=new(true,true);
     private static readonly string LocalPin=new('A',64),PeerPin=new('B',64),NewPin=new('C',64);
@@ -37,20 +37,23 @@ internal static class AuthenticatedPermissionDispatchTests
         internal readonly ServerRef Target;
         internal readonly LocalSecurityRpcRuntime Local;
         internal readonly PeerSecurityRpcRuntime Peer;
+        internal readonly PeerUnpairCoordinator? Notifications;
         private readonly List<IAsyncDisposable> connections=[];
         internal GrantPolicyRepository Repo=>new(F.Database,F.HostId,F.Time);
         internal long Revision=>Repo.Read().Revision;
         internal long Count(string table)=>F.Count("SELECT COUNT(*) FROM "+table+";");
         internal long Denials=>F.Count("SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PermissionPolicyDenied';");
-        internal Rig(bool initialized=true)
+        internal Rig(bool initialized=true,PrepareUnpairConnection? preparation=null)
         {
             F=new(initialized);User=initialized?F.Enroll():Guid.Empty;Target=new(F.HostId,Guid.NewGuid());
             F.Sql($"INSERT INTO SecureCredentialReferences (CredentialRef,Purpose,CreatedUtc,PublicKeyFingerprint,ActivatedUtc) VALUES ('current','HostTlsV1','{F.Time.Now:O}','{LocalPin}','{F.Time.Now:O}'); UPDATE HostIdentity SET CurrentCredentialRef='current' WHERE Id=1;");
             F.Sql($"INSERT INTO TrustedManagers (PeerHostId,State,CurrentTrustedPublicKeyFingerprint,CreatedUtc) VALUES ('{PeerId:D}','Active','{PeerPin}','{F.Time.Now:O}');");
+            Notifications=preparation is null?null:new(F.HostId,preparation,F.Time);
             Local=NewLocal();Peer=NewPeer();
         }
-        internal LocalSecurityRpcRuntime NewLocal()=>new(F.Database,F.HostId,F.Secrets,c=>(string)c.Items["fixture-native"]!,_=>{},F.Time);
-        internal PeerSecurityRpcRuntime NewPeer()=>new(F.Database,F.HostId,Repo.CreateDefaultActivationHook(),F.Time);
+        internal LocalSecurityRpcRuntime NewLocal()=>new(F.Database,F.HostId,F.Secrets,c=>(string)c.Items["fixture-native"]!,_=>{},F.Time){UnpairNotifications=Notifications};
+        internal PeerSecurityRpcRuntime NewPeer()
+        {var peer=new PeerSecurityRpcRuntime(F.Database,F.HostId,Repo.CreateDefaultActivationHook(),F.Time);if(Notifications is not null)peer.ConfigureUnpairNotifications(Notifications);return peer;}
         private static DefaultHttpContext Context()
         {var c=new DefaultHttpContext();c.Request.Scheme="https";c.Request.Protocol="HTTP/2";return c;}
         internal async Task<DefaultHttpContext> LocalContext(bool owner=false,bool negotiate=true,bool authenticate=true,bool feature=true)
@@ -84,7 +87,7 @@ internal static class AuthenticatedPermissionDispatchTests
         {var id=Guid.NewGuid();Repo.IssueServer(F.Actor,Revision,id,grantee,ServerCapability.ViewServer,Target,rights??Use,null);return id;}
         internal void Register(SqliteConnection c,SqliteTransaction tx,ServerRef target)
         {using var cmd=c.CreateCommand();cmd.Transaction=tx;cmd.CommandText=$"INSERT INTO ServerInventory (ServerProfileId,AuthoritativeHostId,DisplayName,InstallPath,CreatedUtc) VALUES ('{target.ServerProfileId:D}','{F.HostId:D}','fixture','fixture','{F.Time.Now:O}');";cmd.ExecuteNonQuery();}
-        public async ValueTask DisposeAsync(){foreach(var connection in connections)await connection.DisposeAsync();F.Dispose();}
+        public async ValueTask DisposeAsync(){if(Notifications is not null)await Notifications.StopAsync();foreach(var connection in connections)await connection.DisposeAsync();F.Dispose();}
     }
     public static async Task LocalSignaturesFeedCanonicalOwnerAndDelegationActions()
     {

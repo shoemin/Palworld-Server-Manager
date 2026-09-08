@@ -16,6 +16,13 @@ public sealed class PeerSecurityRpcRuntime
     internal PeerTransportAuthentication Authentication { get; }
     internal PeerPermissionDispatcher Permissions { get; }
     internal PeerUnpairReceiver Unpair { get; }
+    internal PeerUnpairCoordinator? UnpairNotifications {get;private set;}
+    internal void ConfigureUnpairNotifications(PeerUnpairCoordinator coordinator)
+    {
+        ArgumentNullException.ThrowIfNull(coordinator);
+        if(UnpairNotifications is not null)throw new InvalidOperationException("Unpair coordinator is already configured.");
+        UnpairNotifications=PeerUnpairCoordinator.MatchHost(coordinator,HostId);
+    }
     private readonly GrantPolicyRepository grants;
     internal void RequireCommittedUnpair(PeerGrantMutationActor original,PeerTrustRevocationResult revoked,CancellationToken ct)
         =>grants.RequireCommittedUnpair(original,revoked,ct);

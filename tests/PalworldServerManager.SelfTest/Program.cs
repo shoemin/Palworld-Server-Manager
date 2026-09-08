@@ -15,6 +15,20 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--unpair-coordinator-probe"])
+    {
+        await LiveUnpairConnectionTests.LocalCommitReturnsBeforeHeldNotification();
+        await LiveUnpairConnectionTests.MissingAndPreparingConnectionsNeverDelayCommit();
+        await LiveUnpairConnectionTests.DeniedStaleCanceledCallsLeaveReadyConnectionUnused();
+        await LiveUnpairConnectionTests.RemoteFacadeUsesSameNotificationWithoutEcho();
+        await LiveUnpairConnectionTests.CoordinatorRejectsCrossHostWiring();
+        await UnpairCoordinatorLifetimeTests.CapacityAndRemovedWorkersDrainActualCleanup();
+        await UnpairCoordinatorLifetimeTests.RetentionExpiryClosesPreparationWithoutNotice();
+        await UnpairCoordinatorLifetimeTests.StopCallbackFailureStillDrainsWorkers();
+        await AuthenticatedPermissionDispatchTests.BothDispatchersRetireNotReadyNotifications();
+        await HostNetworkGenerationTests.RegisteredUnpairPreparationStopsWithGeneration();
+        Console.WriteLine("PASS ten unpair coordinator and facade/lifetime scenarios."); return 0;
+    }
     if (args is ["--live-unpair-probe"])
     {
         await PeerTrustRevocationTests.CommittedUnpairGuardRequiresExactTransition();
@@ -881,6 +895,16 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Unpair coordinator LocalCommitReturnsBeforeHeldNotification", LiveUnpairConnectionTests.LocalCommitReturnsBeforeHeldNotification),
+    ("Unpair coordinator MissingAndPreparingConnectionsNeverDelayCommit", LiveUnpairConnectionTests.MissingAndPreparingConnectionsNeverDelayCommit),
+    ("Unpair coordinator DeniedStaleCanceledCallsLeaveReadyConnectionUnused", LiveUnpairConnectionTests.DeniedStaleCanceledCallsLeaveReadyConnectionUnused),
+    ("Unpair coordinator RemoteFacadeUsesSameNotificationWithoutEcho", LiveUnpairConnectionTests.RemoteFacadeUsesSameNotificationWithoutEcho),
+    ("Unpair coordinator CoordinatorRejectsCrossHostWiring", LiveUnpairConnectionTests.CoordinatorRejectsCrossHostWiring),
+    ("Unpair coordinator CapacityAndRemovedWorkersDrainActualCleanup", UnpairCoordinatorLifetimeTests.CapacityAndRemovedWorkersDrainActualCleanup),
+    ("Unpair coordinator RetentionExpiryClosesPreparationWithoutNotice", UnpairCoordinatorLifetimeTests.RetentionExpiryClosesPreparationWithoutNotice),
+    ("Unpair coordinator StopCallbackFailureStillDrainsWorkers", UnpairCoordinatorLifetimeTests.StopCallbackFailureStillDrainsWorkers),
+    ("Unpair coordinator BothDispatchersRetireNotReadyNotifications", AuthenticatedPermissionDispatchTests.BothDispatchersRetireNotReadyNotifications),
+    ("Unpair coordinator RegisteredUnpairPreparationStopsWithGeneration", HostNetworkGenerationTests.RegisteredUnpairPreparationStopsWithGeneration),
     ("Live unpair PreparationFeatureFailureRetainsObservedRotation", PeerRotationReceiptRpcTests.PreparationFeatureFailureRetainsObservedRotation),
     ("Live unpair CommittedUnpairGuardRequiresExactTransition", PeerTrustRevocationTests.CommittedUnpairGuardRequiresExactTransition),
     ("Live unpair ActualScopedDeliveryAndSingleAttempt", LiveUnpairConnectionTests.ActualScopedDeliveryAndSingleAttempt),
