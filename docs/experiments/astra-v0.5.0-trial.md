@@ -4556,3 +4556,12 @@ B found one documentation ambiguity: preflight said no schema was invented while
 
 
 Final documentation diff and all17 path boundaries checked; no other B finding remains. Accessibility WAIVED; physical PCs/reboot, Palworld, Windows parity, Linux and release not claimed. Canonical Issue/Project unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #46f / PR154 — accepted in the shadow lane
+
+PR154 merged only into experiment/astra-v0.5.0 at b2dbc9d1e95debfffe684ab362d5d8c340670905; final head dbd611f8effe5487b1916b40d0268176b05def80, qualified executable0a31b2fca8b25964ef7f0989c6a100e27218ffdc. All-three CI34181233646 and exact final Docs34181509799 PASS; actual remote518/518, UI, native, privileged service/multi-user and unique fixture cleanup logs inspected. Final live base/head/clean/executable-equivalence gate PASS. Seventeen files413 insertions/1 deletion, including two new immutable binary descriptors. Local build0 warnings/errors, full518, focused6, UI/SDK/strict Docs PASS.
+
+Three pre-A build/fixture/schema-history corrections,A0/B1 documentation clarification; no new accepted escape. Accepted94 experimental PRs61-154,12 canonical children SHADOW DONE,518 ordinary tests,218 cumulative correction/verification cycles. Seven older accepted escapes remain corrected. Parent46 remains IN PROGRESS for Host lifetime composition and whole-component acceptance. Activity contracts now preserve explicit target/scope, exact lock identity and runtime recovery status without treating durable revision as a status cursor. They do not add an installed RPC or read-authority policy.
+
+Continue46g with fresh Issue46/Project inspection. Actual installed composition must retain one operation owner outside listener generations, drain before releasing machine lease and preserve bootstrap-only startup while uninitialized; future ordinary access must initialize operation recovery after Owner establishment. Empty product executor registrations must never borrow test handlers or guess unknown stored work. Canonical Issue/Project unchanged; accessibility WAIVED and physical/parity/Palworld/Linux/release limits retained. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
