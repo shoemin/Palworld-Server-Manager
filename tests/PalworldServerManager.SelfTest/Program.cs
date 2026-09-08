@@ -15,6 +15,19 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-receipt-probe"])
+    {
+        await PeerTrustRevocationTests.RecoveryReceiptClearsExactKeyWithoutNewGrants();
+        await PeerTrustRevocationTests.RecoveryReceiptDuplicateAndNoOpAreBounded();
+        await PeerTrustRevocationTests.RecoveryReceiptMismatchAndSecondRecoveryCannotUnlock();
+        await PeerTrustRevocationTests.RecoveryReceiptRefusesChangedProofAndRelationship();
+        await PeerTrustRevocationTests.RecoveryReceiptPreservesOldAndStagedNewRotation();
+        await PeerTrustRevocationTests.RecoveryReceiptCarriesOnlyExactOutgoingApproval();
+        await PeerTrustRevocationTests.RecoveryReceiptLateEffectsAndAuditsRollback();
+        await PeerTrustRevocationTests.RecoveryReceiptConcurrencyAndCancellation();
+        await PeerTrustRevocationTests.RecoveryReceiptSchemaAddsNoAuthority();
+        Console.WriteLine("PASS nine exact-key recovery receipt scenarios."); return 0;
+    }
     if (args is ["--owner-replacement-probe"])
     {
         await PeerTrustRevocationTests.OwnerReplacementAppliesCurrentDefaultsAndExactForest();
@@ -920,6 +933,15 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Recovery receipt RecoveryReceiptClearsExactKeyWithoutNewGrants", PeerTrustRevocationTests.RecoveryReceiptClearsExactKeyWithoutNewGrants),
+    ("Recovery receipt RecoveryReceiptDuplicateAndNoOpAreBounded", PeerTrustRevocationTests.RecoveryReceiptDuplicateAndNoOpAreBounded),
+    ("Recovery receipt RecoveryReceiptMismatchAndSecondRecoveryCannotUnlock", PeerTrustRevocationTests.RecoveryReceiptMismatchAndSecondRecoveryCannotUnlock),
+    ("Recovery receipt RecoveryReceiptRefusesChangedProofAndRelationship", PeerTrustRevocationTests.RecoveryReceiptRefusesChangedProofAndRelationship),
+    ("Recovery receipt RecoveryReceiptPreservesOldAndStagedNewRotation", PeerTrustRevocationTests.RecoveryReceiptPreservesOldAndStagedNewRotation),
+    ("Recovery receipt RecoveryReceiptCarriesOnlyExactOutgoingApproval", PeerTrustRevocationTests.RecoveryReceiptCarriesOnlyExactOutgoingApproval),
+    ("Recovery receipt RecoveryReceiptLateEffectsAndAuditsRollback", PeerTrustRevocationTests.RecoveryReceiptLateEffectsAndAuditsRollback),
+    ("Recovery receipt RecoveryReceiptConcurrencyAndCancellation", PeerTrustRevocationTests.RecoveryReceiptConcurrencyAndCancellation),
+    ("Recovery receipt RecoveryReceiptSchemaAddsNoAuthority", PeerTrustRevocationTests.RecoveryReceiptSchemaAddsNoAuthority),
     ("Owner replacement OwnerReplacementAppliesCurrentDefaultsAndExactForest", PeerTrustRevocationTests.OwnerReplacementAppliesCurrentDefaultsAndExactForest),
     ("Owner replacement OwnerReplacementHandlesRevokedPeerBoundAndBenignRotation", PeerTrustRevocationTests.OwnerReplacementHandlesRevokedPeerBoundAndBenignRotation),
     ("Owner replacement OwnerReplacementRetainsRecoveryAndDeniesOrdinaryAuthority", PeerTrustRevocationTests.OwnerReplacementRetainsRecoveryAndDeniesOrdinaryAuthority),
