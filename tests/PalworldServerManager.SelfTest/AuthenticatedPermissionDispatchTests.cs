@@ -195,6 +195,54 @@ internal static class AuthenticatedPermissionDispatchTests
         await RejectAsync<ObjectDisposedException>(()=>r.Local.Permissions.Invoke(local,c=>{called=true;return 1;},default));
         await RejectAsync<ObjectDisposedException>(()=>r.Peer.Permissions.Invoke(peer,c=>{called=true;return 1;},default));Check(!called&&r.Revision==revision&&r.Denials==0);
     }
+    public static async Task LocalRevocationDispatchBindsActorAndLifetime()
+    {
+        await using var r=new Rig();var owner=await r.LocalContext(true);var user=await r.LocalContext();
+        var incarnation=r.F.Count($"SELECT Incarnation FROM PeerRelationshipIncarnations WHERE PeerHostId='{r.PeerId:D}';");
+        await RejectAsync<UnauthorizedAccessException>(()=>r.Local.Permissions.Invoke(user,c=>c.RevokePeer(r.Revision,r.PeerId,incarnation),default));
+        var revision=r.Revision;var escaped=await r.Local.Permissions.Invoke(owner,c=>c,default);
+        Reject<ObjectDisposedException>(()=>escaped.RevokePeer(revision,r.PeerId,incarnation));
+        await r.Local.Permissions.Invoke(owner,c=>
+        {
+            Reject<InvalidOperationException>(()=>Task.Factory.StartNew(()=>c.RevokePeer(revision,r.PeerId,incarnation),CancellationToken.None,TaskCreationOptions.LongRunning,TaskScheduler.Default).GetAwaiter().GetResult());
+            return true;
+        },default);
+        using(var cancellation=new CancellationTokenSource())
+            await RejectAsync<OperationCanceledException>(()=>r.Local.Permissions.Invoke(owner,c=>{cancellation.Cancel();return c.RevokePeer(revision,r.PeerId,incarnation);},cancellation.Token));
+        Check(r.Revision==revision&&r.F.Text($"SELECT State FROM TrustedManagers WHERE PeerHostId='{r.PeerId:D}';")=="Active");
+        var result=await r.Local.Permissions.Invoke(owner,c=>c.RevokePeer(revision,r.PeerId,incarnation),default);
+        Check(result.Changed&&r.F.Count($"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerTrustRevoked' AND ActorLocalPrincipalId='{r.F.Owner:D}' AND ActorPeerHostId IS NULL;")==1);
+    }
+    public static async Task RemoteRevocationDispatchBindsOriginalProof()
+    {
+        await using var r=new Rig();var peer=ActorRef.RemoteManager(r.PeerId);
+        r.Repo.IssueHost(r.F.Actor,r.Revision,Guid.NewGuid(),peer,HostCapability.ManageTrustedManagers,r.F.HostId,Use,null);
+        var stale=r.PeerContext();var revision=r.Revision;
+        r.F.Sql($"DELETE FROM PeerRelationshipIncarnations WHERE PeerHostId='{r.PeerId:D}'; INSERT INTO PeerRelationshipIncarnations (PeerHostId) VALUES ('{r.PeerId:D}');");
+        var incarnation=r.F.Count($"SELECT Incarnation FROM PeerRelationshipIncarnations WHERE PeerHostId='{r.PeerId:D}';");
+        await RejectAsync<AuthenticationException>(()=>r.Peer.Permissions.Invoke(stale,c=>c.RevokePeer(revision,r.PeerId,incarnation),default));
+        var context=r.PeerContext();var escaped=await r.Peer.Permissions.Invoke(context,c=>c,default);
+        Reject<ObjectDisposedException>(()=>escaped.RevokePeer(revision,r.PeerId,incarnation));
+        using(var cancellation=new CancellationTokenSource())
+            await RejectAsync<OperationCanceledException>(()=>r.Peer.Permissions.Invoke(context,c=>{cancellation.Cancel();return c.RevokePeer(revision,r.PeerId,incarnation);},cancellation.Token));
+        Check(r.Revision==revision&&r.Count("AuditEvents")>0);
+        var result=await r.Peer.Permissions.Invoke(context,c=>c.RevokePeer(revision,r.PeerId,incarnation),default);
+        Check(result.Changed&&result.Incarnation>incarnation&&r.F.Count($"SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerTrustRevoked' AND ActorPeerHostId='{r.PeerId:D}' AND ActorLocalPrincipalId IS NULL;")==1);
+        await RejectAsync<AuthenticationException>(()=>r.Peer.Permissions.Invoke(context,c=>c.RevokePeer(r.Revision,r.PeerId,result.Incarnation),default));
+    }
+    public static async Task RevocationAfterStagedPromotionNeedsFreshRevision()
+    {
+        await using var r=new Rig();
+        r.Repo.IssueHost(r.F.Actor,r.Revision,Guid.NewGuid(),ActorRef.RemoteManager(r.PeerId),HostCapability.ManageTrustedManagers,r.F.HostId,Use,null);
+        r.F.Sql($"UPDATE TrustedManagers SET PendingTrustedPublicKeyFingerprint='{NewPin}',PendingRotationId='{Guid.NewGuid():D}',PendingRotationExpiresUtc='{r.F.Time.Now.AddMinutes(-1):O}' WHERE PeerHostId='{r.PeerId:D}';");
+        var context=r.PeerContext(remote:NewPin);var revision=r.Revision;
+        var incarnation=r.F.Count($"SELECT Incarnation FROM PeerRelationshipIncarnations WHERE PeerHostId='{r.PeerId:D}';");
+        await RejectAsync<StaleAuthorizationRevisionException>(()=>r.Peer.Permissions.Invoke(context,c=>c.RevokePeer(revision,r.PeerId,incarnation),default));
+        Check(r.Revision==revision+1&&r.Count("TrustedManagerCredentialHistory")==1&&r.F.Text($"SELECT State FROM TrustedManagers WHERE PeerHostId='{r.PeerId:D}';")=="Active");
+        Check(r.F.Count("SELECT COUNT(*) FROM AuditEvents WHERE EventKind='PeerTrustRevoked';")==0);
+        var result=await r.Peer.Permissions.Invoke(context,c=>c.RevokePeer(r.Revision,r.PeerId,incarnation),default);
+        Check(result.Changed&&result.InvalidatedGrants==1&&r.F.Text($"SELECT State FROM TrustedManagers WHERE PeerHostId='{r.PeerId:D}';")=="Revoked");
+    }
     public static async Task GuardedPromotionDoesNotBecomePermissionOrLocalUserAuthority()
     {
         await using var r=new Rig();var root=r.HostRoot(ActorRef.RemoteManager(r.PeerId));var rotation=Guid.NewGuid();
