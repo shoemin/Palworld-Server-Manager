@@ -16,7 +16,7 @@ using WireResult=PalworldServerManager.Contracts.Wire.PeerRecoveryCompletionResu
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class RecoverySenderTests
+internal static partial class RecoverySenderTests
 {
     private static void Check(bool value){if(!value)throw new Exception("Recovery sender assertion failed.");}
     private static TaskCompletionSource Signal()=>new(TaskCreationOptions.RunContinuationsAsynchronously);

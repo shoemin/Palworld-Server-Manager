@@ -15,6 +15,14 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-generation-probe"])
+    {
+        await RecoverySenderTests.GenerationComposedSenderAndClosedAdmission();
+        await RecoverySenderTests.GenerationStopDrainsActualRecoveryCallback();
+        await RecoverySenderTests.GenerationInterruptedReplyReopensExactApproval();
+        await RecoverySenderTests.GenerationRecoveryRequiresConfiguredServingLifetime();
+        Console.WriteLine("PASS four recovery generation scenarios."); return 0;
+    }
     if (args is ["--recovery-sender-probe"])
     {
         await RecoverySenderTests.ActualMutualCompletionAndFreshAuthority();
@@ -1037,6 +1045,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
     ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
     ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
+    ("Recovery generation composed sender and closed admission", RecoverySenderTests.GenerationComposedSenderAndClosedAdmission),
+    ("Recovery generation stop drains actual native callback", RecoverySenderTests.GenerationStopDrainsActualRecoveryCallback),
+    ("Recovery generation interrupted reply reopens exact approval", RecoverySenderTests.GenerationInterruptedReplyReopensExactApproval),
+    ("Recovery generation requires configured serving lifetime", RecoverySenderTests.GenerationRecoveryRequiresConfiguredServingLifetime),
     ("Recovery sender ActualMutualCompletionAndFreshAuthority", RecoverySenderTests.ActualMutualCompletionAndFreshAuthority),
     ("Recovery sender ActualOwnRecoveryUsesCurrentKeyAndHistoricalApproval", RecoverySenderTests.ActualOwnRecoveryUsesCurrentKeyAndHistoricalApproval),
     ("Recovery sender UnapprovedNewOwnKeyAndOldLocalKeyRefuse", RecoverySenderTests.UnapprovedNewOwnKeyAndOldLocalKeyRefuse),
