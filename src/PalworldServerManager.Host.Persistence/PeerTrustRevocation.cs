@@ -5,7 +5,7 @@ using PalworldServerManager.Core.Security;
 namespace PalworldServerManager.Host.Persistence;
 
 public sealed record PeerTrustRevocationResult(Guid PeerHostId,long Revision,long Incarnation,
-    bool Changed,int InvalidatedGrants,int InvalidatedReplacements);
+    bool Changed,int InvalidatedGrants,int InvalidatedReplacements,long PreviousIncarnation);
 
 public sealed partial class GrantPolicyRepository
 {
@@ -32,7 +32,7 @@ public sealed partial class GrantPolicyRepository
         if(receivedNotice is not null&&TryReceivedUnpair(c,tx,receivedNotice,out var previousIncarnation))
         {
             ct.ThrowIfCancellationRequested();tx.Commit();
-            return new(peerHostId,before.Revision,previousIncarnation,false,0,0);
+            return new(peerHostId,before.Revision,previousIncarnation,false,0,0,expectedIncarnation);
         }
         writer.Require(c,tx,before);
         if(expectedRevision is {} expected)RequireRevision(expected,before.Revision);
@@ -61,7 +61,7 @@ public sealed partial class GrantPolicyRepository
         var candidates=pending.Values.Where(row=>Equals(row[1],Id(peerHostId))&&row[10] is DBNull).ToArray();
         var trustChanged=!Equals(target[1],"Revoked")||target[12] is DBNull;
         if(!trustChanged&&hs.Length==0&&ss.Length==0&&candidates.Length==0)
-        {ct.ThrowIfCancellationRequested();tx.Commit();return new(peerHostId,before.Revision,expectedIncarnation,false,0,0);}
+        {ct.ThrowIfCancellationRequested();tx.Commit();return new(peerHostId,before.Revision,expectedIncarnation,false,0,0,expectedIncarnation);}
 
         var now=time.GetUtcNow();var stamp=Stamp(now);
         if(trustChanged)
@@ -111,7 +111,7 @@ public sealed partial class GrantPolicyRepository
             throw new InvalidOperationException("Revocation relationship changed before commit.");
         if(RevocationCredential(c,tx)!=credential)throw new InvalidOperationException("Host credential changed before commit.");
         receiptCheck?.Invoke();audit();ct.ThrowIfCancellationRequested();tx.Commit();
-        return new(peerHostId,after.Revision,incarnation,true,changed,candidates.Length);
+        return new(peerHostId,after.Revision,incarnation,true,changed,candidates.Length,expectedIncarnation);
     }
 
     // Fixed schema-owned identifiers only; no caller-controlled SQL or generic write API.

@@ -28,6 +28,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
     private PeerRotationProposalRpcClient? proposal;
     private PeerRotationReceiptRpcClient? receipt;
     private PeerCurrentCredentialRpcClient? currentCredential;
+    private PeerUnpairConnectionFactory? unpairConnection;
     private RoutineRotationAcceptanceCollector? collector;
     private RoutineRotationCutoverCoordinator? cutover;
     private RoutineRotationCompletionCoordinator? completion;
@@ -84,6 +85,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             activation = new(runtime, transport); pairingClient = new(pairingRuntime, transport);
             status = new(runtime, transport); proposal = new(runtime, transport); receipt = new(runtime, transport); collector = new(runtime, transport);
             currentCredential = new(runtime, transport);
+            unpairConnection = new(runtime, transport);
         }
     }
     internal async Task StartAsync(CancellationToken ct)
@@ -166,6 +168,11 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         => RunAsync(token => Required(receipt).ConfirmAsync(peer, address, token), ct);
     internal Task<bool> ConfirmCurrentCredentialAsync(Guid peer, Uri address, Guid rotation, CancellationToken ct = default)
         => RunAsync(token => Required(currentCredential).ConfirmAsync(peer, address, rotation, token), ct);
+    // This is connection preparation, not a revocation command. The generation retains
+    // the credential admission until the complete trusted callback and transport cleanup.
+    internal Task<T> WithPeerUnpairConnectionAsync<T>(Guid peer,Uri address,
+        Func<PeerUnpairConnection,CancellationToken,Task<T>> work,CancellationToken ct=default)
+        =>RunAsync(token=>Required(unpairConnection).WithConnection(peer,address,work,token),ct);
     internal Task<RotationAcceptanceCollection> CollectRotationAsync(Guid rotation, IReadOnlyDictionary<Guid, Uri> addresses, CancellationToken ct = default)
         => RunAsync(token => Required(collector).CollectAsync(rotation, addresses, token), ct);
     internal RotationAcceptanceAssessment AssessRotation(RotationAcceptanceCollection collection) => Required(collector).Recheck(collection);

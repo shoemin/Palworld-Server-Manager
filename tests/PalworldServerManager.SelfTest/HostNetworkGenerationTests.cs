@@ -16,7 +16,7 @@ using Fixture = PalworldServerManager.SelfTest.PeerSecurityRpcTests.Fixture;
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class HostNetworkGenerationTests
+internal static partial class HostNetworkGenerationTests
 {
     private static void Check(bool value) { if (!value) throw new Exception("Host generation assertion failed."); }
     private static TaskCompletionSource Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);

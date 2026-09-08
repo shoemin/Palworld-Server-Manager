@@ -15,6 +15,18 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--live-unpair-probe"])
+    {
+        await PeerTrustRevocationTests.CommittedUnpairGuardRequiresExactTransition();
+        await LiveUnpairConnectionTests.ActualScopedDeliveryAndSingleAttempt();
+        await LiveUnpairConnectionTests.UncommittedOrLaterTransitionNeverSends();
+        await LiveUnpairConnectionTests.LostActualTransportCannotAuthenticateAgain();
+        await LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend();
+        await LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof();
+        await HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration();
+        await PeerRotationReceiptRpcTests.PreparationFeatureFailureRetainsObservedRotation();
+        Console.WriteLine("PASS eight live unpair guard/connection/generation/rotation scenarios."); return 0;
+    }
     if (args is ["--unpair-rpc-probe"])
     {
         await PeerUnpairRpcTests.WireAndFeatureAreClosed();
@@ -869,6 +881,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Live unpair PreparationFeatureFailureRetainsObservedRotation", PeerRotationReceiptRpcTests.PreparationFeatureFailureRetainsObservedRotation),
+    ("Live unpair CommittedUnpairGuardRequiresExactTransition", PeerTrustRevocationTests.CommittedUnpairGuardRequiresExactTransition),
+    ("Live unpair ActualScopedDeliveryAndSingleAttempt", LiveUnpairConnectionTests.ActualScopedDeliveryAndSingleAttempt),
+    ("Live unpair UncommittedOrLaterTransitionNeverSends", LiveUnpairConnectionTests.UncommittedOrLaterTransitionNeverSends),
+    ("Live unpair LostActualTransportCannotAuthenticateAgain", LiveUnpairConnectionTests.LostActualTransportCannotAuthenticateAgain),
+    ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
+    ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
+    ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
     ("Unpair RPC WireAndFeatureAreClosed", PeerUnpairRpcTests.WireAndFeatureAreClosed),
     ("Unpair RPC ActualReceiptDuplicatesAndStaleHandshake", PeerUnpairRpcTests.ActualReceiptDuplicatesAndStaleHandshake),
     ("Unpair RPC ProtocolRecipientAndNonActiveRefusals", PeerUnpairRpcTests.ProtocolRecipientAndNonActiveRefusals),
