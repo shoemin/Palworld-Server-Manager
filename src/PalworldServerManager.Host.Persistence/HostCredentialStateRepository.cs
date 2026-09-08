@@ -105,14 +105,18 @@ public sealed partial class HostCredentialStateRepository(HostDatabase database,
                 AND (ActivatedUtc IS NOT NULL OR CredentialRef IN (SELECT OldCredentialRef FROM HostCredentialRotations UNION SELECT NewCredentialRef FROM HostCredentialRotations));
             """,("$purpose",TlsPurpose),("$ref",reference),("$fp",fingerprint)))
             if(Convert.ToInt32(reused.ExecuteScalar())!=0) throw new InvalidOperationException("Recovery cannot reuse a prior credential under a new reference.");
+        var stamp=DateTimeOffset.UtcNow.ToString("O");
+        var expected=new OfflineRecoveryExpectation(c,tx,reference,stamp);
         Execute(c,tx,"""
+            UPDATE PendingCredentialReplacements SET InvalidatedUtc=$now WHERE InvalidatedUtc IS NULL;
             UPDATE HostIdentity SET CurrentCredentialRef=$ref WHERE Id=1;
             UPDATE SecureCredentialReferences SET ActivatedUtc=$now WHERE CredentialRef=$ref;
             UPDATE HostCredentialRotations SET State='Aborted',CompletedUtc=$now,RetirementAuthorized=0 WHERE State IN ('Prepared','Staging','ReadyForCutover','CutOver');
             UPDATE TrustedManagers SET PeerRecoveryRequired=1 WHERE State IN ('PeerBound','Active');
-            UPDATE PendingCredentialReplacements SET InvalidatedUtc=$now WHERE InvalidatedUtc IS NULL;
-            """,("$ref",reference),("$now",DateTimeOffset.UtcNow.ToString("O")));
-        Audit(c,tx,reason==MachineCredentialRecoveryReason.CredentialLoss?"HostCredentialRecoveredFromLoss":"HostCredentialRecoveredFromCompromise"); tx.Commit();
+            """,("$ref",reference),("$now",stamp));
+        expected.Carry(c,tx);
+        var audit=WriteOfflineRecoveryAudit(c,tx,reason==MachineCredentialRecoveryReason.CredentialLoss?"HostCredentialRecoveredFromLoss":"HostCredentialRecoveredFromCompromise",stamp);
+        expected.Validate(c,tx);audit();tx.Commit();
     }
     public void RecordRetired(string reference)
     {
