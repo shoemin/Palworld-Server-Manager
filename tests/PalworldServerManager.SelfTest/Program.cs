@@ -15,6 +15,18 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-confirmation-probe"])
+    {
+        await PeerTrustRevocationTests.ConfirmationChangesOnlyMarkerAndActualAudit();
+        await PeerTrustRevocationTests.ConfirmationAbsentAndDuplicateAreReadOnly();
+        await PeerTrustRevocationTests.ConfirmationUsesCurrentLocalKeyAfterOfflineRecovery();
+        await PeerTrustRevocationTests.ConfirmationRechecksIncomingReceiptIncarnation();
+        await PeerTrustRevocationTests.ConfirmationRefusesStaleProofAndUnapprovedMarkers();
+        await PeerTrustRevocationTests.ConfirmationNeverSubstitutesStagedPeerKey();
+        await PeerTrustRevocationTests.ConfirmationLateEffectsAndAuditRollback();
+        await PeerTrustRevocationTests.ConfirmationConcurrencyAndCancellation();
+        Console.WriteLine("PASS eight exact recovery confirmation scenarios."); return 0;
+    }
     if (args is ["--recovery-rpc-probe"])
     {
         await PeerRecoveryRpcTests.WireAndImmutableHistory();
@@ -1010,6 +1022,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
     ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
     ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
+    ("Recovery confirmation ConfirmationChangesOnlyMarkerAndActualAudit", PeerTrustRevocationTests.ConfirmationChangesOnlyMarkerAndActualAudit),
+    ("Recovery confirmation ConfirmationAbsentAndDuplicateAreReadOnly", PeerTrustRevocationTests.ConfirmationAbsentAndDuplicateAreReadOnly),
+    ("Recovery confirmation ConfirmationUsesCurrentLocalKeyAfterOfflineRecovery", PeerTrustRevocationTests.ConfirmationUsesCurrentLocalKeyAfterOfflineRecovery),
+    ("Recovery confirmation ConfirmationRechecksIncomingReceiptIncarnation", PeerTrustRevocationTests.ConfirmationRechecksIncomingReceiptIncarnation),
+    ("Recovery confirmation ConfirmationRefusesStaleProofAndUnapprovedMarkers", PeerTrustRevocationTests.ConfirmationRefusesStaleProofAndUnapprovedMarkers),
+    ("Recovery confirmation ConfirmationNeverSubstitutesStagedPeerKey", PeerTrustRevocationTests.ConfirmationNeverSubstitutesStagedPeerKey),
+    ("Recovery confirmation ConfirmationLateEffectsAndAuditRollback", PeerTrustRevocationTests.ConfirmationLateEffectsAndAuditRollback),
+    ("Recovery confirmation ConfirmationConcurrencyAndCancellation", PeerTrustRevocationTests.ConfirmationConcurrencyAndCancellation),
     ("Recovery RPC WireAndImmutableHistory", PeerRecoveryRpcTests.WireAndImmutableHistory),
     ("Recovery RPC BothRecoveryExactReceiptAndLostReplyDuplicate", PeerRecoveryRpcTests.BothRecoveryExactReceiptAndLostReplyDuplicate),
     ("Recovery RPC RecoverySessionCannotBecomeOrdinary", PeerRecoveryRpcTests.RecoverySessionCannotBecomeOrdinary),
