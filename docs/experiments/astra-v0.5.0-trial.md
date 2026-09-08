@@ -4180,3 +4180,33 @@ Applicable ARCH-001/002, HOST-001/002, PERSIST-001, CLIENT-001/002/003, IDENT-00
 Implemented two pure BCL files and four ordinary scenarios. Before the first build, implementation inspection corrected positional Host target/scope records to get-only identity (preventing inconsistent init/with copies) and tightened phase validation to reject closed nonterminal cycles without a declared terminal route. One pre-A implementation correction cycle; no previously accepted defect or escape. Tests include immutable properties/collections, explicit retry loops with an exit and an unresolvable cycle refusal. No authority or concrete operation is added.
 
 Zero-warning Release solution build and focused operation-definition probe PASS. Actual Avalonia UI, Windows SDK ABI and strict Docs PASS. Full self-test and all-three exact executable CI qualification proceed; A must be clean before the experimental PR. The isolated native CI guard alone now includes astra/46-*; normal-lane triggers and the old direct-assessment job remain unchanged.
+
+### #46a Review A — whole bounded definition unit
+
+After local482/482, fresh complete diff review of all7 files againstceb9fb95bd497c4f75b86cffd53156842349e4a0. Checked actual property mutability and record equality, null/unknown branch refusal, all36 symmetric scope pairs against an explicit independent matrix, Host/server target-to-scope mapping and foreign destination refusal. Checked immutable phase/transition snapshots, exact ordinal names, all four declared dispositions, terminal null recovery/no successors, valid explicit loops and the finite backward resolution scan. Definitions contain no executable callback or authority decision. No A finding or correction; pre-A1 remains the unit total.
+
+| Invariant | Whole-unit evidence / consequence | Result |
+|---|---|---|
+| ARCH-001, ARCH-002 | New BCL-only Core.Operations; existing WPF/Lan/legacy services and dependency graph untouched. Full architecture guards pass. | PASS |
+| HOST-001, HOST-002, PERSIST-001 | Pure declarations create no writer/executor or alternate Host. Destination check rejects foreign authority; existing exclusivity regression passes. Durable acquisition/release remain later46 work. | PASS |
+| CLIENT-001, CLIENT-002, CLIENT-003 | No client/Contracts project change or dependency path, credential holder or local-channel bypass; architecture/security regressions pass. | PASS |
+| IDENT-001, IDENT-002 | Stable nonempty Host identity and complete existing ServerRef in immutable target/scope; equal-profile cross-Host matrix/equality tests. | PASS |
+| IDENT-003, IDENT-004 | No rotation/recovery credential path changes; full credential regressions retained. | PASS, unchanged |
+| LOCAL-001, LOCAL-002, LOCAL-003, LOCAL-004 | No enrollment, Owner initialization, verifier or protected-channel changes; local proof regressions retained. | PASS, unchanged |
+| OWNER-001, OWNER-002 | No Owner claim/replacement path; target validation is not authorization. | PASS, unchanged |
+| REMOTE-001, REMOTE-002 | No outbound routing, machine key or ceiling bypass. Pure scope conflict is separate from the two authorization checks. | PASS |
+| PAIR-001, PAIR-002, PAIR-003, PAIR-004 | No trust/activation/grant or cross-Host transaction is added; pairing does not influence a lock declaration. | PASS, unchanged |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | No grant creation/delegation/default/reissue writer or capability-to-lock conversion; all canonical authorization regressions pass. | PASS, unchanged |
+| PROTO-001 | Closed enum values reject unknowns; no wire schema/version/default allow change. | PASS |
+| OPS-001 | No editable-resource writer added; stale revision infrastructure remains later46. Existing authorization revision regression retained. | PASS, unchanged |
+| OPS-002, OPS-004 | Explicit independent target and scope, fixed Host/server conflicts, None acquires no modeled scope; all36 pure pairs and server-targeted HostExclusive. Actual locks/visibility/atomicity remain later46. | PASS for domain |
+| OPS-003 | No client-owned/disposable operation lease or cancellation/executor introduced; Host-owned durable lifecycle remains later46. | PASS, unchanged |
+| RECOVERY-001 | Per-kind phase declarations require explicit disposition/transition and resolution path; unknowns refuse, no global phase list or resume action. Actual startup application remains later46. | PASS for domain |
+| SEC-001 | Bounded code-defined metadata and fixed refusal messages; no credential, arbitrary diagnostic payload or logging introduced. | PASS |
+| MIG-001 | No migration, schema or v0.4 source mutation. | PASS, unchanged |
+| PLATFORM-001, PLATFORM-002 | No OS branch/interactive service code; isolated native CI guard expansion only. Actual local UI/SDK regressions pass. | PASS |
+| LINUX-001 | No Linux production work or parity/release inference. | PASS, gate retained |
+
+All40 definitions audited; current source/doc search confirms the new domain is referenced only by its pure tests and evidence, with existing persistence schema retained for later integration. No stale claim of database locking, generic resume, client Activity or complete46 acceptance. Local482/482, focused4/4, zero-warning build, actual UI/SDK and strict Docs PASS. Exact candidate c55369bf831a2a9a33a7e0cc16c4d79f3277d6a4 Docs34173105452 PASS; all-three CI34173104352 and actual job evidence must finish before acceptance. No product decision or new accepted escape. Canonical Issue/Project unchanged, accessibility WAIVED and downstream field/Windows parity/Palworld/Linux/release limits retained.
+
+A clean after the complete local validation and review above; exact native job101897112817 also passed and its actual PAKE/transport/terminal-cleanup log was inspected. No code changes sincec55369bf831a2a9a33a7e0cc16c4d79f3277d6a4. Remaining CI build/service jobs are an explicit merge gate, not a claimed PASS. Proceed to the experimental PR for the separate fresh B review while those independent jobs finish.
