@@ -442,5 +442,6 @@ public static class HostSchema
         new Migration009RotationRetirementIntent(),
         new Migration010AuthorizationRevision(),
         new Migration011DefaultGrantTemplate(),
+        new Migration012DurableOperationPolicy(),
     ];
 }

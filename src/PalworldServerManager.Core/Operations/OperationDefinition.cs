@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace PalworldServerManager.Core.Operations;
 
@@ -38,10 +40,14 @@ public sealed class OperationDefinition
     public LockRequirement LockRequirement { get; }
     public string InitialPhase { get; }
     public IReadOnlyDictionary<string, OperationPhase> Phases { get; }
+    public int SemanticVersion { get; }
+    public string Fingerprint { get; }
 
-    public OperationDefinition(string kind, LockRequirement lockRequirement, string initialPhase, IEnumerable<OperationPhase> phases)
+    public OperationDefinition(string kind, LockRequirement lockRequirement, string initialPhase, IEnumerable<OperationPhase> phases,
+        int semanticVersion = 1)
     {
         Kind = RequireName(kind); InitialPhase = RequireName(initialPhase);
+        if (semanticVersion < 1) throw new ArgumentException("A positive operation semantic version is required.");
         if (!Enum.IsDefined(lockRequirement)) throw new ArgumentException("Unknown operation lock requirement.");
         ArgumentNullException.ThrowIfNull(phases);
         var entries = new Dictionary<string, OperationPhase>(StringComparer.Ordinal);
@@ -62,6 +68,19 @@ public sealed class OperationDefinition
         } while (changed);
         if (resolvable.Count != entries.Count) throw new ArgumentException("Every phase needs a declared path to terminal resolution.");
         LockRequirement = lockRequirement; Phases = new ReadOnlyDictionary<string, OperationPhase>(entries);
+        SemanticVersion = semanticVersion;
+        // Version describes the concrete executor's phase semantics, not an app/protocol
+        // version. Its author must advance it when those semantics change. Sorting makes
+        // collection construction order irrelevant; changed declarations cannot match old work.
+        Fingerprint = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            Format = "OperationDefinitionV1", Kind, SemanticVersion, Lock = (int)LockRequirement, InitialPhase,
+            Phases = entries.Values.OrderBy(p => p.Name, StringComparer.Ordinal).Select(p => new
+            {
+                p.Name, p.IsTerminal, Recovery = p.Recovery is { } disposition ? (int)disposition : 0,
+                Next = p.NextPhases.OrderBy(n => n, StringComparer.Ordinal).ToArray()
+            }).ToArray()
+        })));
     }
 
     public OperationPhase GetPhase(string name)
