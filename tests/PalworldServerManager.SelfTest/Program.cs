@@ -15,6 +15,18 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-offer-probe"])
+    {
+        await RecoverySenderTests.OfferWireShapesAndHistory();
+        await RecoverySenderTests.OfferActualReceiptFreshConfirmationAndMutualRecovery();
+        await RecoverySenderTests.OfferPositiveExactAttestationOnlyAndConcurrentWinner();
+        await RecoverySenderTests.OfferFeatureNegotiationAndNoPending();
+        await RecoverySenderTests.OfferOriginalSessionCannotRecaptureRecoveryIncarnation();
+        await RecoverySenderTests.OfferCurrentAuthorityAndLateAuditRollback();
+        await RecoverySenderTests.OfferOwnedChannelAndCancellation();
+        await RecoverySenderTests.OfferStagedKeyCannotConfirmApprovedOldKey();
+        Console.WriteLine("PASS eight recovery offer scenarios."); return 0;
+    }
     if (args is ["--recovery-generation-probe"])
     {
         await RecoverySenderTests.GenerationComposedSenderAndClosedAdmission();
@@ -1057,6 +1069,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
     ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
     ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
+    ("Recovery offer OfferWireShapesAndHistory", RecoverySenderTests.OfferWireShapesAndHistory),
+    ("Recovery offer OfferActualReceiptFreshConfirmationAndMutualRecovery", RecoverySenderTests.OfferActualReceiptFreshConfirmationAndMutualRecovery),
+    ("Recovery offer OfferPositiveExactAttestationOnlyAndConcurrentWinner", RecoverySenderTests.OfferPositiveExactAttestationOnlyAndConcurrentWinner),
+    ("Recovery offer OfferFeatureNegotiationAndNoPending", RecoverySenderTests.OfferFeatureNegotiationAndNoPending),
+    ("Recovery offer OfferOriginalSessionCannotRecaptureRecoveryIncarnation", RecoverySenderTests.OfferOriginalSessionCannotRecaptureRecoveryIncarnation),
+    ("Recovery offer OfferCurrentAuthorityAndLateAuditRollback", RecoverySenderTests.OfferCurrentAuthorityAndLateAuditRollback),
+    ("Recovery offer OfferOwnedChannelAndCancellation", RecoverySenderTests.OfferOwnedChannelAndCancellation),
+    ("Recovery offer OfferStagedKeyCannotConfirmApprovedOldKey", RecoverySenderTests.OfferStagedKeyCannotConfirmApprovedOldKey),
     ("Recovery generation composed sender and closed admission", RecoverySenderTests.GenerationComposedSenderAndClosedAdmission),
     ("Recovery generation stop drains actual native callback", RecoverySenderTests.GenerationStopDrainsActualRecoveryCallback),
     ("Recovery generation interrupted reply reopens exact approval", RecoverySenderTests.GenerationInterruptedReplyReopensExactApproval),

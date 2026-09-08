@@ -61,7 +61,7 @@ internal static class PeerUnpairRpcTests
         var wrong=reply.Clone();wrong.UnpairedHostId=Guid.NewGuid().ToString("D");Bad(()=>PeerUnpairWire.ValidateReply(wrong,b,a));
         wrong=reply.Clone();wrong.ReceivingHostId="bad";Bad(()=>PeerUnpairWire.ValidateReply(wrong,b,a));
         var local=PeerSecurityRpcRuntime.Hello(a);var remote=PeerSecurityRpcRuntime.Hello(b);
-        Check(local.Handshake.Protocol.Minor==13&&NegotiatedProtocol.Negotiate(local.Handshake,remote.Handshake).Supports(FeatureCapability.PeerUnpair));
+        Check(local.Handshake.Protocol.Minor==14&&NegotiatedProtocol.Negotiate(local.Handshake,remote.Handshake).Supports(FeatureCapability.PeerUnpair));
         remote.Handshake.Capabilities.Remove(FeatureCapability.PeerUnpair);
         Check(!NegotiatedProtocol.Negotiate(local.Handshake,remote.Handshake).Supports(FeatureCapability.PeerUnpair));
         return Task.CompletedTask;
