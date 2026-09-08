@@ -28,6 +28,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
     private PeerRotationProposalRpcClient? proposal;
     private PeerRotationReceiptRpcClient? receipt;
     private PeerCurrentCredentialRpcClient? currentCredential;
+    private PeerRecoveryCompletionRpcClient? recoveryCompletion;
     private PeerUnpairConnectionFactory? unpairConnection;
     internal PeerUnpairCoordinator? UnpairNotifications {get;private set;}
     private RoutineRotationAcceptanceCollector? collector;
@@ -86,6 +87,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             activation = new(runtime, transport); pairingClient = new(pairingRuntime, transport);
             status = new(runtime, transport); proposal = new(runtime, transport); receipt = new(runtime, transport); collector = new(runtime, transport);
             currentCredential = new(runtime, transport);
+            recoveryCompletion = new(runtime, transport);
             unpairConnection = new(runtime, transport);
             UnpairNotifications=new(runtime.HostId,WithPeerUnpairConnectionAsync<PeerUnpairNotification>,runtime.Clock);
             runtime.ConfigureUnpairNotifications(UnpairNotifications);
@@ -171,6 +173,8 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         => RunAsync(token => Required(receipt).ConfirmAsync(peer, address, token), ct);
     internal Task<bool> ConfirmCurrentCredentialAsync(Guid peer, Uri address, Guid rotation, CancellationToken ct = default)
         => RunAsync(token => Required(currentCredential).ConfirmAsync(peer, address, rotation, token), ct);
+    internal Task<PeerRecoveryCompletionExchange> ConfirmRecoveryAsync(Guid peer, Uri address, CancellationToken ct = default)
+        => RunAsync(token => Required(recoveryCompletion).ConfirmAsync(peer, address, token), ct);
     // This is connection preparation, not a revocation command. The generation retains
     // the credential admission until the complete trusted callback and transport cleanup.
     internal Task<T> WithPeerUnpairConnectionAsync<T>(Guid peer,Uri address,
