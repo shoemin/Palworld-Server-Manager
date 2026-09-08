@@ -15,6 +15,19 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--owner-replacement-probe"])
+    {
+        await PeerTrustRevocationTests.OwnerReplacementAppliesCurrentDefaultsAndExactForest();
+        await PeerTrustRevocationTests.OwnerReplacementHandlesRevokedPeerBoundAndBenignRotation();
+        await PeerTrustRevocationTests.OwnerReplacementRetainsRecoveryAndDeniesOrdinaryAuthority();
+        await PeerTrustRevocationTests.OwnerReplacementDeniesStaleAndUnprovenRequests();
+        await PeerTrustRevocationTests.OwnerReplacementRejectsFreshStagedCandidate();
+        await PeerTrustRevocationTests.OwnerReplacementRetriesAndSupersedesWithoutRevival();
+        await PeerTrustRevocationTests.OwnerReplacementLateFaultsRollback();
+        await PeerTrustRevocationTests.OwnerReplacementConcurrencyAndCancellation();
+        await PeerTrustRevocationTests.ReplacementCompletionSchemaAddsNoAuthority();
+        Console.WriteLine("PASS nine local Owner replacement scenarios."); return 0;
+    }
     if (args is ["--replacement-candidate-probe"])
     {
         await ReplacementCandidateTests.FreshEvidenceIsDurableAndIdempotent();
@@ -907,6 +920,15 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Owner replacement OwnerReplacementAppliesCurrentDefaultsAndExactForest", PeerTrustRevocationTests.OwnerReplacementAppliesCurrentDefaultsAndExactForest),
+    ("Owner replacement OwnerReplacementHandlesRevokedPeerBoundAndBenignRotation", PeerTrustRevocationTests.OwnerReplacementHandlesRevokedPeerBoundAndBenignRotation),
+    ("Owner replacement OwnerReplacementRetainsRecoveryAndDeniesOrdinaryAuthority", PeerTrustRevocationTests.OwnerReplacementRetainsRecoveryAndDeniesOrdinaryAuthority),
+    ("Owner replacement OwnerReplacementDeniesStaleAndUnprovenRequests", PeerTrustRevocationTests.OwnerReplacementDeniesStaleAndUnprovenRequests),
+    ("Owner replacement OwnerReplacementRejectsFreshStagedCandidate", PeerTrustRevocationTests.OwnerReplacementRejectsFreshStagedCandidate),
+    ("Owner replacement OwnerReplacementRetriesAndSupersedesWithoutRevival", PeerTrustRevocationTests.OwnerReplacementRetriesAndSupersedesWithoutRevival),
+    ("Owner replacement OwnerReplacementLateFaultsRollback", PeerTrustRevocationTests.OwnerReplacementLateFaultsRollback),
+    ("Owner replacement OwnerReplacementConcurrencyAndCancellation", PeerTrustRevocationTests.OwnerReplacementConcurrencyAndCancellation),
+    ("Owner replacement ReplacementCompletionSchemaAddsNoAuthority", PeerTrustRevocationTests.ReplacementCompletionSchemaAddsNoAuthority),
     ("Replacement candidate FreshEvidenceIsDurableAndIdempotent", ReplacementCandidateTests.FreshEvidenceIsDurableAndIdempotent),
     ("Replacement candidate TrustAndStagedRotationAbaPermanentlyInvalidate", ReplacementCandidateTests.TrustAndStagedRotationAbaPermanentlyInvalidate),
     ("Replacement candidate LocalCredentialAbaPermanentlyInvalidates", ReplacementCandidateTests.LocalCredentialAbaPermanentlyInvalidates),

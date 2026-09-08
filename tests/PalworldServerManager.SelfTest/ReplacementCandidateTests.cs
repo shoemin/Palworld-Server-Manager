@@ -114,9 +114,10 @@ internal static class ReplacementCandidateTests
             VALUES ('{id:D}','{f.PeerId:D}','{Candidate}','{f.Time.Now:O}','{f.Time.Now.AddMinutes(30):O}','Active','{Peer}','{f.Time.Now:O}');
             """);
         f.Execute($"UPDATE PendingCredentialReplacements SET ApprovedUtc='{f.Time.Now:O}',ApprovedByOwnerLocalPrincipalId='{f.OwnerId:D}' WHERE ReplacementId='{approved:D}';");
-        HostSchemaMigrationRunner.Default().Migrate(f.Writer);
+        var runner=new HostSchemaMigrationRunner(HostSchema.AllMigrations().Where(m=>m.Version<=14));
+        runner.Migrate(f.Writer);
         Check(HostSchemaMigrationRunner.ReadSchemaVersion(f.Writer)==14&&Invalid(f,old)&&!Invalid(f,approved)&&f.Count("PeerReplacementBindingEvidence")==0);
-        var snapshot=Snapshot(f);HostSchemaMigrationRunner.Default().Migrate(f.Writer);Check(Snapshot(f)==snapshot);
+        var snapshot=Snapshot(f);runner.Migrate(f.Writer);Check(Snapshot(f)==snapshot);
         Check(Request(f).ReplacementId!=old&&f.Count("PeerReplacementBindingEvidence")==1&&f.Count("HostCapabilityGrants")==0);
         return Task.CompletedTask;
     }

@@ -47,7 +47,7 @@ internal static partial class PeerTrustRevocationTests
         internal PeerTrustRevocationResult Revoke()=>Repo.RevokeLocalPeerTrust(Owner,Revision,F.PeerId,Incarnation);
         internal string Snapshot()
         {
-            var tables=new[]{"HostIdentity","SecureCredentialReferences","LocalPrincipals","TrustedManagers","PeerRelationshipIncarnations","TrustedManagerPairings","PeerLocalBindingEvidence","PendingCredentialReplacements","PeerUnpairReceipts","HostCapabilityGrants","ServerCapabilityGrants","AuthorizationRevision","AuditEvents"};
+            var tables=new[]{"HostIdentity","SecureCredentialReferences","LocalPrincipals","TrustedManagers","PeerRelationshipIncarnations","TrustedManagerPairings","PeerLocalBindingEvidence","PendingCredentialReplacements","PeerReplacementBindingEvidence","PeerReplacementCompletions","PeerUnpairReceipts","HostCapabilityGrants","ServerCapabilityGrants","DefaultGrantTemplateState","HostDefaultGrants","ServerDefaultGrants","AuthorizationRevision","AuditEvents"};
             var rows=new List<string>();
             foreach(var table in tables)
             {

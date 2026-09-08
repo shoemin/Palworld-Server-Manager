@@ -77,10 +77,16 @@ public sealed partial class GrantPolicyRepository
             =>repository.ApplyDefaults(c,tx,activation);
     }
     private Action ApplyDefaults(SqliteConnection c,SqliteTransaction tx,PeerActivationContext activation)
+        =>ApplyDefaults(c,tx,activation,null);
+    private Action ApplyDefaults(SqliteConnection c,SqliteTransaction tx,PeerActivationContext activation,ApprovedReplacementContext? replacement)
     {
         if(activation.AuthoritativeHostId!=hostId||activation.ActivatedUtc.Offset!=TimeSpan.Zero)throw new UnauthorizedAccessException("Invalid activation authority.");
         var before=Read(c,tx);var peer=ActorRef.RemoteManager(activation.PeerHostId);
-        if(!before.Policy.IsActive(peer))throw new UnauthorizedAccessException("Active peer required for defaults.");
+        if(replacement is not null&&activation.InitiatingActor!=ActorRef.LocalPrincipal(replacement.Owner.LocalPrincipalId))
+            throw new UnauthorizedAccessException("Replacement default initiator must be its actual Owner.");
+        var issuance=replacement is null?before.Policy:ReplacementRecipientPolicy(c,tx,before,replacement);
+        if(!issuance.IsActive(peer)||replacement is not null&&replacement.Peer!=activation.PeerHostId)
+            throw new UnauthorizedAccessException("Active peer required for defaults.");
         if(activation.InitiatingActor is null||
             (activation.InitiatingActor!=peer&&!before.Policy.IsOwner(activation.InitiatingActor)))
             throw new UnauthorizedAccessException("Activation initiator is invalid.");
@@ -88,8 +94,8 @@ public sealed partial class GrantPolicyRepository
         using(var cmd=Command(c,tx,"SELECT LocalPrincipalId FROM LocalPrincipals WHERE State='Active' AND IsOwner=1;"))
             owner=ParseId(cmd.ExecuteScalar() as string??throw Corrupt());
         var issuer=ActorRef.LocalPrincipal(owner);var defaults=ReadDefaults(c,tx,before.Revision);var grants=new List<CapabilityGrant>();
-        foreach(var entry in defaults.Template.Hosts)grants.Add(before.Policy.IssueHost(issuer,Guid.NewGuid(),peer,entry.Capability,hostId,entry.Rights,null,activation.ActivatedUtc));
-        foreach(var entry in defaults.Template.Servers)grants.Add(before.Policy.IssueServer(issuer,Guid.NewGuid(),peer,entry.Capability,entry.Target,entry.Rights,null,activation.ActivatedUtc));
+        foreach(var entry in defaults.Template.Hosts)grants.Add(issuance.IssueHost(issuer,Guid.NewGuid(),peer,entry.Capability,hostId,entry.Rights,null,activation.ActivatedUtc));
+        foreach(var entry in defaults.Template.Servers)grants.Add(issuance.IssueServer(issuer,Guid.NewGuid(),peer,entry.Capability,entry.Target,entry.Rights,null,activation.ActivatedUtc));
         var audits=new List<Action>();
         foreach(var grant in grants)
         {
@@ -101,8 +107,9 @@ public sealed partial class GrantPolicyRepository
         return ()=>
         {
             var after=Read(c,tx);RequireRevision(checked(before.Revision+grants.Count),after.Revision);
+            var currentIssuance=replacement is null?after.Policy:ReplacementRecipientPolicy(c,tx,after,replacement);
             var current=ReadDefaults(c,tx,after.Revision);
-            if(!after.Policy.IsOwner(issuer)||!after.Policy.IsActive(peer)||current.ConfigurationId!=defaults.ConfigurationId||
+            if(!after.Policy.IsOwner(issuer)||!currentIssuance.IsActive(peer)||current.ConfigurationId!=defaults.ConfigurationId||
                 current.ConfiguredByLocalPrincipalId!=defaults.ConfiguredByLocalPrincipalId||current.ConfiguredUtc!=defaults.ConfiguredUtc||!SameTemplate(current.Template,defaults.Template))
                 throw new UnauthorizedAccessException("Activation policy changed before commit.");
             foreach(var grant in grants)

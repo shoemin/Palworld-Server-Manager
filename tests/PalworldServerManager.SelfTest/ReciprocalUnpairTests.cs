@@ -96,6 +96,9 @@ internal static partial class PeerTrustRevocationTests
         f.Execute("UPDATE TrustedManagers SET State='Active';");var before=f.Repository.Read(f.PeerId);var grants=new GrantPolicyRepository(f.Database,f.HostId,f.Time).Read();var audits=f.Count("AuditEvents");
         var runner=new HostSchemaMigrationRunner(HostSchema.AllMigrations().Where(m=>m.Version<=13));
         Check(runner.Migrate(f.Writer)==1&&runner.Migrate(f.Writer)==0&&f.Count("PeerUnpairReceipts")==0&&f.Repository.Read(f.PeerId)==before&&f.Count("AuditEvents")==audits);
+        // The assertions above qualify the historical 12-to-13 migration. Current writers
+        // execute only after the database has reached the current complete schema.
+        HostSchemaMigrationRunner.Default().Migrate(f.Writer);
         var repo=new GrantPolicyRepository(f.Database,f.HostId,f.Time);Check(repo.Read().Revision==grants.Revision&&repo.Read().HostGrants.Count==0&&repo.Read().ServerGrants.Count==0);
         var proof=new PeerGrantMutationActor(f.HostId,f.PeerId,new('B',64),new('A',64),HostDatabase.QueryScalarLong(f.Writer,$"SELECT Incarnation FROM PeerRelationshipIncarnations WHERE PeerHostId='{f.PeerId:D}';"));
         Check(repo.ReceiveAuthenticatedPeerUnpair(proof).Changed&&f.Count("PeerUnpairReceipts")==1);
