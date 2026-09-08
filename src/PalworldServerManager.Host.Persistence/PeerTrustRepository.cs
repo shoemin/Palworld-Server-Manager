@@ -137,16 +137,21 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
                 result = new(PeerBindingDisposition.ResumePeerBound, peer, existing.ExpiresUtc);
             }
         }
-        else result = Candidate(c, tx, existing, peerFingerprint, now);
+        else result = Candidate(c, tx, existing, peerFingerprint, verifiedLocalFingerprint, now);
+        if(RequireHost(c,tx)!=verifiedLocalFingerprint)throw new InvalidOperationException("Local credential changed during pairing.");
+        if(owner is not null)RequirePairingOwner(c,tx,owner);
         tx.Commit(); return result;
     }
-    private PeerBindingResult Candidate(SqliteConnection c, SqliteTransaction tx, PeerTrustRecord existing, string fingerprint, DateTimeOffset now)
+    private PeerBindingResult Candidate(SqliteConnection c, SqliteTransaction tx, PeerTrustRecord existing, string fingerprint,string localFingerprint, DateTimeOffset now)
     {
+        var incarnation=PeerRelationshipIncarnation.Read(c,tx,existing.PeerHostId);
+        var revision=CandidateAuthorizationRevision(c,tx);
         using (var command = Command(c, tx, """
-            SELECT ReplacementId,ExpiresUtc,ExpectedTrustState,ExpectedCurrentTrustedPublicKeyFingerprint
-            FROM PendingCredentialReplacements WHERE PeerHostId=$peer AND ProposedKeyFingerprint=$fp
-                AND InvalidatedUtc IS NULL AND ApprovedUtc IS NULL;
-            """, ("$peer", Id(existing.PeerHostId)), ("$fp", fingerprint)))
+            SELECT r.ReplacementId,r.ExpiresUtc,r.ExpectedTrustState,r.ExpectedCurrentTrustedPublicKeyFingerprint
+            FROM PendingCredentialReplacements r JOIN PeerReplacementBindingEvidence e ON e.ReplacementId=r.ReplacementId
+            WHERE r.PeerHostId=$peer AND r.ProposedKeyFingerprint=$fp AND r.InvalidatedUtc IS NULL AND r.ApprovedUtc IS NULL
+                AND e.SourceIncarnation=$inc AND e.LocalFingerprint=$local AND e.VerifiedUtc=r.VerifiedUtc;
+            """, ("$peer", Id(existing.PeerHostId)), ("$fp", fingerprint),("$inc",incarnation),("$local",localFingerprint)))
         using (var reader = command.ExecuteReader())
         {
             while (reader.Read())
@@ -161,7 +166,12 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
             VALUES ($id,$peer,$fp,$now,$expires,$state,$old,$now);
             """, ("$id", Id(id)), ("$peer", Id(existing.PeerHostId)), ("$fp", fingerprint), ("$now", Stamp(now)),
             ("$expires", Stamp(expires)), ("$state", existing.State), ("$old", existing.CurrentFingerprint));
-        Audit(c, tx, existing.PeerHostId, "PeerCredentialReplacementPending", now);
+        Execute(c,tx,"""
+            INSERT INTO PeerReplacementBindingEvidence (ReplacementId,SourceIncarnation,LocalFingerprint,VerifiedUtc)
+            VALUES ($id,$inc,$local,$now);
+            """,("$id",Id(id)),("$inc",incarnation),("$local",localFingerprint),("$now",Stamp(now)));
+        var audit=Audit(c, tx, existing.PeerHostId, "PeerCredentialReplacementPending", now);
+        RequireCandidateCreated(c,tx,existing,fingerprint,localFingerprint,incarnation,revision,id,now,expires,audit);
         return new(PeerBindingDisposition.ReplacementRequired, existing.PeerHostId, expires, id);
     }
     public int ExpirePending()

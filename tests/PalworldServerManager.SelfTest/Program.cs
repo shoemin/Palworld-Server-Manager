@@ -15,6 +15,18 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--replacement-candidate-probe"])
+    {
+        await ReplacementCandidateTests.FreshEvidenceIsDurableAndIdempotent();
+        await ReplacementCandidateTests.TrustAndStagedRotationAbaPermanentlyInvalidate();
+        await ReplacementCandidateTests.LocalCredentialAbaPermanentlyInvalidates();
+        await ReplacementCandidateTests.MissingOrMismatchedProofCannotBeReused();
+        await ReplacementCandidateTests.CanonicalRevocationPreservesItsAtomicTimestamp();
+        await ReplacementCandidateTests.LegacyRequestsNeverGainFreshEvidence();
+        await ReplacementCandidateTests.UnrelatedAndApprovedHistoryRemainIntact();
+        await ReplacementCandidateTests.LateCandidateAuditAndAuthorityFaultsRollback();
+        Console.WriteLine("PASS eight replacement candidate provenance scenarios."); return 0;
+    }
     if (args is ["--unpair-coordinator-probe"])
     {
         await LiveUnpairConnectionTests.LocalCommitReturnsBeforeHeldNotification();
@@ -895,6 +907,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Replacement candidate FreshEvidenceIsDurableAndIdempotent", ReplacementCandidateTests.FreshEvidenceIsDurableAndIdempotent),
+    ("Replacement candidate TrustAndStagedRotationAbaPermanentlyInvalidate", ReplacementCandidateTests.TrustAndStagedRotationAbaPermanentlyInvalidate),
+    ("Replacement candidate LocalCredentialAbaPermanentlyInvalidates", ReplacementCandidateTests.LocalCredentialAbaPermanentlyInvalidates),
+    ("Replacement candidate MissingOrMismatchedProofCannotBeReused", ReplacementCandidateTests.MissingOrMismatchedProofCannotBeReused),
+    ("Replacement candidate CanonicalRevocationPreservesItsAtomicTimestamp", ReplacementCandidateTests.CanonicalRevocationPreservesItsAtomicTimestamp),
+    ("Replacement candidate LegacyRequestsNeverGainFreshEvidence", ReplacementCandidateTests.LegacyRequestsNeverGainFreshEvidence),
+    ("Replacement candidate UnrelatedAndApprovedHistoryRemainIntact", ReplacementCandidateTests.UnrelatedAndApprovedHistoryRemainIntact),
+    ("Replacement candidate LateCandidateAuditAndAuthorityFaultsRollback", ReplacementCandidateTests.LateCandidateAuditAndAuthorityFaultsRollback),
     ("Unpair coordinator LocalCommitReturnsBeforeHeldNotification", LiveUnpairConnectionTests.LocalCommitReturnsBeforeHeldNotification),
     ("Unpair coordinator MissingAndPreparingConnectionsNeverDelayCommit", LiveUnpairConnectionTests.MissingAndPreparingConnectionsNeverDelayCommit),
     ("Unpair coordinator DeniedStaleCanceledCallsLeaveReadyConnectionUnused", LiveUnpairConnectionTests.DeniedStaleCanceledCallsLeaveReadyConnectionUnused),

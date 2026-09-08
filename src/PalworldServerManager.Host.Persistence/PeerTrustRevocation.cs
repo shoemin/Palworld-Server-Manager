@@ -64,6 +64,13 @@ public sealed partial class GrantPolicyRepository
         {ct.ThrowIfCancellationRequested();tx.Commit();return new(peerHostId,before.Revision,expectedIncarnation,false,0,0,expectedIncarnation);}
 
         var now=time.GetUtcNow();var stamp=Stamp(now);
+        // Preserve this canonical transaction's exact timestamps before the generic
+        // trust/incarnation triggers invalidate any remaining unapproved requests.
+        foreach(var row in candidates)
+        {
+            Execute(c,tx,"UPDATE PendingCredentialReplacements SET InvalidatedUtc=$now WHERE ReplacementId=$id AND InvalidatedUtc IS NULL;",
+                ("$now",stamp),("$id",row[0]));row[10]=stamp;
+        }
         if(trustChanged)
         {
             Execute(c,tx,"""
@@ -77,11 +84,6 @@ public sealed partial class GrantPolicyRepository
         var incarnation=PeerRelationshipIncarnation.Read(c,tx,peerHostId);
         if(trustChanged?incarnation<=expectedIncarnation:incarnation!=expectedIncarnation)
             throw new InvalidOperationException("Revocation incarnation did not advance correctly.");
-        foreach(var row in candidates)
-        {
-            Execute(c,tx,"UPDATE PendingCredentialReplacements SET InvalidatedUtc=$now WHERE ReplacementId=$id AND InvalidatedUtc IS NULL;",
-                ("$now",stamp),("$id",row[0]));row[10]=stamp;
-        }
         foreach(var (table,ids) in new[]{("HostCapabilityGrants",hs.Select(g=>g.GrantId)),("ServerCapabilityGrants",ss.Select(g=>g.GrantId))})
             foreach(var id in ids)Execute(c,tx,$"UPDATE {table} SET InvalidatedUtc=$now WHERE GrantId=$id AND InvalidatedUtc IS NULL;",
                 ("$now",stamp),("$id",Id(id)));
