@@ -274,6 +274,7 @@ internal static class PeerPairingRpcTests
         await LocalOwnerPairingRpcTests.Native(provider);
         await LocalOwnerPairingRpcTests.NativeActivation(provider);
         await LocalOwnerPairingRpcTests.NativeRevocationAndRepair(provider);
+        await LocalOwnerPairingRpcTests.NativeSimultaneousOwnRecovery(provider);
         await InvalidVerifiedBinding(provider, false); await InvalidVerifiedBinding(provider, true);
         await using (var a = new Fixture(provider)) await using (var b = new Fixture(provider))
         {

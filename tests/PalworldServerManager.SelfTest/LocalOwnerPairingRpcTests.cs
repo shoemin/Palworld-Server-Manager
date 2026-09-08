@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Authentication;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text.Json;
 using Google.Protobuf;
@@ -34,20 +35,23 @@ internal static partial class LocalOwnerPairingRpcTests
         internal readonly string Pipe = "PSMLocalPairRpc" + Guid.NewGuid().ToString("N");
         internal Guid Principal;
         internal HostNetworkGeneration Generation = null!;
+        private X509Certificate2? presentedCertificate;
+        internal string CurrentPin => PalworldServerManager.Platform.Windows.WindowsPeerTls.PublicFingerprint(presentedCertificate ?? State.Certificate.Value);
         internal string Native { get { using var identity = WindowsIdentity.GetCurrent(); return identity.User!.Value; } }
-        internal async Task Start(IPairingKeyExchangeFactory factory, IPeerActivationHook? hook = null)
+        internal async Task Start(IPairingKeyExchangeFactory factory, IPeerActivationHook? hook = null, X509Certificate2? certificate = null)
         {
+            presentedCertificate = certificate ?? State.Certificate.Value;
             State.State.Time.Now = DateTimeOffset.UtcNow;
             Principal = owner ? State.State.OwnerId : Guid.NewGuid(); var key = Convert.ToBase64String(Key.PublicKey);
             if (owner) State.State.Execute($"UPDATE LocalPrincipals SET OsPrincipalRef='{Native}',PublicVerificationKey='{key}' WHERE IsOwner=1;");
             else State.State.Execute($"INSERT INTO LocalPrincipals (LocalPrincipalId,OsPrincipalRef,PublicVerificationKey,IsOwner,State,CreatedUtc) VALUES ('{Principal:D}','{Native}','{key}',0,'Active','fixture');");
             using var identity = WindowsIdentity.GetCurrent();
             Generation = await WindowsHostComposition.CreateNetworkGenerationAsync(State.State.Database, State.State.HostId, new LocalEnrollmentTests.Store(new byte[32]),
-                identity.User!, identity.User!, State.Certificate.Value, Pipe, new(IPAddress.Loopback,0), new(IPAddress.Loopback,0), factory, hook ?? State.Runtime.Hook,
+                identity.User!, identity.User!, presentedCertificate, Pipe, new(IPAddress.Loopback,0), new(IPAddress.Loopback,0), factory, hook ?? State.Runtime.Hook,
                 discoveryFactory: Probe.CreateAsync);
         }
         internal LocalSecurityRpcTests.Client Client() => new(State.State.HostId, Pipe, new LocalSecurityRpcTests.Reader(LocalHostTrustAnchor.Parse(JsonSerializer.SerializeToUtf8Bytes(
-            new { schemaVersion = 1, hostId = State.State.HostId, currentHostCredentialFingerprint = State.Pin, pendingHostCredentialFingerprint = (string?)null, pendingRotationId = (Guid?)null }))));
+            new { schemaVersion = 1, hostId = State.State.HostId, currentHostCredentialFingerprint = CurrentPin, pendingHostCredentialFingerprint = (string?)null, pendingRotationId = (Guid?)null }))));
         internal async Task<LocalSecurityRpcTests.Client> Authorized()
         {
             var client = Client();
