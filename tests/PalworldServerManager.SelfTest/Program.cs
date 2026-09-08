@@ -15,6 +15,19 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--host-operation-recovery-probe"])
+    {
+        await HostOperationRecoveryTests.PreparationRequiresExactPolicyAndKeepsIdentityAndLock();
+        await HostOperationRecoveryTests.PreparationFaultsRollBackAndRetry();
+        await HostOperationRecoveryTests.StartupUsesOnlyExplicitHandlersOnBothTargets();
+        await HostOperationRecoveryTests.DiscardCleansBeforeReleasingEitherScope();
+        await HostOperationRecoveryTests.MissingChangedManualAndDamagedStateNeverDispatch();
+        await HostOperationRecoveryTests.ConcurrentInitializationAndFailureNeverLoop();
+        await HostOperationRecoveryTests.RecoveryShutdownDrainsAndKeepsPreparedState();
+        await HostOperationRecoveryTests.LateAuthorityRefusalSkipsOnlyThatWorker();
+        await OperationCrashTests.RealProcessTerminationPreservesAtomicPairs();
+        Console.WriteLine("PASS explicit Host startup operation recovery."); return 0;
+    }
     if (args is ["--host-operation-worker-probe"])
     {
         await HostOperationWorkerTests.DisconnectAndWaitCancellationDoNotCancelWork();
@@ -786,6 +799,14 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Host operation recovery PreparationRequiresExactPolicyAndKeepsIdentityAndLock", HostOperationRecoveryTests.PreparationRequiresExactPolicyAndKeepsIdentityAndLock),
+    ("Host operation recovery PreparationFaultsRollBackAndRetry", HostOperationRecoveryTests.PreparationFaultsRollBackAndRetry),
+    ("Host operation recovery StartupUsesOnlyExplicitHandlersOnBothTargets", HostOperationRecoveryTests.StartupUsesOnlyExplicitHandlersOnBothTargets),
+    ("Host operation recovery DiscardCleansBeforeReleasingEitherScope", HostOperationRecoveryTests.DiscardCleansBeforeReleasingEitherScope),
+    ("Host operation recovery MissingChangedManualAndDamagedStateNeverDispatch", HostOperationRecoveryTests.MissingChangedManualAndDamagedStateNeverDispatch),
+    ("Host operation recovery ConcurrentInitializationAndFailureNeverLoop", HostOperationRecoveryTests.ConcurrentInitializationAndFailureNeverLoop),
+    ("Host operation recovery RecoveryShutdownDrainsAndKeepsPreparedState", HostOperationRecoveryTests.RecoveryShutdownDrainsAndKeepsPreparedState),
+    ("Host operation recovery LateAuthorityRefusalSkipsOnlyThatWorker", HostOperationRecoveryTests.LateAuthorityRefusalSkipsOnlyThatWorker),
     ("Host operation worker DisconnectAndWaitCancellationDoNotCancelWork", HostOperationWorkerTests.DisconnectAndWaitCancellationDoNotCancelWork),
     ("Host operation worker ShutdownDrainsWorkersAndRetainsUnfinishedState", HostOperationWorkerTests.ShutdownDrainsWorkersAndRetainsUnfinishedState),
     ("Host operation worker FailedAndUnfinishedWorkersNeverReleaseLocks", HostOperationWorkerTests.FailedAndUnfinishedWorkersNeverReleaseLocks),

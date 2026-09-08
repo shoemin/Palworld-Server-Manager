@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using PalworldServerManager.Core.Operations;
+using PalworldServerManager.Host;
 using PalworldServerManager.Host.Persistence;
 using PalworldServerManager.Host.Persistence.Migrations;
 using static PalworldServerManager.SelfTest.OperationLifecycleTests;
@@ -116,6 +117,23 @@ internal static class OperationCrashTests
                         Check(state.Locks.Single().OwningOperationId == operation && state.Locks.Single().Scope == expectedScope);
                     }
                 }
+                // Actual post-kill startup dispatch uses explicit representative handlers,
+                // never the ordinary executor or a generic "resume everything" path.
+                var recoveryCalls = 0; var ordinaryCalls = 0;
+                var registrations = Definitions().Select(d => new HostOperationExecutor(d,
+                    (_, _) => { Interlocked.Increment(ref ordinaryCalls); return Task.CompletedTask; },
+                    [new(RecoveryDisposition.SafeToRetryFromStart, HostOperationRecoveryTests.RecoveryAdmit, (execution, _) =>
+                    {
+                        Interlocked.Increment(ref recoveryCalls);
+                        Check(execution.Current.OperationId == operation && execution.Current.Phase == "Start");
+                        execution.Transition("Done", Admit); return Task.CompletedTask;
+                    })]));
+                await using var recoveredRuntime = new HostOperationRuntime(database, host, registrations);
+                recoveredRuntime.ApplyStartupRecovery();
+                await recoveredRuntime.WaitForCurrentWorkersAsync().WaitAsync(TimeSpan.FromSeconds(15));
+                var resolved = recoveredRuntime.Read();
+                Check(ordinaryCalls == 0 && recoveryCalls == (mode is "start-after" or "finish-before" ? 1 : 0));
+                Check(resolved.DurableState.Locks.Count == 0 && resolved.Operations.All(o => o.Status == HostOperationStatus.Resolved));
             }
             finally
             {
