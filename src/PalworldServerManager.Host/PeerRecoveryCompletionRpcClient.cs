@@ -13,7 +13,7 @@ internal enum PeerRecoveryCompletionExchange { Confirmed=1,NoPending=2,KeyMismat
 
 // One actual connection and awaited scope;
 // the caller retains the Host lease and borrowed certificate through complete disposal.
-internal sealed class PeerRecoveryCompletionRpcClient(PeerSecurityRpcRuntime runtime,IPeerHttpTransportFactory transport)
+internal sealed partial class PeerRecoveryCompletionRpcClient(PeerSecurityRpcRuntime runtime,IPeerHttpTransportFactory transport)
 {
     internal async Task<PeerRecoveryCompletionExchange> ConfirmAsync(Guid peer,Uri address,CancellationToken ct=default)
     {

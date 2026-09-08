@@ -175,6 +175,8 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         => RunAsync(token => Required(currentCredential).ConfirmAsync(peer, address, rotation, token), ct);
     internal Task<PeerRecoveryCompletionExchange> ConfirmRecoveryAsync(Guid peer, Uri address, CancellationToken ct = default)
         => RunAsync(token => Required(recoveryCompletion).ConfirmAsync(peer, address, token), ct);
+    internal Task<PeerRecoveryPullExchange> PullRecoveryAsync(Guid peer,Uri address,CancellationToken ct=default)
+        =>RunAsync(token=>Required(recoveryCompletion).PullAsync(peer,address,token),ct);
     // This is connection preparation, not a revocation command. The generation retains
     // the credential admission until the complete trusted callback and transport cleanup.
     internal Task<T> WithPeerUnpairConnectionAsync<T>(Guid peer,Uri address,

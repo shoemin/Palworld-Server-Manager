@@ -15,6 +15,20 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-pull-probe"])
+    {
+        await RecoverySenderTests.PullActualIndependentRecoveryAndFreshConnections();
+        await RecoverySenderTests.PullReceiptValidationIsReadOnlyAndExact();
+        await RecoverySenderTests.PullLostStagesRetryOriginalReceiptAfterListenerRestart();
+        await RecoverySenderTests.PullChangedAuthorityAndSupersededReceiptNeverAttest();
+        await RecoverySenderTests.PullMalformedOffersAndMismatchAudit();
+        await RecoverySenderTests.PullMalformedConfirmationAndPostCommitChangeRefuse();
+        await RecoverySenderTests.PullNegotiationNoPendingAndInputBounds();
+        await RecoverySenderTests.PullGenerationStopDrainsSecondNativeCallback();
+        await RecoverySenderTests.PullSharedDeadlineSpansBothConnections();
+        await RecoverySenderTests.PullConcurrentClientsStayIdempotent();
+        Console.WriteLine("PASS ten recovery pull scenarios."); return 0;
+    }
     if (args is ["--recovery-offer-probe"])
     {
         await RecoverySenderTests.OfferWireShapesAndHistory();
@@ -1069,6 +1083,16 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
     ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
     ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
+    ("Recovery pull PullActualIndependentRecoveryAndFreshConnections", RecoverySenderTests.PullActualIndependentRecoveryAndFreshConnections),
+    ("Recovery pull PullReceiptValidationIsReadOnlyAndExact", RecoverySenderTests.PullReceiptValidationIsReadOnlyAndExact),
+    ("Recovery pull PullLostStagesRetryOriginalReceiptAfterListenerRestart", RecoverySenderTests.PullLostStagesRetryOriginalReceiptAfterListenerRestart),
+    ("Recovery pull PullChangedAuthorityAndSupersededReceiptNeverAttest", RecoverySenderTests.PullChangedAuthorityAndSupersededReceiptNeverAttest),
+    ("Recovery pull PullMalformedOffersAndMismatchAudit", RecoverySenderTests.PullMalformedOffersAndMismatchAudit),
+    ("Recovery pull PullMalformedConfirmationAndPostCommitChangeRefuse", RecoverySenderTests.PullMalformedConfirmationAndPostCommitChangeRefuse),
+    ("Recovery pull PullNegotiationNoPendingAndInputBounds", RecoverySenderTests.PullNegotiationNoPendingAndInputBounds),
+    ("Recovery pull PullGenerationStopDrainsSecondNativeCallback", RecoverySenderTests.PullGenerationStopDrainsSecondNativeCallback),
+    ("Recovery pull PullSharedDeadlineSpansBothConnections", RecoverySenderTests.PullSharedDeadlineSpansBothConnections),
+    ("Recovery pull PullConcurrentClientsStayIdempotent", RecoverySenderTests.PullConcurrentClientsStayIdempotent),
     ("Recovery offer OfferWireShapesAndHistory", RecoverySenderTests.OfferWireShapesAndHistory),
     ("Recovery offer OfferActualReceiptFreshConfirmationAndMutualRecovery", RecoverySenderTests.OfferActualReceiptFreshConfirmationAndMutualRecovery),
     ("Recovery offer OfferPositiveExactAttestationOnlyAndConcurrentWinner", RecoverySenderTests.OfferPositiveExactAttestationOnlyAndConcurrentWinner),
