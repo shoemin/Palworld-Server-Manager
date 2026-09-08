@@ -60,8 +60,19 @@ public sealed partial class OperationRepository
         Action<SqliteConnection, SqliteTransaction> requireCurrentAuthority, CancellationToken ct = default)
         => Update(operationId, expectedRevision, null, requireCurrentAuthority, ct);
 
+    // Trusted startup coordination only. This prepares a declared action; it never
+    // performs cleanup, chooses a terminal phase or releases the operation's lock.
+    public DurableOperation PrepareRecovery(Guid operationId, long expectedRevision, RecoveryDisposition disposition,
+        Action<SqliteConnection, SqliteTransaction> requireCurrentAuthority, CancellationToken ct = default)
+    {
+        if (disposition is not (RecoveryDisposition.SafeToRetryFromStart or RecoveryDisposition.SafeToResumeFromPhase or RecoveryDisposition.SafeToDiscard))
+            throw new ArgumentException("An explicit executable recovery disposition is required.");
+        return Update(operationId, expectedRevision, null, requireCurrentAuthority, ct, disposition);
+    }
+
     private DurableOperation Update(Guid operationId, long expectedRevision, string? nextPhase,
-        Action<SqliteConnection, SqliteTransaction> requireCurrentAuthority, CancellationToken ct)
+        Action<SqliteConnection, SqliteTransaction> requireCurrentAuthority, CancellationToken ct,
+        RecoveryDisposition? preparation = null)
     {
         Id(operationId); ArgumentNullException.ThrowIfNull(requireCurrentAuthority); ct.ThrowIfCancellationRequested();
         if (expectedRevision < 1) throw new StaleWriteConflictException();
@@ -72,8 +83,11 @@ public sealed partial class OperationRepository
         if (op.Revision != expectedRevision) throw new StaleWriteConflictException();
         if (op.IsTerminal) throw new OperationConflictException();
         var definition = definitions[op.Kind];
+        if (preparation is not null && op.Recovery != preparation)
+            throw new InvalidOperationException("The current phase does not permit that recovery action.");
         if (nextPhase is not null && !definition.CanTransition(op.Phase, nextPhase)) throw new ArgumentException("Undeclared operation phase transition.");
-        var phase = definition.GetPhase(nextPhase ?? op.Phase); var now = Now();
+        var phase = definition.GetPhase(preparation == RecoveryDisposition.SafeToRetryFromStart ? definition.InitialPhase : nextPhase ?? op.Phase);
+        var now = Now();
         var previousHeartbeat = op.LastHeartbeatUtc ?? op.StartedUtc;
         if (now < previousHeartbeat) now = previousHeartbeat;
         var changed = op with { Phase = phase.Name, IsTerminal = phase.IsTerminal, Recovery = phase.Recovery,

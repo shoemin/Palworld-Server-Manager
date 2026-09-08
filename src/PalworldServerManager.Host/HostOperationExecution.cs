@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using System.Collections.ObjectModel;
 using PalworldServerManager.Core.Operations;
 using PalworldServerManager.Host.Persistence;
 
@@ -6,8 +7,24 @@ namespace PalworldServerManager.Host;
 
 // Trusted executor code must await all work it owns, publish terminal state only after
 // actual resolution, and enforce current business authority/audit at each effect boundary.
-internal sealed record HostOperationExecutor(OperationDefinition Definition,
-    Func<HostOperationExecution, CancellationToken, Task> ExecuteAsync);
+internal sealed class HostOperationExecutor
+{
+    public OperationDefinition Definition { get; }
+    public Func<HostOperationExecution, CancellationToken, Task> ExecuteAsync { get; }
+    public IReadOnlyDictionary<RecoveryDisposition, HostOperationRecoveryHandler> RecoveryHandlers { get; }
+
+    public HostOperationExecutor(OperationDefinition definition, Func<HostOperationExecution, CancellationToken, Task> executeAsync,
+        IEnumerable<HostOperationRecoveryHandler>? recoveryHandlers = null)
+    {
+        Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+        ExecuteAsync = executeAsync ?? throw new ArgumentNullException(nameof(executeAsync));
+        var handlers = new Dictionary<RecoveryDisposition, HostOperationRecoveryHandler>();
+        foreach (var handler in recoveryHandlers ?? [])
+            if (handler is null || !definition.Phases.Values.Any(p => p.Recovery == handler.Disposition) || !handlers.TryAdd(handler.Disposition, handler))
+                throw new ArgumentException("Unique applicable recovery handlers required.");
+        RecoveryHandlers = new ReadOnlyDictionary<RecoveryDisposition, HostOperationRecoveryHandler>(handlers);
+    }
+}
 
 internal sealed class HostOperationExecution
 {

@@ -12,7 +12,7 @@ internal sealed record HostOperationRuntimeSnapshot(OperationStateSnapshot Durab
 // One instance belongs to the authoritative Host lifetime, outside listener generations.
 // The owner holds the machine lease until DisposeAsync has drained every actual worker.
 // This is trusted code registration, not an RPC, command queue or executor sandbox.
-internal sealed class HostOperationRuntime : IAsyncDisposable
+internal sealed partial class HostOperationRuntime : IAsyncDisposable
 {
     private readonly object gate = new();
     private readonly OperationRepository repository;
@@ -22,6 +22,7 @@ internal sealed class HostOperationRuntime : IAsyncDisposable
     private readonly CancellationTokenSource stop;
     private Task? shutdown;
     private bool stopping;
+    private bool recoveryInitialized;
 
     internal HostOperationRuntime(HostDatabase database, Guid hostId, IEnumerable<HostOperationExecutor> registrations,
         TimeProvider? timeProvider = null)
@@ -31,9 +32,9 @@ internal sealed class HostOperationRuntime : IAsyncDisposable
             if (executor?.Definition is null || executor.ExecuteAsync is null || !executors.TryAdd(executor.Definition.Kind, executor))
                 throw new ArgumentException("Unique trusted operation executors required.");
         repository = new(database, hostId, executors.Values.Select(e => e.Definition), timeProvider);
-        // Inspect every persisted record now; none is claimed as a living worker. Explicit
-        // per-phase startup execution is a separate framework unit, not an implicit retry.
-        repository.Read();
+        // Existing work requires explicit startup classification before new admission.
+        // Newly admitted work is never picked up by a later generic retry scan.
+        recoveryInitialized = !repository.Read().Operations.Any(o => !o.Operation.IsTerminal);
         stop = new();
     }
 
@@ -43,12 +44,13 @@ internal sealed class HostOperationRuntime : IAsyncDisposable
         lock (gate)
         {
             if (stopping) throw new ObjectDisposedException(nameof(HostOperationRuntime));
+            if (!recoveryInitialized) throw new InvalidOperationException("Initialize existing operation recovery before admission.");
             PruneCompletedTasks();
             ArgumentNullException.ThrowIfNull(kind);
             if (!executors.TryGetValue(kind, out var executor)) throw new ArgumentException("Unknown trusted operation kind.");
             var record = repository.Start(id, kind, target, requireCurrentAuthority, admissionCancellation);
             var execution = new HostOperationExecution(repository, record, stop.Token);
-            try { workers.Add(id, Queue(() => RunAsync(executor, execution))); }
+            try { workers.Add(id, Queue(() => RunAsync(executor.ExecuteAsync, execution))); }
             catch { execution.Seal(); returnedWorkers.Add(id); throw; }
             return record;
         }
@@ -80,9 +82,9 @@ internal sealed class HostOperationRuntime : IAsyncDisposable
         return Task.WhenAll(tasks).WaitAsync(waitCancellation);
     }
 
-    private async Task RunAsync(HostOperationExecutor executor, HostOperationExecution execution)
+    private async Task RunAsync(Func<HostOperationExecution, CancellationToken, Task> execute, HostOperationExecution execution)
     {
-        try { await executor.ExecuteAsync(execution, stop.Token).ConfigureAwait(false); }
+        try { await execute(execution, stop.Token).ConfigureAwait(false); }
         catch (Exception) { /* Preserve durable state; no inferred terminal phase or raw exception log. */ }
         finally
         {
