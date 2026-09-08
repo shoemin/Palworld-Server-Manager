@@ -30,6 +30,7 @@ internal sealed class PeerCurrentCredentialRpcClient(PeerSecurityRpcRuntime runt
         if (negotiated.Host is null || PeerSecurityRpcService.Id(negotiated.Host.HostId) != peer) throw new AuthenticationException("Peer identity refused.");
         NegotiatedProtocol.Negotiate(hello.Handshake, negotiated.Handshake).Require(FeatureCapability.PeerCurrentCredentialConfirmation);
         var actual = connection.Identity;
+        _=runtime.AuthenticatedRecoveryContact(peer,address,actual,deadline.Token);
         var incarnation = runtime.Repository.ReadAuthenticatedRelationshipIncarnation(peer, actual.PeerFingerprint, actual.LocalFingerprint);
         var proof = runtime.Credentials.PrepareCurrentCredentialConfirmation(rotation, actual.LocalFingerprint);
         var request = PeerCurrentCredentialWire.Wire(proof);

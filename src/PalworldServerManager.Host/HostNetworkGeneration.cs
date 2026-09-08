@@ -29,6 +29,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
     private PeerRotationReceiptRpcClient? receipt;
     private PeerCurrentCredentialRpcClient? currentCredential;
     private PeerRecoveryCompletionRpcClient? recoveryCompletion;
+    internal PeerRecoveryContactCoordinator? RecoveryContacts {get;private set;}
     private PeerUnpairConnectionFactory? unpairConnection;
     internal PeerUnpairCoordinator? UnpairNotifications {get;private set;}
     private RoutineRotationAcceptanceCollector? collector;
@@ -88,6 +89,17 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             status = new(runtime, transport); proposal = new(runtime, transport); receipt = new(runtime, transport); collector = new(runtime, transport);
             currentCredential = new(runtime, transport);
             recoveryCompletion = new(runtime, transport);
+            RecoveryContacts=new(runtime.HostId,(contact,ct)=>RunAsync(async token=>
+            {
+                runtime.RequireRecoveryContact(contact,token);
+                try{await recoveryCompletion.ConfirmAsync(contact.Peer,contact.Address,token).ConfigureAwait(false);}
+                catch(Exception ex)when(ex is not OutOfMemoryException){}
+                token.ThrowIfCancellationRequested();
+                runtime.RequireRecoveryContact(contact,token);
+                try{await recoveryCompletion.PullAsync(contact.Peer,contact.Address,token).ConfigureAwait(false);}
+                catch(Exception ex)when(ex is not OutOfMemoryException){}
+            },ct));
+            runtime.ConfigureRecoveryContacts(RecoveryContacts);
             unpairConnection = new(runtime, transport);
             UnpairNotifications=new(runtime.HostId,WithPeerUnpairConnectionAsync<PeerUnpairNotification>,runtime.Clock);
             runtime.ConfigureUnpairNotifications(UnpairNotifications);
@@ -222,6 +234,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         try
         {
             var unpairStop=UnpairNotifications?.StopAsync()??Task.CompletedTask;
+            var recoveryStop=RecoveryContacts?.StopAsync()??Task.CompletedTask;
             var drain = traffic.DrainAsync(); // closes admission and cancels in-progress startup/work
             await startFinished.ConfigureAwait(false);
             var discoveryStop = Capture(() => discovery?.DisposeAsync().AsTask() ?? Task.CompletedTask);
@@ -230,6 +243,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             var stops = listeners.Select(app => Capture(() => app.StopAsync(CancellationToken.None))).ToArray();
             await Capture(() => drain).ConfigureAwait(false); await Task.WhenAll(stops.Append(discoveryStop)).ConfigureAwait(false);
             await Capture(()=>unpairStop).ConfigureAwait(false);
+            await Capture(()=>recoveryStop).ConfigureAwait(false);
             await Capture(() => discoveryObservation).ConfigureAwait(false);
             if (discoveryFailure is not null) lock (failures) if (!failures.Contains(discoveryFailure)) failures.Add(discoveryFailure);
             foreach (var app in listeners) await Capture(() => app.DisposeAsync().AsTask()).ConfigureAwait(false);

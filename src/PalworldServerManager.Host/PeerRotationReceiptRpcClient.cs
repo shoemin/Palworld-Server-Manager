@@ -32,6 +32,7 @@ internal sealed class PeerRotationReceiptRpcClient(PeerSecurityRpcRuntime runtim
         if (negotiated.Host is null || PeerSecurityRpcService.Id(negotiated.Host.HostId) != peer) throw new AuthenticationException("Peer identity refused.");
         NegotiatedProtocol.Negotiate(hello.Handshake, negotiated.Handshake).Require(FeatureCapability.PeerRotationReceipt);
         var actual = connection.Identity;
+        _=runtime.AuthenticatedRecoveryContact(peer,address,actual,deadline.Token);
         var pending = runtime.Repository.ReadPendingPeerRotationReceipt(peer, actual.PeerFingerprint, actual.LocalFingerprint);
         if (pending is null) return PeerRotationReceiptExchange.NoReceiptPending;
         var request = PeerRotationReceiptWire.Wire(pending);

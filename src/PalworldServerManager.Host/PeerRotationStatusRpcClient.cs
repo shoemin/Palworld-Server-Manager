@@ -36,6 +36,7 @@ internal sealed class PeerRotationStatusRpcClient(PeerSecurityRpcRuntime runtime
         if (reply.Host is null || PeerSecurityRpcService.Id(reply.Host.HostId) != peer) throw new AuthenticationException("Peer identity refused.");
         var actual = connection.Identity;
         NegotiatedProtocol.Negotiate(hello.Handshake, reply.Handshake).Require(FeatureCapability.PeerRotationStatus);
+        _=runtime.AuthenticatedRecoveryContact(peer,address,actual,deadline.Token);
         deadline.Token.ThrowIfCancellationRequested();
         if (HostTrustPlanning.Build(runtime.Credentials.Read()).Publication?.CurrentFingerprint != actual.LocalFingerprint)
             throw new AuthenticationException("Local Host credential changed during the exchange.");

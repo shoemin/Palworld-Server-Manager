@@ -6,7 +6,7 @@ using PalworldServerManager.Host.Persistence;
 namespace PalworldServerManager.Host;
 
 // Trusted Host composition; caller holds the authoritative lease and borrowed certificate.
-public sealed class PeerSecurityRpcRuntime
+public sealed partial class PeerSecurityRpcRuntime
 {
     public Guid HostId { get; }
     internal PeerTrustRepository Repository { get; }
