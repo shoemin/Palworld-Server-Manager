@@ -74,7 +74,21 @@ enum PeerCurrentCredentialResult {
   PEER_CURRENT_CREDENTIAL_RESULT_CONFIRMED = 1;
 }
 message PeerCurrentCredentialReply { PeerCurrentCredentialRequest request = 1; PeerCurrentCredentialResult result = 2; }
+// Intrinsic surrender: the peer to revoke is the actual authenticated connection peer.
+// The request names only the intended receiving Host. No key, incarnation or actor proof.
+message PeerUnpairNotice { string receiving_host_id = 1; }
+enum PeerUnpairResult {
+  PEER_UNPAIR_RESULT_UNSPECIFIED = 0;
+  PEER_UNPAIR_RESULT_RECORDED = 1;
+  PEER_UNPAIR_RESULT_ALREADY_RECORDED = 2;
+}
+message PeerUnpairReply {
+  string receiving_host_id = 1;
+  string unpaired_host_id = 2;
+  PeerUnpairResult result = 3;
+}
 service PeerSecurityProtocol {
+  rpc ReceiveUnpair(PeerUnpairNotice) returns (PeerUnpairReply);
   rpc Negotiate(PeerHello) returns (PeerHello);
   rpc Activate(PeerActivationAck) returns (PeerActivationReply);
   rpc ReadRotationStatus(PeerRotationStatusRequest) returns (PeerRotationStatusReply);

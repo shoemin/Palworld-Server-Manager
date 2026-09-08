@@ -14,10 +14,9 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
     internal static PeerActivationAck Wire(PeerActivationAcknowledgement ack) => new()
     { FromHostId = ack.FromHostId.ToString("D"), RecordedHostId = ack.RecordedHostId.ToString("D"), RecordedFingerprint = ack.RecordedFingerprint };
     internal static PeerActivationAcknowledgement Durable(PeerActivationAck ack) => new(Id(ack.FromHostId), Id(ack.RecordedHostId), ack.RecordedFingerprint);
-    private async Task<T> Dispatch<T>(ServerCallContext context, bool negotiation, Func<PeerSecurityRpcConnection, T> action,
+    private Task<T> Dispatch<T>(ServerCallContext context, bool negotiation, Func<PeerSecurityRpcConnection, T> action,
         FeatureCapability feature = FeatureCapability.PeerTrustActivation, PeerTrafficPurpose purpose = PeerTrafficPurpose.PairingFinalization)
-    {
-        try
+        => GuardErrors(async () =>
         {
             var http = context.GetHttpContext();
             if (!http.Request.IsHttps || http.Request.Protocol != "HTTP/2") throw new AuthenticationException();
@@ -32,7 +31,10 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
                 }
                 return action(session);
             }, context.CancellationToken).ConfigureAwait(false);
-        }
+        });
+    private static async Task<T> GuardErrors<T>(Func<Task<T>> action)
+    {
+        try { return await action().ConfigureAwait(false); }
         catch (OperationCanceledException) { throw new RpcException(new(StatusCode.Cancelled, "Peer request canceled.")); }
         catch (AuthenticationException) { throw new RpcException(new(StatusCode.Unauthenticated, "Peer authentication refused.")); }
         catch (ArgumentException) { throw new RpcException(new(StatusCode.InvalidArgument, "Invalid peer request.")); }
@@ -41,6 +43,8 @@ public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : Pee
         catch (Exception ex) when (ex is not OutOfMemoryException)
         { throw new RpcException(new(StatusCode.Internal, "Peer request failed.")); }
     }
+    public override Task<PeerUnpairReply> ReceiveUnpair(PeerUnpairNotice request,ServerCallContext context)
+        => GuardErrors(()=>runtime.Unpair.Receive(context.GetHttpContext(),request,context.CancellationToken));
     public override Task<PeerHello> Negotiate(PeerHello request, ServerCallContext context) => Dispatch(context, true, session =>
     {
         if (session.NegotiationAttempted) throw new InvalidOperationException(); session.NegotiationAttempted = true;

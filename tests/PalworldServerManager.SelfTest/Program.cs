@@ -15,6 +15,17 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--unpair-rpc-probe"])
+    {
+        await PeerUnpairRpcTests.WireAndFeatureAreClosed();
+        await PeerUnpairRpcTests.ActualReceiptDuplicatesAndStaleHandshake();
+        await PeerUnpairRpcTests.ProtocolRecipientAndNonActiveRefusals();
+        await PeerUnpairRpcTests.ActualCurrentKeyAndLaterRelationshipRefuse();
+        await PeerUnpairRpcTests.ActualAuditFaultIsAtomicAndBounded();
+        await PeerUnpairRpcTests.AdapterConnectionLifetimeAndRuntimeRefusals();
+        await ProtocolTests.SchemaEvolution();
+        Console.WriteLine("PASS six negotiated unpair RPC scenarios and schema history."); return 0;
+    }
     if (args is ["--reciprocal-unpair-probe"])
     {
         await PeerTrustRevocationTests.ReciprocalNoticeIsSelfOnlyAndAtomic();
@@ -858,6 +869,12 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Unpair RPC WireAndFeatureAreClosed", PeerUnpairRpcTests.WireAndFeatureAreClosed),
+    ("Unpair RPC ActualReceiptDuplicatesAndStaleHandshake", PeerUnpairRpcTests.ActualReceiptDuplicatesAndStaleHandshake),
+    ("Unpair RPC ProtocolRecipientAndNonActiveRefusals", PeerUnpairRpcTests.ProtocolRecipientAndNonActiveRefusals),
+    ("Unpair RPC ActualCurrentKeyAndLaterRelationshipRefuse", PeerUnpairRpcTests.ActualCurrentKeyAndLaterRelationshipRefuse),
+    ("Unpair RPC ActualAuditFaultIsAtomicAndBounded", PeerUnpairRpcTests.ActualAuditFaultIsAtomicAndBounded),
+    ("Unpair RPC AdapterConnectionLifetimeAndRuntimeRefusals", PeerUnpairRpcTests.AdapterConnectionLifetimeAndRuntimeRefusals),
     ("Reciprocal unpair ReciprocalNoticeIsSelfOnlyAndAtomic", PeerTrustRevocationTests.ReciprocalNoticeIsSelfOnlyAndAtomic),
     ("Reciprocal unpair ReciprocalDuplicatePreservesNewPendingIntent", PeerTrustRevocationTests.ReciprocalDuplicatePreservesNewPendingIntent),
     ("Reciprocal unpair ReciprocalReceiptNeverRestoresOrdinaryOrLaterTrust", PeerTrustRevocationTests.ReciprocalReceiptNeverRestoresOrdinaryOrLaterTrust),
