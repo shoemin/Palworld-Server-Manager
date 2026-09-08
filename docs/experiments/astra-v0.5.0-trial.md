@@ -4702,3 +4702,11 @@ Rechecked assembled persistence ordering, closed definitions/fingerprints, per-p
 
 
 Final sibling/reference search is clean: original-unit descriptions remain historical, while current component links describe accepted framework ownership and retain concrete-RPC boundaries. Accessibility WAIVED; no physical-PC/reboot, Palworld, Windows parity, Linux or release claim. Six creator permissions/limits and canonical Issue/Project remain unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #46h / PR156 — component accepted in the shadow lane
+
+PR156 merged only into experiment/astra-v0.5.0 at aba91aeccb37c4764681ab75ccd11c1828932bfb; final head fe76c8611f28b0ce94059e3a6b36297c03335328, qualified executable 1c96357f3f151d52976048a3977583b6db3616d5. All-three CI34183059776 and exact final Docs34183481856 PASS; actual native, remote524/524, UI, installed Windows bootstrap/restart/multi-user and unique fixture cleanup logs inspected before merge. Live base/head/clean/executable-equivalence gate PASS. Eleven files203 insertions/2 deletions; local build0 warnings/errors, full524/524, focused three-shape cross-Host scenario, UI/SDK/strict Docs PASS.
+
+Two pre-A evidence/reference corrections,A0/B0; no reproduced implementation failure or new accepted escape. Accepted96 experimental PRs61-156,13 canonical children SHADOW DONE,524 ordinary tests,222 cumulative correction/verification cycles. Seven older accepted escapes remain corrected. Whole #46 is SHADOW DONE at its operation-framework scope: eight units149-156,46 added ordinary tests and18 cycles, all eight criteria and40A-K mapped in v0.5-operation-component-acceptance.md. Concrete business executors/RPC authorization, durable business inputs and effect-specific recovery remain their later verticals; the installed production registry is empty.
+
+Continue dependency-satisfied #28 unilateral trust revocation after live issue and full Project refresh. Canonical Issue/Project unchanged; six creator permissions and their limits remain approved. Accessibility WAIVED, never PASS; no physical-PC/reboot, Palworld, Windows parity, Linux or release acceptance. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
