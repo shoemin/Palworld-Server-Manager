@@ -4460,3 +4460,28 @@ A deliberately challenged generic fallback, kind-versus-phase routing, partial p
 | MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No schema/v0.4 migration, platform/shell or Linux implementation delta. | PASS unchanged |
 
 All40 audited. Stale-reference search covered every ApplyStartupRecovery/PrepareRecovery/RecoveryHandlers production caller: only the new trusted coordinator calls preparation, and production composition is not yet wired. Sibling worker/lifecycle pages now link recovery and describe the new admission guard. Test registration/counts, docs and diff-check clean. Accessibility WAIVED; representative handler/process evidence does not claim physical reboot/PCs, installed business RPCs, Palworld, Windows parity, Linux or release. A clean authorizes PR into experiment/astra-v0.5.0 followed by independent B and remaining gates. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #46e Review B — final PR review
+
+PR153 exists at 762fc78a64bf7281a02705b2789599cb4877bc09. Fresh review inspected the entire 12-file delta against8957b3e and revisited repository transaction order, immutable registrations, runtime locking, context sealing, all new test bodies, actual process fixture, registration and developer/ledger text. Qualified executable remains fc12c779d45fcbca2474dff23aa1504e4ea2a2e8; only review documentation follows it.
+
+B challenged whether a phase-specific policy could dispatch the wrong handler, whether one denied recovery could partially prepare or block another, and whether initialization could pick up a failed current worker. Exact stored disposition selects an explicitly registered handler; mixed phases within one kind prevent a kind-only implementation passing the tests. Immediate revision/authority checks and rollback precede dispatch; the controller-level late-denial test preserves the denied row/lock while another completes. The runtime gate serializes initialization/admission/shutdown, and one-time initialization prevents redispatch. Worker finally blocks retain unresolved state, actual tasks remain tracked through exit, and discard tests hold exclusion until artifact deletion. No client cancellation token or automatic terminal fallback is introduced. These representative handlers do not prove concrete business recovery safety or install an operation RPC.
+
+All40 registry entries rechecked against the final paths and sibling documentation; B results below independently confirm the framework boundaries. No B finding, no new correction cycle or accepted escape. Two pre-A test-evidence cycles; A0/B0. Local full513/focused9/build/UI/SDK/strict Docs and remote513/513 PASS. All-three CI34179901357 completed successfully on the exact executable; actual native, build/UI, service/multi-user and unique service/group/users/profiles/files cleanup logs inspected. Final exact-HEAD Docs and fresh base/head/clean gate remain mandatory before merge.
+
+| Invariants | Impact and evidence | B result |
+|---|---|---|
+| ARCH-001, ARCH-002, CLIENT-001, CLIENT-002, CLIENT-003 | Full path/reference diff preserves WPF/Lan and client graph; only Host/repository/test/docs code changed. | PASS unchanged |
+| HOST-001, HOST-002, PERSIST-001, LOCAL-001 | One trusted Host runtime, existing initialized authoritative repository, same-transaction preparation and enclosing machine lease/drain; actual process fixtures retain that lease. | PASS framework |
+| IDENT-001, IDENT-002, OPS-004 | Stable exact operation/Host/ServerRef and independent locks retained across preparation, cleanup and actual kill/reopen. | PASS |
+| IDENT-003, IDENT-004, LOCAL-002, LOCAL-003, LOCAL-004, OWNER-001, OWNER-002 | No credential, enrollment, bootstrap or privileged recovery path changed. Full regressions retained. | PASS unchanged |
+| REMOTE-001, REMOTE-002, PAIR-001, PAIR-002, PAIR-003, PAIR-004 | No routing/trust/grant inheritance or dual-ceiling change; callbacks are trusted code and no new client/remote endpoint exists. | PASS unchanged |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | No grant/default/preset/creator/audit writer; preparation and handler effect authority remain explicit, never inferred from a recovery enum. | PASS unchanged |
+| PROTO-001, SEC-001 | Closed handler dispositions, immutable registration, no wire change or raw secret-bearing exception payload. | PASS |
+| OPS-001, OPS-002, OPS-003 | Expected revision, unchanged exclusive lock through recovery work, atomic terminal release and Host-owned worker drain reused; stale/fault/cleanup tests pass. | PASS framework; client Activity next46 |
+| RECOVERY-001 | Every startup target inspected; explicit phase-specific retry/resume/discard handlers, manual/missing/changed state held, no generic fallback or repeat loop. | PASS framework; production composition next46 |
+| MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No schema/v0.4 migration, platform/shell or Linux implementation delta. | PASS unchanged |
+
+
+Stale-reference search finds only the trusted coordinator calling PrepareRecovery; production composition remains subsequent46. Recovery documentation explicitly preserves handler business authority/audit responsibilities and all manual/missing/changed-state holds. Accessibility WAIVED; physical reboot/PCs, installed business operations, Palworld, Windows parity, Linux and release are not claimed. Canonical Issue/Project unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
