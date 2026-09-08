@@ -4638,3 +4638,67 @@ PR155 merged only into experiment/astra-v0.5.0 at8939c95201d2b2df39bef7a5e01edc6
 Two pre-A evidence/docs refinements,A0/B0; no build/test failure or new accepted escape. Accepted95 experimental PRs61-155,12 canonical children SHADOW DONE,523 ordinary tests,220 cumulative correction/verification cycles. Seven older accepted escapes remain corrected. Parent46 remains IN PROGRESS solely for whole-component acceptance review. Installed Windows root now owns framework startup and actual drain under its machine lease without blocking first Owner bootstrap; no concrete business executor or Activity RPC is claimed.
 
 Continue46h whole-component acceptance against current issue and architecture/testability requirements, preserving all qualification limits. Canonical Issue/Project unchanged; accessibility WAIVED and physical/parity/Palworld/Linux/release limits retained. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+## #46h cross-Host qualification and component acceptance — preflight
+
+Base3baceb7bdc9f1b6c7fddc754b61b02c16619a98e after PR155; Issue46 unchanged and Project39/39 refreshed. All46a-g implementation units accepted. Checkpoint Docs34182708800 is the exact acceptance-record gate. Whole architecture9/10/testability40 review found an evidence gap: destination-only state, serialized multi-client observation and initiating-client cancellation were separately tested, but no combined two-live-Host scenario covered40G/I for both HostScope and ServerScope. This is not a reproduced implementation failure or accepted escape; whole46 acceptance is not yet granted.
+
+Add one representative end-to-end framework scenario across three target/scope combinations (HostTarget/HostScope, ServerTarget/ServerScope, ServerTarget/HostScope), two live initialized databases/owners and independent serialized contract consumers. Refuse destination-B state at A with no A record/lock/dispatch, admit only at B, preserve B work/lock after initiating-client cancellation, observe identical locks from two consumers, allow same-profile independent work at A, and prove finishing B does not release A's lock. No actual RPC/peer authentication/physical-PC claim or production code change. This closes evidence at the framework boundary requested by46 while leaving business transport/authority to later verticals.
+
+Then assemble all eight acceptance criteria plus40A-K into a component evidence page and refresh sibling completion references. Expected ordinary count524,46 total46 new tests. Full build/focused/self-test/UI/SDK/Docs, all-three exact executable CI, all40/A/PR/B/final gate required because test code changes. No schema, grants/creator, credential, protocol production, UI, Linux or concrete destructive policy change. Accessibility WAIVED and physical/parity/Palworld/Linux/release limits retained.
+
+46h pre-A evidence correction1: the combined three-shape/two-live-Host test closes whole-slice40G/I coverage before component acceptance. Focused test passes without production changes. All prior subunits retained their explicit framework limits; no reproduced implementation defect or new accepted escape. Full524 and current CI qualification required. Checkpoint Docs34182708800 PASS on exact base.
+
+46h pre-A documentation correction2: whole-slice stale-reference review found the original46a page still saying client status Contracts/startup integration were pending. Updated it to the accepted46f/g framework state and retained the concrete-RPC boundary. No executable change; current full/CI qualification remains on1c96357f3f151d52976048a3977583b6db3616d5.
+
+
+### #46h Review A — clean before PR
+
+Reviewed all11 changed files and152-insertion/2-deletion delta against3baceb7bdc9f1b6c7fddc754b61b02c16619a98e, plus assembled46a-g interaction against all eight current issue criteria and architecture/testability40A-K. Executable1c96357f3f151d52976048a3977583b6db3616d5 contains one new ordinary scenario with three target/scope combinations; production unchanged. Local build0 warnings/errors, focused cross-Host matrix, full524/524, actual UI/Windows SDK and strict Docs PASS. Candidate Docs34183061050 PASS; CI34183059776 and exact final Docs remain gates. Current issue unchanged/Project39/39 complete; prerequisites and exact checkpoint Docs34182708800 PASS.
+
+A challenged whether two-client visibility had merely compared one reference, whether the originating Host could persist a foreign target, whether HostScope disconnect behavior was covered, and whether equal profile IDs or finishing one Host's operation could affect another. Two live owners/databases and freshly serialized independent consumers prove destination-only state, exact shared lock identity, all three legal target/scope shapes, canceled client wait with live Host work, per-destination conflict refusal, independent same-profile work at A, and B's resolution leaving A locked/Running. Gates release held workers in finally paths. This is explicit representative framework routing/observation, not an installed remote RPC or authentication test. No implementation change was needed for the combined scenario.
+
+Whole-component mapping includes transactional stale-resource and record revisions, fixed symmetric exclusion, explicit target/scope and all-phase recovery qualification, real process kills across atomic acquisition/resolution, no generic fallback/retry, runtime status changes without durable revision changes, failure/manual/unknown holds, and installed lifetime under the real machine lease. Later concrete RPC/input/authority/audit/effect responsibilities and physical/Palworld/parity/Linux/release limits are explicit. Two pre-A evidence/documentation corrections: combined40G/I matrix before component acceptance and stale46a status/startup reference refresh. No test failure, remaining A finding or reproduced accepted implementation escape.
+
+| Invariants | Impact and evidence | A result |
+|---|---|---|
+| ARCH-001, ARCH-002, CLIENT-001, CLIENT-002, CLIENT-003 | Only tests/docs changed; assembled dependency graph and private credential boundaries retained. | PASS |
+| HOST-001, HOST-002, PERSIST-001 | Destination-bound authoritative repositories, one actual installed Host owner/lease; two simulated Hosts have independent real fixture state, not a claim of two production Hosts on one PC. | PASS |
+| IDENT-001, IDENT-002, OPS-004 | Both explicit targets and independent scopes; same-profile distinct-Host work coexists; foreign admission cannot create local records/locks. | PASS |
+| LOCAL-001, OWNER-001, OWNER-002 | Initialized canonical fixture identities and accepted bootstrap-aware owner; no new authority or Owner ceremony. | PASS unchanged |
+| IDENT-003, IDENT-004, LOCAL-002, LOCAL-003, LOCAL-004 | No credential, rotation, transport or enrollment production change; prior qualified behavior and full regression retained. | PASS unchanged |
+| REMOTE-001, REMOTE-002, PAIR-001, PAIR-002, PAIR-003, PAIR-004 | Framework destination ownership tested; actual remote authentication/dual ceilings remain later RPC obligations, never supplied by test routing or DTOs. | PASS scope |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | No grant/default/preset/creator/audit edits; all current authority checks remain concrete writer responsibilities. | PASS unchanged |
+| PROTO-001, SEC-001 | Existing negotiated Activity DTOs used through real serialization/validation; no new wire fields, secrets or raw error payload. | PASS |
+| OPS-001, OPS-002, OPS-003 | Full stale-write/conflict/atomicity evidence assembled; independent consumers and both-scope client cancellation retain exact Host-owned work. | PASS framework |
+| RECOVERY-001 | Per-phase explicit handlers, all-target actual kill/reopen recovery, manual/unknown/failed holds and no generic resume; empty product registry remains explicit. | PASS framework |
+| MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No migration/platform/UI/Linux delta; installed Windows lifetime remains its single composition root. | PASS unchanged |
+
+All40 audited; every current46 acceptance criterion and40A-K mapped in v0.5-operation-component-acceptance.md. Sibling stale references corrected; isolated fixture/serialization evidence is never inflated into installed RPC, physical-PC/reboot or real Palworld acceptance. Accessibility WAIVED. Canonical Issue/Project unchanged. A clean permits experimental PR followed by independent B and all final gates; only then record whole46 SHADOW DONE. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #46h Review B — final component review
+
+PR156 ate79e8fe50a032ea26d3282aa1a30c016ce61b661 received fresh review of all11 changed files and the assembled46 component against the unchanged issue's complete scope, eight criteria, architecture9/10 and testability40A-K. Executable1c96357f3f151d52976048a3977583b6db3616d5 remains locally qualified at524 tests; only documentation follows. Candidate Docs34183061050 PASS; CI34183059776, actual final job logs, exact HEAD Docs and live base/head gate remain mandatory before acceptance.
+
+B challenged whether test consumers shared mutable objects, whether foreign admission might leave partial local state, whether client cancellation was actually delivered, and whether one Host's terminal resolution could accidentally clear both exclusions. Each observation is separately mapped, serialized and parsed/validated. The origin snapshot remains exactly unchanged after foreign-target refusal and after destination/client cancellation; the canceled observer wait explicitly throws while the destination's own stop token remains uncanceled. Both hosts then own separate actual tasks/locks for the same profile identity qualified by distinct Hosts; resolving B leaves A's exact owning-operation lock and Running status intact. Held gates release in finally before owner disposal. Three target/scope combinations cover Host-wide, normal server and server-targeted Host-wide exclusion without a synthetic server.
+
+Rechecked assembled persistence ordering, closed definitions/fingerprints, per-phase handler selection, failure/manual/unknown holds, runtime-only status freshness, real kill/reopen checkpoints, bootstrap-aware installed owner and drain under machine lease. Evidence-to-criterion mapping is explicit about representative routing/consumers, empty product registration and later RPC authority/inputs/audit/effects; no field or business-operation acceptance is manufactured. All40 audit repeated below. No B finding, test failure or new accepted implementation escape; two pre-A evidence/reference corrections,A0/B0. Whole46 may become SHADOW DONE only after remaining exact merge gates pass.
+
+| Invariants | Impact and evidence | B result |
+|---|---|---|
+| ARCH-001, ARCH-002, CLIENT-001, CLIENT-002, CLIENT-003 | Only tests/docs changed; assembled dependency graph and private credential boundaries retained. | PASS |
+| HOST-001, HOST-002, PERSIST-001 | Destination-bound authoritative repositories, one actual installed Host owner/lease; two simulated Hosts have independent real fixture state, not a claim of two production Hosts on one PC. | PASS |
+| IDENT-001, IDENT-002, OPS-004 | Both explicit targets and independent scopes; same-profile distinct-Host work coexists; foreign admission cannot create local records/locks. | PASS |
+| LOCAL-001, OWNER-001, OWNER-002 | Initialized canonical fixture identities and accepted bootstrap-aware owner; no new authority or Owner ceremony. | PASS unchanged |
+| IDENT-003, IDENT-004, LOCAL-002, LOCAL-003, LOCAL-004 | No credential, rotation, transport or enrollment production change; prior qualified behavior and full regression retained. | PASS unchanged |
+| REMOTE-001, REMOTE-002, PAIR-001, PAIR-002, PAIR-003, PAIR-004 | Framework destination ownership tested; actual remote authentication/dual ceilings remain later RPC obligations, never supplied by test routing or DTOs. | PASS scope |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | No grant/default/preset/creator/audit edits; all current authority checks remain concrete writer responsibilities. | PASS unchanged |
+| PROTO-001, SEC-001 | Existing negotiated Activity DTOs used through real serialization/validation; no new wire fields, secrets or raw error payload. | PASS |
+| OPS-001, OPS-002, OPS-003 | Full stale-write/conflict/atomicity evidence assembled; independent consumers and both-scope client cancellation retain exact Host-owned work. | PASS framework |
+| RECOVERY-001 | Per-phase explicit handlers, all-target actual kill/reopen recovery, manual/unknown/failed holds and no generic resume; empty product registry remains explicit. | PASS framework |
+| MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No migration/platform/UI/Linux delta; installed Windows lifetime remains its single composition root. | PASS unchanged |
+
+
+Final sibling/reference search is clean: original-unit descriptions remain historical, while current component links describe accepted framework ownership and retain concrete-RPC boundaries. Accessibility WAIVED; no physical-PC/reboot, Palworld, Windows parity, Linux or release claim. Six creator permissions/limits and canonical Issue/Project remain unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.

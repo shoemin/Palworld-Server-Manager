@@ -15,6 +15,11 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--operation-cross-host-probe"])
+    {
+        await OperationCrossHostTests.DestinationOwnershipVisibilityAndDisconnectAcrossScopes();
+        Console.WriteLine("PASS cross-Host operation ownership and observation."); return 0;
+    }
     if (args is ["--host-operation-lifetime-probe"])
     {
         await HostOperationLifetimeTests.BootstrapThenConcurrentReadyUsesOneRuntime();
@@ -818,6 +823,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Cross-Host operations DestinationOwnershipVisibilityAndDisconnectAcrossScopes", OperationCrossHostTests.DestinationOwnershipVisibilityAndDisconnectAcrossScopes),
     ("Host operation lifetime BootstrapThenConcurrentReadyUsesOneRuntime", HostOperationLifetimeTests.BootstrapThenConcurrentReadyUsesOneRuntime),
     ("Host operation lifetime EmptyProductionRegistryPreservesEveryTarget", HostOperationLifetimeTests.EmptyProductionRegistryPreservesEveryTarget),
     ("Host operation lifetime FailedInitializationNeverRetriesInSameOwner", HostOperationLifetimeTests.FailedInitializationNeverRetriesInSameOwner),
