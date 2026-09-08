@@ -15,6 +15,21 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-sender-probe"])
+    {
+        await RecoverySenderTests.ActualMutualCompletionAndFreshAuthority();
+        await RecoverySenderTests.ActualOwnRecoveryUsesCurrentKeyAndHistoricalApproval();
+        await RecoverySenderTests.UnapprovedNewOwnKeyAndOldLocalKeyRefuse();
+        await RecoverySenderTests.LostReplyRetriesExactDurableApproval();
+        await RecoverySenderTests.ActualSimultaneousCompletionRequiresFreshIncarnation();
+        await RecoverySenderTests.ChangedLocalAuthorityNeverConfirms();
+        await RecoverySenderTests.MalformedAndMismatchRepliesNeverConfirm();
+        await RecoverySenderTests.NegotiationAndNoPendingAreBounded();
+        await RecoverySenderTests.CancellationDrainsActualNativeCallback();
+        await RecoverySenderTests.ActualDeadlineDisposesHeldResponse();
+        await RecoverySenderTests.ConcurrentNativeSendersStayIdempotent();
+        Console.WriteLine("PASS eleven native recovery sender scenarios."); return 0;
+    }
     if (args is ["--recovery-confirmation-probe"])
     {
         await PeerTrustRevocationTests.ConfirmationChangesOnlyMarkerAndActualAudit();
@@ -1022,6 +1037,17 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
     ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
     ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
+    ("Recovery sender ActualMutualCompletionAndFreshAuthority", RecoverySenderTests.ActualMutualCompletionAndFreshAuthority),
+    ("Recovery sender ActualOwnRecoveryUsesCurrentKeyAndHistoricalApproval", RecoverySenderTests.ActualOwnRecoveryUsesCurrentKeyAndHistoricalApproval),
+    ("Recovery sender UnapprovedNewOwnKeyAndOldLocalKeyRefuse", RecoverySenderTests.UnapprovedNewOwnKeyAndOldLocalKeyRefuse),
+    ("Recovery sender LostReplyRetriesExactDurableApproval", RecoverySenderTests.LostReplyRetriesExactDurableApproval),
+    ("Recovery sender ActualSimultaneousCompletionRequiresFreshIncarnation", RecoverySenderTests.ActualSimultaneousCompletionRequiresFreshIncarnation),
+    ("Recovery sender ChangedLocalAuthorityNeverConfirms", RecoverySenderTests.ChangedLocalAuthorityNeverConfirms),
+    ("Recovery sender MalformedAndMismatchRepliesNeverConfirm", RecoverySenderTests.MalformedAndMismatchRepliesNeverConfirm),
+    ("Recovery sender NegotiationAndNoPendingAreBounded", RecoverySenderTests.NegotiationAndNoPendingAreBounded),
+    ("Recovery sender CancellationDrainsActualNativeCallback", RecoverySenderTests.CancellationDrainsActualNativeCallback),
+    ("Recovery sender ActualDeadlineDisposesHeldResponse", RecoverySenderTests.ActualDeadlineDisposesHeldResponse),
+    ("Recovery sender ConcurrentNativeSendersStayIdempotent", RecoverySenderTests.ConcurrentNativeSendersStayIdempotent),
     ("Recovery confirmation ConfirmationChangesOnlyMarkerAndActualAudit", PeerTrustRevocationTests.ConfirmationChangesOnlyMarkerAndActualAudit),
     ("Recovery confirmation ConfirmationAbsentAndDuplicateAreReadOnly", PeerTrustRevocationTests.ConfirmationAbsentAndDuplicateAreReadOnly),
     ("Recovery confirmation ConfirmationUsesCurrentLocalKeyAfterOfflineRecovery", PeerTrustRevocationTests.ConfirmationUsesCurrentLocalKeyAfterOfflineRecovery),

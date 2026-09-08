@@ -212,6 +212,8 @@ public static class WindowsHostComposition
     }
     internal static PeerActivationRpcClient CreatePeerActivationClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
+    internal static PeerRecoveryCompletionRpcClient CreatePeerRecoveryCompletionClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
+        => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
     internal static PeerRotationStatusRpcClient CreatePeerRotationStatusClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
     internal static PeerRotationProposalRpcClient CreatePeerRotationProposalClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
