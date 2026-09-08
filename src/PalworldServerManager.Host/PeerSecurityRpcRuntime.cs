@@ -31,6 +31,10 @@ public sealed class PeerSecurityRpcRuntime
         =>grants.ReadPendingRecoveryCompletion(proof,ct);
     internal PeerRecoveryConfirmationResult ConfirmAuthenticatedRecoveryCompletion(PeerGrantMutationActor proof,Guid approval,CancellationToken ct)
         =>grants.ConfirmAuthenticatedRecoveryCompletion(proof,approval,ct);
+    internal Persistence.PeerRecoveryCompletionResult ReceiveAuthenticatedRecoveryCompletion(PeerGrantMutationActor proof,Guid approval,string acknowledgedFingerprint,CancellationToken ct)
+        =>grants.ReceiveAuthenticatedRecoveryCompletion(proof,approval,acknowledgedFingerprint,ct);
+    internal void RequireRecordedRecoveryCompletion(PeerGrantMutationActor proof,Guid approval,CancellationToken ct)
+        =>grants.RequireRecordedRecoveryCompletion(proof,approval,ct);
     public PeerSecurityRpcRuntime(HostDatabase database, Guid hostId, IPeerActivationHook hook, TimeProvider? time = null)
     {
         if (hostId == Guid.Empty) throw new ArgumentException("Host identity required.");
