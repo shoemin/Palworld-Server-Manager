@@ -4629,3 +4629,12 @@ No B finding remains after two pre-A evidence/documentation refinements,A0/B0. F
 
 
 Stale-reference search and complete final documentation diff are clean. Current product owner registration is empty by design; unknown persisted work remains visible to the framework as Recovery Required rather than running with borrowed meaning. Installed local-only behavior, current grant/creator limits and all credential safeguards retained. Accessibility WAIVED; physical PCs/reboot, Palworld, Windows parity, Linux and release not claimed. Canonical Issue/Project unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #46g / PR155 — accepted in the shadow lane
+
+PR155 merged only into experiment/astra-v0.5.0 at8939c95201d2b2df39bef7a5e01edc67ab60b4e6; final head77373bda8cc6ec56dd4ad796008bcdc6345fa17f, qualified executable df19b0560bad0abf67ecd28e4b5b30e42256214e. All-three CI34182192041 and exact final Docs34182538062 PASS. Actual remote523/523, UI, native, installed Windows bootstrap/restart/multi-user and unique fixture cleanup logs inspected. Final live base/head/clean/executable-equivalence gate PASS. Ten files296 insertions/11 deletions; local build0 warnings/errors, full523, focused5, UI/SDK/strict Docs PASS.
+
+Two pre-A evidence/docs refinements,A0/B0; no build/test failure or new accepted escape. Accepted95 experimental PRs61-155,12 canonical children SHADOW DONE,523 ordinary tests,220 cumulative correction/verification cycles. Seven older accepted escapes remain corrected. Parent46 remains IN PROGRESS solely for whole-component acceptance review. Installed Windows root now owns framework startup and actual drain under its machine lease without blocking first Owner bootstrap; no concrete business executor or Activity RPC is claimed.
+
+Continue46h whole-component acceptance against current issue and architecture/testability requirements, preserving all qualification limits. Canonical Issue/Project unchanged; accessibility WAIVED and physical/parity/Palworld/Linux/release limits retained. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
