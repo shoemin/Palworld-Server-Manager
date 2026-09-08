@@ -58,18 +58,15 @@ public sealed partial class GrantPolicyRepository
             ("$config",Id(config)),("$actor",Id(actor.LocalPrincipalId)),("$now",Stamp(now)));
         var entries=string.Join(";",template.Hosts.Select(e=>$"H:{e.Capability}:{e.Rights.CanDelegate}:{e.Rights.CanDelegateOnwardDelegation}")
             .Concat(template.Servers.Select(e=>$"S:{Id(e.Target.AuthoritativeHostId)}/{Id(e.Target.ServerProfileId)}:{e.Capability}:{e.Rights.CanDelegate}:{e.Rights.CanDelegateOnwardDelegation}")));
-        Execute(c,tx,"""
-            INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorLocalPrincipalId,AffectedHostId,IsOfflineRecovery,Summary)
-            VALUES ($id,$now,'DefaultGrantTemplateConfigured','LocalPrincipal',$actor,$host,0,$summary);
-            """,("$id",Id(Guid.NewGuid())),("$now",Stamp(now)),("$actor",Id(actor.LocalPrincipalId)),("$host",Id(hostId)),
-            ("$summary",$"Configuration={Id(config)}; Entries={entries}."));
+        var audit=WriteSuccessAudit(c,tx,ActorRef.LocalPrincipal(actor.LocalPrincipalId),hostId,null,
+            "DefaultGrantTemplateConfigured",now,$"Configuration={Id(config)}; Entries={entries}.");
         var after=Read(c,tx);RequireLocal(c,tx,actor,after);
         var expected=checked(before.Revision+prior.Template.Hosts.Count+prior.Template.Servers.Count+template.Hosts.Count+template.Servers.Count+1);
         RequireRevision(expected,after.Revision);
         var result=ReadDefaults(c,tx,after.Revision);
         if(!after.Policy.IsOwner(ActorRef.LocalPrincipal(actor.LocalPrincipalId))||result.ConfigurationId!=config||result.ConfiguredByLocalPrincipalId!=actor.LocalPrincipalId||
             result.ConfiguredUtc!=now||!SameTemplate(result.Template,template))throw new UnauthorizedAccessException("Default configuration changed before commit.");
-        ct.ThrowIfCancellationRequested();tx.Commit();return result;
+        audit();ct.ThrowIfCancellationRequested();tx.Commit();return result;
     }
     // Trusted composition gets a real provider, not a default/no-op hook. Every application
     // produces a per-call validator for its SAME enclosing transaction after the trust audit.
@@ -93,12 +90,13 @@ public sealed partial class GrantPolicyRepository
         var issuer=ActorRef.LocalPrincipal(owner);var defaults=ReadDefaults(c,tx,before.Revision);var grants=new List<CapabilityGrant>();
         foreach(var entry in defaults.Template.Hosts)grants.Add(before.Policy.IssueHost(issuer,Guid.NewGuid(),peer,entry.Capability,hostId,entry.Rights,null,activation.ActivatedUtc));
         foreach(var entry in defaults.Template.Servers)grants.Add(before.Policy.IssueServer(issuer,Guid.NewGuid(),peer,entry.Capability,entry.Target,entry.Rights,null,activation.ActivatedUtc));
+        var audits=new List<Action>();
         foreach(var grant in grants)
         {
             Insert(c,tx,grant);
             // Preserve the actual authenticated local Owner or remote peer initiator,
             // separately from the structural Owner root issuer and peer grantee.
-            Audit(c,tx,activation.InitiatingActor,grant,"DefaultGrantApplied",activation.ActivatedUtc,1,$"ConfiguredDefault:{defaults.ConfigurationId?.ToString("D")??"Factory"}");
+            audits.Add(Audit(c,tx,activation.InitiatingActor,grant,"DefaultGrantApplied",activation.ActivatedUtc,1,$"ConfiguredDefault:{defaults.ConfigurationId?.ToString("D")??"Factory"}"));
         }
         return ()=>
         {
@@ -112,6 +110,7 @@ public sealed partial class GrantPolicyRepository
                 CapabilityGrant persisted=grant is HostCapabilityGrant?after.HostGrants.Single(g=>g.GrantId==grant.GrantId):after.ServerGrants.Single(g=>g.GrantId==grant.GrantId);
                 if(persisted!=grant)throw new UnauthorizedAccessException("Default grant changed before commit.");
             }
+            foreach(var audit in audits)audit();
         };
     }
 }

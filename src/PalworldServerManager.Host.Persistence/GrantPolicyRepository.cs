@@ -47,11 +47,11 @@ public sealed partial class GrantPolicyRepository
                 _=>throw new ArgumentException("Unknown grant request.")
             };
         },ct);
-        Insert(c,tx,grant);Audit(c,tx,actor.Actual,grant,"CapabilityGrantIssued",now,1,"Direct");
+        Insert(c,tx,grant);var audit=Audit(c,tx,actor.Actual,grant,"CapabilityGrantIssued",now,1,"Direct");
         var after=Read(c,tx);actor.Require(c,tx,after);RequireRevision(checked(before.Revision+1),after.Revision);
         CapabilityGrant persisted=grant is HostCapabilityGrant?after.HostGrants.Single(g=>g.GrantId==grant.GrantId):after.ServerGrants.Single(g=>g.GrantId==grant.GrantId);
         if(persisted!=grant)throw new UnauthorizedAccessException("Grant effect changed before commit.");
-        ct.ThrowIfCancellationRequested();tx.Commit();return new(grant.GrantId,after.Revision,1);
+        audit();ct.ThrowIfCancellationRequested();tx.Commit();return new(grant.GrantId,after.Revision,1);
     }
     private static void Insert(SqliteConnection c,SqliteTransaction tx,CapabilityGrant grant)
     {
@@ -72,21 +72,16 @@ public sealed partial class GrantPolicyRepository
             ("$delegate",grant.Rights.CanDelegate?1:0),("$onward",grant.Rights.CanDelegateOnwardDelegation?1:0),
             ("$source",grant.DerivedFromGrantId?.ToString("D")),("$now",Stamp(grant.GrantedUtc)));
     }
-    private static void Audit(SqliteConnection c,SqliteTransaction tx,LocalPrincipalMutationActor actor,CapabilityGrant grant,
+    private static Action Audit(SqliteConnection c,SqliteTransaction tx,LocalPrincipalMutationActor actor,CapabilityGrant grant,
         string kind,DateTimeOffset now,int changed=1)
         =>Audit(c,tx,ActorRef.LocalPrincipal(actor.LocalPrincipalId),grant,kind,now,changed,"Direct");
-    private static void Audit(SqliteConnection c,SqliteTransaction tx,ActorRef actor,CapabilityGrant grant,
+    private static Action Audit(SqliteConnection c,SqliteTransaction tx,ActorRef actor,CapabilityGrant grant,
         string kind,DateTimeOffset now,int changed,string origin)
     {
         var host=grant as HostCapabilityGrant;var server=grant as ServerCapabilityGrant;
         var summary=$"Grant={Id(grant.GrantId)}; Source={grant.DerivedFromGrantId?.ToString("D")??"OwnerRoot"}; Grantee={grant.GranteeActor.Kind}:{Id(grant.GranteeActor.Id)}; Capability={host?.Capability.ToString()??server!.Capability.ToString()}; Delegate={grant.Rights.CanDelegate}; Onward={grant.Rights.CanDelegateOnwardDelegation}; Changed={changed}; Issuer={grant.GrantedByActor.Kind}:{Id(grant.GrantedByActor.Id)}; Origin={origin}.";
-        Execute(c,tx,"""
-            INSERT INTO AuditEvents (AuditEventId,OccurredUtc,EventKind,ActorKind,ActorLocalPrincipalId,ActorPeerHostId,
-                AffectedHostId,AffectedServerProfileId,IsOfflineRecovery,Summary)
-            VALUES ($id,$now,$kind,$actorKind,$actor,$peer,$host,$server,0,$summary);
-            """,("$id",Id(Guid.NewGuid())),("$now",Stamp(now)),("$kind",kind),("$actorKind",actor.Kind.ToString()),
-            ("$actor",actor.Kind==ActorKind.LocalPrincipal?Id(actor.Id):null),("$peer",actor.Kind==ActorKind.RemoteManager?Id(actor.Id):null),
-            ("$host",Id(host?.TargetHostId??server!.Target.AuthoritativeHostId)),("$server",server?.Target.ServerProfileId.ToString("D")),("$summary",summary));
+        return WriteSuccessAudit(c,tx,actor,host?.TargetHostId??server!.Target.AuthoritativeHostId,
+            server?.Target.ServerProfileId,kind,now,summary);
     }
     // This bounded primitive requires structural Owner. It grants no new revocation semantics
     // to ManagePermissions or to a remote caller.
@@ -111,11 +106,11 @@ public sealed partial class GrantPolicyRepository
         if(changed.Length==0)return new(root,before.Revision,0);
         var now=time.GetUtcNow();var table=server?"ServerCapabilityGrants":"HostCapabilityGrants";
         foreach(var grant in changed)Execute(c,tx,$"UPDATE {table} SET InvalidatedUtc=$now WHERE GrantId=$id AND InvalidatedUtc IS NULL;",("$now",Stamp(now)),("$id",Id(grant.GrantId)));
-        Audit(c,tx,owner,rootGrant,"CapabilityGrantSubtreeInvalidated",now,changed.Length);
+        var audit=Audit(c,tx,owner,rootGrant,"CapabilityGrantSubtreeInvalidated",now,changed.Length);
         var after=Read(c,tx);RequireLocal(c,tx,owner,after);RequireRevision(checked(before.Revision+changed.Length),after.Revision);
         if(!after.Policy.IsOwner(ActorRef.LocalPrincipal(owner.LocalPrincipalId)))throw new UnauthorizedAccessException("Owner authorization changed.");
         var actual=(server?after.ServerGrants.Cast<CapabilityGrant>():after.HostGrants.Cast<CapabilityGrant>()).ToDictionary(g=>g.GrantId);
         foreach(var grant in changed)if(actual[grant.GrantId].InvalidatedUtc!=now)throw new UnauthorizedAccessException("Grant invalidation changed before commit.");
-        ct.ThrowIfCancellationRequested();tx.Commit();return new(root,after.Revision,changed.Length);
+        audit();ct.ThrowIfCancellationRequested();tx.Commit();return new(root,after.Revision,changed.Length);
     }
 }

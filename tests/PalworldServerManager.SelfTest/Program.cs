@@ -13,6 +13,14 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--permission-success-audit-probe"])
+    {
+        await PermissionSuccessAuditTests.RemovedAuditRollsBackGrant();
+        await PermissionSuccessAuditTests.EverySuccessfulPathChecksEveryAuditField();
+        await PermissionSuccessAuditTests.LaterBatchAndEnclosingAuditCannotEraseEarlierRows();
+        await PermissionSuccessAuditTests.ConcurrentSuccessfulBatchesKeepIndependentAuditGuards();
+        Console.WriteLine("PASS successful permission audit integrity."); return 0;
+    }
     if (args is ["--authenticated-permission-dispatch-probe"])
     {
         await AuthenticatedPermissionDispatchTests.LocalSignaturesFeedCanonicalOwnerAndDelegationActions();
@@ -664,6 +672,10 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Generation CompletionPreflightAndReconciliationRecovery", HostGenerationTransitionTests.CompletionPreflightAndReconciliationRecovery),
     ("Generation CompletionDrainRechecksOwnerAndRelationship", HostGenerationTransitionTests.CompletionDrainRechecksOwnerAndRelationship),
     ("Generation CompletionAuditCleanupFailureCannotCommit", HostGenerationTransitionTests.CompletionAuditCleanupFailureCannotCommit),
+    ("Successful permission audit RemovedAuditRollsBackGrant", PermissionSuccessAuditTests.RemovedAuditRollsBackGrant),
+    ("Successful permission audit EverySuccessfulPathChecksEveryAuditField", PermissionSuccessAuditTests.EverySuccessfulPathChecksEveryAuditField),
+    ("Successful permission audit LaterBatchAndEnclosingAuditCannotEraseEarlierRows", PermissionSuccessAuditTests.LaterBatchAndEnclosingAuditCannotEraseEarlierRows),
+    ("Successful permission audit ConcurrentSuccessfulBatchesKeepIndependentAuditGuards", PermissionSuccessAuditTests.ConcurrentSuccessfulBatchesKeepIndependentAuditGuards),
     ("Permission dispatch LocalSignaturesFeedCanonicalOwnerAndDelegationActions", AuthenticatedPermissionDispatchTests.LocalSignaturesFeedCanonicalOwnerAndDelegationActions),
     ("Permission dispatch PeerActionsUseRealPeerAndCreatorKeepsIndependentUserCeiling", AuthenticatedPermissionDispatchTests.PeerActionsUseRealPeerAndCreatorKeepsIndependentUserCeiling),
     ("Permission dispatch LocalChannelNegotiationAndCurrentIdentityGateCallbacks", AuthenticatedPermissionDispatchTests.LocalChannelNegotiationAndCurrentIdentityGateCallbacks),

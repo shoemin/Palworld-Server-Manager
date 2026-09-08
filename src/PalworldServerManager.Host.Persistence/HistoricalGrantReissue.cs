@@ -35,11 +35,11 @@ public sealed partial class GrantPolicyRepository
             .Concat(servers.Select(p=>(Old:(CapabilityGrant)p.Old!,New:(CapabilityGrant)p.New))).ToArray();
         ct.ThrowIfCancellationRequested();
         if(pairs.Length==0)return new(null,before.Revision,Array.Empty<ReissuedGrant>(),Array.Empty<ReissuedGrant>());
-        var batch=Guid.NewGuid();
+        var batch=Guid.NewGuid();var audits=new List<Action>();
         foreach(var pair in pairs)
         {
             Insert(c,tx,pair.New);
-            Audit(c,tx,actual,pair.New,"CapabilityGrantReissued",now,1,"OwnerHistoricalReissue:"+Id(batch)+"; HistoricalGrant="+Id(pair.Old.GrantId));
+            audits.Add(Audit(c,tx,actual,pair.New,"CapabilityGrantReissued",now,1,"OwnerHistoricalReissue:"+Id(batch)+"; HistoricalGrant="+Id(pair.Old.GrantId)));
         }
         var after=Read(c,tx);RequireLocal(c,tx,owner,after);RequireRevision(checked(before.Revision+pairs.Length),after.Revision);
         if(!after.Policy.IsOwner(actual)||!after.Policy.IsActive(peer))throw new UnauthorizedAccessException("Reissue authority changed.");
@@ -49,6 +49,7 @@ public sealed partial class GrantPolicyRepository
             if(rows.Single(g=>g.GrantId==pair.New.GrantId)!=pair.New||rows.Single(g=>g.GrantId==pair.Old.GrantId)!=pair.Old)
                 throw new UnauthorizedAccessException("Reissue effect or history changed.");
         }
+        foreach(var audit in audits)audit();
         ct.ThrowIfCancellationRequested();tx.Commit();
         return new(batch,after.Revision,Array.AsReadOnly(hosts.Select(p=>new ReissuedGrant(p.Old!.GrantId,p.New.GrantId)).ToArray()),
             Array.AsReadOnly(servers.Select(p=>new ReissuedGrant(p.Old!.GrantId,p.New.GrantId)).ToArray()));
