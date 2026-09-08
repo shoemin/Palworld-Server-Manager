@@ -1,0 +1,55 @@
+syntax = "proto3";
+package palworld.manager.v1;
+option csharp_namespace = "PalworldServerManager.Contracts.Wire";
+import "Protos/host.proto";
+
+// Observation contracts only. No endpoint, authority grant or operation command.
+// Field numbers are permanent; removed names and numbers must be reserved.
+message OperationTarget {
+  oneof target { string host_id = 1; ServerRef server = 2; }
+}
+message OperationLockScope {
+  oneof scope { string host_id = 1; ServerRef server = 2; }
+}
+enum OperationActivityStatus {
+  OPERATION_ACTIVITY_STATUS_UNSPECIFIED = 0;
+  OPERATION_ACTIVITY_STATUS_RUNNING = 1;
+  OPERATION_ACTIVITY_STATUS_RESOLVED = 2;
+  OPERATION_ACTIVITY_STATUS_AWAITING_RECOVERY = 3;
+  OPERATION_ACTIVITY_STATUS_RECOVERY_REQUIRED = 4;
+}
+enum OperationRecoveryDisposition {
+  OPERATION_RECOVERY_DISPOSITION_UNSPECIFIED = 0;
+  OPERATION_RECOVERY_DISPOSITION_SAFE_TO_RETRY_FROM_START = 1;
+  OPERATION_RECOVERY_DISPOSITION_SAFE_TO_RESUME_FROM_PHASE = 2;
+  OPERATION_RECOVERY_DISPOSITION_REQUIRES_MANUAL_REVIEW = 3;
+  OPERATION_RECOVERY_DISPOSITION_SAFE_TO_DISCARD = 4;
+}
+message OperationActivityItem {
+  string operation_id = 1;
+  string kind = 2;
+  OperationTarget target = 3;
+  string phase = 4;
+  bool is_terminal = 5;
+  OperationActivityStatus status = 6;
+  optional OperationRecoveryDisposition recovery = 7;
+  int64 record_revision = 8; // zero can denote unqualified historical state
+  string started_utc = 9;
+  optional string last_heartbeat_utc = 10;
+}
+message OperationActivityLock {
+  string lock_id = 1;
+  OperationLockScope scope = 2;
+  string kind = 3;
+  string owning_operation_id = 4;
+  string acquired_utc = 5;
+}
+message OperationActivitySnapshot {
+  string authoritative_host_id = 1;
+  // Durable SQL revision ONLY. Runtime status may change without advancing it.
+  // This is not a cache validator, stream cursor or permission to mutate.
+  int64 durable_revision = 2;
+  repeated OperationActivityItem operations = 3;
+  repeated OperationActivityLock locks = 4;
+  bool has_unqualified_state = 5;
+}

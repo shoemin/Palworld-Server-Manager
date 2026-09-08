@@ -15,6 +15,16 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--operation-activity-probe"])
+    {
+        await OperationActivityTests.TargetsScopesAndIndependentReaders();
+        await OperationActivityTests.MalformedAndUnknownWireValuesRefuse();
+        await OperationActivityTests.RuntimeStatusChangesWithoutDurableRevision();
+        await OperationActivityTests.InconsistentHistoryAndOrphanLocksRemainVisible();
+        await OperationActivityTests.NegotiationAndEveryObservationValue();
+        await ProtocolTests.SchemaEvolution();
+        Console.WriteLine("PASS operation Activity contracts."); return 0;
+    }
     if (args is ["--host-operation-recovery-probe"])
     {
         await HostOperationRecoveryTests.PreparationRequiresExactPolicyAndKeepsIdentityAndLock();
@@ -799,6 +809,11 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Operation Activity TargetsScopesAndIndependentReaders", OperationActivityTests.TargetsScopesAndIndependentReaders),
+    ("Operation Activity MalformedAndUnknownWireValuesRefuse", OperationActivityTests.MalformedAndUnknownWireValuesRefuse),
+    ("Operation Activity RuntimeStatusChangesWithoutDurableRevision", OperationActivityTests.RuntimeStatusChangesWithoutDurableRevision),
+    ("Operation Activity InconsistentHistoryAndOrphanLocksRemainVisible", OperationActivityTests.InconsistentHistoryAndOrphanLocksRemainVisible),
+    ("Operation Activity NegotiationAndEveryObservationValue", OperationActivityTests.NegotiationAndEveryObservationValue),
     ("Host operation recovery PreparationRequiresExactPolicyAndKeepsIdentityAndLock", HostOperationRecoveryTests.PreparationRequiresExactPolicyAndKeepsIdentityAndLock),
     ("Host operation recovery PreparationFaultsRollBackAndRetry", HostOperationRecoveryTests.PreparationFaultsRollBackAndRetry),
     ("Host operation recovery StartupUsesOnlyExplicitHandlersOnBothTargets", HostOperationRecoveryTests.StartupUsesOnlyExplicitHandlersOnBothTargets),
