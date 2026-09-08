@@ -4676,3 +4676,29 @@ Whole-component mapping includes transactional stale-resource and record revisio
 | MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No migration/platform/UI/Linux delta; installed Windows lifetime remains its single composition root. | PASS unchanged |
 
 All40 audited; every current46 acceptance criterion and40A-K mapped in v0.5-operation-component-acceptance.md. Sibling stale references corrected; isolated fixture/serialization evidence is never inflated into installed RPC, physical-PC/reboot or real Palworld acceptance. Accessibility WAIVED. Canonical Issue/Project unchanged. A clean permits experimental PR followed by independent B and all final gates; only then record whole46 SHADOW DONE. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #46h Review B — final component review
+
+PR156 ate79e8fe50a032ea26d3282aa1a30c016ce61b661 received fresh review of all11 changed files and the assembled46 component against the unchanged issue's complete scope, eight criteria, architecture9/10 and testability40A-K. Executable1c96357f3f151d52976048a3977583b6db3616d5 remains locally qualified at524 tests; only documentation follows. Candidate Docs34183061050 PASS; CI34183059776, actual final job logs, exact HEAD Docs and live base/head gate remain mandatory before acceptance.
+
+B challenged whether test consumers shared mutable objects, whether foreign admission might leave partial local state, whether client cancellation was actually delivered, and whether one Host's terminal resolution could accidentally clear both exclusions. Each observation is separately mapped, serialized and parsed/validated. The origin snapshot remains exactly unchanged after foreign-target refusal and after destination/client cancellation; the canceled observer wait explicitly throws while the destination's own stop token remains uncanceled. Both hosts then own separate actual tasks/locks for the same profile identity qualified by distinct Hosts; resolving B leaves A's exact owning-operation lock and Running status intact. Held gates release in finally before owner disposal. Three target/scope combinations cover Host-wide, normal server and server-targeted Host-wide exclusion without a synthetic server.
+
+Rechecked assembled persistence ordering, closed definitions/fingerprints, per-phase handler selection, failure/manual/unknown holds, runtime-only status freshness, real kill/reopen checkpoints, bootstrap-aware installed owner and drain under machine lease. Evidence-to-criterion mapping is explicit about representative routing/consumers, empty product registration and later RPC authority/inputs/audit/effects; no field or business-operation acceptance is manufactured. All40 audit repeated below. No B finding, test failure or new accepted implementation escape; two pre-A evidence/reference corrections,A0/B0. Whole46 may become SHADOW DONE only after remaining exact merge gates pass.
+
+| Invariants | Impact and evidence | B result |
+|---|---|---|
+| ARCH-001, ARCH-002, CLIENT-001, CLIENT-002, CLIENT-003 | Only tests/docs changed; assembled dependency graph and private credential boundaries retained. | PASS |
+| HOST-001, HOST-002, PERSIST-001 | Destination-bound authoritative repositories, one actual installed Host owner/lease; two simulated Hosts have independent real fixture state, not a claim of two production Hosts on one PC. | PASS |
+| IDENT-001, IDENT-002, OPS-004 | Both explicit targets and independent scopes; same-profile distinct-Host work coexists; foreign admission cannot create local records/locks. | PASS |
+| LOCAL-001, OWNER-001, OWNER-002 | Initialized canonical fixture identities and accepted bootstrap-aware owner; no new authority or Owner ceremony. | PASS unchanged |
+| IDENT-003, IDENT-004, LOCAL-002, LOCAL-003, LOCAL-004 | No credential, rotation, transport or enrollment production change; prior qualified behavior and full regression retained. | PASS unchanged |
+| REMOTE-001, REMOTE-002, PAIR-001, PAIR-002, PAIR-003, PAIR-004 | Framework destination ownership tested; actual remote authentication/dual ceilings remain later RPC obligations, never supplied by test routing or DTOs. | PASS scope |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | No grant/default/preset/creator/audit edits; all current authority checks remain concrete writer responsibilities. | PASS unchanged |
+| PROTO-001, SEC-001 | Existing negotiated Activity DTOs used through real serialization/validation; no new wire fields, secrets or raw error payload. | PASS |
+| OPS-001, OPS-002, OPS-003 | Full stale-write/conflict/atomicity evidence assembled; independent consumers and both-scope client cancellation retain exact Host-owned work. | PASS framework |
+| RECOVERY-001 | Per-phase explicit handlers, all-target actual kill/reopen recovery, manual/unknown/failed holds and no generic resume; empty product registry remains explicit. | PASS framework |
+| MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No migration/platform/UI/Linux delta; installed Windows lifetime remains its single composition root. | PASS unchanged |
+
+
+Final sibling/reference search is clean: original-unit descriptions remain historical, while current component links describe accepted framework ownership and retain concrete-RPC boundaries. Accessibility WAIVED; no physical-PC/reboot, Palworld, Windows parity, Linux or release claim. Six creator permissions/limits and canonical Issue/Project remain unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
