@@ -444,5 +444,6 @@ public static class HostSchema
         new Migration011DefaultGrantTemplate(),
         new Migration012DurableOperationPolicy(),
         new Migration013PeerUnpairReceipt(),
+        new Migration014ReplacementBindingEvidence(),
     ];
 }
