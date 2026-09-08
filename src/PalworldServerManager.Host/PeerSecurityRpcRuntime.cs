@@ -27,6 +27,10 @@ public sealed class PeerSecurityRpcRuntime
     private readonly GrantPolicyRepository grants;
     internal void RequireCommittedUnpair(PeerGrantMutationActor original,PeerTrustRevocationResult revoked,CancellationToken ct)
         =>grants.RequireCommittedUnpair(original,revoked,ct);
+    internal PendingPeerRecoveryCompletion? ReadPendingRecoveryCompletion(PeerGrantMutationActor proof,CancellationToken ct)
+        =>grants.ReadPendingRecoveryCompletion(proof,ct);
+    internal PeerRecoveryConfirmationResult ConfirmAuthenticatedRecoveryCompletion(PeerGrantMutationActor proof,Guid approval,CancellationToken ct)
+        =>grants.ConfirmAuthenticatedRecoveryCompletion(proof,approval,ct);
     public PeerSecurityRpcRuntime(HostDatabase database, Guid hostId, IPeerActivationHook hook, TimeProvider? time = null)
     {
         if (hostId == Guid.Empty) throw new ArgumentException("Host identity required.");
