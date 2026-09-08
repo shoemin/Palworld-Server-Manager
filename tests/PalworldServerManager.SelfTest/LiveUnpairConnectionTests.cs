@@ -7,7 +7,7 @@ using static PalworldServerManager.SelfTest.PeerSecurityRpcTests;
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class LiveUnpairConnectionTests
+internal static partial class LiveUnpairConnectionTests
 {
     private static void Check(bool value){if(!value)throw new Exception("Live unpair connection assertion failed.");}
     private static TaskCompletionSource Signal()=>new(TaskCreationOptions.RunContinuationsAsynchronously);

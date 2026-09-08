@@ -11,6 +11,9 @@ public sealed class LocalSecurityRpcRuntime
 {
     public Guid HostId { get; }
     internal HostNetworkGeneration? Pairing { get; init; }
+    private PeerUnpairCoordinator? unpairNotifications;
+    internal PeerUnpairCoordinator? UnpairNotifications
+    {get=>unpairNotifications;init=>unpairNotifications=PeerUnpairCoordinator.MatchHost(value,HostId);}
     internal LocalEnrollmentService Enrollment { get; }
     internal Func<bool> IsInitialized { get; }
     internal Func<HttpContext, string> NativePrincipal { get; }

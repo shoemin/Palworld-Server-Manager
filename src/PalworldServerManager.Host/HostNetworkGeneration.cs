@@ -29,6 +29,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
     private PeerRotationReceiptRpcClient? receipt;
     private PeerCurrentCredentialRpcClient? currentCredential;
     private PeerUnpairConnectionFactory? unpairConnection;
+    internal PeerUnpairCoordinator? UnpairNotifications {get;private set;}
     private RoutineRotationAcceptanceCollector? collector;
     private RoutineRotationCutoverCoordinator? cutover;
     private RoutineRotationCompletionCoordinator? completion;
@@ -86,6 +87,8 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             status = new(runtime, transport); proposal = new(runtime, transport); receipt = new(runtime, transport); collector = new(runtime, transport);
             currentCredential = new(runtime, transport);
             unpairConnection = new(runtime, transport);
+            UnpairNotifications=new(runtime.HostId,WithPeerUnpairConnectionAsync<PeerUnpairNotification>,runtime.Clock);
+            runtime.ConfigureUnpairNotifications(UnpairNotifications);
         }
     }
     internal async Task StartAsync(CancellationToken ct)
@@ -212,6 +215,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         }
         try
         {
+            var unpairStop=UnpairNotifications?.StopAsync()??Task.CompletedTask;
             var drain = traffic.DrainAsync(); // closes admission and cancels in-progress startup/work
             await startFinished.ConfigureAwait(false);
             var discoveryStop = Capture(() => discovery?.DisposeAsync().AsTask() ?? Task.CompletedTask);
@@ -219,6 +223,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             // prevent the other applications from closing their connections.
             var stops = listeners.Select(app => Capture(() => app.StopAsync(CancellationToken.None))).ToArray();
             await Capture(() => drain).ConfigureAwait(false); await Task.WhenAll(stops.Append(discoveryStop)).ConfigureAwait(false);
+            await Capture(()=>unpairStop).ConfigureAwait(false);
             await Capture(() => discoveryObservation).ConfigureAwait(false);
             if (discoveryFailure is not null) lock (failures) if (!failures.Contains(discoveryFailure)) failures.Add(discoveryFailure);
             foreach (var app in listeners) await Capture(() => app.DisposeAsync().AsTask()).ConfigureAwait(false);

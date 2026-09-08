@@ -27,7 +27,7 @@ internal sealed class LocalPermissionDispatcher(LocalSecurityRpcRuntime runtime,
             if (session.Protocol is null) throw new InvalidOperationException("Negotiate this connection first.");
             session.Protocol.Require(FeatureCapability.LocalPrincipalSecurity);
             if (!runtime.IsInitialized()) throw new AuthenticationException("Initialized Host required.");
-            using var call = new LocalPermissionCall(repository, session.Authentication.GetCurrentPrincipal().MutationActor, cancellation.Token);
+            using var call = new LocalPermissionCall(repository, session.Authentication.GetCurrentPrincipal().MutationActor, cancellation.Token,runtime.UnpairNotifications);
             return Task.FromResult(action(call));
         }, cancellation.Token).ConfigureAwait(false);
     }
@@ -47,7 +47,7 @@ internal sealed class PeerPermissionDispatcher(PeerSecurityRpcRuntime runtime, G
             session.Protocol.Require(FeatureCapability.PeerTrustActivation);
             var proof = new PeerGrantMutationActor(runtime.HostId, session.PeerId, session.PeerFingerprint, session.LocalFingerprint, session.PeerIncarnation);
             runtime.Authentication.AuthenticateOrdinary(proof, cancellation.Token);
-            using var call = new PeerPermissionCall(repository, proof, cancellation.Token);
+            using var call = new PeerPermissionCall(repository, proof, cancellation.Token,runtime.UnpairNotifications);
             return action(call);
         }, cancellation.Token).ConfigureAwait(false);
     }
@@ -79,8 +79,10 @@ internal abstract class PermissionCall(CancellationToken ct) : IDisposable
     public void Dispose() => Interlocked.Exchange(ref disposed, 1);
 }
 
-internal sealed class LocalPermissionCall(GrantPolicyRepository repository, LocalPrincipalMutationActor actor, CancellationToken ct) : PermissionCall(ct)
+internal sealed class LocalPermissionCall(GrantPolicyRepository repository, LocalPrincipalMutationActor actor, CancellationToken ct,
+    PeerUnpairCoordinator? notifications=null) : PermissionCall(ct)
 {
+    private readonly PeerUnpairCoordinator? notifier=PeerUnpairCoordinator.MatchHost(notifications,actor.HostId);
     internal long RequireHost(HostCapability capability, Guid target)
     { Guard(); return repository.RequireLocalHostCapability(actor, capability, target, Cancellation); }
     internal long RequireServer(ServerCapability capability, ServerRef target)
@@ -106,11 +108,18 @@ internal sealed class LocalPermissionCall(GrantPolicyRepository repository, Loca
     internal GrantMutationResult InvalidateServer(long revision, Guid root)
     { Guard(); return repository.InvalidateServerSubtree(actor, revision, root, Cancellation); }
     internal PeerTrustRevocationResult RevokePeer(long revision, Guid peer, long incarnation)
-    { Guard(); return repository.RevokeLocalPeerTrust(actor, revision, peer, incarnation, Cancellation); }
+        =>RevokePeerWithNotification(revision,peer,incarnation).Revocation;
+    internal PeerUnpairCommit RevokePeerWithNotification(long revision,Guid peer,long incarnation)
+    {
+        Guard();var result=repository.RevokeLocalPeerTrust(actor,revision,peer,incarnation,Cancellation);
+        return new(result,notifier?.Notify(result)??Task.FromResult(PeerUnpairNotification.NotAttempted));
+    }
 }
 
-internal sealed class PeerPermissionCall(GrantPolicyRepository repository, PeerGrantMutationActor actor, CancellationToken ct) : PermissionCall(ct)
+internal sealed class PeerPermissionCall(GrantPolicyRepository repository, PeerGrantMutationActor actor, CancellationToken ct,
+    PeerUnpairCoordinator? notifications=null) : PermissionCall(ct)
 {
+    private readonly PeerUnpairCoordinator? notifier=PeerUnpairCoordinator.MatchHost(notifications,actor.HostId);
     internal long RequireHost(HostCapability capability, Guid target)
     { Guard(); return repository.RequireRemoteHostCapability(actor, capability, target, Cancellation); }
     internal long RequireServer(ServerCapability capability, ServerRef target)
@@ -130,5 +139,10 @@ internal sealed class PeerPermissionCall(GrantPolicyRepository repository, PeerG
     internal CreatorGrantResult CommitConfirmedCreation(long revision, ServerRef target, Action<SqliteConnection,SqliteTransaction> recordConfirmedCreation)
     { Guard(); return repository.CommitConfirmedRemoteCreation(actor, revision, target, recordConfirmedCreation, Cancellation); }
     internal PeerTrustRevocationResult RevokePeer(long revision, Guid peer, long incarnation)
-    { Guard(); return repository.RevokeRemotePeerTrust(actor, revision, peer, incarnation, Cancellation); }
+        =>RevokePeerWithNotification(revision,peer,incarnation).Revocation;
+    internal PeerUnpairCommit RevokePeerWithNotification(long revision,Guid peer,long incarnation)
+    {
+        Guard();var result=repository.RevokeRemotePeerTrust(actor,revision,peer,incarnation,Cancellation);
+        return new(result,notifier?.Notify(result)??Task.FromResult(PeerUnpairNotification.NotAttempted));
+    }
 }
