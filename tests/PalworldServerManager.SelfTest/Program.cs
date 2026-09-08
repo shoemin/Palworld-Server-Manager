@@ -665,6 +665,12 @@ if (args.Length > 0)
         await PeerActivationTests.IdentityExpiryAndRecovery(); await PeerActivationTests.DeadlineAndMissingProof();
         Console.WriteLine("PASS durable reciprocal activation probes."); return 0;
     }
+    if (args is ["--native-repair-probe", var repairPath])
+    {
+        using var provider = new PalworldServerManager.Platform.Windows.WindowsSpake2Provider(repairPath,
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(repairPath))));
+        await LocalOwnerPairingRpcTests.NativeRevocationAndRepair(provider); return 0;
+    }
     if (args is ["--spake2-wrapper-probe", var nativePath])
     {
         Spake2WrapperTests.Run(nativePath); PairingAttemptTests.Native(nativePath); await PeerPairingRpcTests.Native(nativePath); return 0;
