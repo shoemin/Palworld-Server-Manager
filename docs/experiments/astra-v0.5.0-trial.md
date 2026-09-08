@@ -4603,3 +4603,29 @@ Two pre-A evidence/documentation corrections: use missing singleton state for st
 | MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No migration/shell/Linux change; Windows-specific installation stays in the existing single Windows composition root. | PASS |
 
 All40 audited. Stale-reference search covers constructor/InitializeIfReady/GetReady/DisposeAsync callers; installed root owns exactly one empty-registry lifetime, with no registration or disposal inside connection/generation factories. Sibling docs now distinguish installed framework ownership from later business/Activity RPCs. Test registration/diff-check clean. Accessibility WAIVED; physical PCs/reboot, Palworld, Windows parity, Linux and release not claimed. A clean permits PR then fresh B and all remaining gates. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #46g Review B — final PR review
+
+PR155 at92117b77676fb21bad9fe607bbc8301d1be07b18 received a fresh all10-file review againstf8f7fc1. Rechecked the lifetime owner, entire installed startup/shutdown path and unchanged generation ownership interfaces, every new test, registration and all developer/ledger changes. Executable df19b0560bad0abf67ecd28e4b5b30e42256214e remains the locally qualified523/focused5/build/UI/SDK revision. Candidate Docs34182193090 PASS; remaining CI34182192041, actual job logs, exact final Docs and live base/head gate remain mandatory.
+
+B deliberately challenged initialization while no Owner exists, concurrent access versus stop, a failed constructor or recovery scan, an exception after owner creation but before listener readiness, and listener drain blocking operation cancellation. Canonical Host/Owner inspection precedes runtime construction; not-ready GetReady refusal is outside the remembered-failure path so later completed initialization can succeed. Runtime initialization is serialized and at most once; a failed attempt stays held. Disposal sets the owner's shutdown task under the same gate and the runtime refuses admission immediately, retaining unresolved locks while actual tasks drain. RunAsync's outer async owner scope cleans startup failures, and its shutdown finally starts operation cancellation before waiting for the generation, then awaits both under the machine lease. The real lease test cannot reacquire while the worker is held. No transport/request token or test executor is installed as product authority.
+
+No B finding remains after two pre-A evidence/documentation refinements,A0/B0. Full all40 audit below is independently re-evaluated; installed privileged behavior still requires actual current CI success, and representative canonical identity setup is not described as a new credential ceremony. Existing Activity contracts/explicit recovery retain their scope and no business executor or RPC acceptance is inferred from composition.
+
+| Invariants | Impact and evidence | B result |
+|---|---|---|
+| ARCH-001, ARCH-002, CLIENT-001, CLIENT-002, CLIENT-003 | Only Host/tests/docs changed; frozen WPF/Lan and client dependency/credential boundaries intact. | PASS unchanged |
+| HOST-001, HOST-002, PERSIST-001 | One installed operation owner under the actual root machine lease; real blocked-drain lease test and authoritative repository reuse. | PASS; privileged CI pending |
+| LOCAL-001, OWNER-001, OWNER-002 | Canonical initialized Host/Owner check before runtime; bootstrap-only state stays not-ready without new authority, ordinary access rechecks initialization. | PASS |
+| IDENT-001, IDENT-002, OPS-004 | Existing exact Host/server targets and independent scopes retained; both unknown startup targets preserved without record/lock/revision change. | PASS |
+| IDENT-003, IDENT-004, LOCAL-002, LOCAL-003, LOCAL-004 | Existing trust reconciliation/material validation and bootstrap ceremony retained; no credential or enrollment edits. | PASS unchanged |
+| REMOTE-001, REMOTE-002, PAIR-001, PAIR-002, PAIR-003, PAIR-004 | Installed service remains local-only; no new RPC, route, trust or independent-ceiling change. | PASS unchanged |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | No grant/default/creator/audit writer; readiness never supplies business authority, existing per-effect current checks remain required. | PASS unchanged |
+| PROTO-001, SEC-001 | No wire/feature change or secret-bearing diagnostic payload. Remembered startup failure has bounded subsequent refusal. | PASS unchanged |
+| OPS-001, OPS-002, OPS-003 | Existing revisions/exclusion unchanged; owner outlives listener work and drains actual tasks; no client token owns operations. | PASS framework |
+| RECOVERY-001 | Exactly-once explicit startup before ready; empty product registry holds unknown work, initialization failure never becomes an automatic retry. | PASS |
+| MIG-001, PLATFORM-001, PLATFORM-002, LINUX-001 | No migration/shell/Linux change; Windows-specific installation stays in the existing single Windows composition root. | PASS |
+
+
+Stale-reference search and complete final documentation diff are clean. Current product owner registration is empty by design; unknown persisted work remains visible to the framework as Recovery Required rather than running with borrowed meaning. Installed local-only behavior, current grant/creator limits and all credential safeguards retained. Accessibility WAIVED; physical PCs/reboot, Palworld, Windows parity, Linux and release not claimed. Canonical Issue/Project unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
