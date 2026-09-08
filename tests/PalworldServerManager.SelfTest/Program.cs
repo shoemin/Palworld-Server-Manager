@@ -15,6 +15,19 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--recovery-contact-probe"])
+    {
+        await RecoveryContactCoordinatorTests.CoalescesLatestContactWithoutInlineOrAmbientWork();
+        await RecoveryContactCoordinatorTests.CapacityAndStopRetainAllActualCleanup();
+        await RecoveryContactCoordinatorTests.OneDeadlineCancelsPendingFollowupAndDrains();
+        await RecoveryContactCoordinatorTests.StopCallbackFailureStillDrains();
+        await RecoverySenderTests.ContactGenerationBothDirectionsWithoutRecursion();
+        await RecoverySenderTests.ContactFailedPushStillPullsAndNewContactRetries();
+        await RecoverySenderTests.ContactRuntimeRequiresCurrentKeysAndOwner();
+        await RecoverySenderTests.ContactGenerationStopDrainsHeldNativeCallback();
+        await RecoverySenderTests.ContactActualSecurityNegotiationTriggersOnlyAfterProof();
+        Console.WriteLine("PASS nine recovery contact scenarios."); return 0;
+    }
     if (args is ["--recovery-pull-probe"])
     {
         await RecoverySenderTests.PullActualIndependentRecoveryAndFreshConnections();
@@ -1083,6 +1096,15 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Live unpair HeldResponseDisposalDrainsSend", LiveUnpairConnectionTests.HeldResponseDisposalDrainsSend),
     ("Live unpair PreparationRequiresActiveAndActualProof", LiveUnpairConnectionTests.PreparationRequiresActiveAndActualProof),
     ("Live unpair PreparedUnpairConnectionBelongsToGeneration", HostNetworkGenerationTests.PreparedUnpairConnectionBelongsToGeneration),
+    ("Recovery contact CoalescesLatestContactWithoutInlineOrAmbientWork", RecoveryContactCoordinatorTests.CoalescesLatestContactWithoutInlineOrAmbientWork),
+    ("Recovery contact CapacityAndStopRetainAllActualCleanup", RecoveryContactCoordinatorTests.CapacityAndStopRetainAllActualCleanup),
+    ("Recovery contact OneDeadlineCancelsPendingFollowupAndDrains", RecoveryContactCoordinatorTests.OneDeadlineCancelsPendingFollowupAndDrains),
+    ("Recovery contact StopCallbackFailureStillDrains", RecoveryContactCoordinatorTests.StopCallbackFailureStillDrains),
+    ("Recovery contact ContactGenerationBothDirectionsWithoutRecursion", RecoverySenderTests.ContactGenerationBothDirectionsWithoutRecursion),
+    ("Recovery contact ContactFailedPushStillPullsAndNewContactRetries", RecoverySenderTests.ContactFailedPushStillPullsAndNewContactRetries),
+    ("Recovery contact ContactRuntimeRequiresCurrentKeysAndOwner", RecoverySenderTests.ContactRuntimeRequiresCurrentKeysAndOwner),
+    ("Recovery contact ContactGenerationStopDrainsHeldNativeCallback", RecoverySenderTests.ContactGenerationStopDrainsHeldNativeCallback),
+    ("Recovery contact ContactActualSecurityNegotiationTriggersOnlyAfterProof", RecoverySenderTests.ContactActualSecurityNegotiationTriggersOnlyAfterProof),
     ("Recovery pull PullActualIndependentRecoveryAndFreshConnections", RecoverySenderTests.PullActualIndependentRecoveryAndFreshConnections),
     ("Recovery pull PullReceiptValidationIsReadOnlyAndExact", RecoverySenderTests.PullReceiptValidationIsReadOnlyAndExact),
     ("Recovery pull PullLostStagesRetryOriginalReceiptAfterListenerRestart", RecoverySenderTests.PullLostStagesRetryOriginalReceiptAfterListenerRestart),

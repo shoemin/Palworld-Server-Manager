@@ -41,6 +41,7 @@ internal sealed class PeerActivationRpcClient(PeerSecurityRpcRuntime runtime, IP
         if (reply.Host is null || PeerSecurityRpcService.Id(reply.Host.HostId) != peer) throw new AuthenticationException("Peer identity refused.");
         var actual = connection.Identity;
         NegotiatedProtocol.Negotiate(hello.Handshake, reply.Handshake).Require(FeatureCapability.PeerTrustActivation);
+        _=runtime.AuthenticatedRecoveryContact(peer,address,actual,deadline.Token);
         var ack = owner is null
             ? runtime.Repository.PrepareActivationAcknowledgement(peer, actual.PeerFingerprint, actual.LocalFingerprint)
             : runtime.Repository.PrepareOwnerActivationAcknowledgement(owner, peer, actual.PeerFingerprint, actual.LocalFingerprint);

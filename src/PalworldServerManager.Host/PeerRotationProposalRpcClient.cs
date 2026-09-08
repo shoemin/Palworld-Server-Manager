@@ -64,6 +64,7 @@ internal sealed class PeerRotationProposalRpcClient(PeerSecurityRpcRuntime runti
         if (negotiated.Host is null || PeerSecurityRpcService.Id(negotiated.Host.HostId) != peer) throw new AuthenticationException("Peer identity refused.");
         NegotiatedProtocol.Negotiate(hello.Handshake, negotiated.Handshake).Require(FeatureCapability.PeerRotationProposal);
         var actual = connection.Identity;
+        _=runtime.AuthenticatedRecoveryContact(peer,address,actual,deadline.Token);
         if (actual.LocalFingerprint != proposal.OldFingerprint || runtime.Credentials.ReadRoutineRotationProposal(rotationId) != proposal)
             throw new AuthenticationException("Current rotation proposal changed.");
         var reply = await client.StageRotationAsync(request, cancellationToken: deadline.Token).ResponseAsync.ConfigureAwait(false);
