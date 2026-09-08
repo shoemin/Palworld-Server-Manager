@@ -15,6 +15,15 @@ if (args.Length > 0)
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--host-operation-lifetime-probe"])
+    {
+        await HostOperationLifetimeTests.BootstrapThenConcurrentReadyUsesOneRuntime();
+        await HostOperationLifetimeTests.EmptyProductionRegistryPreservesEveryTarget();
+        await HostOperationLifetimeTests.FailedInitializationNeverRetriesInSameOwner();
+        await HostOperationLifetimeTests.ShutdownRacingReadyDrainsActualWork();
+        await HostOperationLifetimeTests.EnclosingLeaseOutlivesWorkerDrain();
+        Console.WriteLine("PASS Host operation lifetime ownership."); return 0;
+    }
     if (args is ["--operation-activity-probe"])
     {
         await OperationActivityTests.TargetsScopesAndIndependentReaders();
@@ -809,6 +818,11 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Grant persistence PostAuditRevokeChangesAndLateCancellation", GrantPolicyPersistenceTests.PostAuditRevokeChangesAndLateCancellation),
     ("Grant persistence ConcurrentWritersAndActorTrustRevisions", GrantPolicyPersistenceTests.ConcurrentWritersAndActorTrustRevisions),
     ("Grant persistence UpgradePreservesGrantsAndRevisionFailsClosed", GrantPolicyPersistenceTests.UpgradePreservesGrantsAndRevisionFailsClosed),
+    ("Host operation lifetime BootstrapThenConcurrentReadyUsesOneRuntime", HostOperationLifetimeTests.BootstrapThenConcurrentReadyUsesOneRuntime),
+    ("Host operation lifetime EmptyProductionRegistryPreservesEveryTarget", HostOperationLifetimeTests.EmptyProductionRegistryPreservesEveryTarget),
+    ("Host operation lifetime FailedInitializationNeverRetriesInSameOwner", HostOperationLifetimeTests.FailedInitializationNeverRetriesInSameOwner),
+    ("Host operation lifetime ShutdownRacingReadyDrainsActualWork", HostOperationLifetimeTests.ShutdownRacingReadyDrainsActualWork),
+    ("Host operation lifetime EnclosingLeaseOutlivesWorkerDrain", HostOperationLifetimeTests.EnclosingLeaseOutlivesWorkerDrain),
     ("Operation Activity TargetsScopesAndIndependentReaders", OperationActivityTests.TargetsScopesAndIndependentReaders),
     ("Operation Activity MalformedAndUnknownWireValuesRefuse", OperationActivityTests.MalformedAndUnknownWireValuesRefuse),
     ("Operation Activity RuntimeStatusChangesWithoutDurableRevision", OperationActivityTests.RuntimeStatusChangesWithoutDurableRevision),

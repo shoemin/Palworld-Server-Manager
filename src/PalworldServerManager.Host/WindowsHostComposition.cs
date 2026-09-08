@@ -59,6 +59,10 @@ public static class WindowsHostComposition
         var publication = HostTrustPlanning.Build(snapshot).Publication
             ?? throw new InvalidOperationException("Privileged machine bootstrap is required.");
         await new WindowsHostCredentialMaterial(store).ValidateAsync(snapshot.CurrentReference!, publication.CurrentFingerprint, stop).ConfigureAwait(false);
+        // Product verticals supply explicit definitions later. Unknown saved work remains
+        // held; bootstrap-only startup must not manufacture an Owner to run recovery.
+        await using var operations = new HostOperationLifetime(database, hostId, []);
+        operations.InitializeIfReady();
         var groupSid = (SecurityIdentifier)new NTAccount(Environment.MachineName, WindowsHostPlatform.ProductActivationGroup).Translate(typeof(SecurityIdentifier));
         var rpc = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { });
         var certificate = await native.LoadAsync(snapshot.CurrentReference!, stop).ConfigureAwait(false);
@@ -69,8 +73,15 @@ public static class WindowsHostComposition
             var canceled = Task.Delay(Timeout.Infinite, wait.Token);
             await Task.WhenAny(canceled, generation.ListenerStopped).ConfigureAwait(false);
         }
-        finally { wait.Cancel(); await generation.StopAsync().ConfigureAwait(false); }
-        // The generation has released listeners, work and its credential before lease disposal.
+        finally
+        {
+            // Signal Host-owned work before waiting for generation shutdown. A connection
+            // observing that work must not prevent the Host's own cancellation/drain.
+            var drainingOperations = operations.DisposeAsync().AsTask();
+            try { wait.Cancel(); await generation.StopAsync().ConfigureAwait(false); }
+            finally { await drainingOperations.ConfigureAwait(false); }
+        }
+        // Generation resources and actual operation workers finish before lease disposal.
     }
 
     // Explicit full-network composition under the caller's machine lease. The native PAKE
