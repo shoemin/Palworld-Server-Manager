@@ -55,11 +55,10 @@ internal static partial class RecoverySenderTests
         using var canceled=new CancellationTokenSource();canceled.Cancel();
         await Failed(Task.Run(()=>f.A.Runtime.AuthenticatedRecoveryContact(contact.Peer,contact.Address,contact.Identity,canceled.Token)));
         Check(attempts==1&&before==OfferSnapshot(f.A)+OfferSnapshot(f.B));
-        foreach(var state in new[]{"PeerBound","Revoked"})
-        {
-            f.A.State.Execute($"UPDATE TrustedManagers SET State='{state}';");
-            Check(await f.A.Runtime.AuthenticatedRecoveryContact(contact.Peer,contact.Address,contact.Identity,default)==PeerRecoveryContactOutcome.NotScheduled&&attempts==1);
-        }
+        f.A.State.Execute("UPDATE TrustedManagers SET State='PeerBound';");
+        Check(await f.A.Runtime.AuthenticatedRecoveryContact(contact.Peer,contact.Address,contact.Identity,default)==PeerRecoveryContactOutcome.NotScheduled&&attempts==1);
+        var grants=Grants(f.A);grants.RevokeLocalPeerTrust(Owner(f.A),grants.Read().Revision,contact.Peer,Incarnation(f.A,f.B));
+        Check(await f.A.Runtime.AuthenticatedRecoveryContact(contact.Peer,contact.Address,contact.Identity,default)==PeerRecoveryContactOutcome.NotScheduled&&attempts==1);
         f.A.State.Execute("UPDATE LocalPrincipals SET IsOwner=0;");
         var refused=false;
         try{await f.A.Runtime.AuthenticatedRecoveryContact(contact.Peer,contact.Address,contact.Identity,default);}
