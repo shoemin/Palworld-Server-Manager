@@ -5684,3 +5684,22 @@ Base01394c19e61f9c95bce40134901a39f50835aee6 to executablea2b23577521f3db82644c3
 | PLATFORM-001, PLATFORM-002, LINUX-001 | Test invokes existing Windows platform composition/provider. No production OS branch, interactive service behavior, physical/parity/Linux/release acceptance. | PASS |
 
 Stale/scope review confirms docs distinguish this complete same-key revoked ceremony from prior historical fixtures and from own fresh-key recovery/public commands/contact retry/actual remote hang/drop still pending. Initial failed build retained; final probe/full native both pass. No canonical issue/Project mutation39/39, normal-lane inspection or outside reviewer contact. Accessibility WAIVED, never PASS. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28o Review B — PASS
+
+Fresh PR171 review of base01394c19e61f9c95bce40134901a39f50835aee6 to heade0a3f15e50ed59f4d8d1eab9bea15ccd062f7cef: all7 files187 insertions independently inspected, including full native test, existing authenticated fixture construction, real default activation hook, canonical grant/revoke/approval/confirmation calls, driver and complete docs/ledger changes. B0, A0; two pre-A rounds/cumulative243, one corrected test-only compile failure, no runtime failure or accepted escape. Final local native/focused/634/UI/SDK/strict Docs and zero-warning build PASS; candidate Docs34216034348 PASS. All-three CI34216031867 actual logs and final exact-head Docs/live gate still required.
+
+| Invariants | Independent review evidence | Result |
+|---|---|---|
+| ARCH-001, ARCH-002, CLIENT-001, CLIENT-002, CLIENT-003 | Test/docs-only inventory, no dependency or frozen legacy/client changes; public local RPC client never receives Host private identity. | PASS |
+| HOST-001, HOST-002, PERSIST-001 | Existing exclusive fixture leases and one owned generation per Host; no additional production writer or service. | PASS |
+| IDENT-001, IDENT-002, IDENT-003, IDENT-004, PAIR-004 | Initial real binding, revoked tombstones, fresh real candidates and distinct approval/incarnation/grant IDs are checked end to end. Own changed-key/offline repair remains explicitly unqualified; no rotation/server identity modification. | PASS seam |
+| LOCAL-001, LOCAL-002, LOCAL-003, LOCAL-004, OWNER-001, OWNER-002 | Pairing/activation traverse real protected local native-identity/signature RPCs. Revoke/approval proof fixture is separately disclosed. Both security audits match local Owner and both original Owners remain active. | PASS |
+| REMOTE-001, REMOTE-002, PAIR-001, PAIR-002, PAIR-003 | Zero grants after initial PAKE; separate activation/Owner approvals. A approval cannot make B accept contact. Local user still lacks CreateServer after remote machine authority is recreated; each acknowledgment commits independently. | PASS seam |
+| AUTH-001, AUTH-002, AUTH-003, AUTH-004, AUTH-005 | Old exact root/child invalidation and unrelated grant preservation, fresh current-Owner/null-parent configured root with exact Host target/rights, old-source denial before/after repair. No creator/default/preset/adoption bypass added. | PASS |
+| PROTO-001 | Existing real protocol negotiation used throughout; no new production wire capability, closed result/state assertions and actual TLS refusal checked. | PASS |
+| OPS-001, OPS-002, OPS-003, OPS-004, RECOVERY-001 | Current canonical revisions/incarnations required at each action; no operation executor or queue/resume path introduced. | PASS |
+| SEC-001, MIG-001 | Genuine native provider/actual TLS and explicit fixture provenance; no manual verified binding candidate, secret diagnostics, material persistence or v0.4 migration. | PASS |
+| PLATFORM-001, PLATFORM-002, LINUX-001 | Existing Windows composition/provider and cleanup, no OS production changes or interactive service effects. Physical/parity/Linux/release remain outside acceptance. | PASS |
+
+Rechecked no false ordinary test-count increase:634 stays634, new native scenario separately named. Broad refusal helper is paired with exact state/lineage/audit/fresh-success assertions. Adjacent documents accurately preserve own fresh-key recovery/public command/contact retry/actual remote hang/drop gates. Canonical39/39 and normal lane untouched; no external contact or new product approval. Accessibility WAIVED, never PASS. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
