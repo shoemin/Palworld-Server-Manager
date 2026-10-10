@@ -8,12 +8,12 @@ namespace PalworldServerManager.Host;
 // Trusted Host-only decoded inputs. This is not a file reader, revision issuer or authorization boundary.
 internal static class SettingsContractMapping
 {
-    public static Wire.SettingsSnapshot Snapshot(ServerRef server, Guid revision,
+    public static Wire.SettingsSnapshot Snapshot(ServerRef server, long revision,
         IReadOnlyDictionary<string, string> configured, IReadOnlyDictionary<string, string> installationDefaults)
     {
         ArgumentNullException.ThrowIfNull(server);
         var active = Copy(configured); var defaults = Copy(installationDefaults);
-        var result = new Wire.SettingsSnapshot { Server = server.ToWire(), Revision = revision.ToString("D") };
+        var result = new Wire.SettingsSnapshot { Server = server.ToWire(), Revision = revision.ToString(CultureInfo.InvariantCulture) };
         foreach (var key in active.Keys.Union(defaults.Keys, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase))
         {
             var definition = PalworldSettingCatalog.Resolve(key);

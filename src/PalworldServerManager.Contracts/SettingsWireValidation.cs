@@ -11,7 +11,7 @@ public static class SettingsWireValidation
     public static bool IsValid(Wire.SettingsSnapshot? snapshot)
     {
         if (snapshot?.Server is null || !Id(snapshot.Server.AuthoritativeHostId) ||
-            !Id(snapshot.Server.ServerProfileId) || !Id(snapshot.Revision) || snapshot.Entries.Count > MaximumEntries) return false;
+            !Id(snapshot.Server.ServerProfileId) || !Revision(snapshot.Revision) || snapshot.Entries.Count > MaximumEntries) return false;
         var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         long characters = 0;
         foreach (var entry in snapshot.Entries)
@@ -34,6 +34,9 @@ public static class SettingsWireValidation
     public static bool IsValidKey(string? value) => value is { Length: > 0 and <= 256 } &&
         char.IsLetter(value[0]) && value.All(c => char.IsLetterOrDigit(c) || c is '_' or '.' or '-');
     private static bool Id(string value) => Guid.TryParseExact(value, "D", out var id) && id != Guid.Empty;
+    private static bool Revision(string value) => value.Length is > 0 and <= 19 &&
+        long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var revision) && revision >= 0 &&
+        revision.ToString(CultureInfo.InvariantCulture) == value;
     private static bool Text(string value, int maximum) => value.Length <= maximum && WellFormed(value);
     private static bool WellFormed(string value)
     {

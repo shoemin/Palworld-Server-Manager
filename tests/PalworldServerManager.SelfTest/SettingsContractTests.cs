@@ -11,7 +11,7 @@ internal static class SettingsContractTests
     private static readonly ServerRef Server = new(new HostId(Guid.NewGuid()), Guid.NewGuid());
     private static Dictionary<string,string> Values(params (string Key,string Value)[] values) => values.ToDictionary(v=>v.Key,v=>v.Value);
     private static Wire.SettingsSnapshot Map(Dictionary<string,string> values, Dictionary<string,string>? defaults = null) =>
-        SettingsContractMapping.Snapshot(Server, Guid.NewGuid(), values, defaults ?? new());
+        SettingsContractMapping.Snapshot(Server, 42, values, defaults ?? new());
     private static void Check(bool value) { if (!value) throw new Exception("Settings contract assertion failed."); }
     public static Task KindsAndAbsentMetadata()
     {
@@ -101,7 +101,14 @@ internal static class SettingsContractTests
         Check(!SettingsWireValidation.IsValid(valid));
         var a=Map(Values(("ServerName","x")));var b=Map(Values(("ServerName","x")));b.Server.AuthoritativeHostId=Guid.NewGuid().ToString("D");
         Check(ServerRef.FromWire(a.Server)!=ServerRef.FromWire(b.Server));
-        try{SettingsContractMapping.Snapshot(Server,Guid.Empty,new Dictionary<string,string>(),new Dictionary<string,string>());throw new Exception("Expected revision refusal.");}catch(InvalidDataException){}
+        foreach(var revision in new[]{0L,42,long.MaxValue})
+        {
+            var snapshot=SettingsContractMapping.Snapshot(Server,revision,new Dictionary<string,string>(),new Dictionary<string,string>());
+            Check(SettingsWireValidation.IsValid(snapshot) && snapshot.Revision==revision.ToString(CultureInfo.InvariantCulture));
+        }
+        foreach(var revision in new[]{"","-1","+1","01"," 1","1.0","9223372036854775808",Guid.NewGuid().ToString("D")})
+        {var snapshot=valid.Clone();snapshot.Revision=revision;Check(!SettingsWireValidation.IsValid(snapshot));}
+        try{SettingsContractMapping.Snapshot(Server,-1,new Dictionary<string,string>(),new Dictionary<string,string>());throw new Exception("Expected revision refusal.");}catch(InvalidDataException){}
         return Task.CompletedTask;
     }
 }

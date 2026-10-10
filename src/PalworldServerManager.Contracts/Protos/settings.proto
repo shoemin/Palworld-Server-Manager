@@ -67,7 +67,8 @@ message SettingsEntry {
 }
 message SettingsSnapshot {
   ServerRef server = 1;
-  // Opaque authoritative version, never a public hash of password-bearing bytes.
+  // Canonical invariant decimal RevisionId (nonnegative int64), increasing at the
+  // authoritative store. Clients compare/return it unchanged; never a content hash.
   string revision = 2;
   repeated SettingsEntry entries = 3;
 }
