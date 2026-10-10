@@ -24,13 +24,13 @@ internal static class SemanticSettingCatalogTests
     }
     public static Task UnknownAndUnclassifiedAreNotGuessed()
     {
-        foreach(var key in new[]{"bFutureSecret","FutureRate","UnknownPath","BaseCampMaxNum","RandomizerType"})
+        foreach(var key in new[]{"bFutureSecret","FutureRate","UnknownPath","RandomizerSeed","AllowConnectPlatform"})
         {
             var definition=PalworldSettingCatalog.Resolve(key);
             Check(definition.EditorKind==PalworldSettingEditorKind.Raw&&!definition.SupportsSemanticEdit&&definition.Unit is null&&definition.Choices.Count==0&&definition.IsSecret is null);
             Check(PalworldSettingCatalog.Validate(key,"anything").Code==SettingValidationCode.Unsupported);
         }
-        Check(!PalworldSettingCatalog.Resolve("bFutureSecret").IsKnown&&PalworldSettingCatalog.Resolve("BaseCampMaxNum").IsKnown);
+        Check(!PalworldSettingCatalog.Resolve("bFutureSecret").IsKnown&&PalworldSettingCatalog.Resolve("RandomizerSeed").IsKnown);
         var compound=PalworldSettingCatalog.Resolve("CrossplayPlatforms");
         Check(!compound.SupportsSemanticEdit&&compound.Choices.Count==0&&PalworldSettingCatalog.Validate(compound.Key,"(FuturePlatform)").Code==SettingValidationCode.Unsupported);
         return Task.CompletedTask;
