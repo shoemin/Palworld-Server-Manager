@@ -24,6 +24,20 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--local-trust-network-probe"])
+    {
+        await LocalOwnerPairingRpcTests.TrustNetworkFeaturesAndClosedProfiles();
+        await LocalOwnerPairingRpcTests.TrustNetworkDeniesBeforeOutboundContact();
+        await LocalOwnerPairingRpcTests.TrustNetworkOwnerPreparesActualReciprocalUnpair();
+        await LocalOwnerPairingRpcTests.TrustNetworkDelegatedPreparationAndOfflineRevocation();
+        await LocalOwnerPairingRpcTests.TrustNetworkInputAndCurrentIdentityRefusals();
+        await LocalOwnerPairingRpcTests.TrustNetworkActualIndependentRecoveryAndNoPending();
+        await LocalOwnerPairingRpcTests.TrustNetworkLatePreparationAuthorityCancels();
+        await LocalOwnerPairingRpcTests.TrustNetworkLateOwnerStopsRecoveryFollowup();
+        await LocalOwnerPairingRpcTests.TrustNetworkCancellationAndForeignGeneration();
+        await LocalOwnerPairingRpcTests.TrustNetworkFailedContactKeepsOriginalApproval();
+        Console.WriteLine("PASS ten local trust network action scenarios."); return 0;
+    }
     if (args is ["--local-peer-replacement-probe"])
     {
         await LocalPeerTrustRpcTests.ReplacementFeatureAndIdentityBoundaries();
@@ -889,6 +903,17 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Local trust network TrustNetworkFeaturesAndClosedProfiles", LocalOwnerPairingRpcTests.TrustNetworkFeaturesAndClosedProfiles),
+    ("Local trust network TrustNetworkDeniesBeforeOutboundContact", LocalOwnerPairingRpcTests.TrustNetworkDeniesBeforeOutboundContact),
+    ("Local trust network TrustNetworkOwnerPreparesActualReciprocalUnpair", LocalOwnerPairingRpcTests.TrustNetworkOwnerPreparesActualReciprocalUnpair),
+    ("Local trust network TrustNetworkDelegatedPreparationAndOfflineRevocation", LocalOwnerPairingRpcTests.TrustNetworkDelegatedPreparationAndOfflineRevocation),
+    ("Local trust network TrustNetworkInputAndCurrentIdentityRefusals", LocalOwnerPairingRpcTests.TrustNetworkInputAndCurrentIdentityRefusals),
+    ("Local trust network TrustNetworkActualIndependentRecoveryAndNoPending", LocalOwnerPairingRpcTests.TrustNetworkActualIndependentRecoveryAndNoPending),
+    ("Local trust network TrustNetworkLatePreparationAuthorityCancels", LocalOwnerPairingRpcTests.TrustNetworkLatePreparationAuthorityCancels),
+    ("Local trust network TrustNetworkLateOwnerStopsRecoveryFollowup", LocalOwnerPairingRpcTests.TrustNetworkLateOwnerStopsRecoveryFollowup),
+    ("Local trust network TrustNetworkCancellationAndForeignGeneration", LocalOwnerPairingRpcTests.TrustNetworkCancellationAndForeignGeneration),
+    ("Local trust network TrustNetworkFailedContactKeepsOriginalApproval", LocalOwnerPairingRpcTests.TrustNetworkFailedContactKeepsOriginalApproval),
+
     ("Failed generation audit cleanup prevents cutover and every replacement", HostGenerationTransitionTests.AuditCleanupFailurePreventsEveryReplacement),
     ("Host transitions perform real cutover New TLS and peer receipt", HostGenerationTransitionTests.ActualCutoverNewTlsAndReceipt),
     ("Host transition preflight refuses without disrupting service", HostGenerationTransitionTests.PreflightRefusalLeavesGenerationServing),
