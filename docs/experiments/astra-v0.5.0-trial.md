@@ -6754,3 +6754,25 @@ Expected changes: additive Core Settings document, self-tests/registration, comp
 ### #47b — Review A finding and correction
 
 A1: independent probe against5501ef87fda719b3d61d6c052dea05bfeb1bd178 reproduced a same-offset edit collision: source `(A=)` with explicit A=2 and added B=3 became A empty/B=32. The original seven groups did not detect this. Corrected by emitting source spans in ascending order with stable replacement-before-addition ordering, rather than applying reversed insertions. This also avoids repeated full-document moves. Added a dedicated regression group for both request orders, empty/whitespace values and trailing comment preservation. Eight groups pass in a separate build that does not touch active full-suite binaries. Initial full/CI still running against the superseded executable; corrected full/CI and renewed all40/A/B are mandatory. Updated prior catalog documentation to link the now implemented document component. Two implementation/correction rounds planned,273 cumulative cycles; no accepted escape.
+
+### #47b — renewed clean Review A
+
+Reviewed full corrected diff against71ecc821c75187834e6aed30151476fa27d13bde at executable51a1fbbab1b2aa87939b7db445c8401522014226: all six files, including legacy-parser composition, immutable source/span lifetime, bounds, complete edit validation, ordered emission, all eight test groups and registration, both component pages and ledger. A1 empty-final-value/addition collision is corrected; no further finding. Independent64 multi-edit combinations also pass. Input refuses without mutating the original; unsupported grammar never normalizes; duplicate aliases, quote/delimiter/sibling/section/comment injection, absent values, large and deeply nested input are covered. Original parser/schema/App/LAN remain byte-equivalent to frozen baseline. No source contains new persistence, authority or client dependency paths. Stale references updated to distinguish the implemented text model from pending file/Host APIs.
+
+Corrected local724/724, eight focused groups,zero-warning build,UI,Windows SDK and strict Docs PASS. Initial723/723 is superseded, not final evidence. Corrected candidate Docs38093062495 PASS; native job114333277258 actual Rust2/native16/all genuine ceremonies inspected. CI38093060954 ordinary/Windows completion and actual logs, fresh post-PR B, exact final Docs/live head/base gates remain mandatory. Two rounds,A1 resolved,273 cumulative cycles planned; no accepted escape. Bounded preservation/immutability/refusal criteria PASS; whole47 Host/revision/stopped-state/recovery/encoding/catalog acceptance remains outstanding. No pending owner decision.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive Core document composes unchanged legacy parser/model; frozen App/LAN and legacy config files have no diff. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure in-memory immutable transformation; no filesystem, database, process, executor or authoritative writer. Host file IO remains subsequent work. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No project references, client APIs, credentials or transport changes. Raw document is not a client DTO. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identities, cross-Host references, rotation or recovery protocols touched. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/bootstrap/Owner/session changes; document editing supplies no authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote admission/trust paths changed; later reads/saves retain both independently checked permission ceilings. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/preset/default/creator writer; approved six creator permissions/limits unchanged. Key aliases cannot inject sibling setting changes. | PASS |
+| PROTO-001 | No wire surface/feature/enum changes. Unsupported syntax refuses instead of normalization; original model semantics are cross-checked before use. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No executable save route or durable-resource write. Revisions/stopped-state/lock/recovery remain required; pure transformation does not bypass admission. Original immutable document survives refusal. | PASS |
+| SEC-001 | Constant error messages and ordinary object string representation omit values. No IO/logging/default/DTO projection; raw model stays trusted Host data. Aggregate input/output bounded; serialized replacements cannot escape into sibling/section/comment mutations. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS branching, interactive shell, Linux or release work. BCL-only Core seam and accepted platform composition remain unchanged. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
