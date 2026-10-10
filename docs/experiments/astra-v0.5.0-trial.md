@@ -6140,3 +6140,29 @@ Stale search refreshed current authorization/unpair/replacement and protocol lin
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28u / PR177 — Review B clean
+
+Separate fresh post-PR review of exact head292cc7b06a80120c81497f150cfbedab1b2f93ec, executablebb3d02270eb68fd57603b57316007a6a48bd4b5c, base513fa36c2851780ca8816759f7b3c0104015fa68. Live PR open/base/head and all24-file inventory match local; diff424 insertions/14 deletions. Reviewed complete source/test/protobuf/document/ledger changes and immutable descriptor evidence, all40 registry, and canonical revocation/denial-audit interactions. Executable unchanged from the fully tested candidate.
+
+Fresh adverse walkthrough: explicit capability cannot bypass native user/current principal or be substituted by an application version; wrong runtime refuses before callback. Repository page uses immediate transaction, validates bounded public rows, reads the sentinel without returning it, and carries a continuation only when needed. No multi-page snapshot claim. Revoke rechecks exact policy/incarnation and current actual actor; concurrent responses cannot both mutate. Audit failure gives constant Internal and no committed effect; lost client reply cannot imply remote delivery. Canonical writer still checks complete expected grants, trust, candidates, completion rows, credential and mandatory audit before commit. Revoking the source of the caller's own delegated permission remains intentionally valid after the authorized pre-state, not a false final-permission requirement. No new product defect found; B0.
+
+Local zero-warning build, ten focused groups,671/671 ordinary,native16/all genuine ceremonies,UI/SDK/strict Docs PASS. CI38080490190 native job114296213508 and Windows job114296213398 PASS with actual logs inspected: five recovery-process fault cases at four service starts plus genuine pairing/service/multi-user/shipped binaries and unique service/group/users/profiles/files cleanup. Ordinary CI job114296213542 remains pending; all-three completion/logs and final exact Docs/base/head gates required before merge. Candidate Docs38080491884 PASS. No executable edit during review.
+
+One pre-A fixture correction,A0/B0,254 cumulative cycles on acceptance; all nine prior accepted escapes corrected, none new. Remaining public initiation/remote route/unpair-process qualifications explicitly retained, no physical/release equivalence. Creator six/limits approved; accessibility WAIVED never PASS. No new product approval/external reviewer/contact. Prior optional local probe cleanup policy hold remains; no workaround. Canonical/normal/main/Windows-parity/Linux gates unchanged.
+
+| Invariants | Fresh Review B evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,MIG-001,LINUX-001 | Exact PR inventory matches all24 local changed files; dependency graph, frozen application and platform gate remain unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Traced actual RPC to runtime-owned session to short-lived facade to single immediate Host transaction. No client SQL, nested Invoke or outbound work within SQL. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | New wire fields hold only requested public IDs/versions; no actor/key/Owner or remote machine credential. Native local transport fixtures exercise real caller authentication. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Read joins exact peer incarnation and uses exact Host capability. Mutation rejects self/missing/stale identity; unrelated server/peer root assertions preserve qualified scopes. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Pending pins remain descriptive and canonical writer clears revoked staged state. No path from page/capability to replacement approval or old-grant restoration. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Walked fresh native/signature identity and repeated repository proof. Closed/uninitialized/foreign runtime/changed principal refuse. No first-connection ownership or Owner mutation. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003 | Pairing never grants inspection authority. Synchronous revoke completes independently of prepared best-effort notifier. Local commit response and later reciprocal delivery remain distinct. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Reviewed existing writer final grant/trust/pending/completion/credential/audit checks, including intentional caller delegated-permission loss. No new root/default/creator authority path. | PASS |
+| PROTO-001,SEC-001 | Wire descriptor history remains additive, required feature checked within original session. Page plus sentinel bounded; malformed GUID/limit/status fail closed; constant errors suppress injected canary. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001,PLATFORM-001,PLATFORM-002 | Stale snapshot cannot authorize commit; rollback and concurrent winner covered. No background business operation or UI/platform seam change. Cancellation and disposed facade checks preserve original lifetime. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
