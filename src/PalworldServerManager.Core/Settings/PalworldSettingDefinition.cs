@@ -19,7 +19,9 @@ public sealed class PalworldSettingDefinition
     public string Description{get;}
     public PalworldSettingEditorKind EditorKind{get;}
     public bool IsKnown{get;}
-    public bool IsSecret=>EditorKind==PalworldSettingEditorKind.Password;
+    // Missing classification cannot become permission for a later DTO mapper to
+    // expose a future secret through a raw-value presentation.
+    public bool? IsSecret=>EditorKind==PalworldSettingEditorKind.Raw?null:EditorKind==PalworldSettingEditorKind.Password;
     public bool SupportsSemanticEdit=>EditorKind is not (PalworldSettingEditorKind.Raw or PalworldSettingEditorKind.Compound);
     public string? Unit{get;}
     public IReadOnlyList<string> Choices{get;}

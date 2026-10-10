@@ -27,7 +27,7 @@ internal static class SemanticSettingCatalogTests
         foreach(var key in new[]{"bFutureSecret","FutureRate","UnknownPath","BaseCampMaxNum","RandomizerType"})
         {
             var definition=PalworldSettingCatalog.Resolve(key);
-            Check(definition.EditorKind==PalworldSettingEditorKind.Raw&&!definition.SupportsSemanticEdit&&definition.Unit is null&&definition.Choices.Count==0);
+            Check(definition.EditorKind==PalworldSettingEditorKind.Raw&&!definition.SupportsSemanticEdit&&definition.Unit is null&&definition.Choices.Count==0&&definition.IsSecret is null);
             Check(PalworldSettingCatalog.Validate(key,"anything").Code==SettingValidationCode.Unsupported);
         }
         Check(!PalworldSettingCatalog.Resolve("bFutureSecret").IsKnown&&PalworldSettingCatalog.Resolve("BaseCampMaxNum").IsKnown);
@@ -66,9 +66,10 @@ internal static class SemanticSettingCatalogTests
         foreach(var key in new[]{"AdminPassword","ServerPassword"})foreach(var value in new string?[]{null,"","private-test-value"})
         {
             var definition=PalworldSettingCatalog.Resolve(key);var result=PalworldSettingCatalog.Validate(key,value);
-            Check(definition.IsSecret&&definition.DefaultValue is null&&result.Code==SettingValidationCode.ExplicitSecretActionRequired);
+            Check(definition.IsSecret==true&&definition.DefaultValue is null&&result.Code==SettingValidationCode.ExplicitSecretActionRequired);
             Check(!result.ToString().Contains("private-test-value",StringComparison.Ordinal));
         }
+        Check(PalworldSettingCatalog.Resolve("ExpRate").IsSecret==false);
         var invalid=PalworldSettingCatalog.Validate("ExpRate","private-test-value");
         Check(!invalid.ToString().Contains("private-test-value",StringComparison.Ordinal));return Task.CompletedTask;
     }
