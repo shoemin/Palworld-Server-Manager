@@ -42,10 +42,10 @@ internal static class SemanticSettingCatalogTests
         {
             CultureInfo.CurrentCulture=CultureInfo.GetCultureInfo("fr-FR");
             foreach(var value in new[]{"1.25","-3","1e3","+2.0"})Check(PalworldSettingCatalog.Validate("ExpRate",value).IsValid);
-            foreach(var value in new string?[]{null,"","two","1,25","NaN","Infinity","1e999"," 2","2 "})Check(PalworldSettingCatalog.Validate("ExpRate",value).Code==SettingValidationCode.FiniteNumberRequired);
+            foreach(var value in new string?[]{null,"","two","1,25","NaN","Infinity","1e999"," 2","2 ","1\0","1\0\0","1\n"})Check(PalworldSettingCatalog.Validate("ExpRate",value).Code==SettingValidationCode.FiniteNumberRequired);
             Check(PalworldSettingCatalog.Validate("ServerPlayerMaxNum","999999999999999999999999999999").IsValid);
             Check(PalworldSettingCatalog.Validate("ServerPlayerMaxNum","-3").IsValid); // No invented domain minimum.
-            foreach(var value in new[]{"1.5","1e3","1,000",""})Check(PalworldSettingCatalog.Validate("ServerPlayerMaxNum",value).Code==SettingValidationCode.IntegerRequired);
+            foreach(var value in new[]{"1.5","1e3","1,000","","1\0","1\0\0","1\n"})Check(PalworldSettingCatalog.Validate("ServerPlayerMaxNum",value).Code==SettingValidationCode.IntegerRequired);
             Check(PalworldSettingCatalog.Validate("PalEggDefaultHatchingTime","0.5").IsValid);
         }
         finally{CultureInfo.CurrentCulture=old;}

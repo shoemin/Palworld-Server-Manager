@@ -49,8 +49,8 @@ public static class PalworldSettingCatalog
         return new(definition.Key,code);
     }
 
-    private static bool Integer(string? value)=>value is not null&&value.Length>0&&value.Trim()==value&&
+    private static bool Integer(string? value)=>value is not null&&value.Length>0&&value.Trim()==value&&!value.Any(char.IsControl)&&
         BigInteger.TryParse(value,NumberStyles.AllowLeadingSign,CultureInfo.InvariantCulture,out _);
-    private static bool Number(string? value)=>value is not null&&value.Length>0&&value.Trim()==value&&
+    private static bool Number(string? value)=>value is not null&&value.Length>0&&value.Trim()==value&&!value.Any(char.IsControl)&&
         double.TryParse(value,NumberStyles.AllowLeadingSign|NumberStyles.AllowDecimalPoint|NumberStyles.AllowExponent,CultureInfo.InvariantCulture,out var number)&&double.IsFinite(number);
 }

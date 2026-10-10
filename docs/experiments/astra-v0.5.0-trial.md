@@ -6684,3 +6684,7 @@ One review-only defect corrected: initial false sensitivity for unclassified key
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration or OS/runtime/UI behavior; Core stays BCL-only, CI permits47 native qualification without altering main eligibility. Windows SDK/UI/full checks retain scope. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47a / PR184 — fresh Review B finding
+
+Fresh complete7-file review at4f80d833aedf2388bf7a1d8ba55a82cdbf8208dd checked metadata, culture/representation edge cases, absence semantics, immutable arrays, secret presentation and all40. An independent isolated probe proved .NET numeric parsers return success for a trailing NUL despite the existing trim/invariant checks. Thus malformed semantic numeric input could receive Valid. Added explicit control-character refusal to both integer and finite-number paths, plus single/double-NUL and newline regressions for each. This is B1, found only by fresh post-PR review/probe, not an accepted escape. There is no live settings endpoint. Previous A evidence/head8f149f6 and CI38091695609 remain superseded for final acceptance. Repeat affected/full validation, renewed A/all40 and fresh B on this same PR are mandatory. Three total implementation/correction rounds,planned271 cumulative cycles; no owner decision.
