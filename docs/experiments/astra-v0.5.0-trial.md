@@ -6240,3 +6240,11 @@ Current docs distinguish new Owner inspection/approval from canonical historical
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28v / PR178 — accepted protected local Owner replacement decisions
+
+2026-10-10. PR178 merged only into experiment/astra-v0.5.0 at 3cef6b3ed915e3336d281a5282aa5f6c7ddd0adf; final head6a704ab32211d2310b0ce30d39446627eaeec85e, executabledb4e3fabe8f48d541f44ae3c3f8ec9f5265466d8. All-three CI38081681869, candidate Docs38081683577 and exact final Docs38082019503 PASS. Actual ordinary job114299725459 confirms681/681/UI; native job114299725115 confirms Rust2/native16/all genuine ceremonies; Windows job114299725294 confirms required service/multi-user/shipped binary qualification, five recovery-process fault cases at four starts and unique service/group/users/profiles/files cleanup. Live final base/head/clean/executable-equivalence gate PASS.
+
+Complete diff32 files404 insertions/24 deletions. Local zero-warning build,ten focused groups,681/681 ordinary,native16/all genuine ceremonies,UI/SDK/strict Docs PASS. Two pre-A test fixture corrections (successor-enrollment setup identity; separate default-grant audit count), A0/B0, no production correction or new accepted escape. Accepted118 experimental PRs61–178,13 canonical children SHADOW DONE,681 ordinary tests,256 cumulative correction/verification cycles; nine prior accepted escapes corrected. Current Owner-only inspection/approval is now public through the protected local boundary. Parent28 remains IN PROGRESS for public recovery initiation, online unpair preparation, dual-authority remote administration routing and unpair-specific actual receiving-process faults.
+
+Creator six/limits approved; accessibility WAIVED never PASS. No new product approval or outside reviewer/contact. Prior optional local probe cleanup remains blocked by automatic approval review, with no workaround or new local privileged PASS. Disposable CI cleanup independently passed. Canonical/normal/main/physical/Palworld/parity/Linux/release acceptance unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
