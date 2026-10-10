@@ -6776,3 +6776,25 @@ Corrected local724/724, eight focused groups,zero-warning build,UI,Windows SDK a
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS branching, interactive shell, Linux or release work. BCL-only Core seam and accepted platform composition remain unchanged. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47b / PR185 — fresh final Review B
+
+Freshly inspected exact pushed PR head55c99bac96e236bff91501105cbb36b84916b6e8 against base71ecc821c75187834e6aed30151476fa27d13bde, all six changed files and the full current-unit ledger. Re-evaluated structural scanning vs legacy semantic equality, same-offset empty edits, alias/duplicate selection, bounded aggregate inputs, immutable ownership, exception/value disclosure and every test registration. Reran independent64 combinations after PR creation: PASS. Ordered source emission preserves both replacement and addition regardless of request enumeration; no overlapping source ranges or partially mutated original can escape. Scope/acceptance documentation distinguishes character preservation from unimplemented file encoding and authoritative save/recovery. No new finding; B0, A1 resolved, two rounds/273 cumulative cycles, no accepted escape.
+
+Local724/724 plus focused8/build/UI/SDK/strict Docs PASS; actual native and Windows service logs inspected, including all four service starts and cleanup. Final ordinary CI completion/log inspection and exact final-head Docs still gate merge. Source-equivalence from executable51a1fbbab1b2aa87939b7db445c8401522014226 to this reviewed head is empty. Renewed all40 audit below; no owner decision or field-evidence claim is manufactured. Whole47 remains IN PROGRESS.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive Core document composes unchanged legacy parser/model; frozen App/LAN and legacy config files have no diff. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure in-memory immutable transformation; no filesystem, database, process, executor or authoritative writer. Host file IO remains subsequent work. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No project references, client APIs, credentials or transport changes. Raw document is not a client DTO. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identities, cross-Host references, rotation or recovery protocols touched. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/bootstrap/Owner/session changes; document editing supplies no authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote admission/trust paths changed; later reads/saves retain both independently checked permission ceilings. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/preset/default/creator writer; approved six creator permissions/limits unchanged. Key aliases cannot inject sibling setting changes. | PASS |
+| PROTO-001 | No wire surface/feature/enum changes. Unsupported syntax refuses instead of normalization; original model semantics are cross-checked before use. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No executable save route or durable-resource write. Revisions/stopped-state/lock/recovery remain required; pure transformation does not bypass admission. Original immutable document survives refusal. | PASS |
+| SEC-001 | Constant error messages and ordinary object string representation omit values. No IO/logging/default/DTO projection; raw model stays trusted Host data. Aggregate input/output bounded; serialized replacements cannot escape into sibling/section/comment mutations. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS branching, interactive shell, Linux or release work. BCL-only Core seam and accepted platform composition remain unchanged. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
