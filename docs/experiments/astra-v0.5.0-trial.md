@@ -6492,3 +6492,27 @@ Current docs distinguish receiving RPC from canonical persistence and remaining 
 | PLATFORM-001,PLATFORM-002 | Existing native Windows TLS composition; no new OS branch/service UI. Actual UI/SDK/native regressions pass without physical/parity claims. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28y / PR181 — fresh Review B
+
+Post-PR review atf898e8745408b5bb929934828a825efa90e91a98, base2588091a85a9fb2abef27036465423a223ff7d06, executable0d379cd82f3b46d41a68a1fcf4a84257e49a65e9. Full21-file local/PR inventory and complete357-insertion/14-deletion diff reviewed; clean and executable-equivalent. All40 fresh matrix below. No external reviewer/comment surfaces read.
+
+Counterexamples checked afresh: foreign runtime/recipient, unnegotiated or recovery-only connection, old minor with explicit feature, request feature removed before observation, canonical native negotiation promotion independent of later denial, changed local/peer fingerprint and incarnation, target stale revision, self-revoke tearing down its own grant, subsequent same-key artificial restoration, Owner UUID as target, oversized cursor/page, corrupt public pin, audit deletion and cancellation/escaped facade. Feature21 is required inside the original owned session before ordinary request authentication. The peer's actual immutable proof and current policy are still required by canonical read/write boundaries. New service supplies only fixed methods; no wire actor or post-write exception selector. Shared projection preserves local writer behavior; request target is checked against runtime Host. Row/reply bounds and constant errors prevent unbounded/private diagnostics. Native negotiation's independent security observation is accurately labeled, not overclaimed as read-only. Receiving self-revoke may return its exact committed result but does not permit the next ordinary call.
+
+Corrected local701/701,focused9,zero-warning build,native16/all genuine ceremonies,UI/SDK/strict Docs PASS. Candidate Docs38089109757 PASS. Completed native job114321696584 actual logs inspected: Rust2/native16/genuine repair/own-key recovery/first-contact and cleanup PASS. CI38089108143 ordinary/service jobs and actual logs plus exact final Docs/live gate remain mandatory before merge. Four correction rounds,A0/B0,planned265 cumulative cycles. No new accepted escape. Current peer1.15/local1.17 and historical1.14 snapshots remain distinct; originating local-user route remains next component. No owner decision/external review/contact; creator six/limits approved, accessibility WAIVED never PASS, prior local cleanup policy hold unchanged without workaround. Canonical/main/normal/physical/parity/Linux/release unchanged.
+
+| Invariants | Fresh Review B evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,MIG-001,LINUX-001 | Complete21-file PR/local inventory; v0.5 only, no frozen app/LAN/migration/Linux changes. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Original Host canonical writer/facade; shared read has same transaction and final guards, no additional state writer or network in SQL. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Receiving-only fixed service; no client key/dependency/direct machine route. Next sender must preserve ordinary protected local channel. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Exact destination semantic Host and peer ID; canonical machine capability matches receiver. Immutable original local/remote pins/incarnation remain trusted connection facts. No ServerRef fabrication or authority type conversion. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Request missing feature cannot call ordinary observation. Native normal negotiation still independently promotes legitimate pending key; mutation stale after observation refuses. Old original session fails after revoke/new incarnation. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/bootstrap/Owner writer added. Real RPC selected-peer/self cases preserve Owner; Owner ID cannot identify a trust row or select any exception. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003 | Pairing is not permission, machine ceiling independently checked and recovery/PeerBound denied. Receiving commit authoritative without reciprocal cooperation. Local user route explicitly still required; no cross-Host atomicity claim. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Existing canonical exact forest/default/creator limits; real RPC invalidates root and descendant while unrelated root survives. Audit actor is actual peer. | PASS |
+| PROTO-001,SEC-001 | Explicit21/peer1.15, normal/recovery feature separation, older-minor test, full immutable history.16-row/16KiB/public fields only, malformed target/cursor/revision denied, corrupted data has constant Internal. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Revision/incarnation checked at canonical commit with late audit rollback. Self-revoke only prior exact tombstone exception; original facade thread/lifetime/cancellation retained, no durable operation or queue added. | PASS |
+| PLATFORM-001,PLATFORM-002 | Existing Windows native TLS/composition and service lifetime, no interactive Host/UI/platform branch. Actual UI/SDK/native checks; no physical/Windows parity/Linux/release claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
