@@ -6348,3 +6348,29 @@ All corrected local gates PASS: zero-warning build,682/682 ordinary,twelve nativ
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28w / PR179 — final fresh Review B clean after both corrections
+
+Reviewed exact PR179 head75d451a0d6140b898faba458859a7fef5d4fdcc3, executableb0334354e14bbc4207af5e0639ee24be51f21c8a, basec4807666abd2dd82912905062506fdc618c2a414; clean worktree and23-file PR/local inventory match. All files reviewed including the renewed A record; pre-B diff401 insertions/21 deletions. Re-inspected source/test delta after renewed A, all40 and intended certificate-admission union. Original ordinary-only query remains byte-equivalent in its effective predicate when fixed recovery flag is false; endpoint flag true adds exactly Active recovery admission within the same transaction. No operation authorization, possession proof, purpose/feature or incarnation check is removed. Eight concurrent batches retain their original success/idempotence assertions. The updater fix establishes an observable running fixture before apply, with bounded timeout and retained survival/handoff assertions; no frozen production change.
+
+Rechecked actual child fault barriers, response bound, fixed deadline and retained instance/lease; durable snapshots and native key continuity remain required. Before-receipt loss intentionally leaves remote Active, while local tombstone denies reconnect. After-receipt loss retains one receipt/audit despite Unconfirmed. No recovery-style resend queue for unpair. Twelve recovery sender groups, deterministic admission/eight batches, eight updater pairs, local682/682, zero-warning build,native16/all genuine ceremonies,UI/SDK/strict Docs PASS.
+
+Intermediate corrected CI38085890251 all-three PASS; actual jobs114312185059/114312185177/114312185260 inspected for682/UI,native2+16/all ceremonies,four unpair and five recovery cases at four starts/complete cleanup. Final executable CI38086391604 native job114313677700 actual logs already PASS; ordinary/service still pending at review. Candidate Docs38086393316 PASS. Exact final-head Docs/live-base/head/clean/executable-equivalence and all-three final actual logs remain mandatory before merge. Three rounds, renewed A0/B0,259 cycles on acceptance. Accepted escape10 is the PR167 availability race; prior nine remain corrected. Initial CI680/681 and intermediate local681/682 failures are retained, never relabeled PASS.
+
+No owner decision or external reviewer/contact. Public local network actions and dual-authority remote routing remain parent28. Creator six/limits approved; accessibility WAIVED never PASS; prior local cleanup policy hold without workaround. Canonical/normal/main/physical/parity/Linux/release unchanged.
+
+| Invariants | Final fresh Review B cross-check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,MIG-001,LINUX-001 | Live23-file PR inventory matches local; frozen v0.4 application unchanged. Updater change establishes only its existing synthetic test precondition. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Traced endpoint callback into one current Host read transaction; process fixture reads receiver only under released lease and retains authoritative ownership. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Production delta is Host listener/read predicate only; no ordinary client dependency, direct peer route or machine-key access. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Peer/Host identity and qualified scopes unchanged. Native identity continuity required on actual child restart; no grant metadata accepted from notices. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Single-snapshot union closes transient recovery-clear denial without promoting a key or clearing recovery. Existing actual-key/incarnation/replacement guards still decide each RPC. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No local authentication/enrollment change. Each unpair snapshot preserves exact unique active Owner; no remote Owner write. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003 | Checked boolean equivalence for ordinary Active, recovery Active, bound/unexpired PeerBound, invalid/Revoked. Endpoint admission grants no operation authority; peer negotiation remains restricted. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Canonical revocation/receipt and full grant regression unchanged. Fixture asserts no grants; native repair separately verifies fresh configured roots and old-lineage refusal. | PASS |
+| PROTO-001,SEC-001 | No feature/schema/wire change, no validation fallback. Fixed bounded SelfTest controls, native proof and constant product errors remain. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001,PLATFORM-001,PLATFORM-002 | Whole generation/actual child cleanup precedes native deletion; one snapshot avoids cross-read classification gap. Updater's real survival/handoff assertion remains after bounded readiness; no production operation/UI behavior changed. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
