@@ -76,14 +76,21 @@ public sealed partial class PeerTrustRepository(HostDatabase database, Guid host
     // Handshake admission only. A later RPC must additionally bind the claimed Host UUID
     // to this actual fingerprint and recheck state; a key alone is not peer authority.
     public bool RecognizesTransportFingerprint(string fingerprint)
+        =>RecognizesTransportFingerprintCore(fingerprint,false);
+    // One snapshot for the endpoint's union of ordinary and intrinsic recovery admission.
+    // Two separate reads could reject a continuously valid Active key if recovery clears
+    // between them. This is certificate admission only; each RPC still checks its purpose.
+    public bool RecognizesPeerEndpointFingerprint(string fingerprint)
+        =>RecognizesTransportFingerprintCore(fingerprint,true);
+    private bool RecognizesTransportFingerprintCore(string fingerprint,bool allowActiveRecovery)
     {
         Fingerprint(fingerprint); using var c = Open(); using var tx = c.BeginTransaction(deferred: true); RequireHost(c, tx);
         using var command = Command(c, tx, """
             SELECT t.State,p.LocalBoundPublicKeyFingerprint,p.ExpiresUtc FROM TrustedManagers t
             LEFT JOIN TrustedManagerPairings p ON p.PeerHostId=t.PeerHostId
-            WHERE t.State IN ('PeerBound','Active') AND t.PeerRecoveryRequired=0 AND
+            WHERE t.State IN ('PeerBound','Active') AND (t.PeerRecoveryRequired=0 OR ($recovery=1 AND t.State='Active')) AND
                 (t.CurrentTrustedPublicKeyFingerprint=$fp OR t.PendingTrustedPublicKeyFingerprint=$fp);
-            """, ("$fp", fingerprint));
+            """, ("$fp", fingerprint),("$recovery",allowActiveRecovery?1:0));
         using var reader = command.ExecuteReader(); var now = time.GetUtcNow();
         while (reader.Read())
             if (reader.GetString(0) == "Active" || (!reader.IsDBNull(1) && !reader.IsDBNull(2) && Date(reader.GetString(2)) > now)) return true;

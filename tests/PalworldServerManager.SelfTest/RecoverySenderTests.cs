@@ -254,6 +254,26 @@ internal static partial class RecoverySenderTests
         await Failed(call.WaitAsync(TimeSpan.FromSeconds(25))); // Production deadline, no caller cancellation.
         Check(tracked.Disposed==1&&!Confirmed(f.A)&&CountEvent(f.B,"PeerRecoveryCompletionReceived")==1);
     }
+    public static async Task EndpointAdmissionSurvivesRecoveryCompletion()
+    {
+        await using var f=new Pair();await f.Start();var receiver=f.B.State.Repository;
+        // Reproduce the former endpoint's split-snapshot interleaving deterministically:
+        // first the ordinary read rejects recovery, then a real canonical receipt clears it.
+        var ordinaryBefore=receiver.RecognizesTransportFingerprint(f.A.Pin);
+        Check(!ordinaryBefore&&receiver.RecognizesActiveRecoveryFingerprint(f.A.Pin)&&receiver.RecognizesPeerEndpointFingerprint(f.A.Pin));
+        var proof=new PeerGrantMutationActor(f.B.State.HostId,f.A.State.HostId,f.A.Pin,f.B.Pin,Incarnation(f.B,f.A));
+        Grants(f.B).ReceiveAuthenticatedRecoveryCompletion(proof,f.AApproval,f.B.Pin);
+        Check(!ordinaryBefore&&!receiver.RecognizesActiveRecoveryFingerprint(f.A.Pin)); // Old OR would return false.
+        Check(receiver.RecognizesTransportFingerprint(f.A.Pin)&&receiver.RecognizesPeerEndpointFingerprint(f.A.Pin));
+        Check(CountEvent(f.B,"PeerRecoveryCompletionReceived")==1&&!receiver.RecognizesPeerEndpointFingerprint(new string('C',64)));
+        Check(await f.Sender(f.A).ConfirmAsync(f.B.State.HostId,f.B.Address)==PeerRecoveryCompletionExchange.Confirmed);
+        Check(CountEvent(f.B,"PeerRecoveryCompletionReceived")==1&&CountEvent(f.A,"PeerRecoveryCompletionConfirmed")==1);
+        // The endpoint union still refuses Revoked and recovery-required PeerBound keys.
+        f.B.State.Execute("UPDATE TrustedManagers SET State='PeerBound',PeerRecoveryRequired=1;");
+        Check(!receiver.RecognizesPeerEndpointFingerprint(f.A.Pin));
+        f.B.State.Execute("UPDATE TrustedManagers SET State='Revoked',CurrentTrustedPublicKeyFingerprint=NULL,PeerRecoveryRequired=0;");
+        Check(!receiver.RecognizesPeerEndpointFingerprint(f.A.Pin));
+    }
     public static async Task ConcurrentNativeSendersStayIdempotent()
     {
         await using var f=new Pair();await f.Start();var sender=f.Sender(f.A);

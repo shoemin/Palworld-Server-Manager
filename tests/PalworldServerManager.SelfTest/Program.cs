@@ -99,6 +99,12 @@ if (args.Length > 0)
         await RecoverySenderTests.GenerationRecoveryRequiresConfiguredServingLifetime();
         Console.WriteLine("PASS four recovery generation scenarios."); return 0;
     }
+    if (args is ["--recovery-admission-probe"])
+    {
+        await RecoverySenderTests.EndpointAdmissionSurvivesRecoveryCompletion();
+        for(var attempt=0;attempt<8;attempt++)await RecoverySenderTests.ConcurrentNativeSendersStayIdempotent();
+        Console.WriteLine("PASS deterministic recovery admission transition and eight concurrent native sender batches."); return 0;
+    }
     if (args is ["--recovery-sender-probe"])
     {
         await RecoverySenderTests.ActualMutualCompletionAndFreshAuthority();
@@ -112,7 +118,8 @@ if (args.Length > 0)
         await RecoverySenderTests.CancellationDrainsActualNativeCallback();
         await RecoverySenderTests.ActualDeadlineDisposesHeldResponse();
         await RecoverySenderTests.ConcurrentNativeSendersStayIdempotent();
-        Console.WriteLine("PASS eleven native recovery sender scenarios."); return 0;
+        await RecoverySenderTests.EndpointAdmissionSurvivesRecoveryCompletion();
+        Console.WriteLine("PASS twelve native recovery sender scenarios."); return 0;
     }
     if (args is ["--recovery-confirmation-probe"])
     {
@@ -1175,6 +1182,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Recovery sender CancellationDrainsActualNativeCallback", RecoverySenderTests.CancellationDrainsActualNativeCallback),
     ("Recovery sender ActualDeadlineDisposesHeldResponse", RecoverySenderTests.ActualDeadlineDisposesHeldResponse),
     ("Recovery sender ConcurrentNativeSendersStayIdempotent", RecoverySenderTests.ConcurrentNativeSendersStayIdempotent),
+    ("Recovery sender EndpointAdmissionSurvivesRecoveryCompletion", RecoverySenderTests.EndpointAdmissionSurvivesRecoveryCompletion),
     ("Recovery confirmation ConfirmationChangesOnlyMarkerAndActualAudit", PeerTrustRevocationTests.ConfirmationChangesOnlyMarkerAndActualAudit),
     ("Recovery confirmation ConfirmationAbsentAndDuplicateAreReadOnly", PeerTrustRevocationTests.ConfirmationAbsentAndDuplicateAreReadOnly),
     ("Recovery confirmation ConfirmationUsesCurrentLocalKeyAfterOfflineRecovery", PeerTrustRevocationTests.ConfirmationUsesCurrentLocalKeyAfterOfflineRecovery),

@@ -6306,3 +6306,13 @@ All local required checks PASS: zero-warning build,681/681 ordinary,native16/all
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28w / PR179 — final CI finding, accepted escape10 and renewed review requirement
+
+First executable1e2108b74e6425d42d395f03a60abe7c20679a9a: CI38085100306 native and Windows service PASS. Actual Windows job114309860668 verifies all four unpair cases at all four service starts, five recovery cases at all four starts, shipped integration and complete unique service/group/users/profiles/files cleanup. Ordinary job114309860556 failed680/681: existing ConcurrentNativeSendersStayIdempotent encountered actual TLS rejection during negotiation. Local681/681 had passed. Final Docs38085675439 passed prior8dfe21b5d772995a411d8f039b76a65d1e074508; no merge occurred.
+
+Investigation found a concrete split-snapshot admission race introduced in accepted PR167 executable076841ea482d08fa0990b7030de0a0e7f2a77d65: BuildPeerApplication ORed RecognizesTransportFingerprint and RecognizesActiveRecoveryFingerprint, each opening a separate read transaction. If a canonical incoming receipt cleared recovery between them, the ordinary check first saw recovery=true and refused, then the recovery-only check saw recovery=false and refused the same continuously Active current credential. This is a fail-closed availability defect, not an authority bypass. The deterministic regression records the first ordinary result, applies the real canonical receipt, and proves the second recovery-only result false while the new combined endpoint predicate accepts before and after. Actual fresh delivery/one receipt/one confirmation, unknown/Revoked/recovery-PeerBound refusal and unchanged eight-sender assertions accompany it.
+
+Correction uses one read transaction for the endpoint union, retaining the ordinary-only predicate through the same private query with a fixed false flag. No protocol, schema, private credential, grant or RPC authorization change. Existing purpose-specific negotiation and incarnation checks remain mandatory. This is accepted escape10; prior nine corrected escapes remain recorded separately. Scope expands PR179 to include this directly observed qualification fix. Initial A/B are superseded for the corrected executable; full local/remote validation and fresh all-files/all40 A then B will be repeated. Cumulative correction/verification cycles258 on acceptance. New ordinary count682. No owner decision or weakened authentication needed.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
