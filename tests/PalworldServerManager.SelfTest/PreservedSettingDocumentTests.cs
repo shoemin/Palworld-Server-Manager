@@ -39,6 +39,17 @@ internal static class PreservedSettingDocumentTests
         Reject<FormatException>(()=>doc.WithValues(new Dictionary<string,string>(StringComparer.Ordinal){{"ExpRate","2"},{"EXPRATE","3"}}));
         Check(doc.Serialize()==text);return Task.CompletedTask;
     }
+    public static Task EmptyFinalValueAndAdditionDoNotCollide()
+    {
+        foreach(var text in new[]{Header+"(A=)",Header+"(Before=One,A=   )",Header+"(A=) ; retained\r\n"})
+        foreach(var changes in new[]{new Dictionary<string,string>{{"A","2"},{"B","3"}},new Dictionary<string,string>{{"B","3"},{"A","2"}}})
+        {
+            var original=PreservedPalworldConfigDocument.Parse(text);var changed=original.WithValues(changes);
+            Check(changed.Get("A")=="2"&&changed.Get("B")=="3"&&original.Serialize()==text);
+            Check(changed.Serialize()==text.Replace(")","2,B=3)",StringComparison.Ordinal));
+        }
+        return Task.CompletedTask;
+    }
     public static Task InjectedValuesCannotEscapeTheirEntry()
     {
         var text=Header+"(ExpRate=1,AdminPassword=\"preserved\")";var doc=PreservedPalworldConfigDocument.Parse(text);

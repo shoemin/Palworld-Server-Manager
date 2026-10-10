@@ -95,8 +95,16 @@ public sealed class PreservedPalworldConfigDocument
         if(added.Count>0)edits.Add((close,close,(entries.Count>0?",":"")+string.Join(',',added)));
         var total=(long)original.Length+edits.Sum(e=>(long)e.Value.Length-(e.End-e.Start));
         if(total>MaximumCharacters)throw Invalid();
-        var result=new StringBuilder(original);
-        foreach(var edit in edits.OrderByDescending(e=>e.Start))result.Remove(edit.Start,edit.End-edit.Start).Insert(edit.Start,edit.Value);
+        // Emit in source order. If the last value is empty, its replacement and
+        // additions share the closing offset: the replacement must precede the
+        // appended entries. Applying insertions backwards reverses that order.
+        var result=new StringBuilder((int)total);var cursor=0;
+        foreach(var edit in edits.OrderBy(e=>e.Start))
+        {
+            result.Append(original,cursor,edit.Start-cursor).Append(edit.Value);
+            cursor=edit.End;
+        }
+        result.Append(original,cursor,original.Length-cursor);
         if(result.Length>MaximumCharacters)throw Invalid();
         return Parse(result.ToString());
     }

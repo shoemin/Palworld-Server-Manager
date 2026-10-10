@@ -29,11 +29,12 @@ if (args.Length > 0)
         await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
         await PreservedSettingDocumentTests.AdditionsAndUnicodeAreExplicit();
         await PreservedSettingDocumentTests.DuplicatePreservationAndAmbiguousEditRefusal();
+        await PreservedSettingDocumentTests.EmptyFinalValueAndAdditionDoNotCollide();
         await PreservedSettingDocumentTests.InjectedValuesCannotEscapeTheirEntry();
         await PreservedSettingDocumentTests.UnsupportedSourceRefusesWithoutNormalization();
         await PreservedSettingDocumentTests.BoundsAndSnapshots();
         await PreservedSettingDocumentTests.SeededNestedPreservation();
-        Console.WriteLine("PASS seven preserved settings document groups."); return 0;
+        Console.WriteLine("PASS eight preserved settings document groups."); return 0;
     }
     if (args is ["--semantic-settings-probe"])
     {
@@ -953,6 +954,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Preserved settings ExactRoundTripAndOneValuePatch", PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch),
     ("Preserved settings AdditionsAndUnicodeAreExplicit", PreservedSettingDocumentTests.AdditionsAndUnicodeAreExplicit),
     ("Preserved settings DuplicatePreservationAndAmbiguousEditRefusal", PreservedSettingDocumentTests.DuplicatePreservationAndAmbiguousEditRefusal),
+    ("Preserved settings EmptyFinalValueAndAdditionDoNotCollide", PreservedSettingDocumentTests.EmptyFinalValueAndAdditionDoNotCollide),
     ("Preserved settings InjectedValuesCannotEscapeTheirEntry", PreservedSettingDocumentTests.InjectedValuesCannotEscapeTheirEntry),
     ("Preserved settings UnsupportedSourceRefusesWithoutNormalization", PreservedSettingDocumentTests.UnsupportedSourceRefusesWithoutNormalization),
     ("Preserved settings BoundsAndSnapshots", PreservedSettingDocumentTests.BoundsAndSnapshots),
