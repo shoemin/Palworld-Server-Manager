@@ -38,13 +38,15 @@ if (args.Length > 0)
     }
     if (args is ["--semantic-settings-probe"])
     {
+        await AdditionalSettingCatalogTests.KnownKindsAndUnits();
+        await AdditionalSettingCatalogTests.ExplicitChoicesAndUnclassifiedBoundaries();
         await SemanticSettingCatalogTests.EstablishedSemantics();
         await SemanticSettingCatalogTests.UnknownAndUnclassifiedAreNotGuessed();
         await SemanticSettingCatalogTests.InvariantNumericValidation();
         await SemanticSettingCatalogTests.ExplicitBooleanEnumAndText();
         await SemanticSettingCatalogTests.SecretErrorsNeverRetainValues();
         await SemanticSettingCatalogTests.MetadataIsImmutable();
-        Console.WriteLine("PASS six semantic settings catalog groups."); return 0;
+        Console.WriteLine("PASS eight semantic settings catalog groups."); return 0;
     }
     if (args is ["--local-remote-trust-probe"])
     {
@@ -951,6 +953,8 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Additional settings KnownKindsAndUnits", AdditionalSettingCatalogTests.KnownKindsAndUnits),
+    ("Additional settings ExplicitChoicesAndUnclassifiedBoundaries", AdditionalSettingCatalogTests.ExplicitChoicesAndUnclassifiedBoundaries),
     ("Preserved settings ExactRoundTripAndOneValuePatch", PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch),
     ("Preserved settings AdditionsAndUnicodeAreExplicit", PreservedSettingDocumentTests.AdditionsAndUnicodeAreExplicit),
     ("Preserved settings DuplicatePreservationAndAmbiguousEditRefusal", PreservedSettingDocumentTests.DuplicatePreservationAndAmbiguousEditRefusal),

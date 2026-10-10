@@ -6,7 +6,7 @@ namespace PalworldServerManager.Core.Settings;
 
 // Additive v0.5 semantics. The frozen legacy schema remains the source of known
 // names/categories/descriptions; a name or prefix alone never infers a value type.
-public static class PalworldSettingCatalog
+public static partial class PalworldSettingCatalog
 {
     public static PalworldSettingDefinition Resolve(string key)
     {
@@ -26,7 +26,7 @@ public static class PalworldSettingCatalog
             "ServerPlayerMaxNum"=>("Maximum players",PalworldSettingEditorKind.Integer,null,Array.Empty<string>()),
             "PalEggDefaultHatchingTime"=>("Huge Egg hatching time",PalworldSettingEditorKind.Duration,"hours",Array.Empty<string>()),
             "CrossplayPlatforms"=>("Crossplay platforms",PalworldSettingEditorKind.Compound,null,Array.Empty<string>()),
-            _=>(canonical,PalworldSettingEditorKind.Raw,null,Array.Empty<string>())
+            _=>Additional(canonical)
         };
         return new(canonical,display,legacy.Category,legacy.Description,true,kind,unit,choices);
     }
