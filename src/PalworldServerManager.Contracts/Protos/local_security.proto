@@ -80,6 +80,35 @@ message LocalRevokePeerReply {
   bool changed = 4;
 }
 
+// Owner-only observations. Pending does not imply currently approvable.
+message LocalPeerReplacementPageRequest { string after_replacement_id = 1; uint32 limit = 2; }
+message LocalPeerReplacementItem {
+  string replacement_id = 1;
+  string peer_host_id = 2;
+  LocalPeerTrustState expected_state = 3;
+  string expected_fingerprint = 4;
+  string proposed_fingerprint = 5;
+  string verified_utc = 6;
+  string expires_utc = 7;
+}
+message LocalPeerReplacementPageReply {
+  string authoritative_host_id = 1;
+  int64 authorization_revision = 2;
+  repeated LocalPeerReplacementItem candidates = 3;
+  string next_after_replacement_id = 4;
+}
+message LocalApprovePeerReplacementRequest { string replacement_id = 1; int64 expected_authorization_revision = 2; }
+// Only local approval truth; the peer's independent recovery obligation remains separate.
+message LocalApprovePeerReplacementReply {
+  string peer_host_id = 1;
+  string replacement_id = 2;
+  int64 authorization_revision = 3;
+  int64 incarnation = 4;
+  bool changed = 5;
+  int32 invalidated_grants = 6;
+  int32 created_default_grants = 7;
+}
+
 service LocalSecurityProtocol {
   rpc Negotiate(Handshake) returns (LocalHandshakeReply);
   rpc IssueChallenge(LocalPrincipalRequest) returns (LocalChallenge);
@@ -98,4 +127,6 @@ service LocalSecurityProtocol {
   rpc ActivatePeer(LocalActivatePeerRequest) returns (LocalActivatePeerReply);
   rpc ReadPeerTrust(LocalPeerTrustPageRequest) returns (LocalPeerTrustPageReply);
   rpc RevokePeerTrust(LocalRevokePeerRequest) returns (LocalRevokePeerReply);
+  rpc ReadPeerReplacements(LocalPeerReplacementPageRequest) returns (LocalPeerReplacementPageReply);
+  rpc ApprovePeerReplacement(LocalApprovePeerReplacementRequest) returns (LocalApprovePeerReplacementReply);
 }

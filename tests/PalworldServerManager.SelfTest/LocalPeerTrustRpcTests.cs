@@ -12,7 +12,7 @@ using LocalPeerTrustItem=PalworldServerManager.Contracts.Wire.LocalPeerTrustItem
 
 namespace PalworldServerManager.SelfTest;
 
-internal static class LocalPeerTrustRpcTests
+internal static partial class LocalPeerTrustRpcTests
 {
     private static void Check(bool value){if(!value)throw new Exception("Local peer trust RPC assertion failed.");}
     private static async Task Refused(Task call,StatusCode code)

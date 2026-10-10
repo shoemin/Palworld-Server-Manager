@@ -9,12 +9,13 @@ namespace PalworldServerManager.Host;
 public sealed partial class LocalSecurityRpcService
 {
     // Enter the owned connection exactly once; never nest Dispatch with Permissions.Invoke.
-    private async Task<T> DispatchTrust<T>(ServerCallContext context,Func<LocalPermissionCall,T> action)
+    private async Task<T> DispatchTrust<T>(ServerCallContext context,Func<LocalPermissionCall,T> action,
+        FeatureCapability feature=FeatureCapability.LocalPeerTrustManagement)
     {
         try
         {
             return await runtime.Permissions.Invoke(context.GetHttpContext(),action,context.CancellationToken,
-                FeatureCapability.LocalPeerTrustManagement).ConfigureAwait(false);
+                feature).ConfigureAwait(false);
         }
         catch(OperationCanceledException){throw new RpcException(new(StatusCode.Cancelled,"Local request canceled."));}
         catch(AuthenticationException){throw new RpcException(new(StatusCode.Unauthenticated,"Local authentication refused."));}
