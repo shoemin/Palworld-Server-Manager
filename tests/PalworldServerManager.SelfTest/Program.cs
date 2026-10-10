@@ -13,6 +13,15 @@ if (args.Length > 0)
 {
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
+    if (args is ["--recovery-process-probe", var recoveryRoot])
+    {
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException();
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        if (!new System.Security.Principal.WindowsPrincipal(identity).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator))
+            throw new UnauthorizedAccessException("Recovery process qualification requires an elevated disposable Windows harness.");
+        await WindowsRecoveryProcessQualification.Run(recoveryRoot, identity.User!, CancellationToken.None);
+        Console.WriteLine("PASS five actual recovery process scenarios."); return 0;
+    }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
     if (args is ["--recovery-contact-probe"])

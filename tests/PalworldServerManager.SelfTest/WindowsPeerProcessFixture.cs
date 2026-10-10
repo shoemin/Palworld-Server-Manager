@@ -20,7 +20,8 @@ internal static partial class WindowsPeerProcessFixture
 {
     internal const string ConfigName = "peer-process.json";
     internal sealed record Config(Guid Nonce, Guid Host, Guid Peer, Guid Owner, string Root, string Sid,
-        string? NativePath = null, string? NativeHash = null, bool PauseBeforePeerBound = false, bool PauseResponderBeforePeerBound = false)
+        string? NativePath = null, string? NativeHash = null, bool PauseBeforePeerBound = false, bool PauseResponderBeforePeerBound = false,
+        int RecoveryFault = 0)
     {
         internal string Mutex => @"Global\PSMPeerProcess-" + Host.ToString("N");
         internal string Pipe => "PSMPeerProcess" + Host.ToString("N");

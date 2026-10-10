@@ -69,6 +69,10 @@ internal sealed class HostGenerationTransitions(HostCredentialStateRepository st
         => OnCurrentAsync((generation, token) => generation.ConfirmRotationAsync(peer, address, token), ct);
     internal Task<bool> ConfirmCurrentCredentialAsync(Guid peer, Uri address, Guid rotation, CancellationToken ct = default)
         => OnCurrentAsync((generation, token) => generation.ConfirmCurrentCredentialAsync(peer, address, rotation, token), ct);
+    internal Task<PeerRecoveryCompletionExchange> ConfirmRecoveryAsync(Guid peer,Uri address,CancellationToken ct=default)
+        =>OnCurrentAsync((generation,token)=>generation.ConfirmRecoveryAsync(peer,address,token),ct);
+    internal Task<PeerRecoveryPullExchange> PullRecoveryAsync(Guid peer,Uri address,CancellationToken ct=default)
+        =>OnCurrentAsync((generation,token)=>generation.PullRecoveryAsync(peer,address,token),ct);
     internal Task<RoutineRotationPreparation> CutOverAsync(LocalPrincipalMutationActor owner, Guid rotation,
         IReadOnlyDictionary<Guid, Uri> addresses, CancellationToken ct = default) => Serialized(async token =>
     {
