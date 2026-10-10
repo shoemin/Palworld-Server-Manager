@@ -6798,3 +6798,11 @@ Local724/724 plus focused8/build/UI/SDK/strict Docs PASS; actual native and Wind
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS branching, interactive shell, Linux or release work. BCL-only Core seam and accepted platform composition remain unchanged. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47b / PR185 — accepted preserved settings document
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 atfedeb1f1d8f5ee5f12f717560e9c4545326b830b; final headf91667214222dee5e9b9fa2046a58b2c6bf62fbb, executable51a1fbbab1b2aa87939b7db445c8401522014226. Final CI38093060954 all three required jobs PASS; actual completed logs114333277258/114333277035/114333277171 inspected for native16/Rust2/all genuine ceremonies, ordinary724/724/UI/zero warnings, four Windows service starts with five recovery/four unpair process cases each and complete cleanup. Candidate Docs38093062495 and exact final Docs38093652004 PASS. Live base/head/clean/source-equivalence gates PASS. Complete diff6 files346 insertions/1 deletion. Earlier723/723 and CI38092922898 PASS are superseded and not final acceptance evidence.
+
+Local724/724,focused8,independent64 combinations,500 nested seeded cases/10000 edits,zero-warning build,UI/SDK/strict Docs PASS. Review A1 empty-final-value/addition collision corrected; renewed A and fresh B0/all40 clean. Two rounds,273 cumulative cycles; no new accepted escape, ten historical escapes corrected. Accepted125 experimental PRs61–185,fourteen canonical children SHADOW DONE. #47 remains IN PROGRESS for remaining established catalog semantics, Host DTO/read/save, file encoding, revision/stopped-state/operation recovery qualification. ViewServer/EditSettings decision and creator limits unchanged; no owner decision/external contact outstanding. Canonical/main unchanged; accessibility WAIVED never PASS; no physical/Palworld/parity/Linux/release claim.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
