@@ -16,7 +16,8 @@ namespace PalworldServerManager.Host;
 // action/atomic preset, not an arbitrary client callback or a multi-operation transaction.
 internal sealed class LocalPermissionDispatcher(LocalSecurityRpcRuntime runtime, GrantPolicyRepository repository)
 {
-    internal async Task<T> Invoke<T>(HttpContext context, Func<LocalPermissionCall,T> action, CancellationToken ct)
+    internal async Task<T> Invoke<T>(HttpContext context, Func<LocalPermissionCall,T> action, CancellationToken ct,
+        FeatureCapability requiredFeature=FeatureCapability.LocalPrincipalSecurity)
     {
         ArgumentNullException.ThrowIfNull(action); PermissionDispatchChannel.Require(context);
         var connection = context.Features.Get<LocalSecurityRpcConnection>();
@@ -26,6 +27,7 @@ internal sealed class LocalPermissionDispatcher(LocalSecurityRpcRuntime runtime,
         {
             if (session.Protocol is null) throw new InvalidOperationException("Negotiate this connection first.");
             session.Protocol.Require(FeatureCapability.LocalPrincipalSecurity);
+            session.Protocol.Require(requiredFeature);
             if (!runtime.IsInitialized()) throw new AuthenticationException("Initialized Host required.");
             using var call = new LocalPermissionCall(repository, session.Authentication.GetCurrentPrincipal().MutationActor, cancellation.Token,runtime.UnpairNotifications);
             return Task.FromResult(action(call));
@@ -83,6 +85,8 @@ internal sealed class LocalPermissionCall(GrantPolicyRepository repository, Loca
     PeerUnpairCoordinator? notifications=null) : PermissionCall(ct)
 {
     private readonly PeerUnpairCoordinator? notifier=PeerUnpairCoordinator.MatchHost(notifications,actor.HostId);
+    internal LocalPeerTrustPage ReadPeerTrust(Guid? afterPeer,int limit)
+    { Guard();return repository.ReadLocalPeerTrust(actor,afterPeer,limit,Cancellation); }
     internal long RequireHost(HostCapability capability, Guid target)
     { Guard(); return repository.RequireLocalHostCapability(actor, capability, target, Cancellation); }
     internal long RequireServer(ServerCapability capability, ServerRef target)

@@ -24,6 +24,20 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--local-peer-trust-probe"])
+    {
+        await LocalPeerTrustRpcTests.FeatureAndWireHistory();
+        await LocalPeerTrustRpcTests.OwnerRevokesExactPeerAndPreservesOthers();
+        await LocalPeerTrustRpcTests.NonOwnerNeedsExactCurrentCapability();
+        await LocalPeerTrustRpcTests.CurrentIdentityIsRechecked();
+        await LocalPeerTrustRpcTests.PagesAreBoundedCurrentObservations();
+        await LocalPeerTrustRpcTests.StaleIncarnationAndMalformedRequestsRefuse();
+        await LocalPeerTrustRpcTests.AuditFailureRollsBackAndErrorsStayBounded();
+        await LocalPeerTrustRpcTests.ConcurrentRevocationHasOneWinner();
+        await AuthenticatedPermissionDispatchTests.TrustReadRequiresOwnedSessionAndFeature();
+        await AuthenticatedPermissionDispatchTests.TrustReadCancellationAndFacadeLifetime();
+        Console.WriteLine("PASS ten local peer trust RPC/dispatch scenarios."); return 0;
+    }
     if (args is ["--recovery-contact-probe"])
     {
         await RecoveryContactCoordinatorTests.CoalescesLatestContactWithoutInlineOrAmbientWork();
@@ -1308,6 +1322,16 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Local connect exposes only authenticated semantic Host and principal identity", ClientSecurityCompositionTests.ConnectionIdentity),
     ("Ordinary client negotiation and prepared-key proof fail closed", ClientSecurityCompositionTests.NegotiationAndProofBoundaries),
     ("Host service worker releases resources and distinguishes stop from failure", HostServiceWorkerTests.Lifecycle),
+    ("Local peer trust FeatureAndWireHistory", LocalPeerTrustRpcTests.FeatureAndWireHistory),
+    ("Local peer trust OwnerRevokesExactPeerAndPreservesOthers", LocalPeerTrustRpcTests.OwnerRevokesExactPeerAndPreservesOthers),
+    ("Local peer trust NonOwnerNeedsExactCurrentCapability", LocalPeerTrustRpcTests.NonOwnerNeedsExactCurrentCapability),
+    ("Local peer trust CurrentIdentityIsRechecked", LocalPeerTrustRpcTests.CurrentIdentityIsRechecked),
+    ("Local peer trust PagesAreBoundedCurrentObservations", LocalPeerTrustRpcTests.PagesAreBoundedCurrentObservations),
+    ("Local peer trust StaleIncarnationAndMalformedRequestsRefuse", LocalPeerTrustRpcTests.StaleIncarnationAndMalformedRequestsRefuse),
+    ("Local peer trust AuditFailureRollsBackAndErrorsStayBounded", LocalPeerTrustRpcTests.AuditFailureRollsBackAndErrorsStayBounded),
+    ("Local peer trust ConcurrentRevocationHasOneWinner", LocalPeerTrustRpcTests.ConcurrentRevocationHasOneWinner),
+    ("Local peer trust TrustReadRequiresOwnedSessionAndFeature", AuthenticatedPermissionDispatchTests.TrustReadRequiresOwnedSessionAndFeature),
+    ("Local peer trust TrustReadCancellationAndFacadeLifetime", AuthenticatedPermissionDispatchTests.TrustReadCancellationAndFacadeLifetime),
     ("Production local listener ignores external hosting and endpoint configuration", LocalSecurityRpcTests.ProductionConfiguration),
     ("Local security gRPC requires TLS negotiation and intended-user bootstrap", LocalSecurityRpcTests.NegotiationAndBootstrap),
     ("Local security gRPC binds native identity nonces and Owner authorization", LocalSecurityRpcTests.AuthenticationAndAuthority),

@@ -45,6 +45,41 @@ message LocalPairingDiscoveryReply { repeated LocalDiscoveredPairingHost hosts =
 message LocalActivatePeerRequest { string peer_host_id = 1; string reachable_host = 2; uint32 peer_port = 3; }
 message LocalActivatePeerReply { PeerActivationResult result = 1; }
 
+// Current local observations, not authorization permits or remote command routes.
+enum LocalPeerTrustState {
+  LOCAL_PEER_TRUST_STATE_UNSPECIFIED = 0;
+  LOCAL_PEER_TRUST_STATE_PEER_BOUND = 1;
+  LOCAL_PEER_TRUST_STATE_ACTIVE = 2;
+  LOCAL_PEER_TRUST_STATE_REVOKED = 3;
+}
+message LocalPeerTrustPageRequest { string after_peer_host_id = 1; uint32 limit = 2; }
+message LocalPeerTrustItem {
+  string peer_host_id = 1;
+  LocalPeerTrustState state = 2;
+  int64 incarnation = 3;
+  string current_fingerprint = 4;
+  string pending_fingerprint = 5;
+  bool recovery_required = 6;
+}
+message LocalPeerTrustPageReply {
+  string authoritative_host_id = 1;
+  int64 authorization_revision = 2;
+  repeated LocalPeerTrustItem peers = 3;
+  string next_after_peer_host_id = 4;
+}
+message LocalRevokePeerRequest {
+  string peer_host_id = 1;
+  int64 expected_authorization_revision = 2;
+  int64 expected_incarnation = 3;
+}
+// Reports only the local commit. It never asserts reciprocal notification success.
+message LocalRevokePeerReply {
+  string peer_host_id = 1;
+  int64 authorization_revision = 2;
+  int64 incarnation = 3;
+  bool changed = 4;
+}
+
 service LocalSecurityProtocol {
   rpc Negotiate(Handshake) returns (LocalHandshakeReply);
   rpc IssueChallenge(LocalPrincipalRequest) returns (LocalChallenge);
@@ -61,4 +96,6 @@ service LocalSecurityProtocol {
   rpc DiscoverPairingHosts(LocalPairingDiscoveryRequest) returns (LocalPairingDiscoveryReply);
   rpc PairHost(LocalPairHostRequest) returns (LocalPairHostReply);
   rpc ActivatePeer(LocalActivatePeerRequest) returns (LocalActivatePeerReply);
+  rpc ReadPeerTrust(LocalPeerTrustPageRequest) returns (LocalPeerTrustPageReply);
+  rpc RevokePeerTrust(LocalRevokePeerRequest) returns (LocalRevokePeerReply);
 }
