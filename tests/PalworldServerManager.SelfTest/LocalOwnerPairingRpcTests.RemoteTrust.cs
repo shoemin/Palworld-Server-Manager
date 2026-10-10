@@ -114,7 +114,7 @@ internal static partial class LocalOwnerPairingRpcTests
         var host=Guid.NewGuid().ToString("D");var peer=Guid.NewGuid().ToString("D");var request=new PeerTrustPageRequest{AuthoritativeHostId=host,Limit=1};
         var page=new PeerTrustPageReply{AuthoritativeHostId=host,AuthorizationRevision=1,Peers={new PeerManagedTrustItem{PeerHostId=peer,State=PeerManagedTrustState.Active,Incarnation=1,CurrentFingerprint=new string('A',64)}},NextAfterPeerHostId=peer};
         PeerTrustAdministrationRpcClient.ValidatePage(page,request);
-        foreach(var mutate in new Action<PeerTrustPageReply>[] {p=>p.AuthoritativeHostId=peer,p=>p.AuthorizationRevision=-1,p=>p.Peers[0].State=(PeerManagedTrustState)999,p=>p.Peers[0].CurrentFingerprint="secret",p=>p.Peers[0].Incarnation=0,p=>p.Peers.Add(p.Peers[0].Clone()),p=>p.NextAfterPeerHostId=host,p=>p.Peers[0].PeerHostId=host})
+        foreach(var mutate in new Action<PeerTrustPageReply>[] {p=>p.AuthoritativeHostId=peer,p=>p.AuthorizationRevision=-1,p=>p.Peers[0].State=(PeerManagedTrustState)999,p=>p.Peers[0].CurrentFingerprint="secret",p=>p.Peers[0].Incarnation=0,p=>p.Peers.Add(p.Peers[0].Clone()),p=>p.NextAfterPeerHostId=host,p=>p.Peers[0].PeerHostId=host,p=>p.Peers[0].PeerHostId="malformed",p=>p.Peers[0].PeerHostId=Guid.Empty.ToString("D")})
         {var bad=page.Clone();mutate(bad);Reject(()=>PeerTrustAdministrationRpcClient.ValidatePage(bad,request));}
         var revoke=new PeerRevokeTrustRequest{AuthoritativeHostId=host,PeerHostId=peer,ExpectedAuthorizationRevision=2,ExpectedIncarnation=3};
         var result=new PeerRevokeTrustReply{AuthoritativeHostId=host,PeerHostId=peer,AuthorizationRevision=2,Incarnation=3,Changed=true};

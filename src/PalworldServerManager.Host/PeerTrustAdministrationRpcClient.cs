@@ -47,7 +47,7 @@ internal sealed class PeerTrustAdministrationRpcClient(PeerSecurityRpcRuntime ru
             HttpVersionPolicy=HttpVersionPolicy.RequestVersionExact,MaxReceiveMessageSize=PeerSecurityRpcService.MaximumMessageBytes,MaxSendMessageSize=PeerSecurityRpcService.MaximumMessageBytes});
         var client=new PeerSecurityProtocol.PeerSecurityProtocolClient(channel);var hello=PeerSecurityRpcRuntime.Hello(runtime.HostId);
         var reply=await client.NegotiateAsync(hello,cancellationToken:deadline.Token).ResponseAsync.ConfigureAwait(false);
-        if(reply.Host is null||PeerSecurityRpcService.Id(reply.Host.HostId)!=peer||reply.Handshake is null||reply.Handshake.Capabilities.Count>64||reply.Handshake.ProductVersion.Length>256)
+        if(reply.Host is null||Canonical(reply.Host.HostId)!=peer||reply.Handshake is null||reply.Handshake.Capabilities.Count>64||reply.Handshake.ProductVersion.Length>256)
             throw new AuthenticationException("Peer negotiation refused.");
         var protocol=NegotiatedProtocol.Negotiate(hello.Handshake,reply.Handshake);protocol.Require(FeatureCapability.PeerTrustActivation);protocol.Require(FeatureCapability.PeerTrustAdministration);
         void RequireProof()
@@ -61,7 +61,7 @@ internal sealed class PeerTrustAdministrationRpcClient(PeerSecurityRpcRuntime ru
         RequireProof();authorize(deadline.Token);validate(result);deadline.Token.ThrowIfCancellationRequested();return result;
     }
     private static Guid Canonical(string value)
-    {var id=PeerSecurityRpcService.Id(value);return id.ToString("D")==value?id:throw new AuthenticationException("Invalid peer reply.");}
+        =>Guid.TryParseExact(value,"D",out var id)&&id!=Guid.Empty&&id.ToString("D")==value?id:throw new AuthenticationException("Invalid peer reply.");
     internal static void ValidatePage(PeerTrustPageReply reply,PeerTrustPageRequest request)
     {
         if(reply is null||reply.CalculateSize()>PeerSecurityRpcService.MaximumMessageBytes||reply.AuthoritativeHostId!=request.AuthoritativeHostId||
