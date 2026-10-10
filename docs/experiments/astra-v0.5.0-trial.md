@@ -6588,3 +6588,13 @@ Current local710/710,focused9,zero-warning build,native16/all genuine ceremonies
 | PLATFORM-001,PLATFORM-002 | Existing Windows native/composition seams; UI/SDK/native validation, no interactive Host or new platform branch. Field/parity/release remains downstream. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28z / PR182 — accepted originating local-user trust administration
+
+2026-10-10. PR182 merged only into experiment/astra-v0.5.0 at9dcd658d9cf4b0fa0ee9559225ce946186f94db6; final head2d85b66c13fea59bd8b6a17c7bdede2925445c0f, executable21b6e6414fd1b5e0c4ad83edf7249f9bbdbff2f8. All-three CI38090313175,candidate Docs38090314868,exact final Docs38090781819 PASS. Actual jobs114325233507/114325233497/114325233606 inspected:710/710/UI,Rust2/native16/all genuine ceremonies,four actual unpair/five recovery cases at all four service starts,shipped service/multi-user/native qualification and complete cleanup. Live base/head/clean/executable-equivalence gates PASS.
+
+Complete diff33 files changed, 461 insertions(+), 26 deletions(-). Local zero-warning build,710/710 ordinary,focused9,native16/all genuine ceremonies,UI/SDK/strict Docs PASS. Two correction rounds (initial implementation and malformed remote reply identity classification), A0/B0/all40;267 cumulative cycles. Initial deliberately interrupted full run has no PASS claim. No new accepted escape; all ten prior accepted escapes corrected. Receiving machine authority remains independent from the originating local user. Exact canonical forest/Owner/revision/incarnation/audit/self-revoke behavior is unchanged.
+
+Accepted122 experimental PRs61–182,13 canonical children SHADOW DONE,710 ordinary tests. Parent28 remains IN PROGRESS for aggregate acceptance. No owner decision/external review/contact. Creator six/limits approved; accessibility WAIVED never PASS. Prior optional local cleanup policy hold remains without workaround or local privileged PASS; disposable CI cleanup independently passes. Canonical/main/normal/physical/Palworld/parity/Linux/release unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
