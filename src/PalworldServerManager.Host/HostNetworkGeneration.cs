@@ -29,6 +29,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
     private PeerRotationReceiptRpcClient? receipt;
     private PeerCurrentCredentialRpcClient? currentCredential;
     private PeerRecoveryCompletionRpcClient? recoveryCompletion;
+    private PeerTrustAdministrationRpcClient? trustAdministration;
     internal PeerRecoveryContactCoordinator? RecoveryContacts {get;private set;}
     private PeerUnpairConnectionFactory? unpairConnection;
     internal PeerUnpairCoordinator? UnpairNotifications {get;private set;}
@@ -89,6 +90,7 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
             status = new(runtime, transport); proposal = new(runtime, transport); receipt = new(runtime, transport); collector = new(runtime, transport);
             currentCredential = new(runtime, transport);
             recoveryCompletion = new(runtime, transport);
+            trustAdministration = new(runtime, transport);
             RecoveryContacts=new(runtime.HostId,(contact,ct)=>RunAsync(async token=>
             {
                 runtime.RequireRecoveryContact(contact,token);
@@ -185,6 +187,10 @@ internal sealed partial class HostNetworkGeneration(X509Certificate2 certificate
         => RunAsync(token => Required(receipt).ConfirmAsync(peer, address, token), ct);
     internal Task<bool> ConfirmCurrentCredentialAsync(Guid peer, Uri address, Guid rotation, CancellationToken ct = default)
         => RunAsync(token => Required(currentCredential).ConfirmAsync(peer, address, rotation, token), ct);
+    internal Task<PalworldServerManager.Contracts.Wire.PeerTrustPageReply> ReadManagedPeerTrustAsync(Guid peer,Uri address,Guid? after,int limit,Action<CancellationToken> authorize,CancellationToken ct)
+        =>RunAsync(token=>Required(trustAdministration).Read(peer,address,after,limit,authorize,token),ct);
+    internal Task<PalworldServerManager.Contracts.Wire.PeerRevokeTrustReply> RevokeManagedPeerTrustAsync(Guid peer,Uri address,Guid target,long revision,long incarnation,Action<CancellationToken> authorize,CancellationToken ct)
+        =>RunAsync(token=>Required(trustAdministration).Revoke(peer,address,target,revision,incarnation,authorize,token),ct);
     internal Task<PeerRecoveryCompletionExchange> ConfirmRecoveryAsync(Guid peer, Uri address, CancellationToken ct = default)
         => RunAsync(token => Required(recoveryCompletion).ConfirmAsync(peer, address, token), ct);
     internal Task<PeerRecoveryPullExchange> PullRecoveryAsync(Guid peer,Uri address,CancellationToken ct=default)

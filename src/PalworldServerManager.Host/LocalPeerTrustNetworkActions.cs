@@ -8,7 +8,7 @@ namespace PalworldServerManager.Host;
 internal sealed record LocalPeerRecoveryContact(PeerRecoveryCompletionExchange Sent,PeerRecoveryPullExchange Received);
 
 // Fixed trusted actions. No SQL transaction or synchronous PermissionCall spans network work.
-internal sealed class LocalPeerTrustNetworkActions(HostDatabase database,Guid host,TimeProvider? time=null)
+internal sealed partial class LocalPeerTrustNetworkActions(HostDatabase database,Guid host,TimeProvider? time=null)
 {
     private readonly GrantPolicyRepository grants=new(database,host,time);
     private readonly PeerTrustRepository peers=new(database,host,time);

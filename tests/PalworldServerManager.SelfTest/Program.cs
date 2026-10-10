@@ -24,6 +24,19 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--local-remote-trust-probe"])
+    {
+        await LocalOwnerPairingRpcTests.RemoteTrustFeatureAndIdentity();
+        await LocalOwnerPairingRpcTests.RemoteTrustBothCeilingsAndNoDeniedContact();
+        await LocalOwnerPairingRpcTests.RemoteTrustOwnerCannotBypassMachineAndExactRevoke();
+        await LocalOwnerPairingRpcTests.RemoteTrustLatePermissionPreventsCommand();
+        await LocalOwnerPairingRpcTests.RemoteTrustIndependentCommitAfterLocalChange();
+        await LocalOwnerPairingRpcTests.RemoteTrustSelfRevokeAndStaleRequests();
+        await LocalOwnerPairingRpcTests.RemoteTrustReplyValidation();
+        await LocalOwnerPairingRpcTests.RemoteTrustBoundsAndCancellation();
+        await LocalOwnerPairingRpcTests.RemoteTrustGenerationStopDrainsActualRequest();
+        Console.WriteLine("PASS nine local remote-trust route scenarios."); return 0;
+    }
     if (args is ["--peer-trust-administration-probe"])
     {
         await PeerTrustAdministrationRpcTests.FeaturesAndHistory();
@@ -916,6 +929,16 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Local remote trust RemoteTrustFeatureAndIdentity", LocalOwnerPairingRpcTests.RemoteTrustFeatureAndIdentity),
+    ("Local remote trust RemoteTrustBothCeilingsAndNoDeniedContact", LocalOwnerPairingRpcTests.RemoteTrustBothCeilingsAndNoDeniedContact),
+    ("Local remote trust RemoteTrustOwnerCannotBypassMachineAndExactRevoke", LocalOwnerPairingRpcTests.RemoteTrustOwnerCannotBypassMachineAndExactRevoke),
+    ("Local remote trust RemoteTrustLatePermissionPreventsCommand", LocalOwnerPairingRpcTests.RemoteTrustLatePermissionPreventsCommand),
+    ("Local remote trust RemoteTrustIndependentCommitAfterLocalChange", LocalOwnerPairingRpcTests.RemoteTrustIndependentCommitAfterLocalChange),
+    ("Local remote trust RemoteTrustSelfRevokeAndStaleRequests", LocalOwnerPairingRpcTests.RemoteTrustSelfRevokeAndStaleRequests),
+    ("Local remote trust RemoteTrustReplyValidation", LocalOwnerPairingRpcTests.RemoteTrustReplyValidation),
+    ("Local remote trust RemoteTrustBoundsAndCancellation", LocalOwnerPairingRpcTests.RemoteTrustBoundsAndCancellation),
+    ("Local remote trust RemoteTrustGenerationStopDrainsActualRequest", LocalOwnerPairingRpcTests.RemoteTrustGenerationStopDrainsActualRequest),
+
     ("Peer trust administration FeaturesAndHistory", PeerTrustAdministrationRpcTests.FeaturesAndHistory),
     ("Peer trust administration IndependentMachineCeiling", PeerTrustAdministrationRpcTests.IndependentMachineCeiling),
     ("Peer trust administration ExactForestAndIdempotence", PeerTrustAdministrationRpcTests.ExactForestAndIdempotence),
