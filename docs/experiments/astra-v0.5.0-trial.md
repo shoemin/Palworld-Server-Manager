@@ -6374,3 +6374,13 @@ No owner decision or external reviewer/contact. Public local network actions and
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28w / PR179 — accepted actual unpair process qualification and recovery admission correction
+
+2026-10-10. PR179 merged only into experiment/astra-v0.5.0 at 6366e3e161e398f4032ace3d0ab47310f9751f7e; final head4fbf45eda67a017cae3f724c6349ad40241fa2f1, executableb0334354e14bbc4207af5e0639ee24be51f21c8a. All-three CI38086391604, candidate Docs38086393316 and exact final Docs38086810052 PASS. Actual jobs114313677556/114313677687/114313677700 inspected:682/682/UI, Rust2/native16/all genuine ceremonies, four actual unpair cases plus five recovery cases at four service starts, shipped service/multi-user/native qualification and complete cleanup. Live final base/head/clean/executable-equivalence gate PASS.
+
+Complete diff23 files427 insertions/21 deletions. Final local zero-warning build,682/682 ordinary,twelve recovery sender groups,deterministic recovery-clear regression/eight concurrent batches,eight updater fixture pairs,native16/all genuine ceremonies,UI/SDK/strict Docs PASS. Three implementation/correction rounds, renewed A0/B0;259 cumulative cycles. Initial CI38085100306 ordinary680/681 exposed accepted escape10: PR167/076841ea482d08fa0990b7030de0a0e7f2a77d65 split-snapshot ordinary/recovery TLS admission could falsely reject a continuously Active key as recovery cleared. Fixc0832116c7bd350dbcb2791794b64d92b23cf279 uses one snapshot and retains all operation authorization. Intermediate local681/682 exposed existing updater fixture readiness omission, corrected test-only by b0334354e14bbc4207af5e0639ee24be51f21c8a. Frozen v0.4 application remains unchanged. Intermediate CI38085890251 also passed all three jobs; all failures remain recorded.
+
+Accepted119 experimental PRs61–179,13 canonical children SHADOW DONE,682 ordinary tests,259 cycles; ten identified accepted escapes now corrected. Parent28 remains IN PROGRESS for public online unpair preparation/recovery initiation and dual-authority remote administration routing. No owner decision or external review/contact. Creator six/limits approved; accessibility WAIVED never PASS. Prior optional local cleanup policy hold remains without workaround or local privileged PASS. Disposable CI cleanup independently passed. Canonical/normal/main/physical/Palworld/parity/Linux/release acceptance unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
