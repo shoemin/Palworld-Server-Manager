@@ -6282,3 +6282,27 @@ One initial implementation/verification round, A0 after review; local zero-warni
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28w / PR179 — fresh Review B clean
+
+Reviewed live PR179 headda9e54f339942db4479dd4eb947c6d1a4949c334 against basec4807666abd2dd82912905062506fdc618c2a414; all16 changed files matched local inventory, executable1e2108b74e6425d42d395f03a60abe7c20679a9a unchanged, clean worktree. Re-read full implementation and service readiness changes separately after opening PR, revisited exact canonical receipt/coordinator semantics, all40 invariants and current architecture best-effort contract. Complete pre-B diff286 insertions/14 deletions. A0/B0, no production fix, no new accepted escape; one implementation/verification round gives257 cycles only on acceptance.
+
+Adversarial follow-through: before-receipt crash must leave remote Active; after-commit crash must preserve one reciprocal receipt/audit even though sender sees Unconfirmed; actual remote hang must remain alive after its three-second client limit; positive delivery must confirm. The synchronous local call returns before the barrier completes. Restart requires changed process instance with same actual native identity; stale activation and fresh notification preparation cannot restore trust. Parent state snapshots acquire receiver lease after exit; cleanup refuses to delete borrowed native material before generation drain. Mode/tag validation is test-only and isolated from installed Host. Original grants/Owner remain unchanged; historical fixture evidence is explicitly separated from native PAKE qualification.
+
+All local required checks PASS: zero-warning build,681/681 ordinary,native16/all genuine ceremonies,UI/SDK/strict Docs. Actual completed native CI job114309860720 inspected: Rust2,16 wrapper tests and every genuine ceremony PASS. Candidate Docs38085228980 PASS. Windows service and ordinary CI38085100306 still running; no claim of new privileged process PASS until completed job logs are inspected. Final exact-head Docs, live base/head/clean/equivalence and all-three CI/log gates remain mandatory. No permission request or new owner decision. Creator six/limits approved; accessibility WAIVED never PASS; prior local cleanup policy hold retained without workaround. Canonical/normal/main/physical/parity/Linux/release untouched.
+
+| Invariants | Fresh Review B cross-check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,MIG-001,LINUX-001 | Live PR16-file inventory matches local. Test-only seam and nine refreshed component pages; no production/legacy/schema/platform gate change. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Re-traced live child ownership, released-lease state inspection and restart. Parent never opens receiver database while its process owns the lease. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | All new network work belongs to native Host generation in SelfTest; no ordinary client machine identity or route added. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Exact host/peer/instance and retained native key/public pin checked; different instance required on restart. No grant/scope conversion. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | No repair shortcut: consumed notification and fresh preparation fail after revocation; native re-pair/own-key recovery remain separate ceremonies. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Original fixture Owner remains the only active Owner in each transactional snapshot. Initial Owner/binding inputs are not claimed as real enrollment/PAKE. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003 | Positive real activation precedes ordinary preparation. Unconfirmed remote state deliberately differs from local tombstone. No outgoing queue or machine-ceiling substitution. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Zero grants and one activation fixture effect required; existing canonical full suite covers forest/default/creator rules unchanged. | PASS |
+| PROTO-001,SEC-001 | Closed test-only config modes and tags, UTF8/address/report bounds, fixed non-expanding withheld response, no secret in public reports. Installed protocol unchanged. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001,PLATFORM-001,PLATFORM-002 | Local revision/incarnation from current authoritative snapshot; actual notification task pending at child barrier. Explicit exit/whole-generation drain precedes native cleanup; mandatory service flag checks execution. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
