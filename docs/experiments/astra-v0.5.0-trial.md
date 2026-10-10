@@ -6644,3 +6644,11 @@ Post-creation review at0876c05dd24ddc6a78905287a83945bddcfda6ac,base9a165373f71b
 | PLATFORM-001,PLATFORM-002,LINUX-001 | Existing native Windows seams/single roots, actual multi-user/UI/service checks, local SDK ABI proof. No Host UI, Linux implementation, physical-PC/parity/release acceptance. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28 / PR183 — aggregate accepted, SHADOW DONE
+
+2026-10-10. PR183 merged only into experiment/astra-v0.5.0 atba5d5d7bdc7afe201fefcb954cf445c69209683c, final head20d7799f1085fda76e0392da0ede0461221a2163. Complete16-file94-insertion14-deletion documentation delta, A0/B0/all40 and eight acceptance criteria PASS. Exact Docs38091158106 PASS; live base/head/clean/executable equivalence PASS. Reused executable21b6e6414fd1b5e0c4ad83edf7249f9bbdbff2f8/all-three CI38090313175 with all actual completed logs inspected; local/remote710/710,UI/native16/all genuine ceremonies/local SDK and required service/multi-user/process cleanup evidence unchanged. No duplicate executable run claimed. Previous route checkpoint Docs38091018629 PASS.
+
+Accepted123 experimental PRs61–183,14 canonical children SHADOW DONE (#27,#28,#34–38,#41–46,#52),710 ordinary tests,268 cumulative cycles. All ten historical accepted escapes corrected; none new. #28 now SHADOW DONE; canonical issue/Project unchanged. Next authorized dependency-satisfied #47 settings semantic catalog and Host API; use established metadata only, preserve unknowns/secrets and stale-write guards. No owner decision outstanding. Creator six/limits approved; accessibility WAIVED never PASS. Prior optional local cleanup policy hold remains without workaround or local privileged PASS. No physical/parity/Linux/release acceptance.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
