@@ -6214,3 +6214,29 @@ Stale search refreshed17 component pages including dispatch inventory, current1.
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28v / PR178 — Review B clean
+
+Separate final review of exact PR headf314238090f44f804f06b761f4b5e82a1877cf0d, executabledb4e3fabe8f48d541f44ae3c3f8ec9f5265466d8, base71e526ffc18eaa680999c5c5fed44c72dc8b018b; live PR open/base/head and complete32-file inventory match local. Diff378 insertions/24 deletions. Re-evaluated every source/test/protobuf/descriptor/doc/ledger delta, all40 invariants, actual candidate provenance and canonical approval/default/audit final checks. No executable differences from required tested candidate.
+
+Fresh adverse assessment: a page may include expired rows and may change across calls, so it exposes timestamps rather than a ready/approved claim. Read projection is bounded although the preexisting policy snapshot is not asserted to be. Owner is freshly checked, and the approval writer independently rejects a changed candidate even with an unchanged page revision. Approving one sibling invalidates others; stale policy cannot silently approve, and a refreshed duplicate yields Changed=false without another default or audit. Actual old Owner authentication remains insufficient after Owner transfer. Constant error projection hides trigger canary; no new private proof crosses wire. Complete canonical late-effect/default and audit checks remain in the same transaction; no ordinary-peer privilege is inferred from new local feature18. No substantive B finding.
+
+Local zero-warning build,ten focused groups,681/681 ordinary,native16/all genuine ceremonies,UI/Windows SDK/strict Docs PASS. Candidate Docs38081683577 and native job114299725115 in CI38081681869 PASS; actual native log inspected (Rust2/native16/genuine repair/own-key recovery). Remaining CI jobs/actual logs and final exact HEAD Docs/live gates are required before merge. B0 after A0 and two pre-A test fixture corrections;256 cumulative cycles on acceptance, no new accepted escape. New public approval fixtures are not relabeled native PAKE or field installation evidence.
+
+Current docs distinguish new Owner inspection/approval from canonical historical tests and remaining public recovery initiation/online unpair preparation/remote dual-authority routing/unpair-process faults. No unresolved product approval or outside contact. Creator six/limits approved; accessibility WAIVED never PASS. Prior optional local cleanup policy hold remains without workaround. Canonical/normal/main/physical/parity/Linux/release status unchanged.
+
+| Invariants | Fresh Review B cross-check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,MIG-001,LINUX-001 | Live PR32-file inventory matches local; no legacy/dependency/schema-migration/Linux production delta. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Followed fixed adapter through original runtime session into guarded synchronous facade and authoritative repository. No client callback or network held by SQL. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Public RPC request carries exact ID/revision only. Existing native local TLS/signing boundary owns real actor; no Host private credential or direct remote client path. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Stable semantic peer preserved; server/default roots still exact qualified scopes. Historical public pins cannot substitute for current candidate evidence. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Canonical writer still refuses staged rotation, expired/invalidated/unproven candidate and changed key/incarnation. Approval cannot perform offline recovery or revive prior lineage. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Re-evaluated old authenticated session after Owner transfer/native/key change; read and approval refuse. Capability17 or both management grants cannot authorize Owner decision. No enrollment or Owner mutation. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003 | Page contains no grant or authority token. Local approval preserves independent recovery, completion marker and separate Host transactions. Remote ceilings remain untouched. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Existing replacement/default final checks enforce old forest invalidation, exact fresh configured roots, actual current Owner and separate approval/default audits. Concurrent/duplicate/sibling paths cannot reissue stale roots. | PASS |
+| PROTO-001,SEC-001 | Explicit feature18 checked within session; old17-only denied. All historical descriptors immutable and current1.16 additive. Public row validation/sentinel/page cap/constant errors prevent unbounded or secret reply. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001,PLATFORM-001,PLATFORM-002 | Version guard and whole canonical transaction remain authoritative; late fault/cancellation roll back. Read-only observation is not a long-running operation. No UI/executor/platform ownership change. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
