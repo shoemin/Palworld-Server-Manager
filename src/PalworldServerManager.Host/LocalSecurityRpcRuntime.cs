@@ -18,6 +18,7 @@ public sealed class LocalSecurityRpcRuntime
     internal Func<bool> IsInitialized { get; }
     internal Func<HttpContext, string> NativePrincipal { get; }
     internal LocalPermissionDispatcher Permissions { get; }
+    internal LocalPeerTrustNetworkActions TrustNetwork { get; }
     private readonly LocalPrincipalAuthenticationRepository _authentication;
     private readonly Action<LocalAuthenticationFailure> _report;
     public LocalSecurityRpcRuntime(HostDatabase database, Guid hostId, ISecureCredentialStore store,
@@ -29,6 +30,7 @@ public sealed class LocalSecurityRpcRuntime
         _authentication = new(database); Enrollment = new(new LocalEnrollmentRepository(database, hostId, time), store, hostId, time);
         var state = new HostCredentialStateRepository(database, hostId); IsInitialized = () => state.Read().Initialized;
         Permissions = new(this, new GrantPolicyRepository(database, hostId, time));
+        TrustNetwork = new(database, hostId, time);
     }
     // Install after TLS and before HTTP in the listener pipeline. State has the connection's
     // actual lifetime, never a request lifetime or an attacker-selected session identifier.

@@ -109,6 +109,26 @@ message LocalApprovePeerReplacementReply {
   int32 created_default_grants = 7;
 }
 
+// Reachability hints only. The Host authenticates the exact semantic peer itself.
+message LocalPeerContactRequest { string peer_host_id = 1; string reachable_host = 2; uint32 peer_port = 3; }
+// An ephemeral observation, never a revocation permit or delivery acknowledgement.
+message LocalPreparePeerUnpairReply { bool prepared = 1; }
+enum LocalPeerRecoveryPushResult {
+  LOCAL_PEER_RECOVERY_PUSH_RESULT_UNSPECIFIED = 0;
+  LOCAL_PEER_RECOVERY_PUSH_RESULT_CONFIRMED = 1;
+  LOCAL_PEER_RECOVERY_PUSH_RESULT_NO_PENDING = 2;
+  LOCAL_PEER_RECOVERY_PUSH_RESULT_KEY_MISMATCH = 3;
+}
+enum LocalPeerRecoveryPullResult {
+  LOCAL_PEER_RECOVERY_PULL_RESULT_UNSPECIFIED = 0;
+  LOCAL_PEER_RECOVERY_PULL_RESULT_CONFIRMED = 1;
+  LOCAL_PEER_RECOVERY_PULL_RESULT_NO_PENDING = 2;
+  LOCAL_PEER_RECOVERY_PULL_RESULT_KEY_MISMATCH = 3;
+  LOCAL_PEER_RECOVERY_PULL_RESULT_UNSUPPORTED = 4;
+}
+// Separate intrinsic observations. No new Owner approval or cross-Host atomic result.
+message LocalCompletePeerRecoveryReply { LocalPeerRecoveryPushResult sent = 1; LocalPeerRecoveryPullResult received = 2; }
+
 service LocalSecurityProtocol {
   rpc Negotiate(Handshake) returns (LocalHandshakeReply);
   rpc IssueChallenge(LocalPrincipalRequest) returns (LocalChallenge);
@@ -129,4 +149,6 @@ service LocalSecurityProtocol {
   rpc RevokePeerTrust(LocalRevokePeerRequest) returns (LocalRevokePeerReply);
   rpc ReadPeerReplacements(LocalPeerReplacementPageRequest) returns (LocalPeerReplacementPageReply);
   rpc ApprovePeerReplacement(LocalApprovePeerReplacementRequest) returns (LocalApprovePeerReplacementReply);
+  rpc PreparePeerUnpair(LocalPeerContactRequest) returns (LocalPreparePeerUnpairReply);
+  rpc CompletePeerRecovery(LocalPeerContactRequest) returns (LocalCompletePeerRecoveryReply);
 }
