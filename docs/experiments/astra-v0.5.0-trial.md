@@ -6876,3 +6876,11 @@ Post-review stale-reference check found B1: the catalog paragraph still called t
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS behavior, UI or Linux changes. Pure BCL metadata; no new dependency or parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47c / PR186 — accepted established settings metadata
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 at4ff9321f28caeafa1a63ce573f18b7879e5ad1c8; final head39da5f249e875679a58bb77ab15acf0310209b2f, executable68716b819b2003db5acfea054c2cf472fbead67c. Final CI38093969822 all-three PASS; completed actual logs114335930894/114335930949/114335930960 inspected for Rust2/native16/all genuine ceremonies,726/726/UI/zero warnings,four Windows service starts with recovery/unpair process cases and complete cleanup. Candidate Docs38093971195,initial B Docs38094341738 and exact clarified final Docs38094380148 PASS. Live branch/base/head/clean/source-equivalence gates PASS. Complete diff7 files218 insertions/8 deletions.
+
+Local726/726,focused8,independent all72-map probe,build/UI/SDK/strict Docs PASS. A0/B1 stale documentation wording corrected,renewed A/B/all40 clean,two verification rounds,275 cumulative cycles. No new accepted escape; ten historical escapes corrected. Accepted126 experimental PRs61–186,fourteen canonical children SHADOW DONE. #47 IN PROGRESS for Host DTO/read/save,file encoding,revisions/stopped-state/durable recovery. Next bounded47d byte-preserving document snapshot remains pure Core; no live file-write or authority endpoint implied. No owner decision outstanding. Creator limits/ViewServer/EditSettings unchanged,accessibility WAIVED never PASS; canonical/main/physical/parity/Linux/release unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
