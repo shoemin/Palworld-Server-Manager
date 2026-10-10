@@ -34,5 +34,6 @@
     <None Update="Fixtures\peer-pairing-*.pb" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\discovery-*.pb" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Fixtures\operation-activity-*.pb" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\settings-*.pb" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

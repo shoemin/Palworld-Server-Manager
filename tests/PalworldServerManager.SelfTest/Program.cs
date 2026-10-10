@@ -31,6 +31,16 @@ if (args.Length > 0)
         await PreservedSettingFileTests.InvalidEncodingAndBoundsRefuse();
         Console.WriteLine("PASS three settings encoding groups."); return 0;
     }
+    if (args is ["--settings-contract-probe"])
+    {
+        await SettingsContractTests.KindsAndAbsentMetadata();
+        await SettingsContractTests.RedactionAllSourcesAndCopies();
+        await SettingsContractTests.DistinctObservationsAndHistoricalInvalidValues();
+        await SettingsContractTests.MalformedAndDisclosureShapesRefuse();
+        await SettingsContractTests.BoundsAndConstantErrors();
+        await ProtocolTests.SchemaEvolution();
+        Console.WriteLine("PASS five settings contract groups and immutable protocol history."); return 0;
+    }
     if (args is ["--preserved-settings-probe"])
     {
         await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
@@ -961,6 +971,11 @@ if (args.Length > 0)
 var tests = new List<(string Name, Func<Task> Run)>
 {
     ("Settings encoding ExactEncodingAndSelectedEdit", PreservedSettingFileTests.ExactEncodingAndSelectedEdit),
+    ("Settings contract KindsAndAbsentMetadata", SettingsContractTests.KindsAndAbsentMetadata),
+    ("Settings contract RedactionAllSourcesAndCopies", SettingsContractTests.RedactionAllSourcesAndCopies),
+    ("Settings contract DistinctObservationsAndHistoricalInvalidValues", SettingsContractTests.DistinctObservationsAndHistoricalInvalidValues),
+    ("Settings contract MalformedAndDisclosureShapesRefuse", SettingsContractTests.MalformedAndDisclosureShapesRefuse),
+    ("Settings contract BoundsAndConstantErrors", SettingsContractTests.BoundsAndConstantErrors),
     ("Settings encoding DefensiveCopiesAndSecretSafeErrors", PreservedSettingFileTests.DefensiveCopiesAndSecretSafeErrors),
     ("Settings encoding InvalidEncodingAndBoundsRefuse", PreservedSettingFileTests.InvalidEncodingAndBoundsRefuse),
     ("Additional settings KnownKindsAndUnits", AdditionalSettingCatalogTests.KnownKindsAndUnits),
