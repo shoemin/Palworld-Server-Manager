@@ -6714,3 +6714,25 @@ Original A1 unknown sensitivity and B1 trailing-NUL findings are corrected. Inde
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration or OS/runtime/UI behavior; Core stays BCL-only, CI permits47 native qualification without altering main eligibility. Windows SDK/UI/full checks retain scope. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47a / PR184 — fresh final Review B
+
+Reviewed pushed head248c00301e979b7b2b17739b6a5679c049bb2c64 against base210899f0901950af2fff5d1129d348be19056a2f, all seven files. Rechecked the complete catalog and result model, test registration, negative cases, CI eligibility and documentation against the current47 contract. Explicit nullable sensitivity prevents unclassified-value disclosure; password assignment cannot bypass secret actions; control rejection precedes both numeric parsers. Choice storage cannot be mutated, future enum data is not coerced, missing metadata stays absent and culture cannot alter parsing. Frozen legacy parser/schema/App/LAN diff is empty. No persistence, authority, routing, process or dependency-graph changes. Owner-approved read/save mapping is recorded without claiming implemented endpoints.
+
+Bounded acceptance: UI-independent immutable Core definitions and structured validation PASS; representative known kinds, Raw unknowns, absent range/default/restart metadata and secret refusal covered by six groups; full716/716 and zero-warning/UI/SDK/strict Docs PASS. Whole47 unknown-document/DTO/revision/save acceptance remains pending subsequent units. No further finding after A1 sensitivity/B1 trailing-NUL corrections; three rounds,271 cumulative cycles planned. Fresh all40 audit below is clean. Actual completed native and Windows service logs inspected; ordinary final CI and exact final-head Docs still gate merge. This ledger-only review receipt must remain executable-equivalent to dc47c63b6a6b00e4f9368cafcae7a058809cc7e8.
+
+| Invariants | Review evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | New Core namespace only; exact diff proves original schema/parser/service/model unchanged from frozen baseline. No App/LAN edits or changed legacy callers. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure immutable lookup/validation; no IO, database, mutation callback or authoritative Host surface. Host writes remain later47 work. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No reference graph, client, credential or transport change; Core definitions are not exposed by direct client dependency. Later Host mapping explicitly required. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identities, server routing, rotation or credential replacement touched. Per-server defaults/effective values are not fabricated in global catalog. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/session/credential changes; semantic validation cannot grant authority or substitute for protected Host admission. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Accepted dual ceilings and canonical trust paths remain unchanged; no new network API or offline queue. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No capability/preset/default/creator writer; six approved creator permissions/limits and exact provenance remain intact. Semantic default null is not a grant or installation value. | PASS |
+| PROTO-001 | Owner-approved later reads require ViewServer and saves EditSettings, without implication between them; exact target/dual ceilings retained. No wire contract/feature or historical descriptor changes. Core enums have explicit values; unsupported semantics refuse and future values are not coerced. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No editable-resource write/executor/lock policy. Revision/stopped-state/durable save/recovery remain mandatory in later47 units. Framework and ordinary suite unchanged except six new tests. | PASS |
+| SEC-001 | Passwords reject generic assignment, including empty/null. Error values contain key/closed code only; no input value, logging or default secret. Raw sensitivity is explicitly null; missing metadata cannot classify unknown values as public. Numeric control input is explicitly refused. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration or OS/runtime/UI behavior; Core stays BCL-only, CI permits47 native qualification without altering main eligibility. Windows SDK/UI/full checks retain scope. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
