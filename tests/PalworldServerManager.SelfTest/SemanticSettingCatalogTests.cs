@@ -58,7 +58,9 @@ internal static class SemanticSettingCatalogTests
         foreach(var value in new[]{"None","Item","ItemAndEquipment","All"})Check(PalworldSettingCatalog.Validate("DeathPenalty",value).IsValid);
         foreach(var value in new[]{"FutureChoice","none",""})Check(PalworldSettingCatalog.Validate("DeathPenalty",value).Code==SettingValidationCode.KnownChoiceRequired);
         Check(PalworldSettingCatalog.Validate("ServerName","世界, \"quoted\" (name)").IsValid&&PalworldSettingCatalog.Validate("ServerDescription","").IsValid);
-        foreach(var value in new[]{"x\ny","x\ry","x\0y"})Check(PalworldSettingCatalog.Validate("ServerDescription",value).Code==SettingValidationCode.SingleLineRequired);
+        foreach(var key in new[]{"ServerName","ServerDescription"})
+        foreach(var value in new[]{"x\ny","x\ry","x\0y","x\u2028y","x\u2029y"})
+            Check(PalworldSettingCatalog.Validate(key,value).Code==SettingValidationCode.SingleLineRequired);
         return Task.CompletedTask;
     }
     public static Task SecretErrorsNeverRetainValues()
