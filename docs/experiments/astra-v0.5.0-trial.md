@@ -6918,3 +6918,25 @@ Corrected local729/729,focused encoding3 and catalog8,zero-warning build,UI,Wind
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Pure BCL Unicode handling, no migration or OS/UI/Linux behavior. No field/parity/release evidence claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47d / PR187 — fresh final Review B
+
+Fresh post-PR review of exact pushed headefaf203d5e4b93375efa607828d0598c22bd908a againsteb54933babb6deca591b8a1106c1f2c37400eef2 covers all nine files. Rechecked every byte-model path and exception, UTF32/UTF16 prefix ambiguity, snapshot ownership, exact unchanged/edited bytes, source/output aliasing, default string representation, Unicode correction and test registrations. Reran600 independent supplementary-scalar cases and both rebuilt-library separator probes after PR creation: PASS. No new finding. A1/accepted escape11 corrected; B0, two rounds,277 cumulative cycles planned. Eleven accepted escapes now corrected in the candidate; final experiment merge remains gated.
+
+Local729/729,encoding3/catalog8,zero-warning build,UI/SDK/strict Docs PASS. Native/service completed actual logs include all genuine ceremonies/four service starts and complete cleanup. Final ordinary CI38095028224 completed log and exact final-head Docs/live head/base/clean still gate merge. Executable-equivalence from5728a103ec590d52fa59f32fe56037d9bdb48e06 is empty. Fresh all40 matrix below remains clean. Current documentation consistently separates implemented in-memory preservation from future authorized Host IO/DTO/revision/stopped-state/recovery; ViewServer reads cannot call the legacy auto-creating loader. No owner decision or false field/parity/release claim.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | New v0.5 byte wrapper composes accepted text model; original schema/parser/model/App/LAN unchanged. Single-line correction affects only additive semantic catalog. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Byte transformation only; no IO/path API, mutation callback, database writer, Host endpoint or process executor. Actual protected save remains Host work. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No project/client/reference/credential/transport changes. Raw byte snapshot remains internal Host model data, never a client DTO. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identities, routing, rotation or recovery protocols affected. No public password-dependent content hash/revision. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal/bootstrap/Owner/session behavior; pure serialization creates no authority or credential access. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote paths/trust effects; later settings RPCs still require both exact permission ceilings and current authenticated contexts. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/preset/default/creator changes. Encoding choice and validation results are not authorization. Approved six creator limits and read/save mapping unchanged. | PASS |
+| PROTO-001 | No wire/feature/descriptor/enum changes. Unsupported encoding refuses; no fallback replacement or silent code-page guess. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No authoritative write/lock/operation handler. Source/output copies are immutable and failures leave original bytes intact; revision/stopped-state/durable replacement remains mandatory. | PASS |
+| SEC-001 | Input copied before decode; strict bounded decoders/encoders, exact roundtrip and constant no-inner-exception errors. No source/default/effective/log/DTO disclosure. Stored secrets and unclassified values stay unchanged. Unicode line/paragraph separators now reject typed single-line input, closing accepted escape11. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Pure BCL Unicode handling, no migration or OS/UI/Linux behavior. No field/parity/release evidence claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
