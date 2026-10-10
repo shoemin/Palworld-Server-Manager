@@ -43,7 +43,7 @@ public static partial class PalworldSettingCatalog
             PalworldSettingEditorKind.Integer=>Integer(decodedValue)?SettingValidationCode.Valid:SettingValidationCode.IntegerRequired,
             PalworldSettingEditorKind.Multiplier or PalworldSettingEditorKind.Duration=>Number(decodedValue)?SettingValidationCode.Valid:SettingValidationCode.FiniteNumberRequired,
             PalworldSettingEditorKind.Enum=>definition.Choices.Contains(decodedValue,StringComparer.Ordinal)?SettingValidationCode.Valid:SettingValidationCode.KnownChoiceRequired,
-            PalworldSettingEditorKind.Text=>decodedValue is not null&&!decodedValue.Any(char.IsControl)?SettingValidationCode.Valid:SettingValidationCode.SingleLineRequired,
+            PalworldSettingEditorKind.Text=>decodedValue is not null&&!decodedValue.Any(c=>char.IsControl(c)||c is '\u2028' or '\u2029')?SettingValidationCode.Valid:SettingValidationCode.SingleLineRequired,
             _=>SettingValidationCode.Unsupported
         };
         return new(definition.Key,code);

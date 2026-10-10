@@ -24,6 +24,13 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--settings-encoding-probe"])
+    {
+        await PreservedSettingFileTests.ExactEncodingAndSelectedEdit();
+        await PreservedSettingFileTests.DefensiveCopiesAndSecretSafeErrors();
+        await PreservedSettingFileTests.InvalidEncodingAndBoundsRefuse();
+        Console.WriteLine("PASS three settings encoding groups."); return 0;
+    }
     if (args is ["--preserved-settings-probe"])
     {
         await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
@@ -953,6 +960,9 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Settings encoding ExactEncodingAndSelectedEdit", PreservedSettingFileTests.ExactEncodingAndSelectedEdit),
+    ("Settings encoding DefensiveCopiesAndSecretSafeErrors", PreservedSettingFileTests.DefensiveCopiesAndSecretSafeErrors),
+    ("Settings encoding InvalidEncodingAndBoundsRefuse", PreservedSettingFileTests.InvalidEncodingAndBoundsRefuse),
     ("Additional settings KnownKindsAndUnits", AdditionalSettingCatalogTests.KnownKindsAndUnits),
     ("Additional settings ExplicitChoicesAndUnclassifiedBoundaries", AdditionalSettingCatalogTests.ExplicitChoicesAndUnclassifiedBoundaries),
     ("Preserved settings ExactRoundTripAndOneValuePatch", PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch),
