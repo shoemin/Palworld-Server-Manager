@@ -6598,3 +6598,28 @@ Complete diff33 files changed, 461 insertions(+), 26 deletions(-). Local zero-wa
 Accepted122 experimental PRs61–182,13 canonical children SHADOW DONE,710 ordinary tests. Parent28 remains IN PROGRESS for aggregate acceptance. No owner decision/external review/contact. Creator six/limits approved; accessibility WAIVED never PASS. Prior optional local cleanup policy hold remains without workaround or local privileged PASS; disposable CI cleanup independently passes. Canonical/main/normal/physical/Palworld/parity/Linux/release unchanged.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28 aggregate — preflight
+
+Current Issue28 body and complete Project39/39 refreshed. Dependencies33/19 and27/44/45 accepted in the frozen baseline/isolated lane. Base9a165373f71b36f8dfa8864f1969f038382551a4. Owner-authorized ShadowReady and isolated A/B workflow apply; canonical metadata remains unchanged. Documentation-only aggregate acceptance of PRs157–182; no executable, reference, credential, authority, persistence writer or operation-executor change. Recheck the complete local/remote administrator and reciprocal-receipt paths, fresh pairing/Owner approval/recovery, all40 invariants, eight acceptance criteria, exact-source CI and stale current documentation. No owner decision is outstanding. Accessibility WAIVED never PASS; physical/parity/Linux/release remain downstream.
+
+### #28 aggregate — Review A
+
+All16 changed/new documentation files reviewed before PR. Eight issue acceptance criteria mapped to canonical transactions, actual local/peer RPCs, exact forest rules, genuine native ceremonies and actual receiving-process faults. Entire trust source path rechecked: local/remote administrators, received duplicate receipt, unconditional commit/nonblocking notification, Owner replacement/default roots, original originating-user proof and independent ceiling. Fourteen stale current aggregate-pending references now link the aggregate; historical ledger remains intact. No finding or correction beyond the planned documentation. Local strict Docs PASS; exact executable21b6e6414fd1b5e0c4ad83edf7249f9bbdbff2f8 equivalence verified. Reuse710/710/full UI/native/SDK and all-three CI38090313175 with actual completed logs; no redundant executable test or false new-run claim. A0, one documentation verification round, planned268 cumulative cycles. B and exact-head remote Docs/live gates remain required. No owner decision.
+
+| Invariants | Aggregate evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,CLIENT-001,MIG-001 | Exact executable comparison and dependency tests retain frozen WPF/LAN, Core-independent ordinary clients and unchanged migration sources. Aggregate delta is documentation only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Actual service/lease qualification and canonical immediate transactions keep authoritative writes on their own Host; network callbacks cannot block local commit. | PASS |
+| CLIENT-002,CLIENT-003,LOCAL-002,LOCAL-004,REMOTE-001 | Real named-pipe TLS/native user identity routes through its own generation; only Host-owned native transport consumes machine keys. No credential values in contracts/audit. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Stable exact Host identities, independent destination capability checks and typed Host/server forests. No fabricated server target or cross-Host grant scope. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Original pins/incarnations retained; stale proof fails. Replacement requires fresh verified PAKE and current local Owner. Native repair/own-key recovery, offline continuity and five process faults preserve exact approval markers. | PASS |
+| LOCAL-001,LOCAL-003,OWNER-001,OWNER-002 | Exactly one current Owner remains unchanged by remote effects. Enrollment/bootstrap/re-home remain canonical independent paths. Revocation and successful audit late-effect checks roll back unauthorized identity changes. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002 | Actual originating local-only/machine-only tests each refuse; denied local users cause zero contact. Pairing/PeerBound/recovery never grants ordinary authority; default roots follow explicit Owner approval only. | PASS |
+| PAIR-003,OPS-001 | Eight acceptance mappings distinguish unconditional local commit from best-effort reciprocal delivery. Original revision/incarnation protects stale changes; no cross-Host atomicity claim or retry queue. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Exact provenance subtree, unrelated-row preservation, historical-invalid descendants and approved six creator limits. Replacement creates current configured fresh roots without old authority revival. | PASS |
+| PROTO-001,SEC-001 | Explicit local22/1.18 and peer21/1.15, preserved immutable descriptor history, bounded closed replies and constant errors. Audit identities/counts have no secrets; protected Windows credentials separately verified. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No new business executor or operation policy. Canonical transaction + generation-owned bounded workers drain actual tasks before key/lease disposal. Four unpair/five recovery process cases cover durable interruption and cleanup. | PASS |
+| PLATFORM-001,PLATFORM-002,LINUX-001 | Existing native Windows seams/single roots, actual multi-user/UI/service checks, local SDK ABI proof. No Host UI, Linux implementation, physical-PC/parity/release acceptance. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
