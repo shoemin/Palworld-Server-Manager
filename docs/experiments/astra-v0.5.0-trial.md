@@ -6516,3 +6516,13 @@ Corrected local701/701,focused9,zero-warning build,native16/all genuine ceremoni
 | PLATFORM-001,PLATFORM-002 | Existing Windows native TLS/composition and service lifetime, no interactive Host/UI/platform branch. Actual UI/SDK/native checks; no physical/Windows parity/Linux/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28y / PR181 — accepted receiving peer trust administration
+
+2026-10-10. PR181 merged only into experiment/astra-v0.5.0 at10f2136b4fff0c96ea59197e9139694aa5f82747; final head5ce258a34d885726d06c38196b6aff6def03d789, executable0d379cd82f3b46d41a68a1fcf4a84257e49a65e9. All-three CI38089108143,candidate Docs38089109757,exact final Docs38089497349 PASS. Actual jobs114321696505/114321696584/114321696611 inspected:701/701/UI,Rust2/native16/all genuine ceremonies,four actual unpair/five recovery cases at all four service starts,shipped service/multi-user/native qualification and complete cleanup. Live base/head/clean/executable-equivalence gates PASS.
+
+Complete diff21 files changed, 381 insertions(+), 14 deletions(-). Local zero-warning build,701/701 ordinary,focused9,native16/all genuine ceremonies,UI/SDK/strict Docs PASS. Four correction rounds (generic parameter,negative status expectations,normal negotiation versus request observation fixture,and current-minor expectations), A0/B0/all40;265 cumulative cycles. Initial deliberately interrupted full run has no PASS claim. No new accepted escape; all ten prior accepted escapes corrected. Receiving machine authority remains independent from the originating local user. Exact canonical forest/Owner/revision/incarnation/audit/self-revoke behavior is unchanged.
+
+Accepted121 experimental PRs61–181,13 canonical children SHADOW DONE,701 ordinary tests. Parent28 remains IN PROGRESS for the originating local-user remote administration route and aggregate acceptance. No owner decision/external review/contact. Creator six/limits approved; accessibility WAIVED never PASS. Prior optional local cleanup policy hold remains without workaround or local privileged PASS; disposable CI cleanup independently passes. Canonical/main/normal/physical/Palworld/parity/Linux/release unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
