@@ -24,6 +24,18 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--preserved-settings-probe"])
+    {
+        await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
+        await PreservedSettingDocumentTests.AdditionsAndUnicodeAreExplicit();
+        await PreservedSettingDocumentTests.DuplicatePreservationAndAmbiguousEditRefusal();
+        await PreservedSettingDocumentTests.EmptyFinalValueAndAdditionDoNotCollide();
+        await PreservedSettingDocumentTests.InjectedValuesCannotEscapeTheirEntry();
+        await PreservedSettingDocumentTests.UnsupportedSourceRefusesWithoutNormalization();
+        await PreservedSettingDocumentTests.BoundsAndSnapshots();
+        await PreservedSettingDocumentTests.SeededNestedPreservation();
+        Console.WriteLine("PASS eight preserved settings document groups."); return 0;
+    }
     if (args is ["--semantic-settings-probe"])
     {
         await SemanticSettingCatalogTests.EstablishedSemantics();
@@ -939,6 +951,15 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Preserved settings ExactRoundTripAndOneValuePatch", PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch),
+    ("Preserved settings AdditionsAndUnicodeAreExplicit", PreservedSettingDocumentTests.AdditionsAndUnicodeAreExplicit),
+    ("Preserved settings DuplicatePreservationAndAmbiguousEditRefusal", PreservedSettingDocumentTests.DuplicatePreservationAndAmbiguousEditRefusal),
+    ("Preserved settings EmptyFinalValueAndAdditionDoNotCollide", PreservedSettingDocumentTests.EmptyFinalValueAndAdditionDoNotCollide),
+    ("Preserved settings InjectedValuesCannotEscapeTheirEntry", PreservedSettingDocumentTests.InjectedValuesCannotEscapeTheirEntry),
+    ("Preserved settings UnsupportedSourceRefusesWithoutNormalization", PreservedSettingDocumentTests.UnsupportedSourceRefusesWithoutNormalization),
+    ("Preserved settings BoundsAndSnapshots", PreservedSettingDocumentTests.BoundsAndSnapshots),
+    ("Preserved settings SeededNestedPreservation", PreservedSettingDocumentTests.SeededNestedPreservation),
+
     ("Semantic settings EstablishedSemantics", SemanticSettingCatalogTests.EstablishedSemantics),
     ("Semantic settings UnknownAndUnclassifiedAreNotGuessed", SemanticSettingCatalogTests.UnknownAndUnclassifiedAreNotGuessed),
     ("Semantic settings InvariantNumericValidation", SemanticSettingCatalogTests.InvariantNumericValidation),
