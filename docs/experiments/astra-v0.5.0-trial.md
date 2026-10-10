@@ -6979,3 +6979,23 @@ Corrected734/734 local, five focused contract groups plus immutable protocol his
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS/UI/platform or Linux production changes. No field/parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47e / PR188 — fresh final Review B
+
+Fresh post-PR review at exact pushed4187fe149942151533b89879b883e081047f0f80 against97cdedd163eadee142be1dddc60c925a941418bf rechecked all13 files. Independently challenged default/empty/absent observation semantics, case-alias keys, Unicode validity versus historical edit invalidity, positive sensitivity classification in both sources, every metadata value path, canonical increasing revision format and identity/resource bounds. Confirmed there is no endpoint, feature advertisement, effective-value inference, schema-derived authorization, raw save command or IO side effect. Reran five focused contract groups plus immutable schema history and95-key/1000-Unicode independent probe after PR creation: PASS. Full corrected734/734 and UI/SDK/zero-warning build/strict Docs remain applicable; no executable change since6b12b189e9947e7ee5e2c48967e97bd776eaf49d. No new finding: A1 corrected/B0,two rounds,279 cumulative cycles planned; no new accepted escape. All40 fresh matrix below clean. Actual completed all-three CI38096400693 logs, final-head Docs and live head/base/clean gates still required before merge. No owner decision; whole47 protected read/save/stale-write/stopped-state/durable recovery outstanding. Future effective observer must establish actual observation age/status rather than inferring values from config/defaults.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen legacy parser/schema/model/App/LAN unchanged; additive Contracts and Host mapper only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure projection; no file/profile/process write, store writer, endpoint or second Host. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Contracts have no Core reference, verified assembly boundary; ordinary clients and transport/credential consumers unchanged. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Snapshot carries exact ServerRef; identity qualification and malformed/empty Host refusal tested. No rotation/recovery changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No bootstrap/principal/Owner/enrollment or credential paths changed. Valid DTO is not authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote route/contact/trust mutation. Later reads still require both current authorization ceilings; no feature advertised. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants, roots, delegation, presets or creator changes. Approved independent ViewServer/EditSettings retained. | PASS |
+| PROTO-001 | Explicit kind/sensitivity/validation mappings deny unspecified/future values. New settings descriptor retained unchanged, all prior snapshots retained, current descriptor exact comparison. No premature capability negotiation. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Corrected A1 to existing nonnegative increasing RevisionId representation, zero/max/invalid variants tested. No issuer/save/operation executor; protected stale-write/locks/stopped-state/recovery remain required. | PASS |
+| SEC-001 | Positive nonsecret classification before both value projection and validation. Secret/unclassified configured/default/effective/catalog defaults absent, constant errors, no raw request record/logging. Bounds, Unicode, alias rejection, malformed disclosures and 95-key canaries tested. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS/UI/platform or Linux production changes. No field/parity/release claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
