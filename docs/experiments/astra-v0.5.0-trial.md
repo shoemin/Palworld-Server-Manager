@@ -6662,3 +6662,25 @@ Applicable whole audit all40, especially ARCH001/HOST002/CLIENT001/OPS001/PERSIS
 ### #47a — Review A finding before PR
 
 The initial IsSecret Boolean inferred false for unknown/unclassified Raw definitions. No Host endpoint/DTO yet consumed it, but that negative metadata could incorrectly authorize future presentation of an unclassified secret. Changed it to nullable sensitivity: Raw is unknown, known password true, explicitly classified nonsecret kinds false. Tests now cover all three cases, including a future secret-like key without name inference. This is A1, not a test failure or accepted escape. Initial executable59f5b6abf95a5b921a3b9c383b4818bd0578f923/CI38091361517 is superseded by this correction; retain actual run outcomes without presenting them as final. No rebuild while initial local full suite is active. Corrected full/invariant/A/B gates remain required.
+
+### #47a — Review A clean after correction
+
+Review at8f149f6f6e7efde118a79df097160d660c6126af,base210899f0901950af2fff5d1129d348be19056a2f. All7 changed files and complete corrected diff reviewed. Component criteria: immutable UI-independent Core definitions; legacy canonical metadata reuse; eight representative semantic kinds; missing bounds/default/restart remain null; invariant-culture structured validation; explicit secret action and unknown sensitivity; unsupported future/raw preservation obligation retained. Focused six and full716/716,zero-warning build,UI,SDK,strict Docs PASS. Candidate Docs38091697204 PASS. Corrected native CI job114329256211 actual Rust2/native16/all genuine ceremonies logs inspected. Remaining CI38091695609 ordinary/service and post-PR exact Docs mandatory.
+
+One review-only defect corrected: initial false sensitivity for unclassified keys became unknown; new positive/negative/unknown tests pass. No automated-test defect or accepted escape. Initial full716/716 and all-three CI38091361517 passed but are superseded, not final evidence. Two implementation/correction rounds,A1 resolved,planned270 cumulative cycles. No product decision. Complete stale search and exact frozen legacy parser/schema/service/model comparison clean. No guessed game constraints or new wire/Host endpoint. Later47 document/remaining metadata/Host routes/save/recovery remain required.
+
+| Invariants | Review evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | New Core namespace only; exact diff proves original schema/parser/service/model unchanged from frozen baseline. No App/LAN edits or changed legacy callers. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure immutable lookup/validation; no IO, database, mutation callback or authoritative Host surface. Host writes remain later47 work. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No reference graph, client, credential or transport change; Core definitions are not exposed by direct client dependency. Later Host mapping explicitly required. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identities, server routing, rotation or credential replacement touched. Per-server defaults/effective values are not fabricated in global catalog. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/session/credential changes; semantic validation cannot grant authority or substitute for protected Host admission. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Accepted dual ceilings and canonical trust paths remain unchanged; no new network API or offline queue. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No capability/preset/default/creator writer; six approved creator permissions/limits and exact provenance remain intact. Semantic default null is not a grant or installation value. | PASS |
+| PROTO-001 | No wire contract/feature or historical descriptor changes. Core enums have explicit values; unsupported semantics refuse and future values are not coerced. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No editable-resource write/executor/lock policy. Revision/stopped-state/durable save/recovery remain mandatory in later47 units. Framework and ordinary suite unchanged except six new tests. | PASS |
+| SEC-001 | Passwords reject generic assignment, including empty/null. Error values contain key/closed code only; no input value, logging or default secret. Raw sensitivity is explicitly null; metadata cannot silently classify an unknown value as public. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration or OS/runtime/UI behavior; Core stays BCL-only, CI permits47 native qualification without altering main eligibility. Windows SDK/UI/full checks retain scope. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
