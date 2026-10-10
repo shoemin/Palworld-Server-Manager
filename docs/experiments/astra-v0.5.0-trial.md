@@ -6166,3 +6166,11 @@ One pre-A fixture correction,A0/B0,254 cumulative cycles on acceptance; all nine
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28u / PR177 — accepted local peer trust inspection and revocation
+
+2026-10-10. PR177 merged only into experiment/astra-v0.5.0 at dcb9eafa2947486a7ad86600345224772f340f64; final headdf96ab58bfdcee351ed1ec412343535e0dfea75b, executablebb3d02270eb68fd57603b57316007a6a48bd4b5c. All-three CI38080490190, candidate Docs38080491884 and exact final Docs38081153229 PASS. Actual ordinary job114296213542 confirms671/671 and UI; native job114296213508 confirms Rust2/native16/all genuine ceremonies; Windows job114296213398 confirms required privileged service/multi-user/shipped binaries, five recovery-process fault cases at four starts and unique service/group/users/profiles/files cleanup. Live final base/head/clean/executable-equivalence gate PASS.
+
+Complete diff24 files450 insertions/14 deletions. Local zero-warning build,ten focused groups,671/671 ordinary,native16/all ceremonies,UI/SDK/strict Docs PASS. One pre-A correction of invalid revoked-principal test fixture; A0/B0 and no new accepted escape. Accepted117 experimental PRs61–177,13 canonical children SHADOW DONE,671 ordinary tests,254 cumulative correction/verification cycles; nine prior accepted escapes corrected. Parent28 remains IN PROGRESS for public online preparation, Owner replacement/recovery initiation, remote administration routing and unpair-specific receiving-process hang/drop qualification.
+
+Creator six/limits approved; accessibility WAIVED never PASS. No new product approval or external reviewer/contact. Prior optional local probe cleanup rejection remains explicitly separate from passing disposable CI cleanup, with no workaround or passing local privileged claim. Canonical/normal/main/physical/Palworld/parity/Linux/release acceptance unchanged. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
