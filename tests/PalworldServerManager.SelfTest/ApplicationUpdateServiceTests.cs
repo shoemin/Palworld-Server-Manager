@@ -348,9 +348,16 @@ internal static class ApplicationUpdateServiceTests
             var profile = new ServerProfile { Name = "Apply Safety Test", InstallPath = installPath };
             await registry.AddAsync(profile);
 
-            using var fake = SyntheticPalServerHarness.Start(installPath, waitSeconds: 10, exitCode: 0);
+            using var fake = SyntheticPalServerHarness.Start(installPath, waitSeconds: 30, exitCode: 0);
             try
             {
+                // Establish the real running-server precondition before testing apply.
+                // Process.Start may return before Windows exposes its executable path.
+                var readiness = System.Diagnostics.Stopwatch.StartNew();
+                while (!processes.IsRunning(profile) && !fake.HasExited && readiness.Elapsed < TimeSpan.FromSeconds(5))
+                    await Task.Delay(25);
+                True(!fake.HasExited, "the synthetic process exited before apply-test readiness");
+                True(processes.IsRunning(profile), "the synthetic process was not observable before apply within its readiness deadline");
                 var backend = new FakeUpdateBackend { ExecutionMode = UpdateExecutionMode.Installed };
                 var service = new ApplicationUpdateService(backend, paths, logger, operations, registry, processes, handoff)
                 {
