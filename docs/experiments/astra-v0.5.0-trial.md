@@ -6940,3 +6940,11 @@ Local729/729,encoding3/catalog8,zero-warning build,UI/SDK/strict Docs PASS. Nati
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Pure BCL Unicode handling, no migration or OS/UI/Linux behavior. No field/parity/release evidence claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47d / PR187 — accepted byte preservation and Unicode validation correction
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 at770e361aad9183bd4c7eb6884ae2613d7f34c46d; final head2b81119d9dfb60d554eae6902688116bc469782d, executable5728a103ec590d52fa59f32fe56037d9bdb48e06. Final CI38095028224 all-three PASS; completed actual logs114339072004/114339072202/114339072234 inspected for Rust2/native16/all genuine ceremonies,729/729/UI/zero warnings,four Windows service starts with recovery/unpair cases and complete cleanup. Corrected candidate Docs38095030050 and exact final Docs38095751639 PASS. Live head/base/clean/source-equivalence gates PASS. Complete diff9 files189 insertions/5 deletions. Initial729/729 and CI38094946351 are superseded, not final evidence.
+
+Corrected local729/729,encoding3/catalog8,600 supplementary-Unicode cases,zero-warning build,UI/SDK/strict Docs PASS. A1 accepted escape11 corrected; renewed A/B0/all40 clean,two rounds,277 cumulative cycles. All eleven identified accepted escapes now corrected. Accepted127 experimental PRs61–187,fourteen canonical children SHADOW DONE. #47 remains IN PROGRESS for Host DTO/read/save,revision/stopped-state/durable recovery; byte encoding now implemented without filesystem writes. No owner decision/external contact outstanding. ViewServer/EditSettings and creator limits unchanged; accessibility WAIVED never PASS; canonical/main/physical/parity/Linux/release unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
