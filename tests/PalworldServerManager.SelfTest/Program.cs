@@ -24,6 +24,16 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--semantic-settings-probe"])
+    {
+        await SemanticSettingCatalogTests.EstablishedSemantics();
+        await SemanticSettingCatalogTests.UnknownAndUnclassifiedAreNotGuessed();
+        await SemanticSettingCatalogTests.InvariantNumericValidation();
+        await SemanticSettingCatalogTests.ExplicitBooleanEnumAndText();
+        await SemanticSettingCatalogTests.SecretErrorsNeverRetainValues();
+        await SemanticSettingCatalogTests.MetadataIsImmutable();
+        Console.WriteLine("PASS six semantic settings catalog groups."); return 0;
+    }
     if (args is ["--local-remote-trust-probe"])
     {
         await LocalOwnerPairingRpcTests.RemoteTrustFeatureAndIdentity();
@@ -929,6 +939,13 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Semantic settings EstablishedSemantics", SemanticSettingCatalogTests.EstablishedSemantics),
+    ("Semantic settings UnknownAndUnclassifiedAreNotGuessed", SemanticSettingCatalogTests.UnknownAndUnclassifiedAreNotGuessed),
+    ("Semantic settings InvariantNumericValidation", SemanticSettingCatalogTests.InvariantNumericValidation),
+    ("Semantic settings ExplicitBooleanEnumAndText", SemanticSettingCatalogTests.ExplicitBooleanEnumAndText),
+    ("Semantic settings SecretErrorsNeverRetainValues", SemanticSettingCatalogTests.SecretErrorsNeverRetainValues),
+    ("Semantic settings MetadataIsImmutable", SemanticSettingCatalogTests.MetadataIsImmutable),
+
     ("Local remote trust RemoteTrustFeatureAndIdentity", LocalOwnerPairingRpcTests.RemoteTrustFeatureAndIdentity),
     ("Local remote trust RemoteTrustBothCeilingsAndNoDeniedContact", LocalOwnerPairingRpcTests.RemoteTrustBothCeilingsAndNoDeniedContact),
     ("Local remote trust RemoteTrustOwnerCannotBypassMachineAndExactRevoke", LocalOwnerPairingRpcTests.RemoteTrustOwnerCannotBypassMachineAndExactRevoke),
