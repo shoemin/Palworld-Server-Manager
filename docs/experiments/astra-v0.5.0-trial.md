@@ -6957,3 +6957,25 @@ Expected changes: Contracts proto/shape validator, Host mapper, SelfTest/descrip
 ### #47e — Review A1: preserve the accepted increasing revision contract
 
 Cross-section review against architecture section9 and ConfigurationRevisionRepository found the initial mapper's UUID-shaped revision contradicted the accepted monotonically increasing nonnegative int64 RevisionId. Corrected Host input to long and wire text to exact invariant decimal, including initial zero and Int64.MaxValue. Negative tests refuse UUID/empty/signed/padded/fractional/overflow values. The store remains the only revision issuer; no public password-dependent hash. Initial candidate51dce28 and CI38096219526 are superseded and cannot qualify the corrected candidate. Existing new descriptor history is retained unchanged: the field remains string; only its comment and validation contract change. This was caught before acceptance, not an accepted escape. Two rounds,279 cumulative cycles planned; eleven earlier accepted escapes remain corrected. Renew full validation/A/B/all40 on corrected source.
+
+### #47e — renewed clean Review A
+
+Reviewed the full13-file diff against97cdedd163eadee142be1dddc60c925a941418bf at corrected executable6b12b189e9947e7ee5e2c48967e97bd776eaf49d. Checked every DTO field/enum, Host projection branch, error and buffer boundary; tested all95 baseline names with canary values plus1000 supplementary-Unicode wire roundtrips. Password/unknown-sensitivity values never reach observations or value validation. Existing nonsecret invalid values stay unchanged with closed error codes; absent and empty/default/configured remain distinct, effective absent. Source keys determine availability, metadata stays catalog-owned, inputs/choices have no output alias. Contracts remain Core-independent; no live RPC/feature/IO/authority paths introduced. A1 revision mismatch corrected against architecture section9 and existing ConfigurationRevisionRepository; zero/max/canonical-format negative cases pass. No further substantive finding; clarified aggregate setting-character bounds separately from fixed identity/revision limits. Historical descriptor bytes remain unchanged and match current schema.
+
+Corrected734/734 local, five focused contract groups plus immutable protocol history, zero-warning build,UI/SDK/strict Docs PASS. Corrected candidate Docs38096402043 and native actual job114343082438 PASS. All-three CI38096400693 and fresh post-PR B/final-head Docs/live head/base/clean/source equivalence remain required. Initial734 and CI38096219526 superseded. Two rounds,A1 corrected,279 cumulative cycles planned; no new accepted escape. Previous eleven corrected. All40 below; no owner decision. Whole47 protected read/save/stale-write/stopped-state/durable recovery remains incomplete.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen legacy parser/schema/model/App/LAN unchanged; additive Contracts and Host mapper only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure projection; no file/profile/process write, store writer, endpoint or second Host. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Contracts have no Core reference, verified assembly boundary; ordinary clients and transport/credential consumers unchanged. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Snapshot carries exact ServerRef; identity qualification and malformed/empty Host refusal tested. No rotation/recovery changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No bootstrap/principal/Owner/enrollment or credential paths changed. Valid DTO is not authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote route/contact/trust mutation. Later reads still require both current authorization ceilings; no feature advertised. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants, roots, delegation, presets or creator changes. Approved independent ViewServer/EditSettings retained. | PASS |
+| PROTO-001 | Explicit kind/sensitivity/validation mappings deny unspecified/future values. New settings descriptor retained unchanged, all prior snapshots retained, current descriptor exact comparison. No premature capability negotiation. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Corrected A1 to existing nonnegative increasing RevisionId representation, zero/max/invalid variants tested. No issuer/save/operation executor; protected stale-write/locks/stopped-state/recovery remain required. | PASS |
+| SEC-001 | Positive nonsecret classification before both value projection and validation. Secret/unclassified configured/default/effective/catalog defaults absent, constant errors, no raw request record/logging. Bounds, Unicode, alias rejection, malformed disclosures and 95-key canaries tested. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS/UI/platform or Linux production changes. No field/parity/release claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
