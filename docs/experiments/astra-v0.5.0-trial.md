@@ -6623,3 +6623,24 @@ All16 changed/new documentation files reviewed before PR. Eight issue acceptance
 | PLATFORM-001,PLATFORM-002,LINUX-001 | Existing native Windows seams/single roots, actual multi-user/UI/service checks, local SDK ABI proof. No Host UI, Linux implementation, physical-PC/parity/release acceptance. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28 aggregate / PR183 — fresh Review B
+
+Post-creation review at0876c05dd24ddc6a78905287a83945bddcfda6ac,base9a165373f71b36f8dfa8864f1969f038382551a4: complete16-file PR/local inventory matches;73 insertions/14 deletions reviewed. Fresh pass checked each eight-criterion claim against canonical source/tests and actual completed CI logs, including duplicate-only original-session receipt, withheld replies and receiver death, refusal of any reconnect after unilateral commit, exact unrelated grants/Owner survival and independent originating permission. Four actual receiving-process cases are not mislabeled physical-network or genuine initial-PAKE tests; separate native ceremonies supply that proof. Original binding fixtures remain explicit. No new executable or policy; exact executable CI reuse is appropriate. Current references link aggregate evidence and historical entries retain their original status. Review B0; A0;268 planned cycles. All40 below. Exact-head Docs and live head/base/clean gates remain before merge. No owner decision.
+
+| Invariants | Fresh post-PR aggregate evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,CLIENT-001,MIG-001 | Exact executable comparison and dependency tests retain frozen WPF/LAN, Core-independent ordinary clients and unchanged migration sources. Aggregate delta is documentation only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Actual service/lease qualification and canonical immediate transactions keep authoritative writes on their own Host; network callbacks cannot block local commit. | PASS |
+| CLIENT-002,CLIENT-003,LOCAL-002,LOCAL-004,REMOTE-001 | Real named-pipe TLS/native user identity routes through its own generation; only Host-owned native transport consumes machine keys. No credential values in contracts/audit. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Stable exact Host identities, independent destination capability checks and typed Host/server forests. No fabricated server target or cross-Host grant scope. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Original pins/incarnations retained; stale proof fails. Replacement requires fresh verified PAKE and current local Owner. Native repair/own-key recovery, offline continuity and five process faults preserve exact approval markers. | PASS |
+| LOCAL-001,LOCAL-003,OWNER-001,OWNER-002 | Exactly one current Owner remains unchanged by remote effects. Enrollment/bootstrap/re-home remain canonical independent paths. Revocation and successful audit late-effect checks roll back unauthorized identity changes. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002 | Actual originating local-only/machine-only tests each refuse; denied local users cause zero contact. Pairing/PeerBound/recovery never grants ordinary authority; default roots follow explicit Owner approval only. | PASS |
+| PAIR-003,OPS-001 | Eight acceptance mappings distinguish unconditional local commit from best-effort reciprocal delivery. Original revision/incarnation protects stale changes; no cross-Host atomicity claim or retry queue. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | Exact provenance subtree, unrelated-row preservation, historical-invalid descendants and approved six creator limits. Replacement creates current configured fresh roots without old authority revival. | PASS |
+| PROTO-001,SEC-001 | Explicit local22/1.18 and peer21/1.15, preserved immutable descriptor history, bounded closed replies and constant errors. Audit identities/counts have no secrets; protected Windows credentials separately verified. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No new business executor or operation policy. Canonical transaction + generation-owned bounded workers drain actual tasks before key/lease disposal. Four unpair/five recovery process cases cover durable interruption and cleanup. | PASS |
+| PLATFORM-001,PLATFORM-002,LINUX-001 | Existing native Windows seams/single roots, actual multi-user/UI/service checks, local SDK ABI proof. No Host UI, Linux implementation, physical-PC/parity/release acceptance. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
