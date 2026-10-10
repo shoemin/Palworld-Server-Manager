@@ -87,7 +87,33 @@ message PeerUnpairReply {
   string unpaired_host_id = 2;
   PeerUnpairResult result = 3;
 }
+// Ordinary administration: the actor comes only from this connection's actual TLS proof.
+message PeerTrustPageRequest { string authoritative_host_id = 1; string after_peer_host_id = 2; uint32 limit = 3; }
+enum PeerManagedTrustState {
+  PEER_MANAGED_TRUST_STATE_UNSPECIFIED = 0;
+  PEER_MANAGED_TRUST_STATE_PEER_BOUND = 1;
+  PEER_MANAGED_TRUST_STATE_ACTIVE = 2;
+  PEER_MANAGED_TRUST_STATE_REVOKED = 3;
+}
+message PeerManagedTrustItem {
+  string peer_host_id = 1; PeerManagedTrustState state = 2; int64 incarnation = 3;
+  string current_fingerprint = 4; string pending_fingerprint = 5; bool recovery_required = 6;
+}
+message PeerTrustPageReply {
+  string authoritative_host_id = 1; int64 authorization_revision = 2;
+  repeated PeerManagedTrustItem peers = 3; string next_after_peer_host_id = 4;
+}
+message PeerRevokeTrustRequest {
+  string authoritative_host_id = 1; string peer_host_id = 2;
+  int64 expected_authorization_revision = 3; int64 expected_incarnation = 4;
+}
+message PeerRevokeTrustReply {
+  string authoritative_host_id = 1; string peer_host_id = 2;
+  int64 authorization_revision = 3; int64 incarnation = 4; bool changed = 5;
+}
 service PeerSecurityProtocol {
+  rpc ReadManagedPeerTrust(PeerTrustPageRequest) returns (PeerTrustPageReply);
+  rpc RevokeManagedPeerTrust(PeerRevokeTrustRequest) returns (PeerRevokeTrustReply);
   rpc NegotiateRecovery(PeerHello) returns (PeerHello);
   rpc ReceiveRecoveryCompletion(PeerRecoveryCompletionRequest) returns (PeerRecoveryCompletionReply);
   rpc ReadRecoveryCompletionOffer(PeerRecoveryOfferRequest) returns (PeerRecoveryOfferReply);

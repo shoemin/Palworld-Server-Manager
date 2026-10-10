@@ -11,12 +11,16 @@ public sealed partial class GrantPolicyRepository
 {
     // Bounded observation, never an execution permit. Later writers recheck all authority.
     public LocalPeerTrustPage ReadLocalPeerTrust(LocalPrincipalMutationActor actor,Guid? afterPeer,int limit,CancellationToken ct=default)
+        =>ReadPeerTrust(LocalWriter(actor),afterPeer,limit,ct);
+    public LocalPeerTrustPage ReadRemotePeerTrust(PeerGrantMutationActor actor,Guid? afterPeer,int limit,CancellationToken ct=default)
+        =>ReadPeerTrust(PeerWriter(actor),afterPeer,limit,ct);
+    private LocalPeerTrustPage ReadPeerTrust(GrantWriter writer,Guid? afterPeer,int limit,CancellationToken ct)
     {
         if(limit is <1 or >16||afterPeer==Guid.Empty)throw new ArgumentException("Invalid peer page.");
-        ct.ThrowIfCancellationRequested();var writer=LocalWriter(actor);
+        ct.ThrowIfCancellationRequested();
         using var c=Open();using var tx=c.BeginTransaction(deferred:false);
         var before=Read(c,tx);writer.Require(c,tx,before);
-        AuthorizeOrAudit(c,tx,writer,before.Revision,new("ReadPeerTrust",hostId,null,"LocalPeerPage"),()=>
+        AuthorizeOrAudit(c,tx,writer,before.Revision,new("ReadPeerTrust",hostId,null,writer.Actual.Kind==ActorKind.LocalPrincipal?"LocalPeerPage":"RemotePeerPage"),()=>
         {
             if(!before.Policy.CanUseHost(writer.Actual,HostCapability.ManageTrustedManagers,hostId))
                 throw new UnauthorizedAccessException("Trust inspection refused.");

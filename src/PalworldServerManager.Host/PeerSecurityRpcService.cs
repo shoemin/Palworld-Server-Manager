@@ -7,7 +7,7 @@ using PalworldServerManager.Host.Persistence;
 
 namespace PalworldServerManager.Host;
 
-public sealed class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : PeerSecurityProtocol.PeerSecurityProtocolBase
+public sealed partial class PeerSecurityRpcService(PeerSecurityRpcRuntime runtime) : PeerSecurityProtocol.PeerSecurityProtocolBase
 {
     public const int MaximumMessageBytes = 16 * 1024;
     internal static Guid Id(string text) => Guid.TryParseExact(text, "D", out var id) && id != Guid.Empty ? id : throw new ArgumentException();

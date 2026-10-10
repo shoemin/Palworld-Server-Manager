@@ -24,6 +24,19 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--peer-trust-administration-probe"])
+    {
+        await PeerTrustAdministrationRpcTests.FeaturesAndHistory();
+        await PeerTrustAdministrationRpcTests.IndependentMachineCeiling();
+        await PeerTrustAdministrationRpcTests.ExactForestAndIdempotence();
+        await PeerTrustAdministrationRpcTests.SelfRevocationAndOldSession();
+        await PeerTrustAdministrationRpcTests.StaleMalformedAndOwnerRefusals();
+        await PeerTrustAdministrationRpcTests.BoundedReadAndCorruptProjection();
+        await PeerTrustAdministrationRpcTests.OriginalProofAndNonActiveStates();
+        await PeerTrustAdministrationRpcTests.AuditRollbackAndOwnedDispatch();
+        await PeerTrustAdministrationRpcTests.FeatureBeforeRotationObservation();
+        Console.WriteLine("PASS nine peer trust administration scenarios."); return 0;
+    }
     if (args is ["--local-trust-network-probe"])
     {
         await LocalOwnerPairingRpcTests.TrustNetworkFeaturesAndClosedProfiles();
@@ -903,6 +916,16 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Peer trust administration FeaturesAndHistory", PeerTrustAdministrationRpcTests.FeaturesAndHistory),
+    ("Peer trust administration IndependentMachineCeiling", PeerTrustAdministrationRpcTests.IndependentMachineCeiling),
+    ("Peer trust administration ExactForestAndIdempotence", PeerTrustAdministrationRpcTests.ExactForestAndIdempotence),
+    ("Peer trust administration SelfRevocationAndOldSession", PeerTrustAdministrationRpcTests.SelfRevocationAndOldSession),
+    ("Peer trust administration StaleMalformedAndOwnerRefusals", PeerTrustAdministrationRpcTests.StaleMalformedAndOwnerRefusals),
+    ("Peer trust administration BoundedReadAndCorruptProjection", PeerTrustAdministrationRpcTests.BoundedReadAndCorruptProjection),
+    ("Peer trust administration OriginalProofAndNonActiveStates", PeerTrustAdministrationRpcTests.OriginalProofAndNonActiveStates),
+    ("Peer trust administration AuditRollbackAndOwnedDispatch", PeerTrustAdministrationRpcTests.AuditRollbackAndOwnedDispatch),
+    ("Peer trust administration FeatureBeforeRotationObservation", PeerTrustAdministrationRpcTests.FeatureBeforeRotationObservation),
+
     ("Local trust network TrustNetworkFeaturesAndClosedProfiles", LocalOwnerPairingRpcTests.TrustNetworkFeaturesAndClosedProfiles),
     ("Local trust network TrustNetworkDeniesBeforeOutboundContact", LocalOwnerPairingRpcTests.TrustNetworkDeniesBeforeOutboundContact),
     ("Local trust network TrustNetworkOwnerPreparesActualReciprocalUnpair", LocalOwnerPairingRpcTests.TrustNetworkOwnerPreparesActualReciprocalUnpair),

@@ -95,7 +95,7 @@ internal static class PeerRecoveryRpcTests
             Bad(()=>PeerRecoveryCompletionWire.ValidateReply(bad,request,a));
         }
         Bad(()=>PeerRecoveryCompletionWire.ValidateReply(reply,request,b));
-        var hello=PeerSecurityRpcRuntime.RecoveryHello(a);Check(hello.Handshake.Protocol.Minor==14&&hello.Handshake.Capabilities.SequenceEqual(new[]{FeatureCapability.PeerRecoveryCompletion,FeatureCapability.PeerRecoveryCompletionOffer}));
+        var hello=PeerSecurityRpcRuntime.RecoveryHello(a);Check(hello.Handshake.Protocol.Minor==15&&hello.Handshake.Capabilities.SequenceEqual(new[]{FeatureCapability.PeerRecoveryCompletion,FeatureCapability.PeerRecoveryCompletionOffer}));
         Check(!PeerSecurityRpcRuntime.Hello(a).Handshake.Capabilities.Contains(FeatureCapability.PeerRecoveryCompletion));
     }
     public static async Task BothRecoveryExactReceiptAndLostReplyDuplicate()

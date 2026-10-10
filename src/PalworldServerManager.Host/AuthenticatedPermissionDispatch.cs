@@ -37,7 +37,8 @@ internal sealed class LocalPermissionDispatcher(LocalSecurityRpcRuntime runtime,
 
 internal sealed class PeerPermissionDispatcher(PeerSecurityRpcRuntime runtime, GrantPolicyRepository repository)
 {
-    internal async Task<T> Invoke<T>(HttpContext context, Func<PeerPermissionCall,T> action, CancellationToken ct)
+    internal async Task<T> Invoke<T>(HttpContext context, Func<PeerPermissionCall,T> action, CancellationToken ct,
+        FeatureCapability requiredFeature=FeatureCapability.PeerTrustActivation)
     {
         ArgumentNullException.ThrowIfNull(action); PermissionDispatchChannel.Require(context);
         var connection = context.Features.Get<PeerSecurityRpcConnection>();
@@ -47,6 +48,7 @@ internal sealed class PeerPermissionDispatcher(PeerSecurityRpcRuntime runtime, G
         {
             if (session.Protocol is null) throw new InvalidOperationException("Negotiate this connection first.");
             session.Protocol.Require(FeatureCapability.PeerTrustActivation);
+            session.Protocol.Require(requiredFeature);
             var proof = new PeerGrantMutationActor(runtime.HostId, session.PeerId, session.PeerFingerprint, session.LocalFingerprint, session.PeerIncarnation);
             runtime.Authentication.AuthenticateOrdinary(proof, cancellation.Token);
             using var call = new PeerPermissionCall(repository, proof, cancellation.Token,runtime.UnpairNotifications);
@@ -128,6 +130,8 @@ internal sealed class PeerPermissionCall(GrantPolicyRepository repository, PeerG
     PeerUnpairCoordinator? notifications=null) : PermissionCall(ct)
 {
     private readonly PeerUnpairCoordinator? notifier=PeerUnpairCoordinator.MatchHost(notifications,actor.HostId);
+    internal LocalPeerTrustPage ReadPeerTrust(Guid? afterPeer,int limit)
+    { Guard();return repository.ReadRemotePeerTrust(actor,afterPeer,limit,Cancellation); }
     internal long RequireHost(HostCapability capability, Guid target)
     { Guard(); return repository.RequireRemoteHostCapability(actor, capability, target, Cancellation); }
     internal long RequireServer(ServerCapability capability, ServerRef target)
