@@ -206,7 +206,7 @@ public static class WindowsHostComposition
             options.MaxSendMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
         });
         WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate,
-            fingerprint => rpc.Repository.RecognizesTransportFingerprint(fingerprint) || rpc.Repository.RecognizesActiveRecoveryFingerprint(fingerprint),
+            rpc.Repository.RecognizesPeerEndpointFingerprint,
             rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint), transportMiddleware);
         var app = builder.Build(); app.MapGrpcService<PeerSecurityRpcService>(); return app;
     }
