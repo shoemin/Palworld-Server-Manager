@@ -6736,3 +6736,11 @@ Bounded acceptance: UI-independent immutable Core definitions and structured val
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration or OS/runtime/UI behavior; Core stays BCL-only, CI permits47 native qualification without altering main eligibility. Windows SDK/UI/full checks retain scope. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47a / PR184 — accepted semantic settings catalog
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 at2713fe1659a01e46e61dc550d8eb2765ece17040; final head2b3965d24327a06125afe65f9ae4426965e08815, executabledc47c63b6a6b00e4f9368cafcae7a058809cc7e8. Final CI38092124841 all three required jobs PASS; actual logs114330528012/114330528118/114330528123 inspected, including ordinary716/716, zero-warning build, UI, Rust2/native16/all genuine ceremonies and all four Windows service starts with recovery/unpair fault cases and complete cleanup. Candidate Docs38092126445 and exact final Docs38092733242 PASS. Exact live base/head/clean/source-equivalence gates PASS. Full delta7 files299 insertions/1 deletion.
+
+Review A1 unknown sensitivity and B1 numeric trailing NUL corrected; renewed A/B/all40 clean, three rounds,271 cumulative cycles. Six local semantic groups and716/716 full,UI/SDK/strict Docs PASS. No new accepted escape; ten historical escapes corrected. Accepted124 experimental PRs61–184, fourteen canonical children SHADOW DONE. #47 remains IN PROGRESS: document preservation, remaining known catalog semantics, Host DTO/read/save/revisions/recovery are outstanding. Owner-approved ViewServer nonsecret reads and EditSettings saves resolve the only pending product question. No other owner decision/external contact required. Canonical/main unchanged; accessibility WAIVED never PASS; no physical/Palworld/parity/Linux/release claim.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
