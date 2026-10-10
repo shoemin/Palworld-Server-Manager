@@ -87,6 +87,10 @@ internal sealed class LocalPermissionCall(GrantPolicyRepository repository, Loca
     private readonly PeerUnpairCoordinator? notifier=PeerUnpairCoordinator.MatchHost(notifications,actor.HostId);
     internal LocalPeerTrustPage ReadPeerTrust(Guid? afterPeer,int limit)
     { Guard();return repository.ReadLocalPeerTrust(actor,afterPeer,limit,Cancellation); }
+    internal LocalPeerReplacementPage ReadPeerReplacements(Guid? afterReplacement,int limit)
+    { Guard();return repository.ReadLocalPeerReplacements(actor,afterReplacement,limit,Cancellation); }
+    internal PeerReplacementApprovalResult ApprovePeerReplacement(long revision,Guid replacement)
+    { Guard();return repository.ApprovePeerReplacement(actor,revision,replacement,Cancellation); }
     internal long RequireHost(HostCapability capability, Guid target)
     { Guard(); return repository.RequireLocalHostCapability(actor, capability, target, Cancellation); }
     internal long RequireServer(ServerCapability capability, ServerRef target)

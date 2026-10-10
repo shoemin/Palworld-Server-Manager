@@ -24,6 +24,20 @@ if (args.Length > 0)
     }
     if (args is ["--operation-lifecycle-child", var opRoot, var opHost, var opId, var opProfile, var opScope, var opMode, var opMutex])
         return OperationCrashTests.RunChild(opRoot, opHost, opId, opProfile, opScope, opMode, opMutex);
+    if (args is ["--local-peer-replacement-probe"])
+    {
+        await LocalPeerTrustRpcTests.ReplacementFeatureAndIdentityBoundaries();
+        await LocalPeerTrustRpcTests.ReplacementRequiresActualOwnerNotCapabilities();
+        await LocalPeerTrustRpcTests.ReplacementRechecksOwnerAndVerifier();
+        await LocalPeerTrustRpcTests.ReplacementAppliesFreshDefaultsAndPreservesOtherPeer();
+        await LocalPeerTrustRpcTests.ReplacementRejectsChangedCandidateEvidence();
+        await LocalPeerTrustRpcTests.ReplacementPagesBoundedAndNeverApprovalPermits();
+        await LocalPeerTrustRpcTests.ReplacementStaleMalformedAndAuditRollback();
+        await LocalPeerTrustRpcTests.ReplacementConcurrentApprovalHasOneWinner();
+        await AuthenticatedPermissionDispatchTests.ReplacementRequiresOwnedSessionAndFeature();
+        await AuthenticatedPermissionDispatchTests.ReplacementCancellationAndFacadeLifetime();
+        Console.WriteLine("PASS ten local Owner replacement RPC/dispatch scenarios."); return 0;
+    }
     if (args is ["--local-peer-trust-probe"])
     {
         await LocalPeerTrustRpcTests.FeatureAndWireHistory();
@@ -1322,6 +1336,16 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Local connect exposes only authenticated semantic Host and principal identity", ClientSecurityCompositionTests.ConnectionIdentity),
     ("Ordinary client negotiation and prepared-key proof fail closed", ClientSecurityCompositionTests.NegotiationAndProofBoundaries),
     ("Host service worker releases resources and distinguishes stop from failure", HostServiceWorkerTests.Lifecycle),
+    ("Local Owner ReplacementFeatureAndIdentityBoundaries", LocalPeerTrustRpcTests.ReplacementFeatureAndIdentityBoundaries),
+    ("Local Owner ReplacementRequiresActualOwnerNotCapabilities", LocalPeerTrustRpcTests.ReplacementRequiresActualOwnerNotCapabilities),
+    ("Local Owner ReplacementRechecksOwnerAndVerifier", LocalPeerTrustRpcTests.ReplacementRechecksOwnerAndVerifier),
+    ("Local Owner ReplacementAppliesFreshDefaultsAndPreservesOtherPeer", LocalPeerTrustRpcTests.ReplacementAppliesFreshDefaultsAndPreservesOtherPeer),
+    ("Local Owner ReplacementRejectsChangedCandidateEvidence", LocalPeerTrustRpcTests.ReplacementRejectsChangedCandidateEvidence),
+    ("Local Owner ReplacementPagesBoundedAndNeverApprovalPermits", LocalPeerTrustRpcTests.ReplacementPagesBoundedAndNeverApprovalPermits),
+    ("Local Owner ReplacementStaleMalformedAndAuditRollback", LocalPeerTrustRpcTests.ReplacementStaleMalformedAndAuditRollback),
+    ("Local Owner ReplacementConcurrentApprovalHasOneWinner", LocalPeerTrustRpcTests.ReplacementConcurrentApprovalHasOneWinner),
+    ("Local Owner ReplacementRequiresOwnedSessionAndFeature", AuthenticatedPermissionDispatchTests.ReplacementRequiresOwnedSessionAndFeature),
+    ("Local Owner ReplacementCancellationAndFacadeLifetime", AuthenticatedPermissionDispatchTests.ReplacementCancellationAndFacadeLifetime),
     ("Local peer trust FeatureAndWireHistory", LocalPeerTrustRpcTests.FeatureAndWireHistory),
     ("Local peer trust OwnerRevokesExactPeerAndPreservesOthers", LocalPeerTrustRpcTests.OwnerRevokesExactPeerAndPreservesOthers),
     ("Local peer trust NonOwnerNeedsExactCurrentCapability", LocalPeerTrustRpcTests.NonOwnerNeedsExactCurrentCapability),
