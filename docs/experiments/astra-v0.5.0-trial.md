@@ -6688,3 +6688,29 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 ### #47a / PR184 — fresh Review B finding
 
 Fresh complete7-file review at4f80d833aedf2388bf7a1d8ba55a82cdbf8208dd checked metadata, culture/representation edge cases, absence semantics, immutable arrays, secret presentation and all40. An independent isolated probe proved .NET numeric parsers return success for a trailing NUL despite the existing trim/invariant checks. Thus malformed semantic numeric input could receive Valid. Added explicit control-character refusal to both integer and finite-number paths, plus single/double-NUL and newline regressions for each. This is B1, found only by fresh post-PR review/probe, not an accepted escape. There is no live settings endpoint. Previous A evidence/head8f149f6 and CI38091695609 remain superseded for final acceptance. Repeat affected/full validation, renewed A/all40 and fresh B on this same PR are mandatory. Three total implementation/correction rounds,planned271 cumulative cycles; no owner decision.
+
+### #47 — owner-approved settings visibility
+
+2026-10-10. Exact owner answer: "Approve ViewServer reads and EditSettings saves (recommended)". This resolves the previously unspecified read/schema permission mapping. ViewServer authorizes nonsecret GetSettingsSchema/GetServerSettings; EditSettings authorizes SaveSettings, each for the exact ServerRef. Neither grants the other. Remote requests require both originating local-user permission and independent destination machine ceiling; stored passwords remain hidden. Existing revisions/stopped-state/operation safety, secret redaction and six creator limits remain unchanged. No canonical issue/Project edit or outside contact. This is authorization for subsequent47 Host API work, not a claim that it is implemented. No owner decision remains outstanding.
+
+### #47a / PR184 — renewed Review A after B correction
+
+Corrected executabledc47c63b6a6b00e4f9368cafcae7a058809cc7e8; base210899f0901950af2fff5d1129d348be19056a2f. All7 files and entire final component reviewed again. Six focused groups and full716/716,zero-warning build,UI,SDK and strict Docs PASS; exact candidate Docs38092126445 PASS. Final native job114330528012 actual Rust2/native16/all genuine ceremonies logs inspected. Initial/sensitivity-only full runs also716/716 and CIs38091361517/38091695609 all-three PASS, explicitly superseded. Final CI38092124841 ordinary/service plus actual logs and exact final Docs remain gates.
+
+Original A1 unknown sensitivity and B1 trailing-NUL findings are corrected. Independent probe now returns FiniteNumberRequired/IntegerRequired for trailing NUL; tests also cover repeated NUL and newline. No further finding. Three implementation/correction rounds,planned271 cycles; no accepted escape. Complete source/stale search confirms no legacy behavior change, no inferred domain limits/default/restart, no new client dependency/authority/endpoint. Approved owner visibility policy is recorded as future Host work. Renewed all40 below; fresh B still follows this renewed A.
+
+| Invariants | Review evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | New Core namespace only; exact diff proves original schema/parser/service/model unchanged from frozen baseline. No App/LAN edits or changed legacy callers. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure immutable lookup/validation; no IO, database, mutation callback or authoritative Host surface. Host writes remain later47 work. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No reference graph, client, credential or transport change; Core definitions are not exposed by direct client dependency. Later Host mapping explicitly required. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identities, server routing, rotation or credential replacement touched. Per-server defaults/effective values are not fabricated in global catalog. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/session/credential changes; semantic validation cannot grant authority or substitute for protected Host admission. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Accepted dual ceilings and canonical trust paths remain unchanged; no new network API or offline queue. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No capability/preset/default/creator writer; six approved creator permissions/limits and exact provenance remain intact. Semantic default null is not a grant or installation value. | PASS |
+| PROTO-001 | Owner-approved later reads require ViewServer and saves EditSettings, without implication between them; exact target/dual ceilings retained. No wire contract/feature or historical descriptor changes. Core enums have explicit values; unsupported semantics refuse and future values are not coerced. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No editable-resource write/executor/lock policy. Revision/stopped-state/durable save/recovery remain mandatory in later47 units. Framework and ordinary suite unchanged except six new tests. | PASS |
+| SEC-001 | Passwords reject generic assignment, including empty/null. Error values contain key/closed code only; no input value, logging or default secret. Raw sensitivity is explicitly null; missing metadata cannot classify unknown values as public. Numeric control input is explicitly refused. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration or OS/runtime/UI behavior; Core stays BCL-only, CI permits47 native qualification without altering main eligibility. Windows SDK/UI/full checks retain scope. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
