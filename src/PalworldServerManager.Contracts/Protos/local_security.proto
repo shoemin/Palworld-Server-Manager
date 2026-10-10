@@ -2,8 +2,8 @@ syntax = "proto3";
 package palworld.manager.v1;
 option csharp_namespace = "PalworldServerManager.Contracts.Wire";
 import "Protos/host.proto";
-import "Protos/peer_pairing.proto";
 import "Protos/peer_security.proto";
+import "Protos/peer_pairing.proto";
 
 // No native caller identity, actor/Owner setter or private key is accepted from a request.
 // Field numbers are permanent. Secrets must never be formatted as diagnostic messages.
@@ -129,7 +129,14 @@ enum LocalPeerRecoveryPullResult {
 // Separate intrinsic observations. No new Owner approval or cross-Host atomic result.
 message LocalCompletePeerRecoveryReply { LocalPeerRecoveryPushResult sent = 1; LocalPeerRecoveryPullResult received = 2; }
 
+message LocalRemotePeerTrustPageRequest { LocalPeerContactRequest destination = 1; string after_peer_host_id = 2; uint32 limit = 3; }
+message LocalRemoteRevokePeerRequest {
+  LocalPeerContactRequest destination = 1; string peer_host_id = 2;
+  int64 expected_authorization_revision = 3; int64 expected_incarnation = 4;
+}
 service LocalSecurityProtocol {
+  rpc ReadRemotePeerTrust(LocalRemotePeerTrustPageRequest) returns (PeerTrustPageReply);
+  rpc RevokeRemotePeerTrust(LocalRemoteRevokePeerRequest) returns (PeerRevokeTrustReply);
   rpc Negotiate(Handshake) returns (LocalHandshakeReply);
   rpc IssueChallenge(LocalPrincipalRequest) returns (LocalChallenge);
   rpc Authenticate(LocalProof) returns (LocalPrincipalIdentity);
