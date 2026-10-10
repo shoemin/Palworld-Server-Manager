@@ -6834,3 +6834,25 @@ Local726/726,focused8,independent72-map probe,zero-warning build,UI,Windows SDK 
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS behavior, UI or Linux changes. Pure BCL metadata; no new dependency or parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47c / PR186 — fresh final Review B
+
+Fresh post-PR review of pushed headf666b77eaa5ed7df7da67e54ddcaa376ae166d29 against1cdb611f0553cb71413cebdae97f4f7ebf1fccb5, all seven files. Rechecked the full literal table, frozen schema evidence, canonical lookup/fallback, test substitutions/registrations and current documentation. Re-ran the separate72-entry inventory probe after PR creation: PASS. Explicit enum spelling is exact and choices remain immutable; numerical validation still checks syntax without inventing domain ranges. Classifying established nonsecret kinds does not classify unsupported/future keys. Both password cases still require explicit secret actions; all absent metadata stays absent. No authority, wire, persistence, platform or legacy-consumer effect. No new finding or correction, A0/B0/one round,274 cumulative cycles planned. No accepted escape.
+
+Full726/726 plus focused8/independent72/build/UI/SDK/strict Docs PASS. Executable-equivalence from68716b819b2003db5acfea054c2cf472fbead67c to reviewed head is empty. Candidate Docs38093971195/native actual logs PASS; final all-three CI38093969822 completed logs and exact final-head Docs/live branch/base/clean checks remain merge gates. Full invariant re-evaluation below remains clean. Whole47 Host/encoding/revisions/stopped-state/recovery acceptance is still outstanding; no pending owner decision or fabricated field qualification.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Only additive v0.5 catalog/tests/docs changed; frozen schema/parser/model/App/LAN remain unchanged. Literal maps resolve canonical legacy keys without changing legacy consumers. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Metadata/validation only: no IO, process, persistence callback, Host executor or write boundary. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No project/reference/client/transport changes; future Host mapping remains mandatory, ordinary clients cannot depend on Core. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identities, cross-Host routing, credential rotation or recovery changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No local principal, Owner, credential, enrollment or session effect. Metadata does not confer authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/RPC/admission effects. Approved independent originating-user and receiving-machine checks remain mandatory for later settings routes. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No capability/default/preset/creator writer. Known setting types are not authorization capabilities; creator six/limits unchanged. | PASS |
+| PROTO-001 | No wire fields/enums/descriptors/feature changes. New domain choices are closed explicit lists; future values remain preserved in documents and cannot be coerced into known choices. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No resource save, lock or operation executor. Revision/stopped-state/recovery gates remain outstanding Host work. | PASS |
+| SEC-001 | Password definitions/generic-write refusal unchanged. Only explicitly established nonsecret kinds gain positive classification; unclassified examples retain null sensitivity. No raw/default/effective values or new error logging. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS behavior, UI or Linux changes. Pure BCL metadata; no new dependency or parity/release claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
