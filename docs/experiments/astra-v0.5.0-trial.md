@@ -6564,3 +6564,27 @@ All current component links distinguish completed originating/receiving/local ac
 | PLATFORM-001,PLATFORM-002 | Existing single Windows composition/native platform seam; actual UI/SDK/native checks. No service interactive action/new OS branch or physical/parity claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #28z / PR182 — fresh Review B
+
+Post-PR review at26e2af3153163023cb71adc00e177b8025895767, basee07f291b731f5b1a72589aa83c4405c3455ca6b8, executable21b6e6414fd1b5e0c4ad83edf7249f9bbdbff2f8. Complete33-file PR/local inventory and437-insertion/26-deletion diff reviewed, clean and executable-equivalent. Full40 audit below. No external review surface used.
+
+Fresh counterexample pass: local-only versus machine-only grants, Owner attempting ungranted remote administration, wrong local Host scope, foreign runtime/generation, permission removal during normal negotiation, independent remote commit followed by local verifier change, revoked/recovery/PeerBound destination, wrong semantic peer or missing feature, native connection reconnection, original incarnation ABA, repeated self-revoke, malformed/duplicate/out-of-order page/cursor, unknown state, public-pin bounds, decreasing result revisions, legitimate marker-only Changed, cancellation before/during traffic and stopped admission. Fixed trusted callbacks derive actor from original local authentication; no wire callback or claimed Owner/proof exists. Current checks occur before transport creation and again before command/reporting. Fresh transport records original completed proof once; reconnect cannot substitute a second proof. Both directions retain their own canonical authority. Response loss or late local refusal cannot roll back the receiver and never enqueues a retry. Malformed remote IDs now remain a peer-proof refusal, rather than caller-input error.
+
+Current local710/710,focused9,zero-warning build,native16/all genuine ceremonies,UI/SDK/strict Docs PASS. Candidate Docs38090314868 PASS. Corrected native CI job114325233497 actual logs inspected: Rust2/native16/all genuine ceremonies and cleanup PASS. Corrected CI38090313175 ordinary/service jobs plus actual logs and final exact Docs/live gates remain mandatory. Original full/CI38090199397 explicitly superseded/canceled, no PASS claim. Two rounds,A0/B0,planned267 cumulative cycles; no new accepted escape. Current docs link completed local/receiving/originating components and retain separate parent28 aggregate acceptance. No owner decision/external reviewer/contact; creator six/limits approved, accessibility WAIVED never PASS; prior optional local cleanup policy hold remains without workaround. Canonical/main/normal/physical/parity/Linux/release unchanged.
+
+| Invariants | Fresh post-PR Review B evidence | Result |
+|---|---|---|
+| ARCH-001,ARCH-002,MIG-001,LINUX-001 | All33 PR/local files matched; additive v0.5 Host/contracts/tests/docs only, frozen application/LAN/migration/Linux untouched. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Fixed sending Host and existing authoritative receiving writer; no client/direct filesystem write or network-held transaction. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Actual native protected local connection routes through its own Host; only Host native transport consumes machine key. No client dependency change. | PASS |
+| IDENT-001,IDENT-002,AUTH-001,AUTH-005 | Exact destination and selected semantic peer; local permission targets remote authoritative Host, receiver checks independent machine capability. No ServerRef/scope fabrication. | PASS |
+| IDENT-003,IDENT-004,PAIR-004 | Original completed key pair/incarnation retained throughout fresh attempt, no proof refresh or recovery authorization. Legitimate canonical observation remains independent of later command result. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Original owned local session serialized; current actual verifier and permission checked before contact/send/report. Owner cannot bypass remote ceiling. No Owner/bootstrap/enrollment change. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003 | Real denial produces zero outbound connection despite machine grant; each ceiling tested separately. Ordinary Active non-recovery only. Independent remote commit may survive local refusal; no cross-Host rollback or automated retry. | PASS |
+| AUTH-002,AUTH-003,AUTH-004 | All authority effects remain canonical receiver forest/default/creator writers; six approved creator rights unchanged. Source actions issue no grants or implicit rights. | PASS |
+| PROTO-001,SEC-001 | Independent explicit22/21 and local1.18/peer1.15; immutable history. Closed bounded reply correlation/order/cursor/pins, nonregressing observations and canonical malformed-ID rejection; constant errors without remote details. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Existing expected revision/incarnation guard, marker-only Changed semantics preserved. Entire15-second-canceled attempt is generation-owned through actual disposal; real stopped in-flight request tested. No durable operation/queue/escaped facade. | PASS |
+| PLATFORM-001,PLATFORM-002 | Existing Windows native/composition seams; UI/SDK/native validation, no interactive Host or new platform branch. Field/parity/release remains downstream. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
