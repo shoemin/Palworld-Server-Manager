@@ -25,7 +25,7 @@ internal static partial class WindowsPeerProcessFixture
     // followed by a public cleanup acknowledgement. Neither code enters JSON/argv/config/logs.
     internal sealed record Report(string Kind, int Pid, Guid Instance, Guid Host, string Pin, string Key,
         Uri Address, string? CurrentPeerPin, Guid? PendingRotation, string? PeerState, DateTimeOffset? BindingExpiry, string? VerifiedPeerPin = null, Uri? PairingAddress = null, Guid? Invitation = null,
-        RecoveryProcessState? Recovery = null);
+        RecoveryProcessState? Recovery = null, UnpairProcessState? Unpair = null);
     private static async Task<string> Line(Stream reader, CancellationToken ct)
     {
         // Never use StreamReader here: read-ahead could decode the next private code
@@ -76,7 +76,8 @@ internal static partial class WindowsPeerProcessFixture
         }
         internal async Task<Report> Command(string action, Uri address, CancellationToken ct)
         {
-            var tag = action switch { "activate" => (byte)1, "receipt" => (byte)2, "refuse-activation" => (byte)5, "recovery-state" => (byte)6, _ => throw new ArgumentException("Unknown control action.") };
+            var tag = action switch { "activate" => (byte)1, "receipt" => (byte)2, "refuse-activation" => (byte)5, "recovery-state" => (byte)6,
+                "unpair-state" => (byte)7, "unpair-refuse-activation" => (byte)8, _ => throw new ArgumentException("Unknown control action.") };
             await Send(tag, address, ct); return await Read(ct);
         }
         private async Task Send(byte tag, Uri address, CancellationToken ct)
@@ -153,6 +154,8 @@ internal static partial class WindowsPeerProcessFixture
             using var watchdog = ct.Register(() => Environment.Exit(2));
             using var lease = Lease(config); var host = new FixtureHost(config); host.RequireFixture();
             Check(config.RecoveryFault is >=0 and <=6,"Unknown recovery fixture mode.");
+            Check(config.UnpairFault is >=0 and <=4 && (config.UnpairFault==0 || config.RecoveryFault==0),"Unknown or ambiguous unpair fixture mode.");
+            if(config.UnpairFault!=0)return await RunUnpairChild(host,ct);
             if(config.RecoveryFault!=0)return await RunRecoveryChild(host,ct);
             Check((config.NativePath is null) == (config.NativeHash is null), "Incomplete native fixture selection.");
             // Native provider lifetime encloses every generation/attempt. Null deliberately
