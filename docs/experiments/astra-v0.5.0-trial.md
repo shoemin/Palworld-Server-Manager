@@ -7850,3 +7850,14 @@ The new service qualification is reached before Ready.ManagedStorageQualified an
 All40 freshly audited; stale/call-site/reference search clean. Three correction/verification rounds,308 cumulative planned; two automated pre-A defects, no A-only/B-only finding and no accepted escape. Whole47/48 IN PROGRESS; no owner decision; accessibility WAIVED, never PASS. Exact final head/base/clean/executable-equivalence and actual completed all-three logs remain before merge into experiment only.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47j / PR198 - accepted managed settings file binding
+
+2026-10-11. Merged only into experiment/astra-v0.5.0 as8ef0c1f84ecdf71f7fedaf9d0c62ab55d58654fa. Final reviewed head a7b705c081d5492801fc7f3128482662c507fbbe; executable737e7034db7f099037f08e34dcf9b39732a86348. All-threeCI38114107730 PASS; completed native114395460011/service114395460165/build114395460209 logs inspected. Local/remote783/783, five focused groups, zero-warning build, UI/actual Windows SDK/strict Docs PASS. Rust2/native16/genuine ceremonies, four actual service starts requiring exact managed-file read/nonmutation/mismatch/missing-active assertions before readiness plus restricted-child/five recovery/four unpair cases, both real nonadmin raw-file/adapter denials, and full service/group/users/profiles/files cleanup verified. CandidateDocs38114109412/ADocs38114447726/finalDocs38114520988 PASS; exact final head/base/clean/executable-equivalence gate PASS. Seven files360insertions.
+
+Two pre-A automated findings corrected: null-conditional fixture counter and nullable ReadOnlyMemory missing/empty distinction. A/B/all40 and reference search clean, no review-only finding. Three rounds,308 cumulative accepted cycles. Accepted138 experimental PRs61-198; fourteen canonical children SHADOW DONE. No new accepted escape; all12 remain corrected. Whole47/48 IN PROGRESS, approved independent read/save permissions and six creator limits unchanged. Prior checkpointDocs38113369867 verified PASS; no owner decision pending.
+
+This accepts the closed managed-file adapter, not a production settings read/save endpoint. Next bounded Host unit combines current ViewServer proof, exact inventory binding, nonsecret parsing/mapping and serialized content revision observation, including same-transaction final permission/registration validation. No raw OS grants, stopped-state, atomic pair or real Palworld/parity/Linux/release claims. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
