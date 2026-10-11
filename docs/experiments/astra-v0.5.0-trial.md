@@ -7025,3 +7025,11 @@ Final corrected local/remote734/734,focused five contract groups plus immutable 
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS/UI/platform or Linux production changes. No field/parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47e / PR188 — accepted settings observation mapping
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 at487ab8a7d792148e1ad99e4574870e91110376fe; final headb6cf3a43222863bcc14f056070c37131a2f8aacb, executable2b0624298ff0df3f7dd12e418d407749df81901f. Final CI38097020804 all-three PASS; actual completed native114344904151/build114344904099/Windows114344904033 logs inspected for all required tests/real ceremonies/four service starts and complete cleanup. Candidate Docs38097022266 and exact final Docs38097644754 PASS. Live head/base/clean/source-equivalence gates PASS. Full change13 files471 insertions/3 deletions. Earlier CI38096219526/38096400693 are superseded.
+
+Local/remote734/734,focused five contract groups/history,95-key canaries,1000 Unicode wire roundtrips and actual parser-to-mapper underscore/Unicode cases,zero-warning build,UI/SDK/strict Docs PASS. A1 revision contract and B1 identifier mismatch corrected; renewed reviews/all40 clean. Three rounds,280 cumulative cycles. No new accepted escape; eleven prior escapes corrected. Accepted128 experimental PRs61–188,fourteen canonical children SHADOW DONE. #47 remains IN PROGRESS for semantic patch integration and protected read/save/revisions/stopped-state/durable recovery. No owner decision pending. Approved ViewServer/EditSettings and creator limits unchanged; accessibility WAIVED never PASS; canonical/main/physical/parity/Linux/release unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
