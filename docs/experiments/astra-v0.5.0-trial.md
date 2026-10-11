@@ -8047,3 +8047,28 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 
 
 #48f A review correction before acceptance: allowed cryptographic refusal codes now apply only before signing succeeds (open/signer/sign stages60/63). An error during subsequent verification cannot be relabeled as denial. No production code change. Positive-control candidate941723e local801/801/build0/UI/actual SDK/strict Docs passed; its actual service CI38118881696 remains pending. Final guard requires renewed build/full local and all-three CI. Four rounds319 planned cumulative if accepted, no accepted escape or owner decision.
+
+
+### #48f review A - restricted child native-key denial
+
+2026-10-11. Reviewed complete five-file diff against base3ad72f4073c2c5d63d9bbc3ba690234817b1597f; final executable3b86b23f3b8182a0eba7619d649f7ee82961de94. A technical PASS after the stage60/63-only refusal correction and repeated validation. Required local build0/801 of801/UI/actual Windows SDK/strict Docs PASS. FinalCI38119290786 native114410502094 and service114410501982 completed; actual logs inspected: Rust2/native16/genuine ceremonies, four service starts with native-key/protected-file denial, parent fresh signing and unchanged storage, recovery5/unpair4/managed storage, both real nonadmin denials, shipped flows and full service/group/users/profiles/files cleanup PASS. Final build job114410502138 remains pending; no complete CI/merge PASS claimed. CandidateDocs38119292336 PASS.
+
+A examined all changed files, both process-entry call sites, exact synthetic cache name/backing-file mapping, native key lifetime, restrictive error classification, ordinary-session refusal, cancellation/retained-handle cleanup, station restoration and positive controls. Initial service stage60 failure was ambiguous; diagnostic run returned NTE_BAD_KEYSET, not positive key use. Parent exact-name fresh reopening before/after and child ephemeral provider control prevent absent-key/provider failures from falsely passing. Review then restricted expected refusal statuses to before signing succeeds; post-sign verification errors cannot pass. The final actual service run includes that correction. No production launcher/credential/ACL policy was changed; all private material remains fixture-owned. Four implementation/correction rounds319 planned cumulative, no accepted escape.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | No frozen WPF/LAN/legacy code changes; only synthetic service harness and docs. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing disposable service and owned fixture credentials under existing exclusivity/cleanup; no production executor or writer added. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency or transport change. Child receives public key name and paths only, not private material. Actual key-use denial proved at all four final service starts. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Existing synthetic Host identity/material/cache reused, no credential replacement or rotation semantics changed. Parent signing checks same owned key. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/principal credential or local channel changes. Actual service identity and restricted token checked before child IO. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No peer/pairing/trust authority change; actual native ceremonies remain mandatory regression evidence. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No canonical grants, presets/defaults/creator paths or OS privilege policy changed. Existing unique child token/desktop experiment retained. | PASS |
+| PROTO-001 | Test process argument list only; no Contracts/feature/minor/descriptor change. Fixed exit stages and exact denial codes fail closed. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No game/save/operation implementation. Existing retained child handle wait/terminate/drain and exact station restore retained; full owned fixture cleanup verified. | PASS |
+| SEC-001 | Parent nonexportable key signs/verifies before/after; child native key use and native/encrypted file reads must be denied; unchanged backing files; no private bytes/logs/args. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Only Windows-specific test harness; no migration/shell action/new OS production branch/Linux implementation. | PASS |
+
+All40 audited and stale/call-site search checked. Exact child argument shape, only one real service caller plus ordinary negative probe, ready only after successful checks, and existing retirement/cleanup verified. A authorizes creation of the experimental PR, then fresh B and final completed CI/Docs/exact-state gates. Whole47/48 IN PROGRESS; no real Palworld, full sandbox, parity, Linux or release qualification. Accessibility WAIVED, never PASS. No owner decision pending.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
