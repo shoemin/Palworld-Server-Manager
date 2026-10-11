@@ -10,7 +10,8 @@ using PalworldServerManager.Client.Platform.Windows;
 namespace PalworldServerManager.SelfTest;
 
 // Qualification only, not a production launcher or a claim about Palworld/mod isolation.
-// No real credential is passed to the child and no shared token/desktop ACL is changed.
+// No real credential is passed to the child. Only the disposable service's verified
+// logon station receives a temporary unique-SID grant, restored before fixture completion.
 internal static class WindowsRestrictedLaunchQualification
 {
     private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
@@ -92,7 +93,7 @@ internal static class WindowsRestrictedLaunchQualification
                 NativeCheck(CreateRestrictedToken(source, 1, 0, IntPtr.Zero, 0, IntPtr.Zero,
                     (uint)sids.Values.Length, sids.Values, out var reduced), "restricted token");
                 using (reduced)
-                using (var desktop = new OwnedDesktop(identity.User))
+                using (var desktop = new OwnedDesktop(identity.User, sids.ChildSid, source))
                 {
                     ConfigureChildObjectDacl(reduced, identity.User, sids.ChildSid);
                     var startupAccess = desktop.ProbeAccess(reduced);
@@ -145,18 +146,7 @@ internal static class WindowsRestrictedLaunchQualification
             try
             {
                 var identities = new List<SecurityIdentifier> { new(WellKnownSidType.WorldSid, null), new(WellKnownSidType.BuiltinUsersSid, null), ChildSid };
-                GetTokenInformation(source, 28, IntPtr.Zero, 0, out var needed);
-                if (needed > 0)
-                {
-                    Check(needed <= 4096, "Unexpected logon SID size."); var buffer = Marshal.AllocHGlobal(needed);
-                    try
-                    {
-                        NativeCheck(GetTokenInformation(source, 28, buffer, needed, out _), "logon SID");
-                        var count = Marshal.ReadInt32(buffer); Check(count is 0 or 1, "Unexpected logon SID count.");
-                        if (count == 1) identities.Add(new(Marshal.ReadIntPtr(buffer, IntPtr.Size == 8 ? 8 : 4)));
-                    }
-                    finally { Marshal.FreeHGlobal(buffer); }
-                }
+                // Do not inherit the shared logon SID's access to other service objects.
                 Values = identities.Select(sid =>
                 {
                     var bytes = new byte[sid.BinaryLength]; sid.GetBinaryForm(bytes, 0);
@@ -187,9 +177,11 @@ internal static class WindowsRestrictedLaunchQualification
     private sealed class OwnedDesktop : IDisposable
     {
         private IntPtr handle;
+        private IntPtr ownedStation;
+        private byte[]? originalStationSecurity;
         private string stationName = "", desktopName = "";
         internal IntPtr Name { get; private set; }
-        internal OwnedDesktop(SecurityIdentifier service)
+        internal OwnedDesktop(SecurityIdentifier service, SecurityIdentifier child, SafeAccessTokenHandle source)
         {
             var original = GetThreadDesktop(GetCurrentThreadId());
             try
@@ -200,9 +192,21 @@ internal static class WindowsRestrictedLaunchQualification
                 try { NativeCheck(GetUserObjectInformationW(station, 2, buffer, needed, out _), "station name"); stationName = Marshal.PtrToStringUni(buffer)!; }
                 finally { Marshal.FreeHGlobal(buffer); }
                 Check(!stationName.Equals("WinSta0", StringComparison.OrdinalIgnoreCase), "Interactive service station refused.");
+                VerifyServiceLogon(source, stationName);
+                ownedStation = OpenWindowStationW(stationName, false, 0x60000);
+                NativeCheck(ownedStation != IntPtr.Zero, "open owned service station security");
+                originalStationSecurity = ReadSecurity(ownedStation);
+                var descriptor = new RawSecurityDescriptor(originalStationSecurity, 0);
+                Check(descriptor.DiscretionaryAcl is not null, "Missing service station DACL.");
+                // Operational station rights only, no WRITE_DAC/WRITE_OWNER/DELETE for child.
+                descriptor.DiscretionaryAcl!.InsertAce(descriptor.DiscretionaryAcl.Count,
+                    new CommonAce(AceFlags.None, AceQualifier.AccessAllowed, 0x2037F, child, false, null));
+                var changed = new byte[descriptor.BinaryLength]; descriptor.GetBinaryForm(changed, 0);
+                uint securityInformation = 4;
+                NativeCheck(SetUserObjectSecurity(ownedStation, ref securityInformation, changed), "temporary child station rights");
                 var name = "AstraRestricted" + Guid.NewGuid().ToString("N");
                 desktopName = name;
-                NativeCheck(ConvertStringSecurityDescriptorToSecurityDescriptorW($"D:P(A;;GA;;;{service.Value})(A;;GA;;;WD)", 1, out var sd, out _), "desktop security");
+                NativeCheck(ConvertStringSecurityDescriptorToSecurityDescriptorW($"D:P(A;;GA;;;{service.Value})(A;;0x201ff;;;{child.Value})", 1, out var sd, out _), "desktop security");
                 try
                 {
                     var security = new SecurityAttributes { Size = Marshal.SizeOf<SecurityAttributes>(), Descriptor = sd };
@@ -210,7 +214,7 @@ internal static class WindowsRestrictedLaunchQualification
                     NativeCheck(handle != IntPtr.Zero, "private desktop");
                 }
                 finally { LocalFree(sd); }
-                // Never switch the visible desktop or alter an existing object's ACL.
+                // Never switch a visible desktop or grant access to a pre-existing user/system station.
                 Name = Marshal.StringToHGlobalUni(stationName + "\\" + name);
                 if (GetThreadDesktop(GetCurrentThreadId()) != original) NativeCheck(SetThreadDesktop(original), "restore fixture thread desktop");
             }
@@ -219,19 +223,54 @@ internal static class WindowsRestrictedLaunchQualification
         internal string ProbeAccess(SafeAccessTokenHandle reduced)
             => WindowsIdentity.RunImpersonated(reduced, () =>
             {
-                var station = OpenWindowStationW(stationName, false, 0x000F037F);
+                var station = OpenWindowStationW(stationName, false, 0x2037F);
                 var stationError = station == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
                 if (station != IntPtr.Zero) NativeCheck(CloseWindowStation(station), "close diagnostic station handle");
-                var desktop = OpenDesktopW(desktopName, 0, false, 0x000F01FF);
+                var desktop = OpenDesktopW(desktopName, 0, false, 0x201FF);
                 var desktopError = desktop == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
                 if (desktop != IntPtr.Zero) NativeCheck(CloseDesktop(desktop), "close diagnostic desktop handle");
                 // Object names are test-only nonsecret Windows resource metadata.
-                return $"station={stationName}, stationFullError={stationError}, desktopFullError={desktopError}";
+                return $"station={stationName}, stationOperationalError={stationError}, desktopOperationalError={desktopError}";
             });
+        private static void VerifyServiceLogon(SafeAccessTokenHandle source, string name)
+        {
+            GetTokenInformation(source, 10, IntPtr.Zero, 0, out var length);
+            Check(length is >= 16 and <= 4096, "Unexpected token statistics size."); var buffer = Marshal.AllocHGlobal(length);
+            try
+            {
+                NativeCheck(GetTokenInformation(source, 10, buffer, length, out _), "service logon identity");
+                var low = unchecked((uint)Marshal.ReadInt32(buffer, 8)); var high = unchecked((uint)Marshal.ReadInt32(buffer, 12));
+                Check(high != 0 || low is not (0x3e4 or 0x3e5 or 0x3e7), "Shared built-in service logon refused.");
+                Check(name.Equals($"Service-0x{high:x}-{low:x}$", StringComparison.OrdinalIgnoreCase), "Station does not match this service logon.");
+            }
+            finally { Marshal.FreeHGlobal(buffer); }
+        }
+        private static byte[] ReadSecurity(IntPtr station)
+        {
+            uint information = 4;
+            GetUserObjectSecurity(station, ref information, null, 0, out var length);
+            Check(length is > 0 and <= 65536, "Unexpected station descriptor size."); var bytes = new byte[length];
+            NativeCheck(GetUserObjectSecurity(station, ref information, bytes, length, out _), "read station security"); return bytes;
+        }
         public void Dispose()
         {
-            if (Name != IntPtr.Zero) { Marshal.FreeHGlobal(Name); Name = IntPtr.Zero; }
-            if (handle != IntPtr.Zero) { NativeCheck(CloseDesktop(handle), "close private desktop"); handle = IntPtr.Zero; }
+            try
+            {
+                if (ownedStation != IntPtr.Zero && originalStationSecurity is not null)
+                {
+                    uint information = 4;
+                    NativeCheck(SetUserObjectSecurity(ownedStation, ref information, originalStationSecurity), "restore station security");
+                    var restored = new RawSecurityDescriptor(ReadSecurity(ownedStation), 0).GetSddlForm(AccessControlSections.Access);
+                    Check(restored == new RawSecurityDescriptor(originalStationSecurity, 0).GetSddlForm(AccessControlSections.Access), "Station security restoration mismatch.");
+                    originalStationSecurity = null;
+                }
+            }
+            finally
+            {
+                if (Name != IntPtr.Zero) { Marshal.FreeHGlobal(Name); Name = IntPtr.Zero; }
+                try { if (handle != IntPtr.Zero) { NativeCheck(CloseDesktop(handle), "close private desktop"); handle = IntPtr.Zero; } }
+                finally { if (ownedStation != IntPtr.Zero) { NativeCheck(CloseWindowStation(ownedStation), "close owned station security handle"); ownedStation = IntPtr.Zero; } }
+            }
         }
     }
 
@@ -267,4 +306,6 @@ internal static class WindowsRestrictedLaunchQualification
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)] private static extern IntPtr OpenWindowStationW(string name, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint access);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)] private static extern IntPtr OpenDesktopW(string name, uint flags, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint access);
     [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseWindowStation(IntPtr station);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetUserObjectSecurity(IntPtr handle, ref uint information, [Out] byte[]? descriptor, uint length, out uint needed);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetUserObjectSecurity(IntPtr handle, ref uint information, byte[] descriptor);
 }
