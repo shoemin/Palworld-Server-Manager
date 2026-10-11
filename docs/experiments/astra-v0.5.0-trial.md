@@ -7587,3 +7587,13 @@ The correction gives only the test's current user full control of its new dispos
 All40 covered after correction. Three rounds,301 cumulative planned; no accepted escape or owner decision. Final gates remain completed current-run logs, final-head Docs and live head/base/clean/executable equivalence. Whole47/48 IN PROGRESS; real Palworld/parity/release unqualified, accessibility WAIVED never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47h / PR195 - accepted bounded Windows file reader
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 as65400cd1a6c8991d380288fd7540a3b940bc04b0. Final reviewed head1714e23f399a04b5e2281c7e23e45a7653d48f1b; executable46d65ff30f12caecd61d0f0be369bddddebb7807. Corrected all-threeCI38108989638 PASS; completed native114380405179/service114380405293/build114380405320 logs inspected. Rust2/native16/genuine ceremonies,769/769 including all six actual file groups, UI/zero warnings, four actual service starts each with restricted launch plus five recovery/four unpair cases and full service/group/users/profiles/files cleanup verified. Corrected candidateDocs38109350316/finalDocs38109444899 PASS. Exact final head/base/clean/source-equivalence gate PASS. Six files464 insertions.
+
+Corrected local769/769,six focused groups,zero-warning build,UI/actual SDK/strict Docs PASS; independent C++ SDK x64 file ABI verified. Initial38108135990 remains768/769 FAIL due the test's inherited-DACL restoration comparison; controlled protected fixture baseline passes without weakening exact checks. Renewed A/B/all40 clean. Three rounds,301 cumulative accepted cycles. Accepted135 experimental PRs61-195; fourteen canonical children SHADOW DONE. No new accepted escape; all12 remain corrected. Whole47/48 IN PROGRESS, no owner decision pending; read/save permissions and six creator limits unchanged.
+
+No production file-read caller, save/revision/lifetime policy, complete sandbox or real Palworld/parity/Linux/release claim. Next bounded work prepares a protected managed-storage root beside the private Host root through the existing privileged bootstrap boundary, without widening product-parent or private-Host permissions. Accessibility WAIVED, never PASS. Prior checkpointDocs38107780842 verified PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
