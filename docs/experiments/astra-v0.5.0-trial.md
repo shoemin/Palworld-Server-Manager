@@ -8097,3 +8097,14 @@ B attempted false-PASS paths: nonexistent/wrong key, failed CNG provider, succes
 All40 freshly audited. Whole-result reference search verified the real service call, negative ordinary-session call, exact child entry shape, credential-store digest mapping and readiness gate. No B-only finding, no new accepted escape; four rounds319 planned cumulative. Initial and diagnostic failures remain recorded; the intermediate positive-control service run also passed, but only the final guarded executable is used for acceptance. Whole47/48 remain IN PROGRESS; no pending owner decision. Accessibility WAIVED, never PASS; real Palworld/parity/Linux/release evidence remains unavailable and unclaimed.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #48f / PR201 - accepted restricted child credential denial
+
+2026-10-11. Merged only into experiment/astra-v0.5.0 ase62932cdea8dafed671be3e12f839d3701287943. Final B head53d0141ab3ecfd3164f2021af136edfbe9422c8b; executable3b86b23f3b8182a0eba7619d649f7ee82961de94. FinalCI38119290786 all-three completed PASS, actual native114410502094/service114410501982/build114410502138 logs inspected. Local/remote801/801/build0/UI/actual local SDK/strict Docs PASS. Rust2/native16/genuine ceremonies, four actual service starts with native-key/protected-file denial, fresh parent signing/unchanged storage, recovery5/unpair4/managed storage, real two-user denials, shipped flows and full service/group/users/profiles/files cleanup verified. CandidateDocs38119292336/ADocs38119845238/finalDocs38119896153 PASS. Exact final head/base/clean/executable-equivalence gates PASS. Five files150insert13delete.
+
+Initial service38118365420 stage60 failure and diagnostic38118597076 NTE_BAD_KEYSET refusal remain preserved, both cleanup PASS; neither proved private signing. Added parent exact-key fresh-open/signing and child ephemeral provider controls. Intermediate positive-controlCI38118881696 all-three PASS. A then caught a post-sign verification error classification weakness, corrected and fully rerun on final executable. B no additional finding. Four rounds319 cumulative accepted cycles. Accepted141 experimental PRs61-201; fourteen canonical children SHADOW DONE;801 ordinary tests; all12 prior accepted escapes corrected, no new escape.
+
+Whole47/48 remain IN PROGRESS. Next bounded prerequisite qualifies own-tree writes and reciprocal sibling denial for restricted children under disposable managed-storage folders, preserving Host-key/process protections and cleanup. No production launcher, complete sandbox, real Palworld/parity/Linux/release acceptance. No owner decision pending. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
