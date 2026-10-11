@@ -7637,3 +7637,27 @@ Root validation remains a momentary observation, not a retained filesystem permi
 All40 reviewed; call-site and contradictory-reference search clean after bootstrap-only correction. Two rounds,303 cumulative planned; no new accepted escape. Whole47/48 IN PROGRESS. Accessibility WAIVED, never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48e / PR196 - Review B PASS, final gates pending
+
+Fresh second review of fc0f1076f3e73b28e4a2ec6bac3e1f5d82f25498 against fd710f3fb0ec6206a75823e30f158dbc3c012708. Reviewed the entire12-file result again, including bootstrap-only correction, platform contracts/ACL/path behavior, all policy groups, SCM readiness, both actual nonadmin actions, offline independence fixture, product-parent equality and cleanup ownership. No substantive B finding. Corrected executable d3f34f2afd29e12ccfa0cfa0dbf32970e593785c is unchanged. Local773/773, zero-warning build, UI/actual SDK/strict Docs PASS. Corrected38110726166 native logs inspected (Rust2/native16/genuine Owner/re-pair/recovery/first-contact); remaining completed service/build evidence and final-head Docs are still gates.
+
+An existing valid container is observed only: children are neither adopted nor repaired. Rejecting an unsafe root does not mutate it. New protected creation can survive a subsequent bootstrap failure without creating server or Owner authority. Parent safety and no-follow checks are observations under trusted fixed composition, not a general path sandbox or retained handle guarantee; future consumers still require exact identity/root binding and authorized operation lifetime. ACLs grant no ordinary-user/creator filesystem access. Corrected recovery test deliberately gives nonbootstrap commands an invalid overlapping storage root while retaining their real credential success assertions; it cannot pass merely by skipping those commands. Current product bootstrap fixes the path without a new caller-controlled option. Actual service qualification is required at every configured start and false/missing readiness is rejected. Stale/call-site references agree with this boundary.
+
+| Invariant | Fresh whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform/CLI/tests/docs, with frozen WPF/LAN unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Only existing elevated stopped/exclusive bootstrap creates a container; no second machine authority or new online writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency/private key/direct file operation or routing change. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Stable semantic identities and credential transitions unchanged; storage cannot gate recovery. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Bootstrap remains explicit intended-principal admission; root existence conveys no enrollment/Owner authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No pairing/Active trust/remote ceiling change, with genuine native regression evidence retained. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants, defaults, presets, delegation or creator issuance; approved read/save and six-right limits exact. | PASS |
+| PROTO-001 | No wire/negotiation/enum/history changes. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No stale-save, tracked lifetime or operation claim; offline setup explicitly not a database filesystem transaction. | PASS |
+| SEC-001 | Exact three-ACE protected root; no unsafe repair/parent widening/secret logs/user access; real denial and cleanup evidence required. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Source data untouched; Windows-specific behavior remains in platform adapter; no interactive service UI or Linux work. | PASS |
+
+All40 covered. Two rounds,303 cumulative planned; all12 accepted escapes remain corrected, no new accepted escape. Whole47/48 IN PROGRESS; no owner decision. Merge requires completed all-three corrected CI logs, final Docs and exact current head/base/clean/executable equivalence. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release claim.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
