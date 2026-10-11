@@ -7235,3 +7235,25 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 Initial48c zero-warning build, five focused actual process/permission/concurrency groups, UI, actual Windows SDK and strict Docs PASS. Full local/remote regression and both reviews remain pending. No implementation correction so far.
 
 Review A source inspection found A1: the new synthetic Rig could leave a partially copied fixture directory if its constructor failed before returning. Added verified-root cleanup around startup failure. Initial CI38101720074 canceled/superseded; no PASS or explicit cleanup claim from that canceled disposable run. Initial local suite is allowed to finish before rebuilding binaries; corrected full validation and all remote gates remain mandatory. Independent actual-library probe captured259/-1 through the retained handle after disposing the original launcher Process objects, with owned fixture cleanup. This probe exercises unchanged production code and does not replace corrected full validation.
+
+### #48c — Review A
+
+Reviewed corrected executable548d42275a83464bb4fddf323e484e8c31bfb59c againstf636d75eb4d01e2345bc17f6b668f4146a273735: all eight files, handle ownership transfer and failure cleanup, exact time/image comparison, wait-before-exit-code distinction, disposal serialization, public result shapes and test-owned process permission changes. A1 fixture-constructor cleanup corrected; no remaining finding. Initial755/755 retained as superseded evidence; corrected zero-warning build,focused five groups,full755/755,actual UI/SDK/strict Docs PASS. Independent actual-library retained-handle259/-1 check after launcher-object disposal PASS with cleanup. Source/ref search finds no launch/kill surface, client caller, frozen edits, new dependency or implicit server-ownership/stopped-state claim. Two implementation/verification rounds,287 cumulative cycles planned.
+
+Final executable CI38102044377 matches; native114359806161 PASS, remaining actual logs pending. No owner decision or new accepted escape. PR creation next; fresh B/all40 and exact final Docs/CI/head/base/clean/source-equivalence gates remain before merge. Complete audit:
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform contracts/partial implementation; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Retained read-only OS handle, no game control, store write, new Host or operation executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client reference/transport/credential/outbound connection changes; leases remain trusted Host data. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | PID/time/image matches exact opened OS object; no server identity or ownership invented. Host still maps qualified ServerRef. No Host identity/rotation changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal/bootstrap/Owner/channel effects or credential access. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network/remote shortcut; current dual permissions remain required by future Host operations. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants/defaults/presets/creator/delegation paths changed; an attachment is not permission to control a server. | PASS |
+| PROTO-001 | No wire/negotiation change. Unknown attachment/exit state explicit and non-authorizing; private factories prevent contradictory result shapes. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/revision/lock/finalization changed. One observed exit is not whole-world quiescence. Same handle preserves exact exit bits including259/-1; missing exit code is explicit, never fabricated success. | PASS |
+| SEC-001 | Query/synchronize only, no token/VM/private-key rights or raw path logs. Safe ownership transfer, deterministic cancellation/failure disposal, locked read/dispose; actual denied new open does not invalidate retained handle. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows APIs stay behind Host-side seam; no migration, shared-Core OS branch, interactive shell or Linux code. Actual synthetic evidence does not claim real Palworld/service launch/parity/release. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
