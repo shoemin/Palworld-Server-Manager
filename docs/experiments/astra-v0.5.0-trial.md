@@ -7938,3 +7938,14 @@ Fresh attack review checked mutable request/byte ownership assumptions, exact lo
 All40 freshly audited; repeated stale/call-site search clean. Whole47/48 IN PROGRESS; no owner decision; approved ViewServer reads/EditSettings saves and six creator limits unchanged. Accessibility WAIVED, never PASS. No real Palworld/parity/Linux/release claim. Final exact gates authorize experiment-only merge.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47k / PR199 - accepted authorized Host settings observations
+
+2026-10-11. Merged only into experiment/astra-v0.5.0 as c1911689c5720385520f3cade2c01e3148cb5c96. Final reviewed head a764d5ebd5cf3c6924a94980d8494234cb918afa; corrected executable cd33cc124f2bdc65ccbb685acdc0b02779476d8a. CorrectedCI38115672364 all-three PASS, completed native114399969155/service114399968888/build114399968796 logs inspected. Local/remote791/791, eight focused groups, build0/UI/actual SDK/strict Docs PASS. Rust2/native16/genuine ceremonies, four service starts with managed settings/restricted-child/five recovery/four unpair qualification, two-user denials, shipped bootstrap/recovery/client checks and full service/group/users/profiles/files cleanup verified. CandidateDocs38115673477/ADocs38116091379/finalDocs38116261634 PASS; exact final head/base/clean/executable-equivalence gate PASS. Ten files570insert3delete.
+
+A corrected queued-revocation coverage and scheduling/cleanup weaknesses. Completed initialCI38115304757 reported789/790 on its old cross-thread Task.Run assumption; corrected during A before that completed log arrived. Initial local790 passed and initial service cleanup passed, but neither is corrected-code acceptance. No production correction or B-only finding. Two rounds,310 cumulative accepted cycles. Accepted139 experimental PRs61-199; fourteen canonical children SHADOW DONE. No accepted escape; all12 earlier escapes remain corrected. Whole47/48 IN PROGRESS, approved independent read/save permissions and six creator limits unchanged. Prior checkpointDocs38114853568 PASS; no owner decision pending.
+
+This accepts the internal Host read engine and same-transaction proof/inventory checks, not an already connected settings RPC or save. Next connect the reader to authenticated local and peer APIs plus originating-Host forwarding, with one shared Host reader, additive negotiated descriptors and bounded response transport that preserves existing authentication message limits. No real Palworld/parity/Linux/release qualification. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
