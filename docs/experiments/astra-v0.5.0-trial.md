@@ -7563,3 +7563,27 @@ Rechecked unchanged reader: anchored no-follow traversal and same-handle link/ty
 All40 covered; same PR195 remains open for renewed B and final CI/Docs/head/base/clean/source-equivalence gates. Whole47/48 IN PROGRESS; accessibility WAIVED, never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47h / PR195 - corrected Review B PASS, merge gates pending
+
+2026-10-10. Fresh B review of1e09b778c2acb211b89a5751ebe1a49346abfccc against ba7cf6838bb915281440763015cc302a46612c8b, including entire six-file result and corrected fixture. No substantive B finding. Executable46d65ff30f12caecd61d0f0be369bddddebb7807 unchanged. Corrected local769/769, six focused actual file groups, zero-warning build, actual UI/SDK/strict Docs and independent native ABI PASS. Corrected38108989638 still requires completed ordinary/service logs; no overall CI PASS or merge claimed.
+
+The correction gives only the test's current user full control of its new disposable file before applying a read denial; it does not touch directory/production ACLs. Exact restored-DACL equality, positive reread and fixture deletion remain mandatory. Original remote failure is retained as768/769 FAIL, not relabeled. Rechecked whole reader ownership, native signatures/masks, relative-name handling, before/after same-handle metadata checks, error privacy and all successful/error/cancellation disposal paths. No later path reopen or hidden authority fallback appears. Caller responsibilities and writable-mapping limitation remain explicit. All affected test dispatch/documentation references agree; no source or dependency change beyond the planned seam.
+
+| Invariant | Fresh corrected whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/legacy Core untouched; additive platform/read tests only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | No production caller, filesystem writer, online state writer or second authority. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency, credential or transport route altered. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Semantic identities and all rotation/recovery boundaries unchanged. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal enrollment/Owner/bootstrap/channel changes. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Existing independent remote authorization and trust rules remain; actual native evidence reviewed. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/delegation/creator effects; approved limits unchanged. | PASS |
+| PROTO-001 | No protocol or immutable history change; unknown native statuses become Unavailable. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Passive byte observation only, no revision/lock/lifetime/recovery authority inferred. | PASS |
+| SEC-001 | Link/type/size checks precede bytes; fixed errors and no partial results; corrected fixture preserves exact ACL checks without production relaxation. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, interactive action or Linux code; native behavior remains in explicit Windows seam. | PASS |
+
+All40 covered after correction. Three rounds,301 cumulative planned; no accepted escape or owner decision. Final gates remain completed current-run logs, final-head Docs and live head/base/clean/executable equivalence. Whole47/48 IN PROGRESS; real Palworld/parity/release unqualified, accessibility WAIVED never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
