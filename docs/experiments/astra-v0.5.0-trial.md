@@ -7103,3 +7103,25 @@ Acceptance: exact local qualified target only; missing/nullable data distinguish
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
 
 Initial verification corrected a test-fixture error: revoking the Owner must also clear its verifier, as required by the existing schema. Five focused groups, zero-warning build, UI, actual Windows SDK ABI and strict Docs now pass. Full local regression and remote qualification are pending; no review/acceptance claim yet.
+
+### #48a — Review A
+
+Reviewed executable 641ea90a6f8045a22ad6a6dd536129fb681b1b20 against base6ba4aa5a0c87624ec781dacbce07f371b56d422e, every changed file and sibling creator inventory/revision/authorization paths. SQL predicates use both canonical identity components; initialized Host/Owner and inventory share a single read transaction. Connection opens read-only without HostDatabase's creating helper. Strict getters preserve nullable/empty and Int32 observations and reject storage/time corruption without repair or value-bearing errors. Disposal/error/cancellation paths inspected; returned immutable data is explicitly not current authorization, protected-path proof or process-finalization evidence. No new production finding (A0). Test-discovered fixture correction above; two implementation/verification rounds,283 cumulative cycles planned. Independent scratch project initially had a wrong relative DLL path, corrected before execution; no production defect or false PASS from that setup failure.
+
+Local745/745, five focused groups, zero-warning build, actual Avalonia UI, actual Windows SDK ABI and strict Docs PASS. Independent probe using actual built assemblies passed500 atomic Owner/inventory commits with132 concurrent reads, never observing the revoked-Owner inventory; existing empty directory remained database-free. Table snapshots verify no inventory/grant/revision/identity mutation. CI38099569342 executable head matches; native job114352509738 PASS, remaining actual logs still pending. Stale/reference search found no new callers, wire DTO reuse, second inventory authority, lifecycle claims or changed frozen files. Complete six-file diff and all40 matrix below clean. PR creation is next, not merge; fresh Review B and all remote/exact-head gates remain.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive Host.Persistence reader; frozen WPF/Core legacy/LAN untouched; no dependency change. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing authoritative DB read only; no root/schema creation, second authority, mutation or process executor. Caller retains exclusivity. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client/reference/transport/credential changes; raw inventory remains Host-only. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact local Host-qualified query and cross-Host collision refusal; no Host identity/rotation/recovery change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized exact Host and exactly one active Owner required in snapshot; no enrollment/bootstrap/Owner effect. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No network/trust effect or remote shortcut. Both remote ceilings remain required by later consumers. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/creator/delegation path changes. Observation is not authority; six creator permissions/limits unchanged. | PASS |
+| PROTO-001 | No wire or negotiation change; reader is not RPC/DTO. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Read-only snapshot does not create revisions/locks/operations or classify stopped state. Future effects require current authority/revision/locks/recovery. | PASS |
+| SEC-001 | No settings/secret store access. Constant malformed-storage errors and field-free default object formatting; raw path/provenance never emitted by production reader. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration/path interpretation/OS process/shell/Linux code. CI change only enables existing native qualification for48 branches; no physical/parity/release claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
