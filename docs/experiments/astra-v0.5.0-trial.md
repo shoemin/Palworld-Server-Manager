@@ -7822,3 +7822,31 @@ Tests found two pre-review defects (fake null-conditional counter and nullable m
 All40 reviewed. Approved read/save independence and six creator limits unchanged. Whole47/48 IN PROGRESS; no owner decision; accessibility WAIVED, never PASS. No real Palworld/parity/Linux/release claim. Next open the experimental PR, then fresh B and all completed remote/exact-head gates before merge.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47j / PR198 - fresh Review B PASS, merge gates pending
+
+2026-10-11. Fresh post-PR review of386c79e348139198db61b5d2d7e41e54c12e782e against bb6167686aa4726a7c1f084c5016ed7208331926. Re-read the complete seven-file diff, all production/test/documentation paths and service mandatory-readiness/real-user callers; no external review surfaces inspected and no substitution of A for this pass. No substantive B finding. Executable737e7034db7f099037f08e34dcf9b39732a86348 unchanged;783/783/five focused/build0/UI/actual SDK/strict Docs remain applicable. AD ocs38114447726 PASS (Review A ledger head); final Docs and all-three completed CI38114107730 logs still gate merge.
+
+Deliberately checked route substitution, profile/case aliases, both missing-file cases, failure after one/two buffers, nullable-memory regression, disposal alias views, cancellation before IO/after reads/final policy, exact error redaction, public versus test injection, raw secret logging, creation-on-read, registration/grant assumptions, and service flag/cleanup coverage. None opens an authority, writer, client or credential route. No inode-consistent pair or file freeze is promised; retained bounded native handles protect each read only. The public raw-buffer constructor transfers ownership on successful construction; trusted consumers must not retain/mutate buffers or race disposal. Underlying native allocations and parser copies are not claimed to be universally erased.
+
+The new service qualification is reached before Ready.ManagedStorageQualified and its failure prevents service readiness, so existing four-start parent checks cover these exact managed settings assertions as well as the storage canary. Two real nonadmin calls require both raw settings and protected adapter refusal. Their actual completion and fixture cleanup remain required, not inferred from a local mock. Secret test values are synthetic and no new production logging exists. First/final Host authorization, same-transaction inventory validation and revision issuance are the next consuming unit; read/save independence remains approved and unchanged.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/legacy loader unchanged; added Host-platform seam only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Read-only adapter, no file/database mutation or second Host; fixture preparation remains explicit service/offline qualification. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency, identity holder or transport route changes; raw file object stays Host-side. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Platform profile is trusted local input only, no cross-Host bare ID DTO; exact path binding, no identity/trust/rotation change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/bootstrap/Owner/credential path; protected root does not translate OS eligibility into product authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote endpoint or pairing change; adapter cannot authorize a caller and requires future independent local/remote checks. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant creation/default/delegation/creator effect; ViewServer reads/EditSettings saves remain independent, six creator limits unchanged. | PASS |
+| PROTO-001 | No wire/negotiation/descriptor changes; closed native failures and no caller-selected filename. | PASS |
+| OPS-001 | No revision/save API here; future content observation and fresh stale-save reconciliation remain required. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/process/lock/recovery executor; individual file reads do not claim stopped state or atomic save. | PASS |
+| SEC-001 | Protected root before/after, retained no-follow bounded native reads, owned raw buffers cleared on failure/disposal, fixed path-free errors; no raw wire/log values. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Closed Windows adapter behind Host-only seam; never adopt/edit legacy source, no UI-shell or Linux implementation. | PASS |
+
+All40 freshly audited; stale/call-site/reference search clean. Three correction/verification rounds,308 cumulative planned; two automated pre-A defects, no A-only/B-only finding and no accepted escape. Whole47/48 IN PROGRESS; no owner decision; accessibility WAIVED, never PASS. Exact final head/base/clean/executable-equivalence and actual completed all-three logs remain before merge into experiment only.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
