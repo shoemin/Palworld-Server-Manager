@@ -7083,3 +7083,11 @@ Local740/740,zero-warning build,UI/SDK/strict Docs PASS. Candidate Docs380979222
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Pure shared semantics; no migration/platform/interactive-shell/Linux production changes. No field/parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47f / PR189 — accepted semantic patch preparation
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 at9357ac92445dd5ea2bb84a1461511751b28dd148; final head326b493a2d031e6b8181b2adb9d5ea71cc551aa4, executableecedf6d8868f9e3fb064e58c5f80d4b8eac5f46c. Final CI38097920513 all-three PASS; actual completed native114347605418/build114347605534/Windows114347605527 logs inspected for Rust2/native16/all genuine ceremonies,740/740/UI/zero warnings,four service starts with five recovery/four unpair cases and complete cleanup. Candidate Docs38097922206 and exact final Docs38098457660 PASS. Exact live head/base/clean/source-equivalence gates PASS. Full change7 files265 insertions/3 deletions.
+
+Local/remote740/740,focused six patch groups,independent actual-library/final-size/Unicode/enum/integer/empty-final-plus-addition checks,all six encodings,10000 quoted-pair preservation cases,zero-warning build,UI/SDK/strict Docs PASS. A0/B0/all40 clean,one round,281 cumulative cycles. No new accepted escape; eleven prior escapes corrected. Accepted129 experimental PRs61–189,fourteen canonical children SHADOW DONE. #47 remains IN PROGRESS for protected Host read/save/revisions/stopped-state/durable recovery. Proceed toward the related48 authoritative inventory/lifecycle prerequisite rather than inventing a settings-only stopped flag. No owner decision pending; approved permissions/creator limits unchanged,accessibility WAIVED never PASS; canonical/main/physical/parity/Linux/release unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
