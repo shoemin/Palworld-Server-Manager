@@ -7485,3 +7485,29 @@ All40 A/B audits required, especially HOST-002/SEC-001/PLATFORM-001 and no false
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
 
 Initial47h zero-warning build passed; focused native tests caught fixture-only ACL restoration that had not marked the saved DACL as modified. Restore through a new FileSecurity descriptor and compare read-back DACL explicitly; all six actual Windows groups then PASS. Review A also found A1: drive-qualified spelling alone admits mapped network drives. Added an explicit local-drive-type gate before opening the root. Two implementation/correction/verification rounds,300 cumulative planned; no accepted escape or owner decision. Full corrected local/remote validation required before A PASS.
+
+### #47h - Review A PASS
+
+2026-10-10. Executable11413fba0683f3ab11aeb5bdb2b7f11b49652692 against baseba7cf6838bb915281440763015cc302a46612c8b. Local769/769, six focused actual Windows groups, zero-warning build, UI/actual SDK/strict Docs PASS. Independent x64 C++ compilation against installed Windows SDK verifies Unicode/object/IO/file-information structure sizes/offsets and flag masks. NativeCI114377891341 in38108135990 completed and actual Rust2/native16/genuine ceremony logs inspected; ordinary and service jobs still pending.
+
+Reviewed all six changed files and call paths. No production caller exists: root selection/ACL validation, current authorization, stopped-state and configuration revisions remain separate requirements. Components copied before IO; strict name bounds and local-drive gate; FILE_OPEN/no-follow relative single-component opens; same-handle type/reparse/link/size checks before bytes; no backup intent or privilege retry. All file/ancestor handles retained without write/delete sharing, native structures checked independently, constant categorized failures, allocated result cleared on failure/cancellation and handles released deterministically. Existing writable mappings explicitly remain outside this guarantee. Actual junction/hard-link/ACL/share/refusal and successful post-read deletion/move tests support the narrow claims.
+
+A1 mapped-drive gate and fixture ACL restoration corrected. Stale search covered all new reader/failure symbols, docs and test dispatch; no RPC, production caller, immutable history, grant issuer or package/dependency changes. Two implementation/correction/verification rounds,300 cumulative planned; no new accepted escape or owner decision.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform contract/adapter and SelfTest/docs only; frozen WPF/LAN/legacy Core unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-side read seam, no production caller or authoritative writer; no file creation/ACL/save effect. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency, credential or transport change; trusted Host inputs never exposed as a client arbitrary-path RPC. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No Host/server identity, trust, rotation or recovery changes; path input explicitly not an identity/authority permit. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/bootstrap/Owner changes; reader itself cannot authenticate or grant rights. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No routing/trust/remote authorization change; existing native ceremonies and full ordinary suite remain passing. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/delegation/creator path; approved read/save and creator limits unchanged. | PASS |
+| PROTO-001 | Platform-only failure categories, no public wire or authorization enum change. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No revision issuer, lock, writer or stopped-state claim; byte observation does not become an execution permit or atomic database/filesystem snapshot. | PASS |
+| SEC-001 | No path/content/native exception in errors; no partial bytes; link/redirection refusals before read; no ACL relaxation; secret filtering remains future Host caller responsibility. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Explicit Windows seam, no source migration, shared OS branches, interactive service action or Linux implementation. | PASS |
+
+All40 covered. Whole47/48 remains IN PROGRESS; no real Palworld/parity/release claim. Next authorized action is PR creation and fresh B review, then completed all-three CI logs/final Docs/live head/base/clean/source-equivalence gate for experiment-only merge. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
