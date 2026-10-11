@@ -18,14 +18,22 @@ internal static class WindowsProcessAttachmentTests
         internal readonly Process Child;
         internal readonly WindowsProcessInspector Inspector = new();
         internal ObservedServerProcess Identity => Inspector.Capture().Processes.Single(p => p.ProcessId == Child.Id);
-        internal Rig(int seconds = 60, int exitCode = 0) => Child = SyntheticPalServerHarness.Start(root, seconds, exitCode);
+        internal Rig(int seconds = 60, int exitCode = 0)
+        {
+            try { Child = SyntheticPalServerHarness.Start(root, seconds, exitCode); }
+            catch { DeleteFixtureDirectory(); throw; }
+        }
         public void Dispose()
         {
             try { if (!Child.HasExited) Child.Kill(entireProcessTree: true); Check(Child.WaitForExit(10000)); }
             finally { Child.Dispose(); }
+            DeleteFixtureDirectory();
+        }
+        private void DeleteFixtureDirectory()
+        {
             if (!root.StartsWith(Path.GetFullPath(Path.GetTempPath()) + "PSMProcessAttachment", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Synthetic cleanup refused.");
-            Directory.Delete(root, true);
+            if (Directory.Exists(root)) Directory.Delete(root, true);
         }
     }
 

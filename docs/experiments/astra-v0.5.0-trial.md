@@ -7233,3 +7233,5 @@ Impact: Platform.Contracts attachment/exit/lease types, additive partial Windows
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
 
 Initial48c zero-warning build, five focused actual process/permission/concurrency groups, UI, actual Windows SDK and strict Docs PASS. Full local/remote regression and both reviews remain pending. No implementation correction so far.
+
+Review A source inspection found A1: the new synthetic Rig could leave a partially copied fixture directory if its constructor failed before returning. Added verified-root cleanup around startup failure. Initial CI38101720074 canceled/superseded; no PASS or explicit cleanup claim from that canceled disposable run. Initial local suite is allowed to finish before rebuilding binaries; corrected full validation and all remote gates remain mandatory. Independent actual-library probe captured259/-1 through the retained handle after disposing the original launcher Process objects, with owned fixture cleanup. This probe exercises unchanged production code and does not replace corrected full validation.
