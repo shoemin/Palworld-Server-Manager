@@ -7990,3 +7990,29 @@ Reviewed all changed source/tests/descriptors/docs and surrounding canonical per
 All40 audited; corrected reference searches and cross-document stale claims checked. No new dependency or frozen WPF/LAN change. Whole47/48 IN PROGRESS; independent approved ViewServer reads/EditSettings saves and six creator limits retained. No save/stopped-state/real Palworld/parity/Linux/release qualification; accessibility WAIVED, never PASS. A authorizes PR creation, then fresh B and exact completed CI/Docs gates.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47l / PR200 fresh review B - configured settings APIs
+
+2026-10-11. Reviewed pushed Adf9e2949ed6890b4fda725e217c0550aacff6743 against base6a01153ac96ef6b80dc512644b153e49364188a7; executable9eb33611583446ac7f3375eef5fcbf0d004840f6 unchanged. Fresh B technical PASS, no B-only production or test correction. Local801/801/ten groups/build0/UI/actual Windows SDK/strict Docs PASS. ADocs38118011652 PASS. CorrectedCI38117511741 native114405257236/service114405257392 completed and actual logs PASS; full Build job114405257113 still pending at this review entry. Final merge remains conditional on that completed log, final Docs and exact-head/base/clean/executable-equivalence checks. No premature CI or merge PASS.
+
+B independently traced route and connection confusion, wrong Host/server, absent negotiation/feature, uninitialized/read-less runtime, Edit-only grants, queued authority loss and changed local/peer proof, native credential ownership, Active/recovery/incarnation/pin boundaries, duplicate TLS reconnect, remote response identity/revision substitution, unknown enums, large Unicode and opaque protobuf size, sanitization, shared reader/generation drain and optional missing storage. Existing generated descriptors remain immutable; only two new descriptor files, known-feature additions and separate service stubs. Existing pairing-only map remains unchanged; security service limits16KiB verified by actual oversized calls, settings request16KiB/response4MiB separately bounded. Incoming reader validators stay synchronous with current authenticated facade on the existing owned transaction; remote network proof is rechecked rather than retaining that facade across awaits. No file writer, authority shortcut, credential transfer, effective-value guess or permission implication found.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN and legacy service/parser unchanged; Host uses accepted shared reader. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing machine lease/composition owns one reader; sole state effect is accepted revision observation writer. No client/file writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Contracts remain Core-independent; generated transport stubs stay in Host. Forwarding uses Host-owned TLS, never a machine key in ordinary clients. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact qualified target/reply; fresh completed-TLS proof and current incarnation/pins rechecked, generation cancellation retained, no rotation/recovery policy change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Same authenticated connection/principal feature gate, initialized single Owner, no enrollment/private-user-key/Owner effects. Missing storage does not block bootstrap/recovery startup. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Local ViewServer before contact and before/after read; independent Active/non-recovery machine ceiling. Pairing-only endpoint unchanged; no trust/grant inference. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | Canonical typed exact-scope/lineage policy and same-transaction checks; View-only success, Edit-only denial, no new creator/default/delegation grants. | PASS |
+| PROTO-001 | Additive services/feature25/26, local20/peer17, retained immutable histories; configured advertisement, missing-feature refusals and closed shape/size/revision checks. | PASS |
+| OPS-001 | Positive durable active-content revision, unchanged token stable; private metadata same-transaction authority/inventory checks reused. No save or stale-write acceptance claim. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No long-running operation/new lifecycle executor; short read canceled/drained with generation. Shared reader gate is not stopped proof or destructive-operation lock. | PASS |
+| SEC-001 | No request paths; positive nonsecret classification, unknown/secret suppression and owned buffer clearing; bounded requests/responses and fixed errors. Large Unicode and binary secret-absence checks. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows adapter only at composition root; no source mutation, shell/UI/OS branching/new Linux implementation. | PASS |
+
+All40 freshly audited and whole-result stale/contradictory-reference search repeated; older component descriptions now link the consuming API while preserving pending save/lifecycle requirements. Initial local/CI798/800 remains an explicitly superseded failure on two minor16 expectations, corrected to17 before this review. Five rounds315 planned cumulative, no accepted escape. Whole47/48 remain IN PROGRESS. Approved ViewServer reads/EditSettings saves, both remote ceilings and six creator limits unchanged. Accessibility WAIVED, never PASS. No real Palworld/parity/Linux/release qualification.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
