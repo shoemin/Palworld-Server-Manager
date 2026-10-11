@@ -8108,3 +8108,69 @@ Initial service38118365420 stage60 failure and diagnostic38118597076 NTE_BAD_KEY
 Whole47/48 remain IN PROGRESS. Next bounded prerequisite qualifies own-tree writes and reciprocal sibling denial for restricted children under disposable managed-storage folders, preserving Host-key/process protections and cleanup. No production launcher, complete sandbox, real Palworld/parity/Linux/release acceptance. No owner decision pending. Accessibility WAIVED, never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #48g preflight - restricted per-server writable folders
+
+2026-10-11. Base48031ceb876c74b5c204dfcb8fb023e3bc6ccc56, following accepted PR201. Current #48 body/ShadowReady and all40 invariants reviewed. Bounded test-only prerequisite: two fresh canonical disposable folders under the existing separately protected managed-storage root, each bound to one distinct random restricting SID. Each actual restricted service child must read/write/create/rename/delete its own descendants but be denied sibling read/write/delete/create and own/sibling root DACL changes. Run reciprocal children with retained-handle termination and recheck protected Host key/file/process denial. Parent verifies root permissions and content; cleanup removes only exact owned regular files/empty directories after children terminate, never recursive supplied-path deletion. Existing private Host root permissions remain unchanged.
+
+Expected files: SelfTest restricted qualification partial/helper, Program arguments, NativeTlsServiceFixture invocation/readiness, qualification docs and trial ledger. No production assembly, platform policy, dependency, protocol, persistent writer, registry/grant/creator/default, credential protection or lifecycle executor changes. All effect paths: owned service fixture prepares private canary/key plus fresh managed folders; two copied tokens receive independent restricting SIDs; exact own/sibling paths enter synthetic child arguments; parent checks both then deletes only owned fixture entries. No source import/adoption, local-user OS grants, persisted SID, server registration or production launch. Cleanup errors fail qualification. Authority, credential consumers and sole production persistence ownership remain unchanged.
+
+All40 apply to whole-result review, especially HOST-002/CLIENT-002/SEC-001/PLATFORM-001/OPS-002..004/RECOVERY-001. Actual all-four-start service evidence, two nonadmin regressions, full local801/native/UI/SDK/Docs plus all-three CI, A/B and stale-reference checks required. This tests filesystem separation; it does not select a complete sandbox or prove real Palworld compatibility. Whole47/48 remain IN PROGRESS; no owner decision pending.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+#48g A review strengthening before acceptance: add deliberate constructor interruption after the first prepared folder and an actual restricted-child exit81 after a verified partial write. Require exact owned folder removal, unchanged managed-root ACL and subsequent complete reciprocal children. Initial executable9ea2d9c/CI38120439060 and local suite remain running; no failure or acceptance inferred. Corrected executable will require renewed full validation. No production change or owner decision.
+
+
+### #48g review A - restricted per-server writable folders
+
+2026-10-11. Reviewed complete six-file diff against base48031ceb876c74b5c204dfcb8fb023e3bc6ccc56; corrected executable72d5c158da747a7bc6c5aa95fec659798f536961. A technical PASS after strengthening failure-path evidence and renewed validation. Local801/801/build0/UI/actual Windows SDK/strict Docs PASS. CorrectedCI38120714818 native114414693483/service114414693272 completed with actual logs inspected: Rust2/native16/genuine ceremonies; all four service starts with reciprocal writable-folder checks, interrupted preparation and actual child-write cleanup, retained native-key/private-file/process denial, parent signing/integrity, recovery5/unpair4/managed storage; two actual nonadmin denials, shipped flows and full service/group/users/profiles/files cleanup PASS. Ordinary build job114414693462 completed PASS. Corrected candidateDocs38120716337 PASS.
+
+A traced every changed file, current exact child argument/mode dispatch, both independently restricted tokens, actual service checks before IO, separate managed-root setup/disjointness, fresh folder ownership, exact child permission scopes and parent snapshot readback. Missing paths/arbitrary errors cannot satisfy UnauthorizedAccess refusal. Each complete child edits only its own files and must refuse sibling operations/root DACL changes. A found initial success-only folder coverage insufficient for rollback: added typed constructor interruption after first prepared folder plus exact exit81 after a verified partial write in a real restricted child. Parent must drain retained child handles, remove only known regular files and empty directories and verify removal; both complete reciprocal children still require exit0. Unknown exits cannot pass. Cleanup rejects links and never recursively deletes a supplied path. Initial service all four starts/cleanup and local801/UI/SDK passed; no automated failure or accepted escape. Two rounds321 planned cumulative.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | No frozen WPF/LAN/legacy code changes; only synthetic service harness, reciprocal file fixture and docs. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing disposable service and owned fixture credentials under existing exclusivity/cleanup; no production executor or writer added. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency or transport change. Child receives public key name and paths only, not private material. Actual key/file denial and reciprocal writable isolation proved on all four corrected service starts. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Existing synthetic Host identity/material/cache reused, no credential replacement or rotation semantics changed. Parent signing checks same owned key. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/principal credential or local channel changes. Actual service identity and restricted token checked before child IO. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No peer/pairing/trust authority change; actual native ceremonies remain mandatory regression evidence. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No canonical grants, presets/defaults/creator paths or production OS policy changed. Two distinct random restricting SIDs receive only owned synthetic folder rights. | PASS |
+| PROTO-001 | Test process argument list only; no Contracts/feature/minor/descriptor change. Fixed exit stages and exact denial codes fail closed. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No game/save/operation implementation. Existing retained child handle wait/terminate/drain and exact station restore retained; exact owned file/empty-directory cleanup plus full fixture cleanup proved in completed corrected service evidence. | PASS |
+| SEC-001 | Parent signing/credential integrity retained; reciprocal own folder writes and sibling/DACL refusal, exact fresh path ownership and no recursive cleanup. No private bytes/logs/args. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Only Windows-specific test harness; no migration/shell action/new OS production branch/Linux implementation. | PASS |
+
+All40 audited and whole-result reference search checked: single trusted service caller, ordinary-session refusal, exact dispatcher arity/modes, readiness only after complete Run, existing store digest and cleanup preserved. No production policy/launcher/schema/protocol/authority change. A permits experimental PR creation, then fresh B and final CI/Docs/exact-state gates. Whole47/48 remain IN PROGRESS. No real Palworld, full sandbox, parity, Linux or release qualification. Accessibility WAIVED, never PASS. A separate auto-start authorization/persistence decision has been identified for the next slice; it does not affect this test-only acceptance.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #48g / PR202 fresh review B - restricted writable-folder qualification
+
+2026-10-11. Fresh complete review of pushed A0425f77d149da748018a70b621296fafc107fde3 against base48031ceb876c74b5c204dfcb8fb023e3bc6ccc56; executable72d5c158da747a7bc6c5aa95fec659798f536961 unchanged. B found one documentation ambiguity: the qualification paragraph could imply directory rename was tested. Corrected it to the actual sequence: create directory, create/read/rename/delete its file, then remove the empty directory. No executable correction or added scope. Rechecked the corrected whole documentation, all six changed files and all40; B PASS. ADocs38121408716 PASS; final Docs/exact-state gates still required.
+
+All-three correctedCI38120714818 completed PASS; actual native114414693483/service114414693272/build114414693462 logs inspected. Local/remote801/801/build0/UI/actual local SDK/strict Docs PASS. Native Rust2/native16/genuine ceremonies; all four service starts prove reciprocal own-folder writes/sibling refusal, deliberate preparation and actual partial-write cleanup, retained Host-key/private-file/process denials, parent signing/integrity, recovery5/unpair4/managed storage. Both real nonadmins, shipped bootstrap/recovery/client checks and complete service/group/users/profiles/files cleanup PASS. InitialCI38120439060 also all-three PASS; no automated failure.
+
+B independently checked two-token/path substitution, root versus inherited descendant rights, wrong/missing files, partially successful forbidden writes, ordinary-session invocation, exact interruption versus arbitrary error codes, short-circuit cleanup and constructor failure, process/desktop handle disposal and retained native termination, readiness after restart, credential lifetimes, exception/argument secrecy and inherited production-policy claims. Final content/ACL/entry checks catch partial mutations even if an operation reports access denial afterward. Typed constructor interruption cannot be satisfied by arbitrary cleanup failure; deliberate child81 must be followed by two complete exit0 children. Empty-directory cleanup never follows a reparse or recursively erases a supplied path. Existing fixture setup verifies managed storage disjoint from private Host/public/handoff roots. This fixture is not a hostile-filesystem production adapter or complete sandbox. No authority, persistent state, protocol or ordinary client behavior changed.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | No frozen WPF/LAN/legacy code changes; only synthetic service harness, reciprocal file fixture and docs. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing disposable service and owned fixture credentials under existing exclusivity/cleanup; no production executor or writer added. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency or transport change. Child receives public key name and paths only, not private material. Actual key/file denial and reciprocal writable isolation proved on all four corrected service starts. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Existing synthetic Host identity/material/cache reused, no credential replacement or rotation semantics changed. Parent signing checks same owned key. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/principal credential or local channel changes. Actual service identity and restricted token checked before child IO. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No peer/pairing/trust authority change; actual native ceremonies remain mandatory regression evidence. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No canonical grants, presets/defaults/creator paths or production OS policy changed. Two distinct random restricting SIDs receive only owned synthetic folder rights. | PASS |
+| PROTO-001 | Test process argument list only; no Contracts/feature/minor/descriptor change. Fixed exit stages and exact denial codes fail closed. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No game/save/operation implementation. Existing retained child handle wait/terminate/drain and exact station restore retained; exact owned file/empty-directory cleanup plus full fixture cleanup proved in completed corrected service evidence. | PASS |
+| SEC-001 | Parent signing/credential integrity retained; reciprocal own folder writes and sibling/DACL refusal, exact fresh path ownership and no recursive cleanup. No private bytes/logs/args. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Only Windows-specific test harness; no migration/shell action/new OS production branch/Linux implementation. | PASS |
+
+All40 freshly audited and reference search repeated. Three implementation/review correction rounds322 planned cumulative (initial implementation, A rollback evidence, B documentation precision); no accepted escape. Ordinary801 count is unchanged; actual child cases are separate privileged evidence. Whole47/48 remain IN PROGRESS. The next auto-start authorization/persistence choice will be presented separately after this unit is accepted. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release qualification.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
