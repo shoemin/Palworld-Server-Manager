@@ -447,5 +447,6 @@ public static class HostSchema
         new Migration014ReplacementBindingEvidence(),
         new Migration015ReplacementCompletion(),
         new Migration016RecoveryCompletionReceipt(),
+        new Migration017ConfigurationContentObservations(),
     ];
 }
