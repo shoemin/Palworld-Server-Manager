@@ -7061,3 +7061,25 @@ Local740/740,focused six patch groups,independent actual-library prototype/six e
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Pure shared semantics; no migration/platform/interactive-shell/Linux production changes. No field/parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47f / PR189 — fresh final Review B
+
+Fresh review at exact pushedd6850eebc5f1a753b09f031996a5d21445e25917 againstd7663ca343fbe545b2a10994020054496df9478a covers all seven files, every action/validation/error branch, immutable output boundaries and sibling parser/encoding/catalog rules. Independently exercised both edit orders that fill an empty final value while appending a new setting, guarding against the earlier preserved-document collision; both pass. Re-ran six focused groups and actual built-Core preparation probe after PR creation, including secret/default-JSON redaction, all encodings, final-output size refusal, bad text Unicode and enum/integer forms. No new finding; A0/B0,one round,281 cumulative cycles planned. Full all40 matrix below remains clean. No revision issuer, RPC, IO or permission expansion; actual availability/current authority/stopped-state/durable save remain mandatory Host responsibilities.
+
+Local740/740,zero-warning build,UI/SDK/strict Docs PASS. Candidate Docs38097922206 PASS. Native114347605418 and Windows114347605527 completed actual logs inspected: Rust2/native16/all genuine ceremonies, four service starts/fault cases and complete cleanup PASS. Final ordinary CI38097920513 completed log plus exact final-head Docs/live head/base/clean/source-equivalence gates remain required. No owner decision, new accepted escape or false field/parity/release claim.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive Core patch only; frozen legacy parser/schema/model/App/LAN unchanged. Existing project Quote composes with accepted preserved byte model. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Pure byte proposal, no file/path/profile/process/DB writer, operation executor or second Host. Invalid patches return no output. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client/project references, transport or credential changes. Core patch is consumed later by Host, never directly by ordinary clients. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No routing/Host/server identity/rotation change. Caller still supplies exact qualified target at future protected Host boundary. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No bootstrap/enrollment/principal/Owner/credential paths. A prepared document is not authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No network/contact/trust effects. Both current permission ceilings remain required for later remote save. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants, presets, roots/delegation or creator path. Independent ViewServer/EditSettings and six creator limits unchanged. | PASS |
+| PROTO-001 | No wire/descriptor/feature changes. Closed factory actions; unsupported raw/compound/wrong-action edits refuse. Later wire mapper must deny unknown actions. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No authoritative write/revision/lock/operation yet. All dirty values validate before output; immutable originals survive every failure. Future Host must enforce revisions/stopped state/locks/durable recovery. | PASS |
+| SEC-001 | Secret actions explicit, empty replacement refuses, clear explicit; replacement value nonpublic, default object/JSON and index/code errors do not echo inputs. Unicode/control/size refusals, no partial proposal, source bytes and unselected secrets preserved. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Pure shared semantics; no migration/platform/interactive-shell/Linux production changes. No field/parity/release claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
