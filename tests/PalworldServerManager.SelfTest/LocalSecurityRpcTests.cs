@@ -26,19 +26,19 @@ public static class LocalSecurityRpcTests
     internal sealed class Client : IDisposable
     {
         private readonly GrpcChannel _channel;
-        public Client(Guid host, string pipe, ILocalHostTrustReader reader, bool unboundedSend = false)
+        public Client(Guid host, string pipe, ILocalHostTrustReader reader, bool unboundedSend = false, int? maximumReceive = null)
         {
             _channel = GrpcChannel.ForAddress("https://localhost", new GrpcChannelOptions
             {
                 HttpHandler = new WindowsLocalHostHttpTransportFactory(reader, pipe).CreateHandler(host), DisposeHttpClient = true,
                 HttpVersion = HttpVersion.Version20, HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                MaxReceiveMessageSize = LocalSecurityRpcService.MaximumMessageBytes, MaxSendMessageSize = unboundedSend ? null : LocalSecurityRpcService.MaximumMessageBytes
+                MaxReceiveMessageSize = maximumReceive ?? LocalSecurityRpcService.MaximumMessageBytes, MaxSendMessageSize = unboundedSend ? null : LocalSecurityRpcService.MaximumMessageBytes
             });
         }
         private static Marshaller<T> Codec<T>() where T : class, IMessage<T>, new() => Marshallers.Create<T>(value => value.ToByteArray(), bytes => { var value = new T(); value.MergeFrom(bytes); return value; });
-        public async Task<TResponse> Call<TRequest, TResponse>(string name, TRequest request) where TRequest : class, IMessage<TRequest>, new() where TResponse : class, IMessage<TResponse>, new()
+        public async Task<TResponse> Call<TRequest, TResponse>(string name, TRequest request, string service = "palworld.manager.v1.LocalSecurityProtocol") where TRequest : class, IMessage<TRequest>, new() where TResponse : class, IMessage<TResponse>, new()
         {
-            var method = new Method<TRequest, TResponse>(MethodType.Unary, "palworld.manager.v1.LocalSecurityProtocol", name, Codec<TRequest>(), Codec<TResponse>());
+            var method = new Method<TRequest, TResponse>(MethodType.Unary, service, name, Codec<TRequest>(), Codec<TResponse>());
             using var call = _channel.CreateCallInvoker().AsyncUnaryCall(method, null, new CallOptions(deadline: DateTime.UtcNow.AddSeconds(15)), request);
             return await call.ResponseAsync;
         }

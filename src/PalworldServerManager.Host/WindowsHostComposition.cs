@@ -65,6 +65,7 @@ public static class WindowsHostComposition
         operations.InitializeIfReady();
         var groupSid = (SecurityIdentifier)new NTAccount(Environment.MachineName, WindowsHostPlatform.ProductActivationGroup).Translate(typeof(SecurityIdentifier));
         var rpc = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { });
+        rpc.ConfigureSettings(CreateSettingsReader(database, hostId, serviceSid));
         var certificate = await native.LoadAsync(snapshot.CurrentReference!, stop).ConfigureAwait(false);
         await using var generation = await CreateLocalGenerationAsync(rpc, serviceSid, groupSid, certificate, PipeName, stop).ConfigureAwait(false);
         using var wait = CancellationTokenSource.CreateLinkedTokenSource(stop);
@@ -82,6 +83,15 @@ public static class WindowsHostComposition
             finally { await drainingOperations.ConfigureAwait(false); }
         }
         // Generation resources and actual operation workers finish before lease disposal.
+    }
+
+    private static SettingsSnapshotReader CreateSettingsReader(HostDatabase database, Guid host, SecurityIdentifier serviceSid)
+    {
+        // Construction alone does no IO or provisioning: missing game storage must
+        // not disable bootstrap, credential recovery or unrelated Host management.
+        var root = new WindowsManagedStorageRoot(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "PalworldServerManager", "Servers"), serviceSid);
+        return new(database, host, new WindowsManagedServerSettingsReader(root));
     }
 
     // Explicit full-network composition under the caller's machine lease. The native PAKE
@@ -104,6 +114,7 @@ public static class WindowsHostComposition
         }
         var peer = CopyEndpoint(peerEndpoint); var pairing = CopyEndpoint(pairingEndpoint);
         var discovery = CreateWindowsDiscoveryFactory(discoveryPort, peer, pairing);
+        var settings = CreateSettingsReader(database, hostId, serviceSid);
         var state = new HostCredentialStateRepository(database, hostId);
         var material = new WindowsHostCredentialMaterial(store);
         var native = new WindowsHostTlsCredentialCache(hostId, serviceSid, store);
@@ -117,7 +128,7 @@ public static class WindowsHostComposition
                 await material.ValidateAsync(snapshot.CurrentReference!, publication.CurrentFingerprint, token).ConfigureAwait(false);
                 var certificate = await native.LoadAsync(snapshot.CurrentReference!, token).ConfigureAwait(false);
                 return await CreateNetworkGenerationAsync(database, hostId, store, serviceSid, groupSid, certificate, pipe,
-                    peer, pairing, pairingFactory, activationHook, token, discoveryFactory: discovery).ConfigureAwait(false);
+                    peer, pairing, pairingFactory, activationHook, token, discoveryFactory: discovery, settingsReader: settings).ConfigureAwait(false);
             });
     }
 
@@ -159,7 +170,8 @@ public static class WindowsHostComposition
         SecurityIdentifier serviceSid, SecurityIdentifier groupSid, X509Certificate2 certificate, string pipe,
         System.Net.IPEndPoint peerEndpoint, System.Net.IPEndPoint pairingEndpoint, IPairingKeyExchangeFactory pairingFactory,
         IPeerActivationHook activationHook, CancellationToken ct = default, TimeProvider? time = null,
-        Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>>? discoveryFactory = null)
+        Func<UnverifiedHostAdvertisement, CancellationToken, Task<HostDiscoveryRuntime>>? discoveryFactory = null,
+        SettingsSnapshotReader? settingsReader = null)
     {
         var generation = new HostNetworkGeneration(certificate);
         try
@@ -169,12 +181,14 @@ public static class WindowsHostComposition
             if (!state.Initialized || plan.Publication?.CurrentFingerprint != WindowsPeerTls.PublicFingerprint(certificate))
                 throw new System.Security.Authentication.AuthenticationException("Current initialized Host credential is required.");
             var peer = new PeerSecurityRpcRuntime(database, hostId, activationHook, time);
+            if (settingsReader is not null) peer.ConfigureSettings(settingsReader);
             byte[] publicKey;
             using (var key = certificate.GetECDsaPublicKey()!) publicKey = key.ExportSubjectPublicKeyInfo();
             var pairing = new PeerPairingRpcRuntime(database, hostId, publicKey, pairingFactory, (_, _) => { }, time);
             generation.SetPeerWork(peer, pairing, new WindowsPeerHttpTransportFactory(certificate));
             var local = new LocalSecurityRpcRuntime(database, hostId, store, WindowsLocalTlsEndpoint.ReadNativePrincipal, _ => { }, time)
                 { Pairing = generation,UnpairNotifications=peer.UnpairNotifications };
+            if (settingsReader is not null) local.ConfigureSettings(settingsReader);
             generation.AddListener(BuildLocalApplication(local, serviceSid, groupSid, certificate, pipe, generation.BindConnection));
             var peerApp = BuildPeerApplication(peer, certificate, peerEndpoint, generation.BindConnection); generation.AddListener(peerApp);
             var pairingApp = BuildPairingApplication(pairing, certificate, pairingEndpoint, generation.BindConnection); generation.AddListener(pairingApp);
@@ -204,11 +218,15 @@ public static class WindowsHostComposition
             options.EnableDetailedErrors = false;
             options.MaxReceiveMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
             options.MaxSendMessageSize = PeerSecurityRpcService.MaximumMessageBytes;
+        }).AddServiceOptions<PeerSettingsRpcService>(options =>
+        {
+            options.MaxReceiveMessageSize = SettingsSnapshotValidation.MaximumRequestBytes;
+            options.MaxSendMessageSize = SettingsSnapshotValidation.MaximumResponseBytes;
         });
         WindowsPeerEndpoint.Configure(builder.WebHost, endpoint, certificate,
             rpc.Repository.RecognizesPeerEndpointFingerprint,
             rpc.BindConnection(WindowsPeerTls.PublicFingerprint(certificate), WindowsPeerEndpoint.ReadRemoteFingerprint), transportMiddleware);
-        var app = builder.Build(); app.MapGrpcService<PeerSecurityRpcService>(); return app;
+        var app = builder.Build(); app.MapGrpcService<PeerSecurityRpcService>(); app.MapGrpcService<PeerSettingsRpcService>(); return app;
     }
     internal static PeerActivationRpcClient CreatePeerActivationClient(PeerSecurityRpcRuntime rpc, X509Certificate2 certificate)
         => new(rpc, new WindowsPeerHttpTransportFactory(certificate));
@@ -262,10 +280,15 @@ public static class WindowsHostComposition
             options.EnableDetailedErrors = false;
             options.MaxReceiveMessageSize = LocalSecurityRpcService.MaximumMessageBytes;
             options.MaxSendMessageSize = LocalSecurityRpcService.MaximumMessageBytes;
+        }).AddServiceOptions<LocalSettingsRpcService>(options =>
+        {
+            options.MaxReceiveMessageSize = SettingsSnapshotValidation.MaximumRequestBytes;
+            options.MaxSendMessageSize = SettingsSnapshotValidation.MaximumResponseBytes;
         });
         WindowsLocalTlsEndpoint.Configure(builder.WebHost, pipe, serviceSid, groupSid, certificate, rpc.BindConnection, transportMiddleware);
         var app = builder.Build();
         app.MapGrpcService<LocalSecurityRpcService>();
+        app.MapGrpcService<LocalSettingsRpcService>();
         return app;
     }
 }

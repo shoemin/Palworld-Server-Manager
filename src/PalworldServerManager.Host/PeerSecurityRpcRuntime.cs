@@ -16,6 +16,13 @@ public sealed partial class PeerSecurityRpcRuntime
     internal PeerTransportAuthentication Authentication { get; }
     internal PeerPermissionDispatcher Permissions { get; }
     internal SettingsSchemaReader SettingsSchema { get; }
+    internal SettingsSnapshotReader? SettingsReader { get; private set; }
+    internal void ConfigureSettings(SettingsSnapshotReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        if (reader.HostId != HostId || SettingsReader is not null) throw new InvalidOperationException("Settings reader binding refused.");
+        SettingsReader = reader;
+    }
     internal PeerUnpairReceiver Unpair { get; }
     internal PeerRecoveryCompletionReceiver Recovery { get; }
     internal PeerUnpairCoordinator? UnpairNotifications {get;private set;}
@@ -50,7 +57,7 @@ public sealed partial class PeerSecurityRpcRuntime
     internal static PeerHello Hello(Guid hostId)
     {
         var hello = new PeerHello { Host = new() { HostId = hostId.ToString("D") },
-            Handshake = new() { Protocol = new() { Major = 1, Minor = 16 }, ProductVersion = "0.5.0-astra" } };
+            Handshake = new() { Protocol = new() { Major = 1, Minor = 17 }, ProductVersion = "0.5.0-astra" } };
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustActivation);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationStatus);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationProposal);
@@ -58,7 +65,8 @@ public sealed partial class PeerSecurityRpcRuntime
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerCurrentCredentialConfirmation);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerUnpair);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustAdministration);
-        hello.Handshake.Capabilities.Add(FeatureCapability.SettingsSchema); return hello;
+        hello.Handshake.Capabilities.Add(FeatureCapability.SettingsSchema);
+        hello.Handshake.Capabilities.Add(FeatureCapability.SettingsSnapshot); return hello;
     }
     internal static PeerHello RecoveryHello(Guid hostId)
     {

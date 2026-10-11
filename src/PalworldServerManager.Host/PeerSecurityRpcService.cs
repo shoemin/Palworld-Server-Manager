@@ -61,6 +61,7 @@ public sealed partial class PeerSecurityRpcService(PeerSecurityRpcRuntime runtim
         var peer = Id(request.Host.HostId);
         runtime.Authentication.Authenticate(peer, session.PeerFingerprint, PeerTrafficPurpose.PairingFinalization);
         var hello = PeerSecurityRpcRuntime.Hello(runtime.HostId);
+        if (runtime.SettingsReader is null) hello.Handshake.Capabilities.Remove(FeatureCapability.SettingsSnapshot);
         var protocol = NegotiatedProtocol.Negotiate(hello.Handshake, request.Handshake);
         protocol.Require(FeatureCapability.PeerTrustActivation);
         session.PeerIncarnation = runtime.Repository.ReadAuthenticatedRelationshipIncarnation(peer, session.PeerFingerprint, session.LocalFingerprint);

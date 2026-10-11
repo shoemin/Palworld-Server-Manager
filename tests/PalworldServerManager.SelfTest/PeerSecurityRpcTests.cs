@@ -74,6 +74,7 @@ internal static class PeerSecurityRpcTests
         private readonly SocketsHttpHandler handler;
         private readonly GrpcChannel channel;
         internal readonly PeerSecurityProtocol.PeerSecurityProtocolClient Rpc;
+        internal readonly PeerSettingsProtocol.PeerSettingsProtocolClient Settings;
         internal RawClient(Fixture client, Fixture server, string? expectedPin = null, bool unboundedSend = false,
             System.Security.Cryptography.X509Certificates.X509Certificate2? certificate = null)
         {
@@ -85,7 +86,7 @@ internal static class PeerSecurityRpcTests
                 MaxReceiveMessageSize = PeerSecurityRpcService.MaximumMessageBytes,
                 MaxSendMessageSize = unboundedSend ? null : PeerSecurityRpcService.MaximumMessageBytes
             });
-            Rpc = new(channel);
+            Rpc = new(channel); Settings = new(channel);
         }
         internal Task<PeerHello> Negotiate(PeerHello hello) => Rpc.NegotiateAsync(hello, deadline: DateTime.UtcNow.AddSeconds(5)).ResponseAsync;
         internal Task<PeerActivationReply> Activate(PeerActivationAck ack) => Rpc.ActivateAsync(ack, deadline: DateTime.UtcNow.AddSeconds(5)).ResponseAsync;

@@ -14,7 +14,7 @@ public sealed partial class LocalSecurityRpcService(LocalSecurityRpcRuntime runt
     public const int MaximumMessageBytes = 16 * 1024;
     private static Guid Id(string text) => Guid.TryParseExact(text, "D", out var id) && id != Guid.Empty ? id : throw new ArgumentException("Invalid identity.");
     private static LocalPrincipalIdentity Identity(AuthenticatedLocalPrincipal identity) => new() { LocalPrincipalId = identity.LocalPrincipalId.ToString("D"), IsOwner = identity.IsOwner };
-    private async Task<T> Dispatch<T>(ServerCallContext context, bool negotiation, bool bootstrap, Func<LocalSecurityRpcConnection, Task<T>> action)
+    internal async Task<T> Dispatch<T>(ServerCallContext context, bool negotiation, bool bootstrap, Func<LocalSecurityRpcConnection, Task<T>> action)
     {
         try
         {
@@ -47,11 +47,12 @@ public sealed partial class LocalSecurityRpcService(LocalSecurityRpcRuntime runt
         if (session.NegotiationAttempted) throw new RpcException(new(StatusCode.FailedPrecondition, "This connection already attempted negotiation."));
         session.NegotiationAttempted = true;
         if (request.Capabilities.Count > 64 || request.ProductVersion.Length > 256) throw new ArgumentException();
-        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 19 }, ProductVersion = "0.5.0-astra" };
+        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 20 }, ProductVersion = "0.5.0-astra" };
         hello.Capabilities.Add(FeatureCapability.LocalPrincipalSecurity);
         hello.Capabilities.Add(FeatureCapability.LocalPeerTrustManagement);
         hello.Capabilities.Add(FeatureCapability.LocalOwnerPeerReplacement);
         hello.Capabilities.Add(FeatureCapability.SettingsSchema);
+        if (runtime.SettingsReader is not null) hello.Capabilities.Add(FeatureCapability.SettingsSnapshot);
         if (runtime.Pairing is not null)
         {
             hello.Capabilities.Add(FeatureCapability.LocalOwnerPairing);
@@ -60,6 +61,7 @@ public sealed partial class LocalSecurityRpcService(LocalSecurityRpcRuntime runt
             hello.Capabilities.Add(FeatureCapability.LocalOwnerPeerRecovery);
             hello.Capabilities.Add(FeatureCapability.LocalRemoteTrustAdministration);
             hello.Capabilities.Add(FeatureCapability.LocalRemoteSettingsSchema);
+            hello.Capabilities.Add(FeatureCapability.LocalRemoteSettingsSnapshot);
         }
         var offered = hello.Capabilities.ToArray();
         var negotiated = NegotiatedProtocol.Negotiate(hello, request);

@@ -1,0 +1,18 @@
+syntax = "proto3";
+package palworld.manager.v1;
+option csharp_namespace = "PalworldServerManager.Contracts.Wire";
+import "Protos/host.proto";
+import "Protos/settings.proto";
+import "Protos/local_security.proto";
+
+// Same authenticated connection and negotiation as the security services.
+// Separate response bounds; no filesystem path, credential, or save command.
+message SettingsSnapshotRequest { ServerRef server = 1; }
+message LocalRemoteSettingsSnapshotRequest { LocalPeerContactRequest destination = 1; ServerRef server = 2; }
+service LocalSettingsProtocol {
+  rpc GetServerSettings(SettingsSnapshotRequest) returns (SettingsSnapshot);
+  rpc GetRemoteServerSettings(LocalRemoteSettingsSnapshotRequest) returns (SettingsSnapshot);
+}
+service PeerSettingsProtocol {
+  rpc GetServerSettings(SettingsSnapshotRequest) returns (SettingsSnapshot);
+}
