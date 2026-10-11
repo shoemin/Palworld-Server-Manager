@@ -7910,3 +7910,31 @@ The shared reader is an internal engine, not a production RPC or file writer. On
 All40 audited after correction. Whole47/48 IN PROGRESS; approved independent read/save permissions and six creator limits unchanged. No owner decision pending; accessibility WAIVED, never PASS. Open experimental PR next, then fresh B and completed all-three actual logs/final Docs/exact-head gates before merge.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47k / PR199 - fresh Review B PASS, final Docs/head gate pending
+
+2026-10-11. Fresh post-PR review of7b6ab9bcc2fa10af303800ac87f8335ea7121bfe against20bd111215aa9f41cecc8424a78eaf7faba1bef4. Re-read all ten changed files and the complete result, including unchanged actor/lineage/transaction/mapper contracts, rather than substituting A. No substantive B finding. Corrected executable cd33cc124f2bdc65ccbb685acdc0b02779476d8a remains unchanged. Local/remote791/791, eight focused groups, zero-warning build, UI/actual Windows SDK/strict Docs PASS. All-three correctedCI38115672364 completed logs inspected: native114399969155 Rust2/native16/genuine ceremonies; service114399968888 four actual starts with managed settings/restricted-child/five recovery/four unpair cases, two actual nonadmin denials, shipped bootstrap/recovery/client checks and complete service/group/users/profiles/files cleanup; build114399968796 full791/UI/build0. CandidateDocs38115673477/ADocs38116091379 PASS. Final-head Docs and exact branch/base/clean/source-equivalence remain before merge.
+
+Completed initialCI38115304757 exposed789/790: the old cross-thread test's Task.Run/GetResult could execute on the calling thread, so its expected InvalidOperationException was absent. A had independently replaced that scheduling assumption with an explicit Thread before these completed logs became available. The corrected dedicated-thread test passes locally and remotely. Preserve this as an automated test defect, not an accepted production escape or a successful initial CI run. Initial local790 passed; initial service cleanup passed; neither substitutes for corrected791 acceptance. Still two rounds310 planned cumulative, no additional correction needed.
+
+Fresh attack review checked mutable request/byte ownership assumptions, exact local/foreign Host and DB scope, current versus stale local/peer proof, queued authority loss, transactional grant/inventory changes, denial-audit commit boundaries, readonly inventory reuse, final response refusal after observation commit, source ambiguity/aggregate bounds, binary secret suppression, buffer lifetime and task/fixture cleanup. Core ServerRef is copied before IO; buffers are owned by the trusted adapter; callbacks are trusted Host code, not request fields. Scope predicate extraction is semantically identical to the previous canonical path. The new validator performs no writes or nested transactions; final pending mutations remain visible and refuse before commit. Synthetic registered sources qualify the Host engine; actual service raw-file protection remains separately qualified. No claim of an already connected production RPC or of stopped/save safety is introduced.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN and legacy parser/service unchanged; accepted pure parser and mapper reused. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Trusted Host reader under existing lease; only existing content metadata writer, no client/file writer or second Host. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency/credential/route changes or newly exposed RPC. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Qualified local ServerRef before IO, exact inventory/DB binding; existing current/staged TLS and incarnation proofs reused. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized Host/single Owner retained; authenticated facade guards and current proof, no enrollment/Owner/credential authority added. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Independent local/peer validators retain exact scope, Active/non-recovery and current identity; no pairing/trust effect or remote shortcut. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | Reuse canonical typed/lineage policy; View-only success/Edit-only refusal, queued revocation, no grants/defaults/delegation/creator changes. | PASS |
+| PROTO-001 | Existing validated DTO only; no protocol/descriptor/version change or runtime RPC activation. Future bounded negotiated API remains required. | PASS |
+| OPS-001 | Serialized byte observations, canonical revisions, unchanged/reopen/ABA tests; failed final same-transaction proof/inventory rolls metadata back. No file save claim. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No new operation/lifecycle executor; gate is read-order synchronization, not stopped proof or replacement for durable save locks/recovery. | PASS |
+| SEC-001 | Positive nonsecret classification before lookup/decoding, unknown/secret values withheld in binary DTO; bounded parse/map, owned buffer disposal, no secret logging. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No schema/source migration or OS/UI/Linux implementation; explicit platform reader injected into shared Host engine. | PASS |
+
+All40 freshly audited; repeated stale/call-site search clean. Whole47/48 IN PROGRESS; no owner decision; approved ViewServer reads/EditSettings saves and six creator limits unchanged. Accessibility WAIVED, never PASS. No real Palworld/parity/Linux/release claim. Final exact gates authorize experiment-only merge.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
