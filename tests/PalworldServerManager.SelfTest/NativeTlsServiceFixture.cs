@@ -3,6 +3,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.ServiceProcess;
 using System.Text.Json;
+using System.Text;
 using PalworldServerManager.Platform.Windows;
 using PalworldServerManager.Platform.Contracts;
 using static PalworldServerManager.SelfTest.WindowsPlatformTests;
@@ -39,7 +40,6 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 }
                 var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
                 using var identity = WindowsIdentity.GetCurrent();
-                WindowsRestrictedLaunchQualification.Run(root, stop);
                 if (config.ManagedStorageRoot is { } managedRoot) WindowsIntegration.QualifyManagedStorage(managedRoot, identity.User!);
                 await WindowsRotationCutoverQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 await WindowsGenerationTransitionQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
@@ -73,11 +73,27 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 using var certificate = await cache.LoadAsync("tls-current", stop);
                 using var key = (ECDsaCng)certificate.GetECDsaPrivateKey()!;
                 var publicKeyPin = Convert.ToHexString(SHA256.HashData(key.ExportSubjectPublicKeyInfo()));
+                var keyFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!);
+                var credentialFile = Path.Combine(root, "credentials", Convert.ToHexString(SHA256.HashData(
+                    Encoding.UTF8.GetBytes("PalworldServerManager.Host.Credential.v1:tls-current"))) + ".bin");
+                static byte[] FileHash(string path) { using var file = File.OpenRead(path); return SHA256.HashData(file); }
+                void RequireParentSigning()
+                {
+                    if (key.Key.ExportPolicy != CngExportPolicies.None) throw new Exception("Fixture native key is exportable.");
+                    var signature = key.SignData("restricted-child-fixture"u8, HashAlgorithmName.SHA256);
+                    try { if (!key.VerifyData("restricted-child-fixture"u8, signature, HashAlgorithmName.SHA256)) throw new Exception("Parent native key did not verify."); }
+                    finally { CryptographicOperations.ZeroMemory(signature); }
+                }
+                RequireParentSigning(); var nativeHash = FileHash(keyFile); var credentialHash = FileHash(credentialFile);
+                WindowsRestrictedLaunchQualification.Run(root, key.Key.KeyName!, keyFile, credentialFile, stop);
+                RequireParentSigning();
+                if (!FileHash(keyFile).AsSpan().SequenceEqual(nativeHash) || !FileHash(credentialFile).AsSpan().SequenceEqual(credentialHash))
+                    throw new Exception("Restricted child changed fixture credential storage.");
                 await material.ValidateAsync("tls-current", publicKeyPin, stop);
                 await new WindowsLocalHostTrustPublisher(config.PublicDirectory, identity.User!).PublishAsync(new LocalHostTrustPublication(config.HostId, publicKeyPin), stop);
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin, true, true,
+                    keyFile, tls.PipeName, tls.PublicPin, true, true,
                     config.PairingProviderPath is not null, config.PairingProviderPath is not null, config.PairingProviderPath is not null, true, true, true, config.ManagedStorageRoot is not null);
                 File.WriteAllText(Path.Combine(root, "tls-ready.tmp"), JsonSerializer.Serialize(ready));
                 File.Move(Path.Combine(root, "tls-ready.tmp"), Path.Combine(root, "tls-ready.json"), true);
@@ -121,7 +137,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                     if (config.PairingProviderPath is not null && !ready.ResponderCrashQualified) throw new Exception("Requested native responder crash qualification was skipped.");
                     Console.WriteLine("PASS service recovery process qualification: five actual child fault/restart cases and complete cleanup.");
                     Console.WriteLine("PASS service unpair process qualification: four actual child delivery/fault/restart cases and complete cleanup.");
-                    Console.WriteLine("PASS service restricted launch qualification: public executable read, private file/DACL and parent process denial, exact exit and cleanup.");
+                    Console.WriteLine("PASS service restricted launch qualification: public executable read, private file/DACL and parent process denial, native Host-key use and protected credential-file denial, parent signing and unchanged storage, exact exit and cleanup.");
                     if (config.ManagedStorageRoot is not null) Console.WriteLine("PASS service managed storage qualification: protected root validation, durable canary write and bounded read across restart.");
                     return ready;
                 }

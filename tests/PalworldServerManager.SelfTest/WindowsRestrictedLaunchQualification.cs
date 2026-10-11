@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -10,7 +11,8 @@ using PalworldServerManager.Client.Platform.Windows;
 namespace PalworldServerManager.SelfTest;
 
 // Qualification only, not a production launcher or a claim about Palworld/mod isolation.
-// No real credential is passed to the child. Only the disposable service's verified
+// Only synthetic fixture key names and paths reach the child, never private bytes.
+// Only the disposable service's verified
 // logon station receives a temporary unique-SID grant, restored before fixture completion.
 internal static class WindowsRestrictedLaunchQualification
 {
@@ -18,7 +20,7 @@ internal static class WindowsRestrictedLaunchQualification
     private static void NativeCheck(bool value, string step)
     { if (!value) throw new Win32Exception(Marshal.GetLastWin32Error(), "Restricted launch qualification: " + step); }
 
-    internal static int Child(string canary, string parent)
+    internal static int Child(string canary, string parent, string nativeKey, string nativeFile, string credentialFile)
     {
         var stage = 40;
         try
@@ -59,9 +61,29 @@ internal static class WindowsRestrictedLaunchQualification
                     using (parentToken) Check(!opened && error == 5, "Restricted child could duplicate parent token.");
                 }
             }
+            stage = 60; denied = false;
+            try
+            {
+                using var key = CngKey.Open(nativeKey, CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                    CngKeyOpenOptions.MachineKey | CngKeyOpenOptions.Silent);
+                using var signer = new ECDsaCng(key);
+                var signature = signer.SignData("restricted-child-fixture"u8, HashAlgorithmName.SHA256);
+                CryptographicOperations.ZeroMemory(signature);
+            }
+            catch (CryptographicException ex) when (ex.HResult is unchecked((int)0x80090010) or unchecked((int)0x80070005)) { denied = true; }
+            Check(denied, "Restricted child used native Host key.");
+            stage = 61; RequireFileReadDenied(nativeFile);
+            stage = 62; RequireFileReadDenied(credentialFile);
             return 0;
         }
         catch { return stage; } // Bounded stage only; no private paths, values or native text on child output.
+    }
+
+    private static void RequireFileReadDenied(string path)
+    {
+        try { using var file = File.OpenRead(path); }
+        catch (UnauthorizedAccessException) { return; }
+        throw new Exception("Restricted child read protected credential storage.");
     }
 
     internal static Task OutsideServiceIsNotQualified()
@@ -69,14 +91,14 @@ internal static class WindowsRestrictedLaunchQualification
         using var identity = WindowsIdentity.GetCurrent();
         Check(!identity.User!.Value.StartsWith("S-1-5-80-", StringComparison.Ordinal), "Ordinary suite requires its nonservice runner.");
         var missing = Path.Combine(Path.GetTempPath(), "astra-unqualified-" + Guid.NewGuid().ToString("N"));
-        try { Run(missing, CancellationToken.None); throw new Exception("Unqualified caller was accepted."); }
+        try { Run(missing, "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential"), CancellationToken.None); throw new Exception("Unqualified caller was accepted."); }
         catch (Exception ex) when (ex.Message == "Actual virtual service required.") { }
-        Check(!Directory.Exists(missing) && Child(Path.Combine(missing, "absent"), "1") == 40,
+        Check(!Directory.Exists(missing) && Child(Path.Combine(missing, "absent"), "1", "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential")) == 40,
             "Unqualified probe performed IO or reported success.");
         return Task.CompletedTask;
     }
 
-    internal static void Run(string root, CancellationToken ct)
+    internal static void Run(string root, string nativeKey, string nativeFile, string credentialFile, CancellationToken ct)
     {
         using var identity = WindowsIdentity.GetCurrent();
         Check(identity.User!.Value.StartsWith("S-1-5-80-", StringComparison.Ordinal), "Actual virtual service required.");
@@ -98,7 +120,7 @@ internal static class WindowsRestrictedLaunchQualification
                     ConfigureChildObjectDacl(reduced, identity.User, sids.ChildSid);
                     var startupAccess = desktop.ProbeAccess(reduced);
                     var executable = Environment.ProcessPath ?? throw new InvalidOperationException();
-                    var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+                    var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture), nativeKey, nativeFile, credentialFile };
                     var command = new StringBuilder(WindowsClientCommandLine.Build(new ClientLaunchTarget(executable, arguments)));
                     var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>(), Desktop = desktop.Name };
                     ct.ThrowIfCancellationRequested();

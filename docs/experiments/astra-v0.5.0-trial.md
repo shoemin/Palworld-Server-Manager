@@ -8027,3 +8027,14 @@ Initial local/CI38117013612 failed798/800 on two stale minor16 test expectations
 This accepts configured local/peer reads and originating-Host forwarding with independent ViewServer ceilings, one Host-lifetime reader, bounded transport and durable observation revisions. SaveSettings and complete lifecycle remain downstream. Next bounded lifecycle prerequisite: qualify actual restricted child access denial for a synthetic native Host key/protected credential material before any complete game-isolation claim. No real Palworld/parity/Linux/release qualification.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #48f preflight - restricted child native-key denial qualification
+
+2026-10-11. Base3ad72f4073c2c5d63d9bbc3ba690234817b1597f; prior checkpointDocs38118194293 PASS. Current #48 body and frozen invariant registry remain authorized under ShadowReady. Test-only extension of accepted restricted service-child qualification: require refusal of actual synthetic native Host-key opening/use, native backing-file and encrypted-credential reads. Parent must prove the same disposable fixture key signs/verifies before and after. Ordinary-session refusal remains nonqualification.
+
+Applicable all40 reviewed, especially CLIENT-002/SEC-001/PLATFORM-001/HOST-002/PERSIST-001/IDENT-001..004/LOCAL-002/OPS-002..004/RECOVERY-001. Expected SelfTest restricted child, service fixture placement/readiness and Program harness arguments plus docs; no production assembly, protocol, schema, grant/default/creator, credential protection policy or launcher changes. No dependency-direction/new package/platform changes. All effect paths: existing parent service creates/reopens its own synthetic key/store; retained no-inherit restricted child receives only fixture key name and test paths, attempts bounded read/sign, exits; existing actual SCM harness retires all owned keys/store/service/users/profiles/files even after failure. No real installed key, private material in command arguments, broad key deletion, blocked local cleanup or caller identity privilege change.
+
+Retain existing restricted token/unique child SID, exact station/desktop restoration, canary/DACL/parent-process denials, retained process handle wait/cleanup. Move qualification after existing fixture tls-current is loaded, before ready; all four service starts must pass and parent positive signing/file integrity remain valid. Expected native permission errors only, no generic exception-as-PASS. Full local/build/UI/SDK/Docs, mandatory actual service CI, native/ordinary CI, A/B/all40 and stale-reference review required. A failure is an engineering result to investigate, not automatic owner blocker or completed sandbox claim.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
