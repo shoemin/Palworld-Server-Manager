@@ -97,6 +97,8 @@ internal sealed class LocalPermissionCall(GrantPolicyRepository repository, Loca
     { Guard(); return repository.RequireLocalHostCapability(actor, capability, target, Cancellation); }
     internal long RequireServer(ServerCapability capability, ServerRef target)
     { Guard(); return repository.RequireLocalServerCapability(actor, capability, target, Cancellation); }
+    internal void ValidateServer(SqliteConnection connection, SqliteTransaction transaction, ServerCapability capability, ServerRef target)
+    { Guard(); repository.ValidateLocalServerCapability(connection, transaction, actor, capability, target, Cancellation); }
     internal GrantMutationResult IssueHost(long revision, HostGrantRequest request)
     {
         Guard(); ArgumentNullException.ThrowIfNull(request);
@@ -136,6 +138,8 @@ internal sealed class PeerPermissionCall(GrantPolicyRepository repository, PeerG
     { Guard(); return repository.RequireRemoteHostCapability(actor, capability, target, Cancellation); }
     internal long RequireServer(ServerCapability capability, ServerRef target)
     { Guard(); return repository.RequireRemoteServerCapability(actor, capability, target, Cancellation); }
+    internal void ValidateServer(SqliteConnection connection, SqliteTransaction transaction, ServerCapability capability, ServerRef target)
+    { Guard(); repository.ValidateRemoteServerCapability(connection, transaction, actor, capability, target, Cancellation); }
     internal GrantMutationResult IssueHost(long revision, HostGrantRequest request)
     {
         Guard(); ArgumentNullException.ThrowIfNull(request);
