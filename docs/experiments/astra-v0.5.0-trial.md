@@ -7537,3 +7537,29 @@ All40 covered and stale-reference search clean. Two rounds,300 cumulative planne
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
 
 Remote ordinary job114377891222 in38108135990 completed768/769: the access-denial fixture's exact restored-DACL comparison failed at line122 after the actual access-denial assertion passed. The fixture inherited different temporary-directory ACL forms in CI; it must not rely on local inherited-descriptor canonicalization. Establish a known protected current-user-full-control DACL on the newly created disposable file, capture its actual descriptor, then test denial and exact restoration against that controlled baseline. Do not weaken the restoration check. Production reader unchanged. Initial local769/769 and native/service CI jobs passed (including full four-start/cleanup evidence), but overall38108135990 is FAIL, never PASS. Prior A/B are superseded pending corrected validation and fresh reviews on this same PR195. Third round,301 cumulative planned; no accepted escape or owner decision.
+
+### #47h / PR195 - corrected Review A PASS
+
+2026-10-10. Corrected executable46d65ff30f12caecd61d0f0be369bddddebb7807. Full corrected local769/769, six focused groups, zero-warning build, UI/actual SDK/strict Docs PASS. Independent Windows x64 C++ ABI evidence applies to unchanged production adapter. New native job114380405179 in38108989638 completed; Rust2/native16 and genuine Owner/re-pair/recovery/first-contact ceremony logs inspected. Other two remote jobs pending, no overall CI PASS claimed.
+
+Fresh whole-result review against ba7cf68 includes all six files and the new controlled test-DACL baseline. The known protected fixture ACL is applied before capturing original state; adding the read denial and restoring the captured DACL retain exact comparison and positive readable-byte checks. Initial CI pinpoints the restoration comparison, but did not record both descriptors; inherited-ACL canonicalization is the working explanation, not an independently observed descriptor diff. The new setup removes that dependency without weakening checks. It only changes a newly created disposable file, not production permissions or a shared temporary directory. Full cleanup still must succeed. Earlier38108135990 remains FAIL and superseded.
+
+Rechecked unchanged reader: anchored no-follow traversal and same-handle link/type/size verification, local-drive/name closure, no writer/create/privilege fallback, constant errors, caller-owned successful bytes, cancellation/result clearing and handle release. Root authority/ACLs, stopped state and revisions remain outside its contract; no production consumer or arbitrary-path endpoint exists. Stale-reference search and source dependency review clean. Third round,301 cumulative planned; no accepted escape or owner decision.
+
+| Invariant | Corrected whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive seam/tests/docs only; frozen WPF/LAN/Core unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Read-only Host-side primitive, no new authority, production caller or writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency, credential or routing effect. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identity/qualified target/trust/credential transition changed. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/bootstrap/authentication path affected. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Dual ceilings and trust-state gates unchanged; corrected native ceremonies pass. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No issuance/default/preset/delegation/creator changes. | PASS |
+| PROTO-001 | No wire feature/schema/history or authorization enum modification. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No lock/revision/executor/recovery effect or false stopped/atomic-snapshot claim. | PASS |
+| SEC-001 | Production no-follow/link/size/privacy checks unchanged; corrected owned-fixture DACL is protected and exact restoration retained. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No source migration, interactive shell or Linux work; native code remains Windows-specific. | PASS |
+
+All40 covered; same PR195 remains open for renewed B and final CI/Docs/head/base/clean/source-equivalence gates. Whole47/48 IN PROGRESS; accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
