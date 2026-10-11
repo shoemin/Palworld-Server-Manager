@@ -7385,3 +7385,13 @@ Acceptance recheck: endpoint provides catalog semantics only, not installed-valu
 Five implementation/correction/verification rounds,293 cumulative planned; accepted escape count remains12, all corrected. Stale-reference search clean after updating sibling current-version tests; no unresolved owner decision. Merge gate must verify exact final head/base/clean state and source equivalence to executableCI head.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47g / PR193 - accepted authorized settings schema endpoint
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 as15644f7c5b9e2dea464ab432e6d126e432ab1c57. Final reviewed head0fe883f0d6375223ebbbe5279cabd2ef94bfd38c; executableb3030128e04b3790c152afb36babb954b077a01c. All-threeCI38105123767 PASS; completed native114368889537/build114368889487/Windows114368889403 logs inspected. Rust2/native16/genuine ceremonies,762/762 including seven new schema groups and corrected recovery/unpair assertions,UI/zero warnings,four service starts each with five recovery/four unpair cases and full service/group/users/profiles/files cleanup verified. CandidateDocs38105518526/finalDocs38105594590 PASS. Exact final head/base/clean/source-equivalence gate PASS.31 files564 insertions/9 deletions.
+
+Local762/762,seven focused groups,independent compiled mapper10908 bytes/1000 serialization/privacy checks,zero-warning build,UI/actual SDK/strict Docs PASS. A1 View-only coverage and initial permission-error/version-test corrections resolved; A/B/all40 clean. Five rounds,293 cumulative accepted cycles. No new accepted escape; all12 remain corrected. Accepted133 experimental PRs61-193,fourteen canonical children SHADOW DONE. Whole47/48 remain IN PROGRESS; no owner decision pending. Independent ViewServer reads/EditSettings saves and all six creator limits unchanged.
+
+Next bounded48d work qualifies restricted synthetic-child launch under the actual virtual-account Windows service. Current interactive-token probes are not service evidence. The separate named-private-window-station probe was denied before child creation and cleaned its fixture; it changed no existing desktop ACL or shared token. No game sandbox or real Palworld/parity/Linux/release claim is accepted from those probes. Accessibility remains WAIVED, never PASS; canonical planning/main unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
