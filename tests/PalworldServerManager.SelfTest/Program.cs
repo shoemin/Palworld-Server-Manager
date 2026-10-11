@@ -69,6 +69,15 @@ if (args.Length > 0)
         await WindowsProcessObservationTests.ActualNativeRepeatedCaptureDisposesHandles();
         Console.WriteLine("PASS five native process observation groups."); return 0;
     }
+    if (args is ["--process-attachment-probe"])
+    {
+        await WindowsProcessAttachmentTests.ExactIdentityRequiredAndDisposalIsReadOnly();
+        await WindowsProcessAttachmentTests.NaturalExitCodesIncludingStillActiveAreCaptured();
+        await WindowsProcessAttachmentTests.PermissionFailureIsUnknownWithoutLosingExistingHandle();
+        await WindowsProcessAttachmentTests.CancellationMalformedAndMissingIdentityRefuse();
+        await WindowsProcessAttachmentTests.ConcurrentReadAndDisposeCannotUseFreedHandle();
+        Console.WriteLine("PASS five retained process attachment groups."); return 0;
+    }
     if (args is ["--preserved-settings-probe"])
     {
         await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
@@ -998,6 +1007,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Process attachment ExactIdentityRequiredAndDisposalIsReadOnly", WindowsProcessAttachmentTests.ExactIdentityRequiredAndDisposalIsReadOnly),
+    ("Process attachment NaturalExitCodesIncludingStillActiveAreCaptured", WindowsProcessAttachmentTests.NaturalExitCodesIncludingStillActiveAreCaptured),
+    ("Process attachment PermissionFailureIsUnknownWithoutLosingExistingHandle", WindowsProcessAttachmentTests.PermissionFailureIsUnknownWithoutLosingExistingHandle),
+    ("Process attachment CancellationMalformedAndMissingIdentityRefuse", WindowsProcessAttachmentTests.CancellationMalformedAndMissingIdentityRefuse),
+    ("Process attachment ConcurrentReadAndDisposeCannotUseFreedHandle", WindowsProcessAttachmentTests.ConcurrentReadAndDisposeCannotUseFreedHandle),
     ("Process observation FailedInspectionNeverMeansEmptySuccess", WindowsProcessObservationTests.FailedInspectionNeverMeansEmptySuccess),
     ("Process observation ReusedPidAndExitedProcessDoNotBecomeIdentityMatches", WindowsProcessObservationTests.ReusedPidAndExitedProcessDoNotBecomeIdentityMatches),
     ("Process observation CancellationAndImmutableObservations", WindowsProcessObservationTests.CancellationAndImmutableObservations),

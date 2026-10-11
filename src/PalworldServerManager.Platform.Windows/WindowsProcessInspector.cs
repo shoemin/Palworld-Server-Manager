@@ -13,7 +13,7 @@ internal interface IWindowsProcessObservationApi
     NativeProcessObservation Observe(int processId);
 }
 
-public sealed class WindowsProcessInspector : IProcessInspector
+public sealed partial class WindowsProcessInspector : IProcessInspector, IProcessAttachment
 {
     private readonly IWindowsProcessObservationApi api;
     public WindowsProcessInspector() : this(new NativeApi()) { }
@@ -123,6 +123,8 @@ public sealed class WindowsProcessInspector : IProcessInspector
         [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool QueryFullProcessImageNameW(SafeProcessHandle process, uint flags, StringBuilder image, ref int length);
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetProcessTimes(SafeProcessHandle process, out long created, out long exited, out long kernel, out long user);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetExitCodeProcess(SafeProcessHandle process, out uint code);
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool CloseHandle(IntPtr handle);
     }

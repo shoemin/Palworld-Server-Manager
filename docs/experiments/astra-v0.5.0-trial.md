@@ -7223,3 +7223,87 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 Local750/750,five focused groups,independent100-live-candidate exact path/time/bounded-handle check,zero-warning build,UI/actual SDK/strict Docs PASS. A1 synthetic cleanup correction/B0/all40 clean; two rounds,285 cumulative cycles. No new accepted escape; eleven prior escapes corrected. Accepted131 experimental PRs61–191,fourteen canonical children SHADOW DONE. Whole47/48 remain IN PROGRESS. Next: retained native process attachment/exit observation, without treating a PID/snapshot as ownership or finalized-state permission. Restricted-launch experiments remain unqualified; no owner decision pending. Approved permissions/creator limits unchanged,accessibility WAIVED never PASS; canonical/main/physical Palworld/parity/Linux/release unchanged.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48c — retained process handle preflight
+
+2026-10-10. Basef636d75eb4d01e2345bc17f6b668f4146a273735 checkpoint after accepted191; branch astra/48-retained-process-handles. Current48 issue refreshed; dependencies/scope unchanged. Add read-only native attachment to an observed PalServer candidate only when PID, exact creation time and exact image path match through the newly opened handle. Retain that same limited-query/synchronization handle for exit observation, distinguishing running/unknown/exited and unavailable exit code. No launch/kill/ownership grant, path-to-server mapping or finalized-world claim. Explicitly test exit259 so it cannot be confused with STILL_ACTIVE after the handle is signaled.
+
+Impact: Platform.Contracts attachment/exit/lease types, additive partial WindowsProcessInspector implementation/shared native exit-code declaration, SelfTest actual process/permission/identity/disposal cases and docs/ledger. No dependency, Core legacy/WPF/LAN, schema, writer, credential, capability/grant/default/creator or operation-executor change. Approved47 read/save rules and six creator limits remain. Host must still authorize/map qualified server, retain full lifetime/descendant tracking and perform durable finalization before any mutation. All40 A/B audits and full local/remote validation required; synthetic Windows execution is not actual Palworld/service-launch/parity acceptance. Native failure/cancellation must close untransferred handles; read/dispose races must never use a freed handle. No owner decision pending.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+Initial48c zero-warning build, five focused actual process/permission/concurrency groups, UI, actual Windows SDK and strict Docs PASS. Full local/remote regression and both reviews remain pending. No implementation correction so far.
+
+Review A source inspection found A1: the new synthetic Rig could leave a partially copied fixture directory if its constructor failed before returning. Added verified-root cleanup around startup failure. Initial CI38101720074 canceled/superseded; no PASS or explicit cleanup claim from that canceled disposable run. Initial local suite is allowed to finish before rebuilding binaries; corrected full validation and all remote gates remain mandatory. Independent actual-library probe captured259/-1 through the retained handle after disposing the original launcher Process objects, with owned fixture cleanup. This probe exercises unchanged production code and does not replace corrected full validation.
+
+### #48c — Review A
+
+Reviewed corrected executable548d42275a83464bb4fddf323e484e8c31bfb59c againstf636d75eb4d01e2345bc17f6b668f4146a273735: all eight files, handle ownership transfer and failure cleanup, exact time/image comparison, wait-before-exit-code distinction, disposal serialization, public result shapes and test-owned process permission changes. A1 fixture-constructor cleanup corrected; no remaining finding. Initial755/755 retained as superseded evidence; corrected zero-warning build,focused five groups,full755/755,actual UI/SDK/strict Docs PASS. Independent actual-library retained-handle259/-1 check after launcher-object disposal PASS with cleanup. Source/ref search finds no launch/kill surface, client caller, frozen edits, new dependency or implicit server-ownership/stopped-state claim. Two implementation/verification rounds,287 cumulative cycles planned.
+
+Final executable CI38102044377 matches; native114359806161 PASS, remaining actual logs pending. No owner decision or new accepted escape. PR creation next; fresh B/all40 and exact final Docs/CI/head/base/clean/source-equivalence gates remain before merge. Complete audit:
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform contracts/partial implementation; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Retained read-only OS handle, no game control, store write, new Host or operation executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client reference/transport/credential/outbound connection changes; leases remain trusted Host data. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | PID/time/image matches exact opened OS object; no server identity or ownership invented. Host still maps qualified ServerRef. No Host identity/rotation changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal/bootstrap/Owner/channel effects or credential access. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network/remote shortcut; current dual permissions remain required by future Host operations. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants/defaults/presets/creator/delegation paths changed; an attachment is not permission to control a server. | PASS |
+| PROTO-001 | No wire/negotiation change. Unknown attachment/exit state explicit and non-authorizing; private factories prevent contradictory result shapes. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/revision/lock/finalization changed. One observed exit is not whole-world quiescence. Same handle preserves exact exit bits including259/-1; missing exit code is explicit, never fabricated success. | PASS |
+| SEC-001 | Query/synchronize only, no token/VM/private-key rights or raw path logs. Safe ownership transfer, deterministic cancellation/failure disposal, locked read/dispose; actual denied new open does not invalidate retained handle. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows APIs stay behind Host-side seam; no migration, shared-Core OS branch, interactive shell or Linux code. Actual synthetic evidence does not claim real Palworld/service launch/parity/release. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48c / PR192 — remote validation findings and correction
+
+CI38102044377 failed753/755 at executable548d42275a83464bb4fddf323e484e8c31bfb59c. This supersedes the earlier pending-CI note; no merge occurred. Attachment denial failed at line79 before exit checking: a privileged runner can have SeDebugPrivilege enabled (System.Diagnostics.ProcessManager itself attempts this), so a process DACL alone is not a valid denial fixture. Corrected using a scoped copied token with privileges disabled, independently asserting native ERROR_ACCESS_DENIED, then Unknown attachment/incomplete capture while the previously opened handle remains valid. Any unexpected lease is now disposed even if the assertion fails. Shared runner privileges are unchanged.
+
+The previously accepted48b actual-process test also failed its immediate post-WaitForExitAsync assertion. .NET8's documented source takes HasExited/exit-code shortcuts before native process signaling. Corrected the fixture oracle and owned-child cleanup to a bounded direct native wait; production still requires the stronger native signal. This is accepted escape12 (test synchronization assumption from PR191), discovered after both prior reviews and merge. A local independent200-owned-process experiment did not reproduce the timing window (0/200), so it is not claimed as a reproduction; source inspection and the remote failure establish the invalid assumption. Full corrected remote evidence remains required.
+
+Both issues were found by automated remote tests after A and before completed B, not by review. This is the third implementation/correction/verification round for48c (288 cumulative planned); the initial A1 constructor-cleanup finding remains recorded. Corrected zero-warning build and five attachment groups PASS locally; full validation/renewed A+B/all40 and exact final gates pending. No production safety weakening or owner decision. The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48c / PR192 — renewed Review A after remote findings
+
+Reinspected all ten changed files against basef636d75eb4d01e2345bc17f6b668f4146a273735 at corrected executable0dac0c404432cb46c61f205ecbea4d2183781db7. Native rights, signaled-handle exit semantics, identity comparison, lease ownership/cancellation/disposal, closed result shapes, test denial oracle, token restoration and bounded owned-child cleanup reviewed. No remaining A finding. Both remote defects and accepted test escape12 remain recorded above; no production behavior was relaxed. Scope/ref search covers every attachment/exit/helper caller and docs; no caller can convert these observations into stopped-state authority. Full corrected local755/755, ten focused groups, independent259/-1 lease reads after launcher-object disposal, zero-warning build, UI, actual SDK and strict Docs PASS. Candidate Docs38103362030 PASS at this executable. Three rounds/288 cumulative planned. Full remote38103088393 and fresh final B remain pending; not a merge claim.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform contracts/partial implementation; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Retained read-only OS handle, no game control, store write, new Host or operation executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client reference/transport/credential/outbound connection changes; leases remain trusted Host data. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | PID/time/image matches exact opened OS object; no server identity or ownership invented. Host still maps qualified ServerRef. No Host identity/rotation changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal/bootstrap/Owner/channel effects or credential access. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network/remote shortcut; current dual permissions remain required by future Host operations. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants/defaults/presets/creator/delegation paths changed; an attachment is not permission to control a server. | PASS |
+| PROTO-001 | No wire/negotiation change. Unknown attachment/exit state explicit and non-authorizing; private factories prevent contradictory result shapes. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/revision/lock/finalization changed. One observed exit is not whole-world quiescence. Same handle preserves exact exit bits including259/-1; missing exit code is explicit, never fabricated success. | PASS |
+| SEC-001 | Query/synchronize only, no token/VM/private-key rights or raw path logs. Safe ownership transfer, deterministic cancellation/failure disposal, locked read/dispose; scoped reduced-token native ACCESS_DENIED independently verified, incomplete capture/Unknown attachment preserve the old handle; native exit oracle avoids managed shortcut. Test-only impersonation does not change the shared token. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows APIs stay behind Host-side seam; no migration, shared-Core OS branch, interactive shell or Linux code. Actual synthetic evidence does not claim real Palworld/service launch/parity/release. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48c / PR192 — fresh final Review B
+
+Fresh review of429c4d2152a5d72cd4f36252c889af91e03dbfff againstf636d75eb4d01e2345bc17f6b668f4146a273735: all ten files reconsidered as a whole after renewed A, including unchanged observation code surrounding the partial-class/native declaration. Rechecked ABI types/rights, no PID-only attachment, same-handle identity and exit reads, failure/cancellation transfer cleanup, locked disposal, nullable unavailable exit codes, native259/-1 handling, and no production control or authority consumer. Rechecked test cleanup after assertion failure, transient token restoration without shared-token changes, actual access-denial oracle and native exit oracle. Ten focused groups rerun after renewed A PASS. B0 after both remote-test corrections; no unresolved source or invariant finding. All40 renewed below. Source/ref search clean. Three rounds/288 cumulative planned; accepted escape12 corrected here, pending acceptance. Earlier CI failure remains visible and is not retried as if it were a transient pass.
+
+Corrected executable0dac0c404432cb46c61f205ecbea4d2183781db7 has local755/755/zero-warning build/UI/actual SDK/strict Docs and independent259/-1 lease evidence PASS. Candidate Docs38103362030 PASS. Native CI114362900297 completed actual log inspected: Rust2/native16 and genuine Host/Owner PAKE, re-pair, simultaneous recovery and first-contact PASS. All-three CI38103088393 completed logs and exact final-head Docs/live head/base/clean/source-equivalence remain mandatory before merge. Scope remains retained read-only observation only, not whole47/48 completion, actual game/service launch isolation, parity, Linux or release qualification. No owner decision pending; approved permissions and six creator limits preserved.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform contracts/partial implementation; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Retained read-only OS handle, no game control, store write, new Host or operation executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client reference/transport/credential/outbound connection changes; leases remain trusted Host data. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | PID/time/image matches exact opened OS object; no server identity or ownership invented. Host still maps qualified ServerRef. No Host identity/rotation changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal/bootstrap/Owner/channel effects or credential access. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network/remote shortcut; current dual permissions remain required by future Host operations. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants/defaults/presets/creator/delegation paths changed; an attachment is not permission to control a server. | PASS |
+| PROTO-001 | No wire/negotiation change. Unknown attachment/exit state explicit and non-authorizing; private factories prevent contradictory result shapes. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/revision/lock/finalization changed. One observed exit is not whole-world quiescence. Same handle preserves exact exit bits including259/-1; missing exit code is explicit, never fabricated success. | PASS |
+| SEC-001 | Query/synchronize only, no token/VM/private-key rights or raw path logs. Safe ownership transfer, deterministic cancellation/failure disposal, locked read/dispose; scoped reduced-token native ACCESS_DENIED independently verified, incomplete capture/Unknown attachment preserve the old handle; native exit oracle avoids managed shortcut. Test-only impersonation does not change the shared token. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows APIs stay behind Host-side seam; no migration, shared-Core OS branch, interactive shell or Linux code. Actual synthetic evidence does not claim real Palworld/service launch/parity/release. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
