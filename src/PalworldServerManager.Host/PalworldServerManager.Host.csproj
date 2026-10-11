@@ -21,6 +21,8 @@
     <Compile Include="$(IntermediateOutputPath)PeerRpc\Protos\PeerSecurityGrpc.cs" />
     <Protobuf Include="..\PalworldServerManager.Contracts\Protos\peer_pairing.proto" ProtoRoot="..\PalworldServerManager.Contracts" GrpcServices="Both" CompileOutputs="false" OutputDir="$(IntermediateOutputPath)PairingRpc" />
     <Compile Include="$(IntermediateOutputPath)PairingRpc\Protos\PeerPairingGrpc.cs" />
+    <Protobuf Include="..\PalworldServerManager.Contracts\Protos\settings_read.proto" ProtoRoot="..\PalworldServerManager.Contracts" GrpcServices="Both" CompileOutputs="false" OutputDir="$(IntermediateOutputPath)SettingsRpc" />
+    <Compile Include="$(IntermediateOutputPath)SettingsRpc\Protos\SettingsReadGrpc.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PalworldServerManager.Core\PalworldServerManager.Core.csproj" />

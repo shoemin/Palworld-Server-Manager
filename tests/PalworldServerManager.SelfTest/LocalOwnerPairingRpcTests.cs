@@ -34,6 +34,7 @@ internal static partial class LocalOwnerPairingRpcTests
         internal readonly HostGenerationDiscoveryTests.Probe Probe = new();
         internal readonly string Pipe = "PSMLocalPairRpc" + Guid.NewGuid().ToString("N");
         internal Guid Principal;
+        internal SettingsSnapshotReader? SettingsReader;
         internal HostNetworkGeneration Generation = null!;
         private X509Certificate2? presentedCertificate;
         internal string CurrentPin => PalworldServerManager.Platform.Windows.WindowsPeerTls.PublicFingerprint(presentedCertificate ?? State.Certificate.Value);
@@ -48,7 +49,7 @@ internal static partial class LocalOwnerPairingRpcTests
             using var identity = WindowsIdentity.GetCurrent();
             Generation = await WindowsHostComposition.CreateNetworkGenerationAsync(State.State.Database, State.State.HostId, new LocalEnrollmentTests.Store(new byte[32]),
                 identity.User!, identity.User!, presentedCertificate, Pipe, new(IPAddress.Loopback,0), new(IPAddress.Loopback,0), factory, hook ?? State.Runtime.Hook,
-                discoveryFactory: Probe.CreateAsync);
+                discoveryFactory: Probe.CreateAsync, settingsReader: SettingsReader);
         }
         internal LocalSecurityRpcTests.Client Client() => new(State.State.HostId, Pipe, new LocalSecurityRpcTests.Reader(LocalHostTrustAnchor.Parse(JsonSerializer.SerializeToUtf8Bytes(
             new { schemaVersion = 1, hostId = State.State.HostId, currentHostCredentialFingerprint = CurrentPin, pendingHostCredentialFingerprint = (string?)null, pendingRotationId = (Guid?)null }))));

@@ -20,7 +20,15 @@ public sealed class LocalSecurityRpcRuntime
     internal LocalPermissionDispatcher Permissions { get; }
     internal LocalPeerTrustNetworkActions TrustNetwork { get; }
     internal SettingsSchemaReader SettingsSchema { get; }
+    internal SettingsSnapshotReader? SettingsReader { get; private set; }
+    internal void ConfigureSettings(SettingsSnapshotReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        if (reader.HostId != HostId || SettingsReader is not null) throw new InvalidOperationException("Settings reader binding refused.");
+        SettingsReader = reader;
+    }
     internal LocalSettingsSchemaNetworkActions SettingsNetwork { get; }
+    internal LocalSettingsSnapshotNetworkActions SnapshotNetwork { get; }
     private readonly LocalPrincipalAuthenticationRepository _authentication;
     private readonly Action<LocalAuthenticationFailure> _report;
     public LocalSecurityRpcRuntime(HostDatabase database, Guid hostId, ISecureCredentialStore store,
@@ -33,7 +41,7 @@ public sealed class LocalSecurityRpcRuntime
         var state = new HostCredentialStateRepository(database, hostId); IsInitialized = () => state.Read().Initialized;
         Permissions = new(this, new GrantPolicyRepository(database, hostId, time));
         TrustNetwork = new(database, hostId, time);
-        SettingsSchema = new(database, hostId); SettingsNetwork = new(database, hostId, time);
+        SettingsSchema = new(database, hostId); SettingsNetwork = new(database, hostId, time); SnapshotNetwork = new(database, hostId, time);
     }
     // Install after TLS and before HTTP in the listener pipeline. State has the connection's
     // actual lifetime, never a request lifetime or an attacker-selected session identifier.

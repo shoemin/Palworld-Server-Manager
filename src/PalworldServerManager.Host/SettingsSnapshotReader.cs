@@ -16,6 +16,7 @@ namespace PalworldServerManager.Host;
 internal sealed class SettingsSnapshotReader
 {
     private readonly Guid host;
+    internal Guid HostId => host;
     private readonly IManagedServerSettingsReader files;
     private readonly ServerInventoryRepository inventory;
     private readonly ConfigurationRevisionRepository revisions;

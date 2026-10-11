@@ -11,6 +11,19 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--settings-rpc-probe"])
+    {
+        await LocalOwnerPairingRpcTests.SnapshotLocalOwnerAndExactTarget();
+        await LocalOwnerPairingRpcTests.SnapshotLocalViewAndEditRemainIndependent();
+        await LocalOwnerPairingRpcTests.SnapshotRemoteIndependentCeilings();
+        await LocalOwnerPairingRpcTests.SnapshotLocalRevocationBeforeOutboundRead();
+        await LocalOwnerPairingRpcTests.SnapshotChangedPrincipalCannotReceiveRemoteReply();
+        await LocalOwnerPairingRpcTests.SnapshotNoRemoteAdvertisementWithoutGeneration();
+        await LocalOwnerPairingRpcTests.SnapshotRevisionBoundsAndSanitizedFailures();
+        await LocalOwnerPairingRpcTests.SnapshotClosedReplyAndBindingValidation();
+        await LocalOwnerPairingRpcTests.SnapshotGenerationDrainCancelsOutboundRead();
+        Console.WriteLine("PASS configured settings RPC: 9 groups."); return 0;
+    }
     if (args is ["--settings-snapshot-probe"])
     {
         await SettingsSnapshotReaderTests.ViewOnlyPrivacyAndDurableRevisions();
@@ -1073,6 +1086,15 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Content revisions FinalProofCancellationAndFaultsRollBack", ConfigurationContentObservationTests.FinalProofCancellationAndFaultsRollBack),
     ("Content revisions MigrationPreservesHistoryAndRollsBack", ConfigurationContentObservationTests.MigrationPreservesHistoryAndRollsBack),
     ("Content revisions InvalidMetadataBoundsAndOverflowRefuse", ConfigurationContentObservationTests.InvalidMetadataBoundsAndOverflowRefuse),
+    ("Settings RPC SnapshotGenerationDrainCancelsOutboundRead", LocalOwnerPairingRpcTests.SnapshotGenerationDrainCancelsOutboundRead),
+    ("Settings RPC SnapshotLocalOwnerAndExactTarget", LocalOwnerPairingRpcTests.SnapshotLocalOwnerAndExactTarget),
+    ("Settings RPC SnapshotLocalViewAndEditRemainIndependent", LocalOwnerPairingRpcTests.SnapshotLocalViewAndEditRemainIndependent),
+    ("Settings RPC SnapshotRemoteIndependentCeilings", LocalOwnerPairingRpcTests.SnapshotRemoteIndependentCeilings),
+    ("Settings RPC SnapshotLocalRevocationBeforeOutboundRead", LocalOwnerPairingRpcTests.SnapshotLocalRevocationBeforeOutboundRead),
+    ("Settings RPC SnapshotChangedPrincipalCannotReceiveRemoteReply", LocalOwnerPairingRpcTests.SnapshotChangedPrincipalCannotReceiveRemoteReply),
+    ("Settings RPC SnapshotNoRemoteAdvertisementWithoutGeneration", LocalOwnerPairingRpcTests.SnapshotNoRemoteAdvertisementWithoutGeneration),
+    ("Settings RPC SnapshotRevisionBoundsAndSanitizedFailures", LocalOwnerPairingRpcTests.SnapshotRevisionBoundsAndSanitizedFailures),
+    ("Settings RPC SnapshotClosedReplyAndBindingValidation", LocalOwnerPairingRpcTests.SnapshotClosedReplyAndBindingValidation),
     ("Settings snapshots ViewOnlyPrivacyAndDurableRevisions", SettingsSnapshotReaderTests.ViewOnlyPrivacyAndDurableRevisions),
     ("Settings snapshots ScopeAndNoReadWithoutView", SettingsSnapshotReaderTests.ScopeAndNoReadWithoutView),
     ("Settings snapshots ChangedProofOrRegistrationCannotCommit", SettingsSnapshotReaderTests.ChangedProofOrRegistrationCannotCommit),

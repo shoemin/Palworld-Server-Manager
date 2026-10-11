@@ -7949,3 +7949,16 @@ A corrected queued-revocation coverage and scheduling/cleanup weaknesses. Comple
 This accepts the internal Host read engine and same-transaction proof/inventory checks, not an already connected settings RPC or save. Next connect the reader to authenticated local and peer APIs plus originating-Host forwarding, with one shared Host reader, additive negotiated descriptors and bounded response transport that preserves existing authentication message limits. No real Palworld/parity/Linux/release qualification. Accessibility WAIVED, never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47l preflight - authenticated configured settings reads
+
+2026-10-11. Base6a01153ac96ef6b80dc512644b153e49364188a7; checkpointDocs38116378682 PASS. Current #47 body rechecked; ShadowReady and approved ViewServer reads/EditSettings saves remain the contract. Implement local GetServerSettings, incoming peer GetServerSettings and originating-Host GetRemoteServerSettings. No save/UI/lifecycle implementation in this unit.
+
+Applicable: all40 reviewed, especially HOST-002/PERSIST-001/CLIENT-001/CLIENT-002/CLIENT-003/REMOTE-001/REMOTE-002/IDENT-001..004/LOCAL-001..004/PAIR-001..004/AUTH-001..005/PROTO-001/OPS-001/SEC-001/PLATFORM-001. Expected Contracts additive settings-read service/messages/features and immutable histories; Host runtime/composition/dispatch/forwarding; focused SelfTest and docs. No dependency-direction changes, new dependency, credential holder, enrollment/grant/default/creator writer, file writer, operation executor, Linux or frozen legacy edits. Sole persistence effect is the accepted observation revision writer with same-transaction current proof/inventory checks.
+
+All effect paths: local authenticated principal to shared reader; authenticated Active incoming peer to the same reader; local authenticated principal via its Host generation/current machine TLS proof to independently authorized remote peer reader. One reader per Host lifetime, shared across local/peer and credential generations; no per-request gates. Trusted fixed Windows storage composition, no request path and no startup provisioning/validation that could couple credential recovery to missing game storage.
+
+Dedicated settings services on existing authenticated endpoints preserve global security16KiB limits. Settings read requests16KiB/responses4MiB plus semantic/serialized reply validation and requested-server/positive revision checks; first-contact pairing endpoint unchanged. Explicit new negotiated features/local20/peer17, no app-version policy. Recheck nonsecret-only bytes, unknown suppression, bounds, independent ceilings, revocation/current pins/incarnations, connection ownership/feature gates, cancellation/drain, unavailable/unconfigured composition, existing control-plane limits, descriptor histories, all40/stale references and full required local/CI evidence. No owner decision identified.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
