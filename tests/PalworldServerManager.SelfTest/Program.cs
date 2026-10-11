@@ -22,7 +22,8 @@ if (args.Length > 0)
         await LocalOwnerPairingRpcTests.SnapshotRevisionBoundsAndSanitizedFailures();
         await LocalOwnerPairingRpcTests.SnapshotClosedReplyAndBindingValidation();
         await LocalOwnerPairingRpcTests.SnapshotGenerationDrainCancelsOutboundRead();
-        Console.WriteLine("PASS configured settings RPC: 9 groups."); return 0;
+        await LocalOwnerPairingRpcTests.SnapshotDirectPeerRequiresNegotiationAndCurrentProof();
+        Console.WriteLine("PASS configured settings RPC: 10 groups."); return 0;
     }
     if (args is ["--settings-snapshot-probe"])
     {
@@ -1086,6 +1087,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Content revisions FinalProofCancellationAndFaultsRollBack", ConfigurationContentObservationTests.FinalProofCancellationAndFaultsRollBack),
     ("Content revisions MigrationPreservesHistoryAndRollsBack", ConfigurationContentObservationTests.MigrationPreservesHistoryAndRollsBack),
     ("Content revisions InvalidMetadataBoundsAndOverflowRefuse", ConfigurationContentObservationTests.InvalidMetadataBoundsAndOverflowRefuse),
+    ("Settings RPC SnapshotDirectPeerRequiresNegotiationAndCurrentProof", LocalOwnerPairingRpcTests.SnapshotDirectPeerRequiresNegotiationAndCurrentProof),
     ("Settings RPC SnapshotGenerationDrainCancelsOutboundRead", LocalOwnerPairingRpcTests.SnapshotGenerationDrainCancelsOutboundRead),
     ("Settings RPC SnapshotLocalOwnerAndExactTarget", LocalOwnerPairingRpcTests.SnapshotLocalOwnerAndExactTarget),
     ("Settings RPC SnapshotLocalViewAndEditRemainIndependent", LocalOwnerPairingRpcTests.SnapshotLocalViewAndEditRemainIndependent),

@@ -146,7 +146,7 @@ internal static partial class LocalOwnerPairingRpcTests
             repo.InvalidateServerSubtree(NetworkOwner(a), repo.Read().Revision, grant); release.TrySetResult();
             await Refused(pending, StatusCode.PermissionDenied); Check(reads == 0);
         }
-        finally { release.TrySetResult(); await app.StopAsync(); }
+        finally { release.TrySetResult(); try { await pending; } catch (RpcException) { } await app.StopAsync(); }
     }
     public static async Task SnapshotChangedPrincipalCannotReceiveRemoteReply()
     {
@@ -162,7 +162,7 @@ internal static partial class LocalOwnerPairingRpcTests
             await entered.Task.WaitAsync(TimeSpan.FromSeconds(5)); a.State.State.Execute("UPDATE LocalPrincipals SET PublicVerificationKey='changed' WHERE IsOwner=1;"); release.TrySetResult();
             await Refused(pending, StatusCode.Unauthenticated);
         }
-        finally { release.TrySetResult(); await app.StopAsync(); }
+        finally { release.TrySetResult(); try { await pending; } catch (RpcException) { } await app.StopAsync(); }
     }
     public static async Task SnapshotNoRemoteAdvertisementWithoutGeneration()
     {
@@ -211,6 +211,13 @@ internal static partial class LocalOwnerPairingRpcTests
             try { PeerSettingsSnapshotRpcClient.ValidateReply(bad, request); throw new Exception("Invalid snapshot accepted."); }
             catch (AuthenticationException) { }
         }
+        using (var extra = new MemoryStream())
+        {
+            using (var output = new CodedOutputStream(extra, leaveOpen: true))
+            { output.WriteTag(100, WireFormat.WireType.LengthDelimited); output.WriteBytes(ByteString.CopyFrom(new byte[SettingsSnapshotValidation.MaximumResponseBytes])); }
+            var oversized = good.Clone(); oversized.MergeFrom(extra.ToArray());
+            Check(!SettingsSnapshotValidation.IsValidReply(oversized, server));
+        }
         try { f.State.Runtime.ConfigureSettings(f.SettingsReader!); throw new Exception("Reader rebound."); } catch (InvalidOperationException) { }
         await using var other = new Fixture();
         try { other.State.Runtime.ConfigureSettings(f.SettingsReader!); throw new Exception("Foreign reader bound."); } catch (InvalidOperationException) { }
@@ -248,5 +255,35 @@ internal static partial class LocalOwnerPairingRpcTests
             Check(files.Reads == 0);
         }
         finally { await a.Generation.StopAsync(); try { await pending; } catch (RpcException) { } await app.StopAsync(); }
+    }
+
+    public static async Task SnapshotDirectPeerRequiresNegotiationAndCurrentProof()
+    {
+        await using var a = new Fixture(); await using var b = new Fixture();
+        ConfigureSnapshot(a); var files = ConfigureSnapshot(b); files.Name = "small";
+        await a.Start(new RefusingFactory()); await b.Start(new RefusingFactory()); await NetworkPair(a, b);
+        var server = SnapshotServer(b); SchemaGrant(b, ActorRef.RemoteManager(a.State.State.HostId), server, ServerCapability.ViewServer);
+        await b.State.Start();
+        var request = new SettingsSnapshotRequest { Server = server };
+        using (var unnegotiated = new PeerSecurityRpcTests.RawClient(a.State, b.State))
+            await Refused(unnegotiated.Settings.GetServerSettingsAsync(request, deadline: DateTime.UtcNow.AddSeconds(5)).ResponseAsync, StatusCode.FailedPrecondition);
+        using (var old = new PeerSecurityRpcTests.RawClient(a.State, b.State))
+        {
+            var hello = PeerSecurityRpcRuntime.Hello(a.State.State.HostId); hello.Handshake.Capabilities.Remove(FeatureCapability.SettingsSnapshot);
+            await old.Negotiate(hello);
+            await Refused(old.Settings.GetServerSettingsAsync(request, deadline: DateTime.UtcNow.AddSeconds(5)).ResponseAsync, StatusCode.FailedPrecondition);
+        }
+        Check(files.Reads == 0);
+        using var c = new PeerSecurityRpcTests.RawClient(a.State, b.State, unboundedSend: true);
+        await c.Negotiate(PeerSecurityRpcRuntime.Hello(a.State.State.HostId));
+        var good = await c.Settings.GetServerSettingsAsync(request, deadline: DateTime.UtcNow.AddSeconds(5)).ResponseAsync;
+        Check(SettingsSnapshotValidation.IsValidReply(good, server) && good.Entries.Single(e => e.Definition.Key == "ServerName").Configured.Value == "small");
+        var oversized = request.Clone(); oversized.Server.ServerProfileId = new string('x', 17000);
+        await Refused(c.Settings.GetServerSettingsAsync(oversized, deadline: DateTime.UtcNow.AddSeconds(5)).ResponseAsync, StatusCode.ResourceExhausted);
+        var oversizedHello = PeerSecurityRpcRuntime.Hello(a.State.State.HostId); oversizedHello.Handshake.ProductVersion = new string('x', 17000);
+        await Refused(c.Negotiate(oversizedHello), StatusCode.ResourceExhausted);
+        b.State.State.Execute($"UPDATE TrustedManagers SET CurrentTrustedPublicKeyFingerprint='{new string('A', 64)}' WHERE PeerHostId='{a.State.State.HostId:D}';");
+        await Refused(c.Settings.GetServerSettingsAsync(request, deadline: DateTime.UtcNow.AddSeconds(5)).ResponseAsync, StatusCode.Unauthenticated);
+        Check(files.Reads == 1);
     }
 }
