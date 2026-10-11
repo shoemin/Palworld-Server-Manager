@@ -7768,3 +7768,13 @@ Migration17 is additive/atomic and retains existing revisions including unqualif
 All40 covered. Two rounds,305 cumulative planned; no new accepted escape, all12 prior escapes corrected. Whole47/48 IN PROGRESS; no owner decision. Final merge requires all-three completed corrected CI logs, final Docs and exact current head/base/clean/executable equivalence. Accessibility WAIVED, never PASS; real Palworld/parity/Linux/release remain unqualified.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47i / PR197 - accepted content revision observations
+
+2026-10-11. Merged only into experiment/astra-v0.5.0 as597922f6588ec87f97bb3d94b7c428c2bfd84d3e. Final reviewed head a789dfdeaaf4874e67cb4b8f912aa3b70ac1635c; corrected executable edf48bf2d6e04d609bb0531db70581c8dd078eba. All-three correctedCI38112313564 PASS; completed native114390250522/service114390250405/build114390250517 logs inspected. Local/remote778/778 including five observation groups, zero-warning build, UI/actual SDK/strict Docs PASS. Rust2/native16/genuine ceremonies, four actual service starts with managed storage/restricted-child/five recovery/four unpair cases, two-user denial, shipped bootstrap/recovery independence and complete service/group/users/profiles/files cleanup verified. The remote full job ran about18minutes and completed successfully, not a timeout or skipped result. Corrected candidateDocs38112662180/finalDocs38112730041 PASS; exact final head/base/clean/executable-equivalence gate PASS.8files397insert1delete.
+
+One pre-A fixture compiler correction and one B correction to same-transaction read validation; renewed A/B/all40 clean. Initial38111742300 succeeded but remains superseded for corrected-code acceptance. Two rounds,305 cumulative accepted cycles. Accepted137 experimental PRs61-197; fourteen canonical children SHADOW DONE. No new accepted escape; all12 remain corrected. Whole47/48 IN PROGRESS, no owner decision pending; approved read/save permissions and six creator limits unchanged. Prior checkpointDocs38111491577 verified PASS.
+
+Private content/revision metadata is accepted, not a production settings endpoint/file writer or filesystem transaction. Future reads require protected registered storage binding and initial ViewServer authorization; future save must reconcile fresh content under operation/stopped lifetime and durable file recovery. Next work connects the protected storage and byte-read boundaries to the exact managed server location. Accessibility WAIVED, never PASS; real Palworld/parity/Linux/release remain unqualified.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
