@@ -90,7 +90,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                     finally { CryptographicOperations.ZeroMemory(signature); }
                 }
                 RequireParentSigning(); var nativeHash = FileHash(keyFile); var credentialHash = FileHash(credentialFile);
-                WindowsRestrictedLaunchQualification.Run(root, key.Key.KeyName!, keyFile, credentialFile, stop);
+                WindowsRestrictedLaunchQualification.Run(root, config.ManagedStorageRoot ?? throw new Exception("Managed fixture storage is required."), key.Key.KeyName!, keyFile, credentialFile, stop);
                 RequireParentSigning();
                 if (!FileHash(keyFile).AsSpan().SequenceEqual(nativeHash) || !FileHash(credentialFile).AsSpan().SequenceEqual(credentialHash))
                     throw new Exception("Restricted child changed fixture credential storage.");
@@ -142,7 +142,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                     if (config.PairingProviderPath is not null && !ready.ResponderCrashQualified) throw new Exception("Requested native responder crash qualification was skipped.");
                     Console.WriteLine("PASS service recovery process qualification: five actual child fault/restart cases and complete cleanup.");
                     Console.WriteLine("PASS service unpair process qualification: four actual child delivery/fault/restart cases and complete cleanup.");
-                    Console.WriteLine("PASS service restricted launch qualification: public executable read, private file/DACL and parent process denial, native Host-key use and protected credential-file denial, parent signing and unchanged storage, exact exit and cleanup.");
+                    Console.WriteLine("PASS service restricted launch qualification: public executable read, private file/DACL and parent process denial, native Host-key use and protected credential-file denial, parent signing and unchanged storage, reciprocal own-folder writes and sibling denial, exact exit and cleanup.");
                     if (config.ManagedStorageRoot is not null) Console.WriteLine("PASS service managed storage qualification: protected root validation, durable canary write and bounded read across restart.");
                     return ready;
                 }

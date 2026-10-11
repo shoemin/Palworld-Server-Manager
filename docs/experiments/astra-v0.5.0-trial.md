@@ -8108,3 +8108,14 @@ Initial service38118365420 stage60 failure and diagnostic38118597076 NTE_BAD_KEY
 Whole47/48 remain IN PROGRESS. Next bounded prerequisite qualifies own-tree writes and reciprocal sibling denial for restricted children under disposable managed-storage folders, preserving Host-key/process protections and cleanup. No production launcher, complete sandbox, real Palworld/parity/Linux/release acceptance. No owner decision pending. Accessibility WAIVED, never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #48g preflight - restricted per-server writable folders
+
+2026-10-11. Base48031ceb876c74b5c204dfcb8fb023e3bc6ccc56, following accepted PR201. Current #48 body/ShadowReady and all40 invariants reviewed. Bounded test-only prerequisite: two fresh canonical disposable folders under the existing separately protected managed-storage root, each bound to one distinct random restricting SID. Each actual restricted service child must read/write/create/rename/delete its own descendants but be denied sibling read/write/delete/create and own/sibling root DACL changes. Run reciprocal children with retained-handle termination and recheck protected Host key/file/process denial. Parent verifies root permissions and content; cleanup removes only exact owned regular files/empty directories after children terminate, never recursive supplied-path deletion. Existing private Host root permissions remain unchanged.
+
+Expected files: SelfTest restricted qualification partial/helper, Program arguments, NativeTlsServiceFixture invocation/readiness, qualification docs and trial ledger. No production assembly, platform policy, dependency, protocol, persistent writer, registry/grant/creator/default, credential protection or lifecycle executor changes. All effect paths: owned service fixture prepares private canary/key plus fresh managed folders; two copied tokens receive independent restricting SIDs; exact own/sibling paths enter synthetic child arguments; parent checks both then deletes only owned fixture entries. No source import/adoption, local-user OS grants, persisted SID, server registration or production launch. Cleanup errors fail qualification. Authority, credential consumers and sole production persistence ownership remain unchanged.
+
+All40 apply to whole-result review, especially HOST-002/CLIENT-002/SEC-001/PLATFORM-001/OPS-002..004/RECOVERY-001. Actual all-four-start service evidence, two nonadmin regressions, full local801/native/UI/SDK/Docs plus all-three CI, A/B and stale-reference checks required. This tests filesystem separation; it does not select a complete sandbox or prove real Palworld compatibility. Whole47/48 remain IN PROGRESS; no owner decision pending.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.

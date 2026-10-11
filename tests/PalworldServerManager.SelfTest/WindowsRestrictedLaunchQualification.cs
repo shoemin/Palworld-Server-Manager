@@ -14,13 +14,13 @@ namespace PalworldServerManager.SelfTest;
 // Only synthetic fixture key names and paths reach the child, never private bytes.
 // Only the disposable service's verified
 // logon station receives a temporary unique-SID grant, restored before fixture completion.
-internal static class WindowsRestrictedLaunchQualification
+internal static partial class WindowsRestrictedLaunchQualification
 {
     private static void Check(bool value, string message) { if (!value) throw new Exception(message); }
     private static void NativeCheck(bool value, string step)
     { if (!value) throw new Win32Exception(Marshal.GetLastWin32Error(), "Restricted launch qualification: " + step); }
 
-    internal static int Child(string canary, string parent, string nativeKey, string nativeFile, string credentialFile)
+    internal static int Child(string canary, string parent, string nativeKey, string nativeFile, string credentialFile, string ownFiles, string siblingFiles)
     {
         var stage = 40;
         try
@@ -96,6 +96,7 @@ internal static class WindowsRestrictedLaunchQualification
             Check(denied, "Restricted child used native Host key.");
             stage = 61; RequireFileReadDenied(nativeFile);
             stage = 62; RequireFileReadDenied(credentialFile);
+            stage = 70; QualifyGameFiles(ownFiles, siblingFiles, ref stage);
             return 0;
         }
         catch { return stage; } // Bounded stage only; no private paths, values or native text on child output.
@@ -113,14 +114,14 @@ internal static class WindowsRestrictedLaunchQualification
         using var identity = WindowsIdentity.GetCurrent();
         Check(!identity.User!.Value.StartsWith("S-1-5-80-", StringComparison.Ordinal), "Ordinary suite requires its nonservice runner.");
         var missing = Path.Combine(Path.GetTempPath(), "astra-unqualified-" + Guid.NewGuid().ToString("N"));
-        try { Run(missing, "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential"), CancellationToken.None); throw new Exception("Unqualified caller was accepted."); }
+        try { Run(missing, missing, "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential"), CancellationToken.None); throw new Exception("Unqualified caller was accepted."); }
         catch (Exception ex) when (ex.Message == "Actual virtual service required.") { }
-        Check(!Directory.Exists(missing) && Child(Path.Combine(missing, "absent"), "1", "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential")) == 40,
+        Check(!Directory.Exists(missing) && Child(Path.Combine(missing, "absent"), "1", "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential"), Path.Combine(missing, "own"), Path.Combine(missing, "sibling")) == 40,
             "Unqualified probe performed IO or reported success.");
         return Task.CompletedTask;
     }
 
-    internal static void Run(string root, string nativeKey, string nativeFile, string credentialFile, CancellationToken ct)
+    internal static void Run(string root, string managedRoot, string nativeKey, string nativeFile, string credentialFile, CancellationToken ct)
     {
         using var identity = WindowsIdentity.GetCurrent();
         Check(identity.User!.Value.StartsWith("S-1-5-80-", StringComparison.Ordinal), "Actual virtual service required.");
@@ -132,46 +133,53 @@ internal static class WindowsRestrictedLaunchQualification
             File.WriteAllText(canary, "SYNTHETIC-NOT-A-CREDENTIAL");
             NativeCheck(OpenProcessToken(new(-1), 0x8B, out var source), "source token");
             using (source)
-            using (var sids = new RestrictingSids(source))
+            using (var first = new RestrictingSids(source))
+            using (var second = new RestrictingSids(source))
+            using (var folders = new OwnedGameFolders(managedRoot, identity.User, first.ChildSid, second.ChildSid))
             {
-                NativeCheck(CreateRestrictedToken(source, 1, 0, IntPtr.Zero, 0, IntPtr.Zero,
-                    (uint)sids.Values.Length, sids.Values, out var reduced), "restricted token");
-                using (reduced)
-                using (var desktop = new OwnedDesktop(identity.User, sids.ChildSid, source))
+                foreach (var entry in new[] { (first, folders.First, folders.Second), (second, folders.Second, folders.First) })
                 {
-                    ConfigureChildObjectDacl(reduced, identity.User, sids.ChildSid);
-                    var startupAccess = desktop.ProbeAccess(reduced);
-                    var executable = Environment.ProcessPath ?? throw new InvalidOperationException();
-                    var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture), nativeKey, nativeFile, credentialFile };
-                    var command = new StringBuilder(WindowsClientCommandLine.Build(new ClientLaunchTarget(executable, arguments)));
-                    var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>(), Desktop = desktop.Name };
-                    ct.ThrowIfCancellationRequested();
-                    NativeCheck(CreateProcessAsUserW(reduced, executable, command, IntPtr.Zero, IntPtr.Zero, false,
-                        0x08000000, IntPtr.Zero, Path.GetDirectoryName(executable)!, ref startup, out var child), "create child");
-                    using var process = new SafeProcessHandle(child.Process, true);
-                    using var thread = new SafeWaitHandle(child.Thread, true);
-                    try
+                    var sids = entry.Item1;
+                    NativeCheck(CreateRestrictedToken(source, 1, 0, IntPtr.Zero, 0, IntPtr.Zero,
+                        (uint)sids.Values.Length, sids.Values, out var reduced), "restricted token");
+                    using (reduced)
+                    using (var desktop = new OwnedDesktop(identity.User, sids.ChildSid, source))
                     {
-                        var deadline = Environment.TickCount64 + 15000;
-                        while (true)
+                        ConfigureChildObjectDacl(reduced, identity.User, sids.ChildSid);
+                        var startupAccess = desktop.ProbeAccess(reduced);
+                        var executable = Environment.ProcessPath ?? throw new InvalidOperationException();
+                        var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture), nativeKey, nativeFile, credentialFile, entry.Item2, entry.Item3 };
+                        var command = new StringBuilder(WindowsClientCommandLine.Build(new ClientLaunchTarget(executable, arguments)));
+                        var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>(), Desktop = desktop.Name };
+                        ct.ThrowIfCancellationRequested();
+                        NativeCheck(CreateProcessAsUserW(reduced, executable, command, IntPtr.Zero, IntPtr.Zero, false,
+                            0x08000000, IntPtr.Zero, Path.GetDirectoryName(executable)!, ref startup, out var child), "create child");
+                        using var process = new SafeProcessHandle(child.Process, true);
+                        using var thread = new SafeWaitHandle(child.Thread, true);
+                        try
                         {
-                            ct.ThrowIfCancellationRequested(); var wait = WaitForSingleObject(process, 100);
-                            if (wait == 0) break;
-                            Check(wait == 258 && Environment.TickCount64 < deadline, "Restricted child did not signal within bound.");
+                            var deadline = Environment.TickCount64 + 15000;
+                            while (true)
+                            {
+                                ct.ThrowIfCancellationRequested(); var wait = WaitForSingleObject(process, 100);
+                                if (wait == 0) break;
+                                Check(wait == 258 && Environment.TickCount64 < deadline, "Restricted child did not signal within bound.");
+                            }
+                            NativeCheck(GetExitCodeProcess(process, out var code), "exit code");
+                            Check(code == 0, $"Restricted child qualification failed, exit {code:X8}; {startupAccess}.");
                         }
-                        NativeCheck(GetExitCodeProcess(process, out var code), "exit code");
-                        Check(code == 0, $"Restricted child qualification failed, exit {code:X8}; {startupAccess}.");
-                    }
-                    finally
-                    {
-                        // Cleanup only through the handle returned for our own child, never PID reopen.
-                        if (WaitForSingleObject(process, 0) != 0)
+                        finally
                         {
-                            NativeCheck(TerminateProcess(process, 42), "owned child cleanup");
-                            Check(WaitForSingleObject(process, 10000) == 0, "Owned child cleanup did not signal.");
+                            // Cleanup only through the handle returned for our own child, never PID reopen.
+                            if (WaitForSingleObject(process, 0) != 0)
+                            {
+                                NativeCheck(TerminateProcess(process, 42), "owned child cleanup");
+                                Check(WaitForSingleObject(process, 10000) == 0, "Owned child cleanup did not signal.");
+                            }
                         }
                     }
                 }
+                folders.Verify();
             }
             Check(File.ReadAllText(canary) == "SYNTHETIC-NOT-A-CREDENTIAL", "Private canary changed.");
         }
@@ -206,7 +214,7 @@ internal static class WindowsRestrictedLaunchQualification
     private static void ConfigureChildObjectDacl(SafeAccessTokenHandle reduced, SecurityIdentifier service, SecurityIdentifier child)
     {
         // Only this newly created token: let the child access its own new kernel objects.
-        // The unique restricting SID is not granted access to any Host object or file.
+        // The unique restricting SID is not granted access to any private Host object or file.
         NativeCheck(ConvertStringSecurityDescriptorToSecurityDescriptorW($"D:P(A;;GA;;;{service.Value})(A;;GA;;;SY)(A;;GA;;;{child.Value})", 1, out var sd, out _), "child object DACL");
         var information = Marshal.AllocHGlobal(IntPtr.Size);
         try
