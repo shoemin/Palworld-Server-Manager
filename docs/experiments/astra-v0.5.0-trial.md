@@ -7511,3 +7511,27 @@ A1 mapped-drive gate and fixture ACL restoration corrected. Stale search covered
 All40 covered. Whole47/48 remains IN PROGRESS; no real Palworld/parity/release claim. Next authorized action is PR creation and fresh B review, then completed all-three CI logs/final Docs/live head/base/clean/source-equivalence gate for experiment-only merge. Accessibility WAIVED, never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47h / PR195 - Review B PASS, final gates pending
+
+2026-10-10. Fresh post-PR review of exact candidatedbc8ab5c620bcacc8292f4d3af35c55945b399b6 against baseba7cf6838bb915281440763015cc302a46612c8b. Re-read every changed file, full native reader/contract/test diff, caller inventory, preflight/A evidence and developer limitations. No substantive B finding. Executable11413fb unchanged; local769/769/six focused groups/zero-warning build/UI/actual SDK/independent C++ ABI/strict Docs PASS. Remaining completed CI logs and final Docs still required before merge.
+
+Rechecked ownership and failure paths: invalid inputs fail before native open; copied components cannot be redirected by later caller mutation; intermediate directories and leaf stay anchored to retained handles; reparse/type/link checks precede byte reads; no create/replace/backup-intent path exists. Native status conversion drops raw details, FileStream errors are recategorized without inner exceptions, cancellation clears only the allocated result buffer (not a whole-process erasure claim). Failure and successful cleanup close all handles; ACL and junction test cleanup applies only to owned disposable fixtures. The trusted Host must still select/authorize/protect the root and coordinate editable resources; this seam has no public RPC or production consumer and does not prove revision consistency, stopped state or freedom from pre-existing writable mappings.
+
+| Invariant | Fresh whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Six-file additive platform/test/docs diff leaves frozen application and legacy dependencies untouched. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Passive Host-side read primitive, no additional authority or authoritative/file writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency/credential/routing change and no arbitrary-path RPC. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identity/credential/trust/recovery change; filesystem path never represented as server authority. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/bootstrap/authentication effect; current-principal gating remains required in future caller. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote ceiling, Active trust or pairing-state mutation; genuine native qualification retained. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant issuance/default/delegation/creator path; independent read/save permissions unchanged. | PASS |
+| PROTO-001 | No wire/negotiation change; closed platform failure reporting does not grant access. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No revision/lock/operation/recovery mutation; ordinary sharing exclusion is not a process-stopped or transaction guarantee. | PASS |
+| SEC-001 | No value/path logging, partial result or permission relaxation; actual unsafe-object/access/share refusals and cleanup verified. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No source migration, interactive shell action or Linux implementation; native calls confined to Windows adapter/test. | PASS |
+
+All40 covered and stale-reference search clean. Two rounds,300 cumulative planned; all12 accepted escapes remain corrected, no new accepted escape. Whole47/48 IN PROGRESS; no owner decision pending. Final gate requires exact current head/base/clean/source equivalence, final Docs, and completed all-three CI logs including actual four-start service qualification and cleanup. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
