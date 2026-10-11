@@ -7741,3 +7741,30 @@ Caller-owned bytes and ordered read/observe/save serialization remain explicit t
 All40 reviewed, writer/table/call-site/protocol and stale-reference search clean. Whole47/48 IN PROGRESS; no owner decision. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release claim.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47i / PR197 - corrected Review B PASS, final gates pending
+
+Fresh B of2cb605d81af2935cb2e5a8372b37c90dc53a209c against0d2bff0060710ed166cdf3f58e1dd33bdb28087e, including whole8-file result and changed validator/test contract. No further substantive finding. Executable edf48bf2d6e04d609bb0531db70581c8dd078eba unchanged. Corrected local778/778, five focused groups, zero-warning build, UI/actual SDK/strict Docs PASS. Corrected38112313564 native logs inspected; completed service/build logs and final Docs remain gates. Prior first A is superseded; initial38111742300 succeeded but cannot qualify corrected code.
+
+The callback now receives exactly the connection/transaction which owns metadata effects, matching the trusted operation-engine pattern. It runs read-only before effects and again before commit, including unchanged-content calls. The final callback can see an in-transaction principal-key change; focused fault tests prove rejection restores both metadata and principal rows. Outside readers see committed state while the supplied transaction sees the pending revision. The old transaction-owning capability API is explicitly excluded from that callback, preventing a nested writer. Initial file authorization and caller serialization remain required. Review rechecked new/unchanged/stale-association/overflow paths, fixed error text, SQL bindings, hash bounds/privacy, final pairwise metadata equality and cancellation/disposal. No caller, arbitrary path, filesystem write, save endpoint or new permission is introduced.
+
+Migration17 is additive/atomic and retains existing revisions including unqualified legacy history without treating it as current content. Private fingerprints are not secrets returned to clients or substitute wire tokens; only the existing qualified counter is returned. Unobserved content changes that revert cannot be detected by this mechanism; live file stability, stopped state, operation lock and durable file recovery remain future save responsibilities. Same-server ID on a different Host is rejected; independent local kinds/server targets remain separate. Stale-reference/call-site/dependency/history searches clean.
+
+| Invariant | Fresh corrected whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/Core semantics remain untouched; eight-file persistence/test/docs result. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-only observation writer under existing machine lease; no second authority or migration admission change. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency/key/transport/direct-file action introduced. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Existing semantic identities/credential lifecycles preserved; resource keys retain exact authoritative Host. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized Host/single Owner checks and same-transaction validator; no Owner/enrollment/bootstrap authority added. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No pairing or remote ceiling changes; future consumer still requires both current authorization boundaries. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/delegation/creator effects; corrected callback cannot stand in for current proof or initial authorization. | PASS |
+| PROTO-001 | No protocol/history modification; content fingerprints never replace decimal wire revisions. | PASS |
+| OPS-001 | Atomic observed-bytes/revision association, stale generic-write refusal, checked overflow and metadata rollback verified. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/lifetime/recovery effect or filesystem-transaction claim; caller duties remain explicit. | PASS |
+| SEC-001 | No raw content persistence/logs; private bounded fingerprints, fixed errors and no wire exposure or new credential holder. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Additive Host schema with historical preservation; no source-store mutation, OS-specific scatter, interactive service action or Linux work. | PASS |
+
+All40 covered. Two rounds,305 cumulative planned; no new accepted escape, all12 prior escapes corrected. Whole47/48 IN PROGRESS; no owner decision. Final merge requires all-three completed corrected CI logs, final Docs and exact current head/base/clean/executable equivalence. Accessibility WAIVED, never PASS; real Palworld/parity/Linux/release remain unqualified.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
