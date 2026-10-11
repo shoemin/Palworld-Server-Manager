@@ -11,6 +11,15 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--configuration-observation-probe"])
+    {
+        await ConfigurationContentObservationTests.DurableBytesAndQualifiedScopes();
+        await ConfigurationContentObservationTests.ConcurrentObservationsAndStaleWrites();
+        await ConfigurationContentObservationTests.FinalProofCancellationAndFaultsRollBack();
+        await ConfigurationContentObservationTests.MigrationPreservesHistoryAndRollsBack();
+        await ConfigurationContentObservationTests.InvalidMetadataBoundsAndOverflowRefuse();
+        Console.WriteLine("PASS configuration content observations: five groups."); return 0;
+    }
     if (args is ["--managed-storage-policy-probe"])
     {
         await ManagedStorageRootTests.ExactPolicyAndOwners();
@@ -1038,6 +1047,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Content revisions DurableBytesAndQualifiedScopes", ConfigurationContentObservationTests.DurableBytesAndQualifiedScopes),
+    ("Content revisions ConcurrentObservationsAndStaleWrites", ConfigurationContentObservationTests.ConcurrentObservationsAndStaleWrites),
+    ("Content revisions FinalProofCancellationAndFaultsRollBack", ConfigurationContentObservationTests.FinalProofCancellationAndFaultsRollBack),
+    ("Content revisions MigrationPreservesHistoryAndRollsBack", ConfigurationContentObservationTests.MigrationPreservesHistoryAndRollsBack),
+    ("Content revisions InvalidMetadataBoundsAndOverflowRefuse", ConfigurationContentObservationTests.InvalidMetadataBoundsAndOverflowRefuse),
     ("Managed storage exact policy and owners", ManagedStorageRootTests.ExactPolicyAndOwners),
     ("Managed storage unsafe policy forms", ManagedStorageRootTests.UnsafePolicyForms),
     ("Managed storage exact service and disjoint paths", ManagedStorageRootTests.ExactServiceAndDisjointPaths),

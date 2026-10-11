@@ -7671,3 +7671,100 @@ A correction removed storage preparation from nonbootstrap credential commands; 
 Protected container preparation is accepted, not individual server creation, game access/launch, settings endpoint/save integration, full sandbox or real Palworld/parity/Linux/release qualification. Next bounded work binds observed settings bytes to durable revision metadata so an external file change cannot silently reuse a previously issued token. Accessibility WAIVED, never PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47i - settings-content revision observation preflight
+
+2026-10-10. Base0d2bff0060710ed166cdf3f58e1dd33bdb28087e. Bind trusted Host observations of bounded file bytes to the existing qualified editable-resource revision counter through additive schema17 and a ConfigurationRevisionRepository observation method. First/new content observations advance the counter; unchanged bytes at the same associated revision retain it. A generic DB revision advance invalidates the older association. Content fingerprints remain private Host metadata and are never wire tokens, audit payloads or log output; canonical nonnegative Int64 wire revisions remain unchanged. This neither reads arbitrary files nor implements SaveSettings or filesystem rollback. Callers must serialize ordered read/observe/save work, authorize ViewServer before file access and at final observation, and later reconcile bytes before stale-save comparison under stopped/operation lifetime. No new semantic setting assumptions.
+
+Affected layers: Host.Persistence additive migration/repository, SelfTest migration/observation/stale-write/concurrency/fault tests, docs/ledger. No dependency direction, credential holder, grant creation, filesystem/process executor, Core semantics, wire protocol or ordinary-client change. One authoritative Host under its existing lease remains the sole online writer. Full40 audit must cover privacy/qualified scope, initialization, exact types/revision overflow, atomic migration, transaction/final-proof/cancellation/trigger failure rollback and preserving legacy history. Existing DB-only Write remains explicitly incapable of rolling back external filesystem effects. No source migration or Linux work. Full local build/tests/UI/actual SDK/Docs, A/B/all40 and completed all-three actual CI logs required. Whole47/48 IN PROGRESS; no owner decision pending. First round,304 cumulative planned.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47i - Review A PASS
+
+Executable b5b1f0f5f2088b400082840d9a60bdb8cee63f4e. Full local778/778, five focused groups, zero-warning build, actual UI/SDK/strict Docs PASS. CI38111742300 native job114388567106 completed; Rust2/native16/genuine ceremonies inspected. Build/service completion still required. Prior checkpointDocs38111491577 verified PASS.
+
+Whole-result review against0d2bff0060710ed166cdf3f58e1dd33bdb28087e covers all8 files and unchanged generic revision writer. One pre-A fixture compiler correction: test code initially accessed the internal migration class directly (CS0122); it now invokes schema17 through the existing public migration registry, without changing production visibility. Five focused groups pass. One counted correction/verification round,304 cumulative planned; no accepted escape.
+
+The new private table is keyed by the same qualified resource as ConfigurationRevisions, foreign-key constrained, and contains only a32-byte content fingerprint and positive associated revision. Migration17 creates no rows, grants or credentials and retains history. Immediate transaction serializes metadata updates; first/new content or an association older than the current counter establishes a new revision. Same content at the same revision preserves timestamp. Strict persisted types/size/current-revision bounds, checked overflow, mandatory before/final read validator, final exact re-read of both metadata rows, Host recheck and final cancellation precede commit. Computed fingerprint is cleared in finally. SQL parameters are bound; no path/content/hash is emitted. Invalid/failed observations never return a revision.
+
+Caller-owned bytes and ordered read/observe/save serialization remain explicit trusted obligations. No production caller or arbitrary file path exists. Content hashing cannot detect an unobserved change-and-revert, freeze a file, establish process stop or make file writes transactional. Future save must reconcile fresh bytes before expected-token comparison under operation/stopped-lifetime protection. A generic DB write leaves an older observation association in place; it cannot silently reuse it, because Observe requires equal current/observed revisions for the unchanged fast path. Both initial and unchanged observations run final proof; transaction faults roll back both rows. Existing fixtures exercise the new migration through actual Host bootstrap/service startup in the full CI suite.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/Core semantics untouched; only Host persistence/tests/docs changed. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-only metadata writer under caller-owned machine lease; existing startup/offline migration authority unchanged. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependencies, credentials, direct filesystem use or routing changes. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact qualified resource/Host keys; no credential/identity/trust transition changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized Host/single active Owner checked; no enrollment/bootstrap/Owner replacement or credential path added. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote authorization or pairing effects; observation metadata conveys no trust or permission. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants/defaults/delegation/creator changes; caller current read validation required, six limits/read-save independence retained. | PASS |
+| PROTO-001 | No wire/history changes or fingerprint tokens; existing decimal revision mapping remains. | PASS |
+| OPS-001 | Atomic content association/counter, observed ABA advances, generic-write invalidation and stale-write tests; filesystem save not claimed. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/executor/lifetime/recovery change; future lock/stopped/durable file recovery remains mandatory. | PASS |
+| SEC-001 | Fingerprints remain private Host metadata; raw bytes never stored/logged/returned; no diagnostic/wire exposure or new secret holder. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Additive atomic Host schema only, no legacy-source migration/native/UI/Linux implementation. | PASS |
+
+All40 reviewed, writer/table/call-site/protocol and stale-reference search clean. Whole47/48 IN PROGRESS; no owner decision. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release claim.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47i / PR197 - Review B correction
+
+Fresh B found the parameterless validator was an unsafe integration contract: existing RequireLocal/RemoteServerCapability opens an immediate write transaction of its own, so using it inside ObserveContent would conflict with the already-held writer. The callback also could not inspect same-transaction authorization changes. Change it to the existing operation-engine pattern: a read-only validator receives the owned connection/transaction, runs before metadata effects and again before commit; initial file-access authorization remains outside/before file IO. No nested transaction or cached permission snapshot is permitted. Tests now read pending revisions through the supplied transaction while outside readers see committed state, and inject an in-transaction Owner credential change that final validation must reject and roll back. Prior A is superseded; same PR197 retained. No production caller exists yet, no accepted escape or owner decision. Two correction/verification rounds,305 cumulative planned. Repeat full local/remote checks and fresh A/B/all40.
+
+### #47i / PR197 - corrected Review A PASS
+
+Corrected executable edf48bf2d6e04d609bb0531db70581c8dd078eba. Corrected full local778/778, five focused groups, zero-warning build, UI/actual SDK/strict Docs PASS. Corrected CI38112313564 native114390250522 completed logs inspected: Rust2/native16/genuine ceremonies PASS; service/build pending. Initial38111742300 completed success but remains superseded for acceptance; original service cleanup log inspected. No unresolved finding after fresh whole-result review.
+
+Whole-result review against0d2bff0060710ed166cdf3f58e1dd33bdb28087e covers all8 files and unchanged generic revision writer. One pre-A fixture compiler correction: test code initially accessed the internal migration class directly (CS0122); it now invokes schema17 through the existing public migration registry, without changing production visibility. Five focused groups pass. Two counted correction/verification rounds,305 cumulative planned; no accepted escape. Initial A superseded after the B callback finding.
+
+The new private table is keyed by the same qualified resource as ConfigurationRevisions, foreign-key constrained, and contains only a32-byte content fingerprint and positive associated revision. Migration17 creates no rows, grants or credentials and retains history. Immediate transaction serializes metadata updates; first/new content or an association older than the current counter establishes a new revision. Same content at the same revision preserves timestamp. Strict persisted types/size/current-revision bounds, checked overflow, mandatory same-transaction before/final read validator, final exact re-read of both metadata rows, Host recheck and final cancellation precede commit. Computed fingerprint is cleared in finally. SQL parameters are bound; no path/content/hash is emitted. Invalid/failed observations never return a revision.
+
+Caller-owned bytes and ordered read/observe/save serialization remain explicit trusted obligations. No production caller or arbitrary file path exists. Content hashing cannot detect an unobserved change-and-revert, freeze a file, establish process stop or make file writes transactional. Future save must reconcile fresh bytes before expected-token comparison under operation/stopped-lifetime protection. A generic DB write leaves an older observation association in place; it cannot silently reuse it, because Observe requires equal current/observed revisions for the unchanged fast path. Both initial and unchanged observations run final proof on the owned connection/transaction; transaction faults roll back both rows. The corrected delegate can see uncommitted current-principal mutations and does not require nesting the canonical transaction-owning capability call. Initial authorization remains before file IO. The supplied validator must stay read-only, and denial audit work cannot start a nested writer. Focused tests prove final pending revision visibility while outside readers see committed state, and roll back an injected Owner public-key change after the final validator refuses. Existing fixtures exercise the new migration through actual Host bootstrap/service startup in the full CI suite.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/Core semantics untouched; only Host persistence/tests/docs changed. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-only metadata writer under caller-owned machine lease; existing startup/offline migration authority unchanged. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependencies, credentials, direct filesystem use or routing changes. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact qualified resource/Host keys; no credential/identity/trust transition changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized Host/single active Owner checked; no enrollment/bootstrap/Owner replacement or credential path added. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote authorization or pairing effects; observation metadata conveys no trust or permission. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants/defaults/delegation/creator changes; caller current read validation on the owned transaction required, six limits/read-save independence retained. | PASS |
+| PROTO-001 | No wire/history changes or fingerprint tokens; existing decimal revision mapping remains. | PASS |
+| OPS-001 | Atomic content association/counter, observed ABA advances, generic-write invalidation and stale-write tests; filesystem save not claimed. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/executor/lifetime/recovery change; future lock/stopped/durable file recovery remains mandatory. | PASS |
+| SEC-001 | Fingerprints remain private Host metadata; raw bytes never stored/logged/returned; no diagnostic/wire exposure or new secret holder. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Additive atomic Host schema only, no legacy-source migration/native/UI/Linux implementation. | PASS |
+
+All40 reviewed, writer/table/call-site/protocol and stale-reference search clean. Whole47/48 IN PROGRESS; no owner decision. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release claim.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47i / PR197 - corrected Review B PASS, final gates pending
+
+Fresh B of2cb605d81af2935cb2e5a8372b37c90dc53a209c against0d2bff0060710ed166cdf3f58e1dd33bdb28087e, including whole8-file result and changed validator/test contract. No further substantive finding. Executable edf48bf2d6e04d609bb0531db70581c8dd078eba unchanged. Corrected local778/778, five focused groups, zero-warning build, UI/actual SDK/strict Docs PASS. Corrected38112313564 native logs inspected; completed service/build logs and final Docs remain gates. Prior first A is superseded; initial38111742300 succeeded but cannot qualify corrected code.
+
+The callback now receives exactly the connection/transaction which owns metadata effects, matching the trusted operation-engine pattern. It runs read-only before effects and again before commit, including unchanged-content calls. The final callback can see an in-transaction principal-key change; focused fault tests prove rejection restores both metadata and principal rows. Outside readers see committed state while the supplied transaction sees the pending revision. The old transaction-owning capability API is explicitly excluded from that callback, preventing a nested writer. Initial file authorization and caller serialization remain required. Review rechecked new/unchanged/stale-association/overflow paths, fixed error text, SQL bindings, hash bounds/privacy, final pairwise metadata equality and cancellation/disposal. No caller, arbitrary path, filesystem write, save endpoint or new permission is introduced.
+
+Migration17 is additive/atomic and retains existing revisions including unqualified legacy history without treating it as current content. Private fingerprints are not secrets returned to clients or substitute wire tokens; only the existing qualified counter is returned. Unobserved content changes that revert cannot be detected by this mechanism; live file stability, stopped state, operation lock and durable file recovery remain future save responsibilities. Same-server ID on a different Host is rejected; independent local kinds/server targets remain separate. Stale-reference/call-site/dependency/history searches clean.
+
+| Invariant | Fresh corrected whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/Core semantics remain untouched; eight-file persistence/test/docs result. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-only observation writer under existing machine lease; no second authority or migration admission change. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency/key/transport/direct-file action introduced. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Existing semantic identities/credential lifecycles preserved; resource keys retain exact authoritative Host. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized Host/single Owner checks and same-transaction validator; no Owner/enrollment/bootstrap authority added. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No pairing or remote ceiling changes; future consumer still requires both current authorization boundaries. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/delegation/creator effects; corrected callback cannot stand in for current proof or initial authorization. | PASS |
+| PROTO-001 | No protocol/history modification; content fingerprints never replace decimal wire revisions. | PASS |
+| OPS-001 | Atomic observed-bytes/revision association, stale generic-write refusal, checked overflow and metadata rollback verified. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/lifetime/recovery effect or filesystem-transaction claim; caller duties remain explicit. | PASS |
+| SEC-001 | No raw content persistence/logs; private bounded fingerprints, fixed errors and no wire exposure or new credential holder. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Additive Host schema with historical preservation; no source-store mutation, OS-specific scatter, interactive service action or Linux work. | PASS |
+
+All40 covered. Two rounds,305 cumulative planned; no new accepted escape, all12 prior escapes corrected. Whole47/48 IN PROGRESS; no owner decision. Final merge requires all-three completed corrected CI logs, final Docs and exact current head/base/clean/executable equivalence. Accessibility WAIVED, never PASS; real Palworld/parity/Linux/release remain unqualified.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.

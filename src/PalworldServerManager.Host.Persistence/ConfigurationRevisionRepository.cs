@@ -11,7 +11,7 @@ public sealed record ConfigurationRevision(EditableResource Resource, long Revis
 // NOT authentication/authorization or an RPC. The trusted writer must authorize the actual
 // database action here and return a read-only final validator for its current proof, effects
 // and audit. External filesystem/process effects cannot be rolled back by this transaction.
-public sealed class ConfigurationRevisionRepository
+public sealed partial class ConfigurationRevisionRepository
 {
     private readonly HostDatabase database;
     private readonly Guid hostId;
