@@ -8016,3 +8016,14 @@ B independently traced route and connection confusion, wrong Host/server, absent
 All40 freshly audited and whole-result stale/contradictory-reference search repeated; older component descriptions now link the consuming API while preserving pending save/lifecycle requirements. Initial local/CI798/800 remains an explicitly superseded failure on two minor16 expectations, corrected to17 before this review. Five rounds315 planned cumulative, no accepted escape. Whole47/48 remain IN PROGRESS. Approved ViewServer reads/EditSettings saves, both remote ceilings and six creator limits unchanged. Accessibility WAIVED, never PASS. No real Palworld/parity/Linux/release qualification.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47l / PR200 - accepted configured settings reads
+
+2026-10-11. Merged only into experiment/astra-v0.5.0 as43416ecb59d653d4f9860fe3b5f7c887abce0bc3. Final B head8090ad5cf5af8898630b01686ea9ec86da0ece04; corrected executable9eb33611583446ac7f3375eef5fcbf0d004840f6. CorrectedCI38117511741 all-three completed PASS, actual native114405257236/service114405257392/build114405257113 logs inspected. Local/remote801/801, ten focused groups, build0/UI/actual Windows SDK/strict Docs PASS. Rust2/native16/genuine ceremonies; all four service starts with managed settings/restricted-child/five recovery/four unpair qualification, both real nonadmin denials, shipped bootstrap/recovery/client checks and full service/group/users/profiles/files cleanup verified. CandidateDocs38117513053/ADocs38118011652/finalDocs38118102269 PASS. Final exact head/base/clean/executable-equivalence gates PASS. Thirty-seven files682insert30delete.
+
+Initial local/CI38117013612 failed798/800 on two stale minor16 test expectations; corrected to17 with security assertions retained. A added direct peer/size/cleanup coverage and stale-doc fixes. No production correction after initial candidate and no B-only finding. Five rounds315 cumulative accepted cycles. Accepted140 experimental PRs61-200, fourteen canonical children SHADOW DONE; all12 prior accepted escapes corrected, no new escape. Whole47/48 IN PROGRESS, no pending owner decision. Accessibility WAIVED, never PASS.
+
+This accepts configured local/peer reads and originating-Host forwarding with independent ViewServer ceilings, one Host-lifetime reader, bounded transport and durable observation revisions. SaveSettings and complete lifecycle remain downstream. Next bounded lifecycle prerequisite: qualify actual restricted child access denial for a synthetic native Host key/protected credential material before any complete game-isolation claim. No real Palworld/parity/Linux/release qualification.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
