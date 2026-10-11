@@ -7148,3 +7148,11 @@ Local745/745,zero-warning build,UI/actual SDK/strict Docs PASS; candidate Docs38
 
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48a / PR190 — accepted inventory observations
+
+2026-10-10. Merged only into experiment/astra-v0.5.0. Final reviewed headf542d1eb135ca641c067375d94000b05e6d6a914; executable641ea90a6f8045a22ad6a6dd536129fb681b1b20. All-three CI38099569342 PASS; completed native114352509738/build114352509691/Windows114352509578 logs inspected for Rust2/native16/genuine ceremonies,745/745/UI/zero warnings,four service starts with five recovery/four unpair cases and complete service/group/users/profiles/files cleanup. Candidate Docs38099800166 and final-head Docs38099864317 PASS. Exact live head/base/clean/source-equivalence gates PASS. Full six-file change293 insertions/1 deletion.
+
+Local745/745,five focused groups,actual-library500-transaction snapshot stress,zero-warning build,UI/actual SDK/strict Docs PASS. A0/B0/all40 clean; initial fixture-schema setup corrected, two implementation/verification rounds,283 cumulative cycles. No new accepted escape; eleven prior escapes remain corrected. Accepted130 experimental PRs61–190,fourteen canonical children SHADOW DONE. Whole47/48 remain IN PROGRESS for actual protected settings/lifecycle/provisioning. No owner decision pending at this checkpoint; proceed with native process observation and launch/storage preflight. Approved permissions/creator limits unchanged,accessibility WAIVED never PASS; canonical/main/physical/parity/Linux/release unchanged.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
