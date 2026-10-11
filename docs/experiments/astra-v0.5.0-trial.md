@@ -7611,3 +7611,29 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 ### #48e - Review A correction before acceptance
 
 Initial executable b5480d7085465285ad0906c80d9c1fd88e927d43 passed local773/773, focused policy groups, zero-warning build, UI/actual SDK/strict Docs. CI38110374632 remains pending and superseded for acceptance. Review found storage preparation was unnecessarily applied to every offline credential command. Restrict preparation to existing privileged bootstrap; Owner rotation/rehome and machine recovery must remain independent of unrelated game-storage availability or layout. The actual offline integration now supplies an intentionally overlapping storage path for every nonbootstrap command, retaining all existing recovery/rotation/rehome success and failure assertions. This is an implementation correction within existing authority, not a new owner choice. Second round,303 cumulative planned; no accepted escape. Renew full local/remote validation and A/B/all40 before acceptance.
+
+### #48e - corrected Review A PASS
+
+Corrected executable d3f34f2afd29e12ccfa0cfa0dbf32970e593785c. Full corrected local773/773, zero-warning build, actual UI/SDK/strict Docs PASS. Native CI114385549523 in38110726166 passed with completed Rust2/native16/genuine ceremony logs inspected; corrected service/build jobs pending. Initial38110374632 completed success but is superseded, not corrected-code acceptance; its completed service log confirms original storage probes and full cleanup.
+
+Fresh whole-result review against fd710f3fb0ec6206a75823e30f158dbc3c012708 covers all12 files. One substantive A correction: managed storage setup is bootstrap-only, preserving credential recovery/Owner rotation/rehome independence. Exact service SID, protected three-ACE DACL, approved owner set, inheritance/forms/rights and canonical local/disjoint root checks reviewed. Provision refuses unsafe existing files/directories/reparse/missing parents and never rewrites descendants or product/private-root permissions. Trusted composition selects storage; no CLI/RPC path input. Existing elevation/stopped/lease/private-root gates precede setup. Safely created root can remain after later bootstrap failure, explicitly documented as preparatory filesystem work, not DB rollback or server creation. Both actual service and two actual nonadmin probes remain mandatory; ordinary policy tests alone cannot qualify OS access.
+
+Root validation remains a momentary observation, not a retained filesystem permit. The fixed product path and trusted test composition do not promise general alias-proof arbitrary folder selection. No game launch, individual server-directory ACL, inventory mutation, creator grant, settings IO endpoint or stopped-lifetime proof added. Native service harness still requires all existing restricted-child/recovery/unpair checks and four starts. Actual integration cleanup owns its checked unique root; product fixture refuses existing product state and owns its fixed test installation. No local privileged installation or cleanup-hold retry.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/legacy code untouched; additive platform/privileged CLI/test/docs only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing elevated stopped/exclusive offline bootstrap prepares only protected container; no second authority or online writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Ordinary-client dependencies, credentials and routing unchanged; no client filesystem mutation introduced. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identity/credential/trust transitions; recovery deliberately independent of storage layout. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Existing intended-user bootstrap/elevation/channel/Owner gates retained; storage setup grants no application authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote ceiling/trust/default/pairing effects; actual native regressions still required. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant creation/default/delegation/adoption; six creator limits and independent ViewServer/EditSettings stay unchanged. | PASS |
+| PROTO-001 | No wire, negotiation, authorization enum or immutable history changes. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Setup under machine lease is idempotent preparation only; no lifecycle/revision/operation completion or unsafe recovery claim. | PASS |
+| SEC-001 | Protected exact root ACL, no unsafe repair/recursive adoption, no secret output or raw user filesystem grant; OS-access integration required. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No legacy-source migration/interactive shell/Linux work; Windows ACL/path behavior behind explicit platform seam. | PASS |
+
+All40 reviewed; call-site and contradictory-reference search clean after bootstrap-only correction. Two rounds,303 cumulative planned; no new accepted escape. Whole47/48 IN PROGRESS. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
