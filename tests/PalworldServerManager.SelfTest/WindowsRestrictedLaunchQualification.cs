@@ -90,7 +90,7 @@ internal static class WindowsRestrictedLaunchQualification
                 // Software KSP can conceal a protected key as NTE_BAD_KEYSET.
                 // The parent must freshly reopen this exact machine-key name before
                 // and after the child and verify unchanged identity/backing bytes.
-                if (ex.HResult is unchecked((int)0x80090010) or unchecked((int)0x80070005) or unchecked((int)0x80090016)) denied = true;
+                if ((stage is 60 or 63) && (ex.HResult is unchecked((int)0x80090010) or unchecked((int)0x80070005) or unchecked((int)0x80090016))) denied = true;
                 else return ex.HResult; // Numeric native status only; never exception/key/path text.
             }
             Check(denied, "Restricted child used native Host key.");
