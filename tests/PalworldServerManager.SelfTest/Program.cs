@@ -41,6 +41,16 @@ if (args.Length > 0)
         await ProtocolTests.SchemaEvolution();
         Console.WriteLine("PASS five settings contract groups and immutable protocol history."); return 0;
     }
+    if (args is ["--settings-patch-probe"])
+    {
+        await SettingPatchTests.SelectedEditsPreserveEveryOtherByte();
+        await SettingPatchTests.SecretActionsNeverImplicitlyClearOrEcho();
+        await SettingPatchTests.WholePatchRefusesInvalidOrUnsupportedEdits();
+        await SettingPatchTests.DuplicateAndMalformedRequestsRefuse();
+        await SettingPatchTests.AllSupportedEncodingsRemainExact();
+        await SettingPatchTests.SeededQuotedEditsCannotInjectSettings();
+        Console.WriteLine("PASS six semantic settings patch groups."); return 0;
+    }
     if (args is ["--preserved-settings-probe"])
     {
         await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
@@ -970,6 +980,12 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Settings patch SelectedEditsPreserveEveryOtherByte", SettingPatchTests.SelectedEditsPreserveEveryOtherByte),
+    ("Settings patch SecretActionsNeverImplicitlyClearOrEcho", SettingPatchTests.SecretActionsNeverImplicitlyClearOrEcho),
+    ("Settings patch WholePatchRefusesInvalidOrUnsupportedEdits", SettingPatchTests.WholePatchRefusesInvalidOrUnsupportedEdits),
+    ("Settings patch DuplicateAndMalformedRequestsRefuse", SettingPatchTests.DuplicateAndMalformedRequestsRefuse),
+    ("Settings patch AllSupportedEncodingsRemainExact", SettingPatchTests.AllSupportedEncodingsRemainExact),
+    ("Settings patch SeededQuotedEditsCannotInjectSettings", SettingPatchTests.SeededQuotedEditsCannotInjectSettings),
     ("Settings encoding ExactEncodingAndSelectedEdit", PreservedSettingFileTests.ExactEncodingAndSelectedEdit),
     ("Settings contract KindsAndAbsentMetadata", SettingsContractTests.KindsAndAbsentMetadata),
     ("Settings contract RedactionAllSourcesAndCopies", SettingsContractTests.RedactionAllSourcesAndCopies),
