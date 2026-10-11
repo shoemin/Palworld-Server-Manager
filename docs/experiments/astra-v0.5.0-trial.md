@@ -7091,3 +7091,60 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 Local/remote740/740,focused six patch groups,independent actual-library/final-size/Unicode/enum/integer/empty-final-plus-addition checks,all six encodings,10000 quoted-pair preservation cases,zero-warning build,UI/SDK/strict Docs PASS. A0/B0/all40 clean,one round,281 cumulative cycles. No new accepted escape; eleven prior escapes corrected. Accepted129 experimental PRs61–189,fourteen canonical children SHADOW DONE. #47 remains IN PROGRESS for protected Host read/save/revisions/stopped-state/durable recovery. Proceed toward the related48 authoritative inventory/lifecycle prerequisite rather than inventing a settings-only stopped flag. No owner decision pending; approved permissions/creator limits unchanged,accessibility WAIVED never PASS; canonical/main/physical/parity/Linux/release unchanged.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48a — inventory observation preflight
+
+2026-10-10. Base6ba4aa5a0c87624ec781dacbce07f371b56d422e; branch astra/48-inventory-observations. Current #48 issue body refreshed; dependencies33/19/40/41/42/43/46 accepted in the shadow lane. Related prerequisite for #47's authoritative target/stopped-state checks; #47 stays IN PROGRESS. This bounded unit adds a trusted Host-only, exact-target, read-only observation of the existing ServerInventory row. No inventory writer, lifecycle state, file access, RPC or server launch is introduced. Missing rows remain absent; nullable paths remain nullable, and recorded ports/paths are observations rather than validated launch inputs. SQLite storage types and canonical UTC timestamps must be checked without coercion or repair.
+
+Impact: Host.Persistence reader, SelfTest negative/snapshot tests, developer documentation and this ledger; CI native guard adds the astra/48 prefix only. No schema, dependency direction, authority-creation path, credential holder, persistence writer or operation executor changes. All grant paths (canonical/direct/delegated/default/creator), local/remote authorization, settings revision/patch seams, service/offline exclusivity and frozen WPF remain unchanged. Trusted caller retains machine exclusivity and current authorization; observations do not confer file access or stopped-state authority. Inspect every changed file, all40 invariants and sibling creator inventory usage in both reviews. Applicable: HOST-001/HOST-002/PERSIST-001/IDENT-002/LOCAL-001/SEC-001/ARCH-001/ARCH-002/CLIENT-001/PLATFORM-001; audit all40 for cross-section effects.
+
+Acceptance: exact local qualified target only; missing/nullable data distinguished; committed SQLite snapshot with initialized exact Host/exactly one active Owner; malformed storage refuses without input echo; read does not create a missing root/database or mutate authoritative rows; cancellation honored. Tests cover cross-Host collisions, reopen, concurrent uncommitted changes, malformed types/time, Host/Owner changes and absent database. Full build/self-test/UI/SDK/strict Docs plus all-three actual CI logs, A/B reviews and exact merge gates required. No owner decision pending, physical Palworld/process/parity/Linux/release claim or expanded creator permissions.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+Initial verification corrected a test-fixture error: revoking the Owner must also clear its verifier, as required by the existing schema. Five focused groups, zero-warning build, UI, actual Windows SDK ABI and strict Docs now pass. Full local regression and remote qualification are pending; no review/acceptance claim yet.
+
+### #48a — Review A
+
+Reviewed executable 641ea90a6f8045a22ad6a6dd536129fb681b1b20 against base6ba4aa5a0c87624ec781dacbce07f371b56d422e, every changed file and sibling creator inventory/revision/authorization paths. SQL predicates use both canonical identity components; initialized Host/Owner and inventory share a single read transaction. Connection opens read-only without HostDatabase's creating helper. Strict getters preserve nullable/empty and Int32 observations and reject storage/time corruption without repair or value-bearing errors. Disposal/error/cancellation paths inspected; returned immutable data is explicitly not current authorization, protected-path proof or process-finalization evidence. No new production finding (A0). Test-discovered fixture correction above; two implementation/verification rounds,283 cumulative cycles planned. Independent scratch project initially had a wrong relative DLL path, corrected before execution; no production defect or false PASS from that setup failure.
+
+Local745/745, five focused groups, zero-warning build, actual Avalonia UI, actual Windows SDK ABI and strict Docs PASS. Independent probe using actual built assemblies passed500 atomic Owner/inventory commits with132 concurrent reads, never observing the revoked-Owner inventory; existing empty directory remained database-free. Table snapshots verify no inventory/grant/revision/identity mutation. CI38099569342 executable head matches; native job114352509738 PASS, remaining actual logs still pending. Stale/reference search found no new callers, wire DTO reuse, second inventory authority, lifecycle claims or changed frozen files. Complete six-file diff and all40 matrix below clean. PR creation is next, not merge; fresh Review B and all remote/exact-head gates remain.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive Host.Persistence reader; frozen WPF/Core legacy/LAN untouched; no dependency change. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing authoritative DB read only; no root/schema creation, second authority, mutation or process executor. Caller retains exclusivity. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client/reference/transport/credential changes; raw inventory remains Host-only. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact local Host-qualified query and cross-Host collision refusal; no Host identity/rotation/recovery change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized exact Host and exactly one active Owner required in snapshot; no enrollment/bootstrap/Owner effect. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No network/trust effect or remote shortcut. Both remote ceilings remain required by later consumers. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/creator/delegation path changes. Observation is not authority; six creator permissions/limits unchanged. | PASS |
+| PROTO-001 | No wire or negotiation change; reader is not RPC/DTO. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Read-only snapshot does not create revisions/locks/operations or classify stopped state. Future effects require current authority/revision/locks/recovery. | PASS |
+| SEC-001 | No settings/secret store access. Constant malformed-storage errors and field-free default object formatting; raw path/provenance never emitted by production reader. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration/path interpretation/OS process/shell/Linux code. CI change only enables existing native qualification for48 branches; no physical/parity/release claim. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48a / PR190 — fresh Review B
+
+Fresh review of exact PR headd857a01407dae8acd7985adaaff9363ecd0c6be9 against6ba4aa5a0c87624ec781dacbce07f371b56d422e: all six changed files, SQL storage/identity/transaction rules, disposal/negative paths, immutable observation semantics, test assertions, CI branch guard and scope statements inspected again. No production finding (B0). Re-ran focused five groups and independent actual-library500-commit stress after PR creation (115 concurrent reads), including existing-directory/missing-DB refusal. Confirmed no implicit file/process access, no successful launch-port claim from historical values, no client serialization of raw observations and no creator-grant side effect. A0/B0; two rounds including the initial fixture correction,283 cumulative cycles planned. No new accepted escape.
+
+Local745/745,zero-warning build,UI/actual SDK/strict Docs PASS; candidate Docs38099800166 exact head PASS. Completed native114352509738 actual log inspected: Rust2/native16/genuine Host/Owner PAKE, activation, re-pair, simultaneous recovery and first-contact PASS. Full CI38099569342 build and Windows actual logs plus exact final-head Docs/live base/head/clean/source-equivalence remain required. This is observation foundation only; whole47/48 remain IN PROGRESS. No owner decision or field/parity/Linux/release claim. Renewed all40 audit:
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive Host.Persistence reader; frozen WPF/Core legacy/LAN untouched; no dependency change. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing authoritative DB read only; no root/schema creation, second authority, mutation or process executor. Caller retains exclusivity. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client/reference/transport/credential changes; raw inventory remains Host-only. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact local Host-qualified query and cross-Host collision refusal; no Host identity/rotation/recovery change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized exact Host and exactly one active Owner required in snapshot; no enrollment/bootstrap/Owner effect. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No network/trust effect or remote shortcut. Both remote ceilings remain required by later consumers. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/creator/delegation path changes. Observation is not authority; six creator permissions/limits unchanged. | PASS |
+| PROTO-001 | No wire or negotiation change; reader is not RPC/DTO. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Read-only snapshot does not create revisions/locks/operations or classify stopped state. Future effects require current authority/revision/locks/recovery. | PASS |
+| SEC-001 | No settings/secret store access. Constant malformed-storage errors and field-free default object formatting; raw path/provenance never emitted by production reader. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration/path interpretation/OS process/shell/Linux code. CI change only enables existing native qualification for48 branches; no physical/parity/release claim. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.

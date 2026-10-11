@@ -51,6 +51,15 @@ if (args.Length > 0)
         await SettingPatchTests.SeededQuotedEditsCannotInjectSettings();
         Console.WriteLine("PASS six semantic settings patch groups."); return 0;
     }
+    if (args is ["--inventory-observation-probe"])
+    {
+        await ServerInventoryTests.ExactTargetAndRecordedValuesSurviveReopen();
+        await ServerInventoryTests.NullableAndHistoricalValuesAreNotLaunchApproval();
+        await ServerInventoryTests.MalformedStorageRefusesWithoutDisclosureOrRepair();
+        await ServerInventoryTests.IdentityOwnerCancellationAndMissingStorageRefuse();
+        await ServerInventoryTests.ReadsObserveCommittedStateWithoutBlockingWriter();
+        Console.WriteLine("PASS five inventory observation groups."); return 0;
+    }
     if (args is ["--preserved-settings-probe"])
     {
         await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
@@ -980,6 +989,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Inventory ExactTargetAndRecordedValuesSurviveReopen", ServerInventoryTests.ExactTargetAndRecordedValuesSurviveReopen),
+    ("Inventory NullableAndHistoricalValuesAreNotLaunchApproval", ServerInventoryTests.NullableAndHistoricalValuesAreNotLaunchApproval),
+    ("Inventory MalformedStorageRefusesWithoutDisclosureOrRepair", ServerInventoryTests.MalformedStorageRefusesWithoutDisclosureOrRepair),
+    ("Inventory IdentityOwnerCancellationAndMissingStorageRefuse", ServerInventoryTests.IdentityOwnerCancellationAndMissingStorageRefuse),
+    ("Inventory ReadsObserveCommittedStateWithoutBlockingWriter", ServerInventoryTests.ReadsObserveCommittedStateWithoutBlockingWriter),
     ("Settings patch SelectedEditsPreserveEveryOtherByte", SettingPatchTests.SelectedEditsPreserveEveryOtherByte),
     ("Settings patch SecretActionsNeverImplicitlyClearOrEcho", SettingPatchTests.SecretActionsNeverImplicitlyClearOrEcho),
     ("Settings patch WholePatchRefusesInvalidOrUnsupportedEdits", SettingPatchTests.WholePatchRefusesInvalidOrUnsupportedEdits),
