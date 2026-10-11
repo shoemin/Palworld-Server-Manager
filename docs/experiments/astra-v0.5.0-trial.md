@@ -7125,3 +7125,26 @@ Local745/745, five focused groups, zero-warning build, actual Avalonia UI, actua
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration/path interpretation/OS process/shell/Linux code. CI change only enables existing native qualification for48 branches; no physical/parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48a / PR190 — fresh Review B
+
+Fresh review of exact PR headd857a01407dae8acd7985adaaff9363ecd0c6be9 against6ba4aa5a0c87624ec781dacbce07f371b56d422e: all six changed files, SQL storage/identity/transaction rules, disposal/negative paths, immutable observation semantics, test assertions, CI branch guard and scope statements inspected again. No production finding (B0). Re-ran focused five groups and independent actual-library500-commit stress after PR creation (115 concurrent reads), including existing-directory/missing-DB refusal. Confirmed no implicit file/process access, no successful launch-port claim from historical values, no client serialization of raw observations and no creator-grant side effect. A0/B0; two rounds including the initial fixture correction,283 cumulative cycles planned. No new accepted escape.
+
+Local745/745,zero-warning build,UI/actual SDK/strict Docs PASS; candidate Docs38099800166 exact head PASS. Completed native114352509738 actual log inspected: Rust2/native16/genuine Host/Owner PAKE, activation, re-pair, simultaneous recovery and first-contact PASS. Full CI38099569342 build and Windows actual logs plus exact final-head Docs/live base/head/clean/source-equivalence remain required. This is observation foundation only; whole47/48 remain IN PROGRESS. No owner decision or field/parity/Linux/release claim. Renewed all40 audit:
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive Host.Persistence reader; frozen WPF/Core legacy/LAN untouched; no dependency change. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing authoritative DB read only; no root/schema creation, second authority, mutation or process executor. Caller retains exclusivity. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client/reference/transport/credential changes; raw inventory remains Host-only. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact local Host-qualified query and cross-Host collision refusal; no Host identity/rotation/recovery change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized exact Host and exactly one active Owner required in snapshot; no enrollment/bootstrap/Owner effect. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No network/trust effect or remote shortcut. Both remote ceilings remain required by later consumers. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/creator/delegation path changes. Observation is not authority; six creator permissions/limits unchanged. | PASS |
+| PROTO-001 | No wire or negotiation change; reader is not RPC/DTO. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Read-only snapshot does not create revisions/locks/operations or classify stopped state. Future effects require current authority/revision/locks/recovery. | PASS |
+| SEC-001 | No settings/secret store access. Constant malformed-storage errors and field-free default object formatting; raw path/provenance never emitted by production reader. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration/path interpretation/OS process/shell/Linux code. CI change only enables existing native qualification for48 branches; no physical/parity/release claim. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
