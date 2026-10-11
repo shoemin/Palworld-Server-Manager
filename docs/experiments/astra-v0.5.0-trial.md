@@ -7962,3 +7962,31 @@ All effect paths: local authenticated principal to shared reader; authenticated 
 Dedicated settings services on existing authenticated endpoints preserve global security16KiB limits. Settings read requests16KiB/responses4MiB plus semantic/serialized reply validation and requested-server/positive revision checks; first-contact pairing endpoint unchanged. Explicit new negotiated features/local20/peer17, no app-version policy. Recheck nonsecret-only bytes, unknown suppression, bounds, independent ceilings, revocation/current pins/incarnations, connection ownership/feature gates, cancellation/drain, unavailable/unconfigured composition, existing control-plane limits, descriptor histories, all40/stale references and full required local/CI evidence. No owner decision identified.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #47l review A - configured settings APIs
+
+2026-10-11. Corrected executable9eb33611583446ac7f3375eef5fcbf0d004840f6 on astra/47-settings-read-api; base6a01153ac96ef6b80dc512644b153e49364188a7 still exact origin integration head. Pre-PR A PASS after local801/801, ten focused settings groups, build0warnings/0errors, actual Avalonia UI, actual Windows SDK ABI and strict Docs. CandidateDocs38117513053 PASS. CorrectedCI38117511741 pending its full regression job; native114405257236 and service114405257392 completed logs inspected and PASS, including all four service starts and complete cleanup. No merge claim.
+
+Initial executablef502977 and initialCI38117013612/local run failed798/800: two older recovery/unpair tests hardcoded peer minor16 instead of the new additive minor17. Corrected expectations retain their feature/security assertions. Initial native/service logs passed, including cleanup; initial failure is not acceptance. Earlier development corrected Contracts ServerRef namespace ambiguity/message inclusion, test trust-anchor construction and a source-error status expectation. A strengthened direct incoming-peer absent negotiation/feature, current-pin refusal, small request limits on both services, oversized unknown protobuf fields and pending-test cleanup; also refreshed seven stale settings documentation cross-references. No production logic correction after initial candidate. Five implementation/correction/verification rounds,315 planned cumulative accepted cycles; no accepted escape.
+
+Reviewed all changed source/tests/descriptors/docs and surrounding canonical permission, credential/generation, inventory/content revision and native binding paths. Existing authentication/control-plane limits remain16KiB; settings responses alone get4MiB on same authenticated endpoints. Caller-supplied file paths/credentials absent. One shared reader per Host across local/peer and transition generations, no storage provisioning on read/startup. Forwarding requires current local ViewServer before contact and before/after remote read, current TLS proof/incarnation and separate destination ceiling. Successful snapshots have exact requested target/positive observed revision; secret and unknown values never appear. No unsupported metadata/effective inference.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN and legacy service/parser unchanged; Host uses accepted shared reader. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing machine lease/composition owns one reader; sole state effect is accepted revision observation writer. No client/file writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Contracts remain Core-independent; generated transport stubs stay in Host. Forwarding uses Host-owned TLS, never a machine key in ordinary clients. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Exact qualified target/reply; fresh completed-TLS proof and current incarnation/pins rechecked, generation cancellation retained, no rotation/recovery policy change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Same authenticated connection/principal feature gate, initialized single Owner, no enrollment/private-user-key/Owner effects. Missing storage does not block bootstrap/recovery startup. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Local ViewServer before contact and before/after read; independent Active/non-recovery machine ceiling. Pairing-only endpoint unchanged; no trust/grant inference. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | Canonical typed exact-scope/lineage policy and same-transaction checks; View-only success, Edit-only denial, no new creator/default/delegation grants. | PASS |
+| PROTO-001 | Additive services/feature25/26, local20/peer17, retained immutable histories; configured advertisement, missing-feature refusals and closed shape/size/revision checks. | PASS |
+| OPS-001 | Positive durable active-content revision, unchanged token stable; private metadata same-transaction authority/inventory checks reused. No save or stale-write acceptance claim. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No long-running operation/new lifecycle executor; short read canceled/drained with generation. Shared reader gate is not stopped proof or destructive-operation lock. | PASS |
+| SEC-001 | No request paths; positive nonsecret classification, unknown/secret suppression and owned buffer clearing; bounded requests/responses and fixed errors. Large Unicode and binary secret-absence checks. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows adapter only at composition root; no source mutation, shell/UI/OS branching/new Linux implementation. | PASS |
+
+All40 audited; corrected reference searches and cross-document stale claims checked. No new dependency or frozen WPF/LAN change. Whole47/48 IN PROGRESS; independent approved ViewServer reads/EditSettings saves and six creator limits retained. No save/stopped-state/real Palworld/parity/Linux/release qualification; accessibility WAIVED, never PASS. A authorizes PR creation, then fresh B and exact completed CI/Docs gates.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
