@@ -7463,3 +7463,13 @@ Rechecked failure behavior separately: failed create never produces readiness; o
 All40 covered, stale-reference search and acceptance scope rechecked. Five rounds,298 cumulative planned; accepted escape count remains12, all corrected. No pending owner decision; next gate is completed all-three CI logs, final Docs and exact live head/base/clean/executable equivalence before experiment-only merge. No canonical state change or real Palworld/parity/release claim.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48d / PR194 - accepted restricted service child qualification
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 as c3d95c0ce7ddf3b192ff0ce9d4d973ea8e7a2885. Final reviewed head81c4181c0b2f07e25530e7b7745b5a2c23b7d380; executable0bad243303760b659cba96aee9da8c6232d6de69. All-threeCI38107062246 PASS; completed native114374697985/build114374697836/Windows114374698320 logs inspected. Rust2/native16/genuine ceremonies,763/763/UI/zero warnings,four actual service starts each with restricted launch plus five recovery/four unpair cases and full service/group/users/profiles/files cleanup verified. CandidateDocs38107580558/finalDocs38107642846 PASS. Exact final head/base/clean/source-equivalence gate PASS. Five files400 insertions/2 deletions.
+
+Local763/763,zero-warning build,UI/actual SDK/strict Docs PASS. A/B/all40 clean after parent-authority coverage and native-startup corrections; earlier four service failures remain failed/superseded diagnostics. Five rounds,298 cumulative accepted cycles. Accepted134 experimental PRs61-194; fourteen canonical children SHADOW DONE. No new accepted escape; all12 remain corrected. Whole47/48 IN PROGRESS and no owner decision pending. Settings read/save approval and all six creator limits unchanged.
+
+This qualifies only the synthetic restricted child and tested access denials, not a complete sandbox or production launcher. Next bounded work establishes a no-follow, handle-relative, size-bounded Windows file-read primitive needed for protected settings IO. Root selection/ACL policy, authorization, revisions, stopped-state/write integration, real Palworld/parity/Linux/release remain pending. Accessibility WAIVED, never PASS. Prior checkpointDocs38105929736 verified PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
