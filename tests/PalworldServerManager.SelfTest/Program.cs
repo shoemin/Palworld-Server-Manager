@@ -11,6 +11,8 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--restricted-service-child", var restrictedCanary, var restrictedParent])
+        return WindowsRestrictedLaunchQualification.Child(restrictedCanary, restrictedParent);
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--recovery-process-probe", var recoveryRoot])
@@ -1018,6 +1020,7 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Restricted launch refuses nonservice qualification", WindowsRestrictedLaunchQualification.OutsideServiceIsNotQualified),
     ("Settings schema SchemaCatalogAndClosedReplyValidation", LocalOwnerPairingRpcTests.SchemaCatalogAndClosedReplyValidation),
     ("Settings schema SchemaLocalOwnerAndExactTarget", LocalOwnerPairingRpcTests.SchemaLocalOwnerAndExactTarget),
     ("Settings schema SchemaLocalViewAndEditRemainIndependent", LocalOwnerPairingRpcTests.SchemaLocalViewAndEditRemainIndependent),
