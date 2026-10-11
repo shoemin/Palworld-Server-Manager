@@ -48,7 +48,7 @@ public static class SettingsWireValidation
         !value.Any(c => char.IsControl(c) || c is '\u2028' or '\u2029');
     private static bool Decimal(string value) => value.Length is > 0 and <= 64 && value.Trim() == value &&
         !value.Any(char.IsControl) && decimal.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out _);
-    private static bool Definition(Wire.SettingsDefinition? d)
+    internal static bool Definition(Wire.SettingsDefinition? d)
     {
         if (d is null || !IsValidKey(d.Key) || !Metadata(d.DisplayName, 256) || !Metadata(d.Category, 256) || !Metadata(d.Description, 4096) ||
             d.DisplayName.Length == 0 || d.Category.Length == 0 || (d.HasUnit && !Metadata(d.Unit, 64)) || d.Choices.Count > 128 ||

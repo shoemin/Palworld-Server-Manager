@@ -47,10 +47,11 @@ public sealed partial class LocalSecurityRpcService(LocalSecurityRpcRuntime runt
         if (session.NegotiationAttempted) throw new RpcException(new(StatusCode.FailedPrecondition, "This connection already attempted negotiation."));
         session.NegotiationAttempted = true;
         if (request.Capabilities.Count > 64 || request.ProductVersion.Length > 256) throw new ArgumentException();
-        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 18 }, ProductVersion = "0.5.0-astra" };
+        var hello = new Handshake { Protocol = new() { Major = 1, Minor = 19 }, ProductVersion = "0.5.0-astra" };
         hello.Capabilities.Add(FeatureCapability.LocalPrincipalSecurity);
         hello.Capabilities.Add(FeatureCapability.LocalPeerTrustManagement);
         hello.Capabilities.Add(FeatureCapability.LocalOwnerPeerReplacement);
+        hello.Capabilities.Add(FeatureCapability.SettingsSchema);
         if (runtime.Pairing is not null)
         {
             hello.Capabilities.Add(FeatureCapability.LocalOwnerPairing);
@@ -58,6 +59,7 @@ public sealed partial class LocalSecurityRpcService(LocalSecurityRpcRuntime runt
             hello.Capabilities.Add(FeatureCapability.LocalPeerUnpairPreparation);
             hello.Capabilities.Add(FeatureCapability.LocalOwnerPeerRecovery);
             hello.Capabilities.Add(FeatureCapability.LocalRemoteTrustAdministration);
+            hello.Capabilities.Add(FeatureCapability.LocalRemoteSettingsSchema);
         }
         var offered = hello.Capabilities.ToArray();
         var negotiated = NegotiatedProtocol.Negotiate(hello, request);

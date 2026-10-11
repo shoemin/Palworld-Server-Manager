@@ -69,6 +69,17 @@ if (args.Length > 0)
         await WindowsProcessObservationTests.ActualNativeRepeatedCaptureDisposesHandles();
         Console.WriteLine("PASS five native process observation groups."); return 0;
     }
+    if (args is ["--settings-schema-probe"])
+    {
+        await LocalOwnerPairingRpcTests.SchemaCatalogAndClosedReplyValidation(); Console.WriteLine("PASS SchemaCatalogAndClosedReplyValidation.");
+        await LocalOwnerPairingRpcTests.SchemaLocalOwnerAndExactTarget(); Console.WriteLine("PASS SchemaLocalOwnerAndExactTarget.");
+        await LocalOwnerPairingRpcTests.SchemaLocalViewAndEditRemainIndependent(); Console.WriteLine("PASS SchemaLocalViewAndEditRemainIndependent.");
+        await LocalOwnerPairingRpcTests.SchemaRemoteIndependentCeilings(); Console.WriteLine("PASS SchemaRemoteIndependentCeilings.");
+        await LocalOwnerPairingRpcTests.SchemaLocalRevocationBeforeOutboundRead(); Console.WriteLine("PASS SchemaLocalRevocationBeforeOutboundRead.");
+        await LocalOwnerPairingRpcTests.SchemaChangedPrincipalCannotReceiveRemoteReply(); Console.WriteLine("PASS SchemaChangedPrincipalCannotReceiveRemoteReply.");
+        await LocalOwnerPairingRpcTests.SchemaNoRemoteAdvertisementWithoutGeneration(); Console.WriteLine("PASS SchemaNoRemoteAdvertisementWithoutGeneration.");
+        return 0;
+    }
     if (args is ["--process-attachment-probe"])
     {
         await WindowsProcessAttachmentTests.ExactIdentityRequiredAndDisposalIsReadOnly();
@@ -1007,6 +1018,14 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Settings schema SchemaCatalogAndClosedReplyValidation", LocalOwnerPairingRpcTests.SchemaCatalogAndClosedReplyValidation),
+    ("Settings schema SchemaLocalOwnerAndExactTarget", LocalOwnerPairingRpcTests.SchemaLocalOwnerAndExactTarget),
+    ("Settings schema SchemaLocalViewAndEditRemainIndependent", LocalOwnerPairingRpcTests.SchemaLocalViewAndEditRemainIndependent),
+    ("Settings schema SchemaRemoteIndependentCeilings", LocalOwnerPairingRpcTests.SchemaRemoteIndependentCeilings),
+    ("Settings schema SchemaLocalRevocationBeforeOutboundRead", LocalOwnerPairingRpcTests.SchemaLocalRevocationBeforeOutboundRead),
+    ("Settings schema SchemaChangedPrincipalCannotReceiveRemoteReply", LocalOwnerPairingRpcTests.SchemaChangedPrincipalCannotReceiveRemoteReply),
+    ("Settings schema SchemaNoRemoteAdvertisementWithoutGeneration", LocalOwnerPairingRpcTests.SchemaNoRemoteAdvertisementWithoutGeneration),
+
     ("Process attachment ExactIdentityRequiredAndDisposalIsReadOnly", WindowsProcessAttachmentTests.ExactIdentityRequiredAndDisposalIsReadOnly),
     ("Process attachment NaturalExitCodesIncludingStillActiveAreCaptured", WindowsProcessAttachmentTests.NaturalExitCodesIncludingStillActiveAreCaptured),
     ("Process attachment PermissionFailureIsUnknownWithoutLosingExistingHandle", WindowsProcessAttachmentTests.PermissionFailureIsUnknownWithoutLosingExistingHandle),

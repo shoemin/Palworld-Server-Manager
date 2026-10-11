@@ -2,6 +2,7 @@ syntax = "proto3";
 package palworld.manager.v1;
 option csharp_namespace = "PalworldServerManager.Contracts.Wire";
 import "Protos/host.proto";
+import "Protos/settings.proto";
 
 // Public DTOs only. Claimed UUIDs and fingerprints are checked against the actual TLS
 // connection and durable trust. Never transport a Host private key or pairing code here.
@@ -112,6 +113,7 @@ message PeerRevokeTrustReply {
   int64 authorization_revision = 3; int64 incarnation = 4; bool changed = 5;
 }
 service PeerSecurityProtocol {
+  rpc GetSettingsSchema(SettingsSchemaRequest) returns (SettingsSchemaReply);
   rpc ReadManagedPeerTrust(PeerTrustPageRequest) returns (PeerTrustPageReply);
   rpc RevokeManagedPeerTrust(PeerRevokeTrustRequest) returns (PeerRevokeTrustReply);
   rpc NegotiateRecovery(PeerHello) returns (PeerHello);

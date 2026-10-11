@@ -2,6 +2,7 @@ syntax = "proto3";
 package palworld.manager.v1;
 option csharp_namespace = "PalworldServerManager.Contracts.Wire";
 import "Protos/host.proto";
+import "Protos/settings.proto";
 import "Protos/peer_security.proto";
 import "Protos/peer_pairing.proto";
 
@@ -134,7 +135,10 @@ message LocalRemoteRevokePeerRequest {
   LocalPeerContactRequest destination = 1; string peer_host_id = 2;
   int64 expected_authorization_revision = 3; int64 expected_incarnation = 4;
 }
+message LocalRemoteSettingsSchemaRequest { LocalPeerContactRequest destination = 1; ServerRef server = 2; }
 service LocalSecurityProtocol {
+  rpc GetSettingsSchema(SettingsSchemaRequest) returns (SettingsSchemaReply);
+  rpc GetRemoteSettingsSchema(LocalRemoteSettingsSchemaRequest) returns (SettingsSchemaReply);
   rpc ReadRemotePeerTrust(LocalRemotePeerTrustPageRequest) returns (PeerTrustPageReply);
   rpc RevokeRemotePeerTrust(LocalRemoteRevokePeerRequest) returns (PeerRevokeTrustReply);
   rpc Negotiate(Handshake) returns (LocalHandshakeReply);
