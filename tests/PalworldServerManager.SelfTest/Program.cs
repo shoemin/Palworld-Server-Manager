@@ -11,6 +11,16 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--bounded-file-read-probe"])
+    {
+        await BoundedFileReaderTests.ExactBytesAndBounds();
+        await BoundedFileReaderTests.ClosedPathsAndMissingObjects();
+        await BoundedFileReaderTests.HardLinksAndJunctionsRefused();
+        await BoundedFileReaderTests.WriterAndReplacementExclusion();
+        await BoundedFileReaderTests.AccessDeniedAndCleanup();
+        await BoundedFileReaderTests.CancellationReleasesHandles();
+        Console.WriteLine("PASS bounded no-follow file reads: six actual Windows groups."); return 0;
+    }
     if (args is ["--restricted-service-child", var restrictedCanary, var restrictedParent])
         return WindowsRestrictedLaunchQualification.Child(restrictedCanary, restrictedParent);
     if (args is ["--peer-process-host", var peerProcessConfig])
@@ -1020,6 +1030,12 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Bounded files exact bytes and bounds", BoundedFileReaderTests.ExactBytesAndBounds),
+    ("Bounded files closed paths and missing objects", BoundedFileReaderTests.ClosedPathsAndMissingObjects),
+    ("Bounded files hard links and junctions refused", BoundedFileReaderTests.HardLinksAndJunctionsRefused),
+    ("Bounded files writer and replacement exclusion", BoundedFileReaderTests.WriterAndReplacementExclusion),
+    ("Bounded files access denied and cleanup", BoundedFileReaderTests.AccessDeniedAndCleanup),
+    ("Bounded files cancellation releases handles", BoundedFileReaderTests.CancellationReleasesHandles),
     ("Restricted launch refuses nonservice qualification", WindowsRestrictedLaunchQualification.OutsideServiceIsNotQualified),
     ("Settings schema SchemaCatalogAndClosedReplyValidation", LocalOwnerPairingRpcTests.SchemaCatalogAndClosedReplyValidation),
     ("Settings schema SchemaLocalOwnerAndExactTarget", LocalOwnerPairingRpcTests.SchemaLocalOwnerAndExactTarget),

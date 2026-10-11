@@ -7473,3 +7473,117 @@ Local763/763,zero-warning build,UI/actual SDK/strict Docs PASS. A/B/all40 clean 
 This qualifies only the synthetic restricted child and tested access denials, not a complete sandbox or production launcher. Next bounded work establishes a no-follow, handle-relative, size-bounded Windows file-read primitive needed for protected settings IO. Root selection/ACL policy, authorization, revisions, stopped-state/write integration, real Palworld/parity/Linux/release remain pending. Accessibility WAIVED, never PASS. Prior checkpointDocs38105929736 verified PASS.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47h - bounded no-follow Windows file reader preflight
+
+2026-10-10. Baseba7cf6838bb915281440763015cc302a46612c8b. Under47's protected settings read/write implementation, add a read-only platform primitive: trusted Host-selected absolute local root plus separately validated relative components, existing objects only, native handle-relative single-component traversal, no reparse following, single-link regular leaf, bounded bytes, no write/delete sharing while held, constant classified errors and cancellation. This is not a settings endpoint, root-authorization/ACL policy, stopped-state proof, revision authority or atomic save. Production callers remain absent until those independent gates are implemented; no client-supplied arbitrary path surface.
+
+Expected impact: additive Platform.Contracts reader/failure contract, Platform.Windows adapter, SelfTest native file fixtures/registration, developer documentation and ledger. No assembly direction changes, credential holder, authority issuer, persistent writer, operation executor, client or public wire change. Root identity/ACL selection is explicitly a future Host responsibility; the primitive prevents path redirection/hard-link reads but cannot authorize a root or exclude pre-existing writable mappings by itself. It never changes file ACLs, creates files or retries with privileges.
+
+All40 A/B audits required, especially HOST-002/SEC-001/PLATFORM-001 and no false OPS-001/RECOVERY-001 claim. Validate actual nested binary reads, empty/exact/oversize bounds, unsafe DOS/ADS/dot/device components, missing and directory leaves, denied reads, existing writer and held-handle replacement refusal, actual hard links/junctions, cancellation and deterministic handle release. Full763+new tests/build/UI/actual SDK/strict Docs and all-three completed CI logs required. No external reviewer, owner decision, production launcher selection or new creator permission.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+Initial47h zero-warning build passed; focused native tests caught fixture-only ACL restoration that had not marked the saved DACL as modified. Restore through a new FileSecurity descriptor and compare read-back DACL explicitly; all six actual Windows groups then PASS. Review A also found A1: drive-qualified spelling alone admits mapped network drives. Added an explicit local-drive-type gate before opening the root. Two implementation/correction/verification rounds,300 cumulative planned; no accepted escape or owner decision. Full corrected local/remote validation required before A PASS.
+
+### #47h - Review A PASS
+
+2026-10-10. Executable11413fba0683f3ab11aeb5bdb2b7f11b49652692 against baseba7cf6838bb915281440763015cc302a46612c8b. Local769/769, six focused actual Windows groups, zero-warning build, UI/actual SDK/strict Docs PASS. Independent x64 C++ compilation against installed Windows SDK verifies Unicode/object/IO/file-information structure sizes/offsets and flag masks. NativeCI114377891341 in38108135990 completed and actual Rust2/native16/genuine ceremony logs inspected; ordinary and service jobs still pending.
+
+Reviewed all six changed files and call paths. No production caller exists: root selection/ACL validation, current authorization, stopped-state and configuration revisions remain separate requirements. Components copied before IO; strict name bounds and local-drive gate; FILE_OPEN/no-follow relative single-component opens; same-handle type/reparse/link/size checks before bytes; no backup intent or privilege retry. All file/ancestor handles retained without write/delete sharing, native structures checked independently, constant categorized failures, allocated result cleared on failure/cancellation and handles released deterministically. Existing writable mappings explicitly remain outside this guarantee. Actual junction/hard-link/ACL/share/refusal and successful post-read deletion/move tests support the narrow claims.
+
+A1 mapped-drive gate and fixture ACL restoration corrected. Stale search covered all new reader/failure symbols, docs and test dispatch; no RPC, production caller, immutable history, grant issuer or package/dependency changes. Two implementation/correction/verification rounds,300 cumulative planned; no new accepted escape or owner decision.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform contract/adapter and SelfTest/docs only; frozen WPF/LAN/legacy Core unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-side read seam, no production caller or authoritative writer; no file creation/ACL/save effect. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency, credential or transport change; trusted Host inputs never exposed as a client arbitrary-path RPC. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No Host/server identity, trust, rotation or recovery changes; path input explicitly not an identity/authority permit. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/bootstrap/Owner changes; reader itself cannot authenticate or grant rights. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No routing/trust/remote authorization change; existing native ceremonies and full ordinary suite remain passing. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/delegation/creator path; approved read/save and creator limits unchanged. | PASS |
+| PROTO-001 | Platform-only failure categories, no public wire or authorization enum change. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No revision issuer, lock, writer or stopped-state claim; byte observation does not become an execution permit or atomic database/filesystem snapshot. | PASS |
+| SEC-001 | No path/content/native exception in errors; no partial bytes; link/redirection refusals before read; no ACL relaxation; secret filtering remains future Host caller responsibility. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Explicit Windows seam, no source migration, shared OS branches, interactive service action or Linux implementation. | PASS |
+
+All40 covered. Whole47/48 remains IN PROGRESS; no real Palworld/parity/release claim. Next authorized action is PR creation and fresh B review, then completed all-three CI logs/final Docs/live head/base/clean/source-equivalence gate for experiment-only merge. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47h / PR195 - Review B PASS, final gates pending
+
+2026-10-10. Fresh post-PR review of exact candidatedbc8ab5c620bcacc8292f4d3af35c55945b399b6 against baseba7cf6838bb915281440763015cc302a46612c8b. Re-read every changed file, full native reader/contract/test diff, caller inventory, preflight/A evidence and developer limitations. No substantive B finding. Executable11413fb unchanged; local769/769/six focused groups/zero-warning build/UI/actual SDK/independent C++ ABI/strict Docs PASS. Remaining completed CI logs and final Docs still required before merge.
+
+Rechecked ownership and failure paths: invalid inputs fail before native open; copied components cannot be redirected by later caller mutation; intermediate directories and leaf stay anchored to retained handles; reparse/type/link checks precede byte reads; no create/replace/backup-intent path exists. Native status conversion drops raw details, FileStream errors are recategorized without inner exceptions, cancellation clears only the allocated result buffer (not a whole-process erasure claim). Failure and successful cleanup close all handles; ACL and junction test cleanup applies only to owned disposable fixtures. The trusted Host must still select/authorize/protect the root and coordinate editable resources; this seam has no public RPC or production consumer and does not prove revision consistency, stopped state or freedom from pre-existing writable mappings.
+
+| Invariant | Fresh whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Six-file additive platform/test/docs diff leaves frozen application and legacy dependencies untouched. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Passive Host-side read primitive, no additional authority or authoritative/file writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency/credential/routing change and no arbitrary-path RPC. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identity/credential/trust/recovery change; filesystem path never represented as server authority. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/bootstrap/authentication effect; current-principal gating remains required in future caller. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote ceiling, Active trust or pairing-state mutation; genuine native qualification retained. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant issuance/default/delegation/creator path; independent read/save permissions unchanged. | PASS |
+| PROTO-001 | No wire/negotiation change; closed platform failure reporting does not grant access. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No revision/lock/operation/recovery mutation; ordinary sharing exclusion is not a process-stopped or transaction guarantee. | PASS |
+| SEC-001 | No value/path logging, partial result or permission relaxation; actual unsafe-object/access/share refusals and cleanup verified. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No source migration, interactive shell action or Linux implementation; native calls confined to Windows adapter/test. | PASS |
+
+All40 covered and stale-reference search clean. Two rounds,300 cumulative planned; all12 accepted escapes remain corrected, no new accepted escape. Whole47/48 IN PROGRESS; no owner decision pending. Final gate requires exact current head/base/clean/source equivalence, final Docs, and completed all-three CI logs including actual four-start service qualification and cleanup. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+Remote ordinary job114377891222 in38108135990 completed768/769: the access-denial fixture's exact restored-DACL comparison failed at line122 after the actual access-denial assertion passed. The fixture inherited different temporary-directory ACL forms in CI; it must not rely on local inherited-descriptor canonicalization. Establish a known protected current-user-full-control DACL on the newly created disposable file, capture its actual descriptor, then test denial and exact restoration against that controlled baseline. Do not weaken the restoration check. Production reader unchanged. Initial local769/769 and native/service CI jobs passed (including full four-start/cleanup evidence), but overall38108135990 is FAIL, never PASS. Prior A/B are superseded pending corrected validation and fresh reviews on this same PR195. Third round,301 cumulative planned; no accepted escape or owner decision.
+
+### #47h / PR195 - corrected Review A PASS
+
+2026-10-10. Corrected executable46d65ff30f12caecd61d0f0be369bddddebb7807. Full corrected local769/769, six focused groups, zero-warning build, UI/actual SDK/strict Docs PASS. Independent Windows x64 C++ ABI evidence applies to unchanged production adapter. New native job114380405179 in38108989638 completed; Rust2/native16 and genuine Owner/re-pair/recovery/first-contact ceremony logs inspected. Other two remote jobs pending, no overall CI PASS claimed.
+
+Fresh whole-result review against ba7cf68 includes all six files and the new controlled test-DACL baseline. The known protected fixture ACL is applied before capturing original state; adding the read denial and restoring the captured DACL retain exact comparison and positive readable-byte checks. Initial CI pinpoints the restoration comparison, but did not record both descriptors; inherited-ACL canonicalization is the working explanation, not an independently observed descriptor diff. The new setup removes that dependency without weakening checks. It only changes a newly created disposable file, not production permissions or a shared temporary directory. Full cleanup still must succeed. Earlier38108135990 remains FAIL and superseded.
+
+Rechecked unchanged reader: anchored no-follow traversal and same-handle link/type/size verification, local-drive/name closure, no writer/create/privilege fallback, constant errors, caller-owned successful bytes, cancellation/result clearing and handle release. Root authority/ACLs, stopped state and revisions remain outside its contract; no production consumer or arbitrary-path endpoint exists. Stale-reference search and source dependency review clean. Third round,301 cumulative planned; no accepted escape or owner decision.
+
+| Invariant | Corrected whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive seam/tests/docs only; frozen WPF/LAN/Core unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Read-only Host-side primitive, no new authority, production caller or writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency, credential or routing effect. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | No identity/qualified target/trust/credential transition changed. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/Owner/bootstrap/authentication path affected. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Dual ceilings and trust-state gates unchanged; corrected native ceremonies pass. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No issuance/default/preset/delegation/creator changes. | PASS |
+| PROTO-001 | No wire feature/schema/history or authorization enum modification. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No lock/revision/executor/recovery effect or false stopped/atomic-snapshot claim. | PASS |
+| SEC-001 | Production no-follow/link/size/privacy checks unchanged; corrected owned-fixture DACL is protected and exact restoration retained. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No source migration, interactive shell or Linux work; native code remains Windows-specific. | PASS |
+
+All40 covered; same PR195 remains open for renewed B and final CI/Docs/head/base/clean/source-equivalence gates. Whole47/48 IN PROGRESS; accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47h / PR195 - corrected Review B PASS, merge gates pending
+
+2026-10-10. Fresh B review of1e09b778c2acb211b89a5751ebe1a49346abfccc against ba7cf6838bb915281440763015cc302a46612c8b, including entire six-file result and corrected fixture. No substantive B finding. Executable46d65ff30f12caecd61d0f0be369bddddebb7807 unchanged. Corrected local769/769, six focused actual file groups, zero-warning build, actual UI/SDK/strict Docs and independent native ABI PASS. Corrected38108989638 still requires completed ordinary/service logs; no overall CI PASS or merge claimed.
+
+The correction gives only the test's current user full control of its new disposable file before applying a read denial; it does not touch directory/production ACLs. Exact restored-DACL equality, positive reread and fixture deletion remain mandatory. Original remote failure is retained as768/769 FAIL, not relabeled. Rechecked whole reader ownership, native signatures/masks, relative-name handling, before/after same-handle metadata checks, error privacy and all successful/error/cancellation disposal paths. No later path reopen or hidden authority fallback appears. Caller responsibilities and writable-mapping limitation remain explicit. All affected test dispatch/documentation references agree; no source or dependency change beyond the planned seam.
+
+| Invariant | Fresh corrected whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/legacy Core untouched; additive platform/read tests only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | No production caller, filesystem writer, online state writer or second authority. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client dependency, credential or transport route altered. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Semantic identities and all rotation/recovery boundaries unchanged. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal enrollment/Owner/bootstrap/channel changes. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Existing independent remote authorization and trust rules remain; actual native evidence reviewed. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant/default/preset/delegation/creator effects; approved limits unchanged. | PASS |
+| PROTO-001 | No protocol or immutable history change; unknown native statuses become Unavailable. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Passive byte observation only, no revision/lock/lifetime/recovery authority inferred. | PASS |
+| SEC-001 | Link/type/size checks precede bytes; fixed errors and no partial results; corrected fixture preserves exact ACL checks without production relaxation. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, interactive action or Linux code; native behavior remains in explicit Windows seam. | PASS |
+
+All40 covered after correction. Three rounds,301 cumulative planned; no accepted escape or owner decision. Final gates remain completed current-run logs, final-head Docs and live head/base/clean/executable equivalence. Whole47/48 IN PROGRESS; real Palworld/parity/release unqualified, accessibility WAIVED never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
