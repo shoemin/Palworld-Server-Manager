@@ -95,6 +95,7 @@ internal static class WindowsRestrictedLaunchQualification
                 using (var desktop = new OwnedDesktop(identity.User))
                 {
                     ConfigureChildObjectDacl(reduced, identity.User, sids.ChildSid);
+                    var startupAccess = desktop.ProbeAccess(reduced);
                     var executable = Environment.ProcessPath ?? throw new InvalidOperationException();
                     var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture) };
                     var command = new StringBuilder(WindowsClientCommandLine.Build(new ClientLaunchTarget(executable, arguments)));
@@ -114,7 +115,7 @@ internal static class WindowsRestrictedLaunchQualification
                             Check(wait == 258 && Environment.TickCount64 < deadline, "Restricted child did not signal within bound.");
                         }
                         NativeCheck(GetExitCodeProcess(process, out var code), "exit code");
-                        Check(code == 0, $"Restricted child qualification failed, exit {code:X8}.");
+                        Check(code == 0, $"Restricted child qualification failed, exit {code:X8}; {startupAccess}.");
                     }
                     finally
                     {
@@ -186,6 +187,7 @@ internal static class WindowsRestrictedLaunchQualification
     private sealed class OwnedDesktop : IDisposable
     {
         private IntPtr handle;
+        private string stationName = "", desktopName = "";
         internal IntPtr Name { get; private set; }
         internal OwnedDesktop(SecurityIdentifier service)
         {
@@ -195,11 +197,11 @@ internal static class WindowsRestrictedLaunchQualification
                 var station = GetProcessWindowStation();
                 GetUserObjectInformationW(station, 2, IntPtr.Zero, 0, out var needed);
                 Check(needed is > 0 and <= 4096, "Unexpected station name size."); var buffer = Marshal.AllocHGlobal((int)needed);
-                string stationName;
                 try { NativeCheck(GetUserObjectInformationW(station, 2, buffer, needed, out _), "station name"); stationName = Marshal.PtrToStringUni(buffer)!; }
                 finally { Marshal.FreeHGlobal(buffer); }
                 Check(!stationName.Equals("WinSta0", StringComparison.OrdinalIgnoreCase), "Interactive service station refused.");
                 var name = "AstraRestricted" + Guid.NewGuid().ToString("N");
+                desktopName = name;
                 NativeCheck(ConvertStringSecurityDescriptorToSecurityDescriptorW($"D:P(A;;GA;;;{service.Value})(A;;GA;;;WD)", 1, out var sd, out _), "desktop security");
                 try
                 {
@@ -214,6 +216,18 @@ internal static class WindowsRestrictedLaunchQualification
             }
             catch { Dispose(); throw; }
         }
+        internal string ProbeAccess(SafeAccessTokenHandle reduced)
+            => WindowsIdentity.RunImpersonated(reduced, () =>
+            {
+                var station = OpenWindowStationW(stationName, false, 0x000F037F);
+                var stationError = station == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
+                if (station != IntPtr.Zero) NativeCheck(CloseWindowStation(station), "close diagnostic station handle");
+                var desktop = OpenDesktopW(desktopName, 0, false, 0x000F01FF);
+                var desktopError = desktop == IntPtr.Zero ? Marshal.GetLastWin32Error() : 0;
+                if (desktop != IntPtr.Zero) NativeCheck(CloseDesktop(desktop), "close diagnostic desktop handle");
+                // Object names are test-only nonsecret Windows resource metadata.
+                return $"station={stationName}, stationFullError={stationError}, desktopFullError={desktopError}";
+            });
         public void Dispose()
         {
             if (Name != IntPtr.Zero) { Marshal.FreeHGlobal(Name); Name = IntPtr.Zero; }
@@ -250,4 +264,7 @@ internal static class WindowsRestrictedLaunchQualification
     [DllImport("advapi32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool ConvertStringSecurityDescriptorToSecurityDescriptorW(string text, uint version, out IntPtr sd, out uint size);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)] private static extern IntPtr CreateDesktopW(string name, IntPtr device, IntPtr mode, uint flags, uint access, ref SecurityAttributes security);
     [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseDesktop(IntPtr desktop);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)] private static extern IntPtr OpenWindowStationW(string name, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint access);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)] private static extern IntPtr OpenDesktopW(string name, uint flags, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint access);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CloseWindowStation(IntPtr station);
 }
