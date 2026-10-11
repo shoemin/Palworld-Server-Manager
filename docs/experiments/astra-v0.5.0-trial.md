@@ -7661,3 +7661,13 @@ An existing valid container is observed only: children are neither adopted nor r
 All40 covered. Two rounds,303 cumulative planned; all12 accepted escapes remain corrected, no new accepted escape. Whole47/48 IN PROGRESS; no owner decision. Merge requires completed all-three corrected CI logs, final Docs and exact current head/base/clean/executable equivalence. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release claim.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48e / PR196 - accepted protected managed storage root
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 as50d11dd7fe300579d88152ad063550157109a1e2. Final reviewed head e2d356c68547271e7c3f72fe67dcc1bec7571787; executable d3f34f2afd29e12ccfa0cfa0dbf32970e593785c. All-three correctedCI38110726166 PASS; completed native114385549523/service114385549388/build114385549559 logs inspected. Local/remote773/773, four policy groups, zero-warning build, UI/actual SDK/strict Docs PASS. Rust2/native16/genuine ceremonies, protected setup/idempotence/unsafe-layout refusal, four actual service starts with storage write/bounded-read plus restricted-child/five recovery/four unpair cases, two real nonadmin denials, bootstrap-only recovery independence, shipped product bootstrap and full service/group/users/profiles/files cleanup verified. CandidateDocs38111098075/finalDocs38111150231 PASS; exact final head/base/clean/executable-equivalence gate PASS.12files365insert8delete.
+
+A correction removed storage preparation from nonbootstrap credential commands; initial38110374632 also completed successfully but is superseded for acceptance. Renewed A/B/all40 clean. Two rounds,303 cumulative accepted cycles. Accepted136 experimental PRs61-196; fourteen canonical children SHADOW DONE. No new accepted escape; all12 remain corrected. Whole47/48 IN PROGRESS, no owner decision pending; approved independent read/save permissions and six creator limits unchanged. Prior checkpointDocs38109728003 verified PASS.
+
+Protected container preparation is accepted, not individual server creation, game access/launch, settings endpoint/save integration, full sandbox or real Palworld/parity/Linux/release qualification. Next bounded work binds observed settings bytes to durable revision metadata so an external file change cannot silently reuse a previously issued token. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
