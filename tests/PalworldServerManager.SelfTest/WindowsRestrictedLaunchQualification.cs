@@ -66,11 +66,22 @@ internal static class WindowsRestrictedLaunchQualification
             {
                 using var key = CngKey.Open(nativeKey, CngProvider.MicrosoftSoftwareKeyStorageProvider,
                     CngKeyOpenOptions.MachineKey | CngKeyOpenOptions.Silent);
+                stage = 63;
                 using var signer = new ECDsaCng(key);
                 var signature = signer.SignData("restricted-child-fixture"u8, HashAlgorithmName.SHA256);
-                CryptographicOperations.ZeroMemory(signature);
+                try
+                {
+                    stage = 65;
+                    Check(signer.VerifyData("restricted-child-fixture"u8, signature, HashAlgorithmName.SHA256), "Unexpected invalid fixture signature.");
+                    stage = 64; // Positive sign AND verify is a distinct isolation failure.
+                }
+                finally { CryptographicOperations.ZeroMemory(signature); }
             }
-            catch (CryptographicException ex) when (ex.HResult is unchecked((int)0x80090010) or unchecked((int)0x80070005)) { denied = true; }
+            catch (CryptographicException ex)
+            {
+                if (ex.HResult is unchecked((int)0x80090010) or unchecked((int)0x80070005)) denied = true;
+                else return ex.HResult; // Numeric native status only; never exception/key/path text.
+            }
             Check(denied, "Restricted child used native Host key.");
             stage = 61; RequireFileReadDenied(nativeFile);
             stage = 62; RequireFileReadDenied(credentialFile);
