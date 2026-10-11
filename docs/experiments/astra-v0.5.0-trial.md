@@ -7708,3 +7708,7 @@ Caller-owned bytes and ordered read/observe/save serialization remain explicit t
 All40 reviewed, writer/table/call-site/protocol and stale-reference search clean. Whole47/48 IN PROGRESS; no owner decision. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release claim.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47i / PR197 - Review B correction
+
+Fresh B found the parameterless validator was an unsafe integration contract: existing RequireLocal/RemoteServerCapability opens an immediate write transaction of its own, so using it inside ObserveContent would conflict with the already-held writer. The callback also could not inspect same-transaction authorization changes. Change it to the existing operation-engine pattern: a read-only validator receives the owned connection/transaction, runs before metadata effects and again before commit; initial file-access authorization remains outside/before file IO. No nested transaction or cached permission snapshot is permitted. Tests now read pending revisions through the supplied transaction while outside readers see committed state, and inject an in-transaction Owner credential change that final validation must reject and roll back. Prior A is superseded; same PR197 retained. No production caller exists yet, no accepted escape or owner decision. Two correction/verification rounds,305 cumulative planned. Repeat full local/remote checks and fresh A/B/all40.

@@ -15,7 +15,7 @@ internal static class ConfigurationContentObservationTests
     private static EditableResource Resource(PeerTrustTests.Fixture f, Guid? server = null, string kind = "ServerSettings")
         => new(kind, server is { } id ? new ServerTarget(new(f.HostId, id)) : new HostTarget(f.HostId));
     private static ConfigurationRevision Observe(PeerTrustTests.Fixture f, EditableResource resource, byte[] bytes)
-        => Repo(f).ObserveContent(resource, bytes, () => { });
+        => Repo(f).ObserveContent(resource, bytes, (_, _) => { });
     private static string Snapshot(PeerTrustTests.Fixture f)
     {
         var rows = new List<object?[]>();
@@ -70,9 +70,16 @@ internal static class ConfigurationContentObservationTests
         {
             using var f = new PeerTrustTests.Fixture(); var resource = Resource(f); if (exists) Observe(f, resource, [1]);
             var before = Snapshot(f); var prior = Repo(f).Read(resource); var calls = 0; using var ct = new CancellationTokenSource();
-            void Attempt() => Repo(f).ObserveContent(resource, unchanged ? [1] : [2], () =>
+            void Attempt() => Repo(f).ObserveContent(resource, unchanged ? [1] : [2], (connection, transaction) =>
             {
+                Check(ReferenceEquals(transaction.Connection, connection));
                 Check(Repo(f).Read(resource) == prior); // outside readers see committed metadata only
+                if (calls == 1)
+                {
+                    using var query = connection.CreateCommand(); query.Transaction = transaction;
+                    query.CommandText = "SELECT RevisionId FROM ConfigurationRevisions;";
+                    Check(query.ExecuteScalar() is long pending && pending == (exists && unchanged ? prior.Revision : prior.Revision + 1));
+                }
                 if (++calls != 2) return;
                 if (cancel) ct.Cancel(); else throw new UnauthorizedAccessException("Synthetic final proof refused.");
             }, ct.Token);
@@ -93,6 +100,18 @@ internal static class ConfigurationContentObservationTests
             try { Observe(f, resource, [2]); } catch (Exception) { refused = true; }
             Check(refused && Snapshot(f) == before);
             f.Execute("DROP TRIGGER ObservationFault;"); Check(Observe(f, resource, [2]).Revision == (exists ? 2 : 1));
+        }
+        using (var f = new PeerTrustTests.Fixture())
+        {
+            var resource = Resource(f); var before = Snapshot(f); var calls = 0;
+            f.Execute("CREATE TRIGGER ObservationAuthorityFault AFTER INSERT ON ConfigurationContentObservations BEGIN UPDATE LocalPrincipals SET PublicVerificationKey='changed'; END;");
+            Reject<UnauthorizedAccessException>(() => Repo(f).ObserveContent(resource, [1], (connection, transaction) =>
+            {
+                calls++; using var query = connection.CreateCommand(); query.Transaction = transaction;
+                query.CommandText = "SELECT COUNT(*) FROM LocalPrincipals WHERE IsOwner=1 AND State='Active' AND PublicVerificationKey='fixture-public';";
+                if (Convert.ToInt32(query.ExecuteScalar()) != 1) throw new UnauthorizedAccessException("Synthetic current identity changed.");
+            }));
+            Check(calls == 2 && Snapshot(f) == before);
         }
         return Task.CompletedTask;
     }
@@ -145,10 +164,10 @@ internal static class ConfigurationContentObservationTests
             if (mode == 0) f.Execute("UPDATE HostIdentity SET HostBootstrapState='Uninitialized';");
             if (mode == 1) f.Execute("UPDATE LocalPrincipals SET IsOwner=0;");
             if (mode == 2) ct.Cancel(); var before = Snapshot(f); var calls = 0;
-            void Attempt() => repo.ObserveContent(resource, mode == 3 ? new byte[4194309] : [1], () => { calls++; if (mode == 4) ct.Cancel(); }, ct.Token);
+            void Attempt() => repo.ObserveContent(resource, mode == 3 ? new byte[4194309] : [1], (_, _) => { calls++; if (mode == 4) ct.Cancel(); }, ct.Token);
             if (mode is 2 or 4) Reject<OperationCanceledException>(Attempt);
             else if (mode == 3) Reject<ArgumentException>(Attempt); else Reject<InvalidOperationException>(Attempt);
-            Check(before == Snapshot(f) && calls == (mode is 2 or 3 ? 0 : 1));
+            Check(before == Snapshot(f) && calls == (mode == 4 ? 1 : 0));
             Reject<ArgumentNullException>(() => repo.ObserveContent(resource, [1], null!));
         }
         return Task.CompletedTask;

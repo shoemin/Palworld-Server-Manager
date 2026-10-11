@@ -10,18 +10,19 @@ public sealed partial class ConfigurationRevisionRepository
     // Trusted Host-only observation of owned bytes, not a file reader, authorization permit or
     // save. The caller serializes its read/observe/save sequence and retains the machine lease.
     // Re-read/reconcile before comparing a save token; an observation cannot freeze a file.
+    // The validator is read-only on the supplied transaction; never open a nested writer.
+    // Initial authorization before reading any file remains the caller's responsibility.
     public ConfigurationRevision ObserveContent(EditableResource resource, ReadOnlySpan<byte> content,
-        Action validateCurrentRead, CancellationToken ct = default)
+        Action<SqliteConnection, SqliteTransaction> validateCurrentRead, CancellationToken ct = default)
     {
         RequireResource(resource); ArgumentNullException.ThrowIfNull(validateCurrentRead); ct.ThrowIfCancellationRequested();
         if (content.Length > 4194308) throw new ArgumentException("Configuration observation exceeds the byte bound.");
-        validateCurrentRead();
-        ct.ThrowIfCancellationRequested();
         var fingerprint = SHA256.HashData(content);
         try
         {
             using var c = Open(false); using var tx = c.BeginTransaction(deferred: false);
-            RequireHost(c, tx); var before = Read(c, tx, resource);
+            RequireHost(c, tx); validateCurrentRead(c, tx); ct.ThrowIfCancellationRequested();
+            var before = Read(c, tx, resource);
             var observed = ReadObservation(c, tx, resource, before.Revision);
             var unchanged = observed is not null && observed.Value.Revision == before.Revision &&
                 CryptographicOperations.FixedTimeEquals(observed.Value.Fingerprint, fingerprint);
@@ -48,7 +49,7 @@ public sealed partial class ConfigurationRevisionRepository
                 after = new(resource, next, now);
             }
             // Mandatory even for unchanged bytes: no metadata observation becomes a cached proof.
-            validateCurrentRead(); RequireHost(c, tx);
+            validateCurrentRead(c, tx); RequireHost(c, tx);
             if (Read(c, tx, resource) != after) throw new InvalidDataException("Configuration revision changed before commit.");
             var final = ReadObservation(c, tx, resource, after.Revision);
             if (final is null || final.Value.Revision != after.Revision ||
