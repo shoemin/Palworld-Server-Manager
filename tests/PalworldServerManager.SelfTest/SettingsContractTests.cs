@@ -36,12 +36,14 @@ internal static class SettingsContractTests
     }
     public static Task RedactionAllSourcesAndCopies()
     {
-        var inputs = Values(("AdminPassword","admin-private"),("ServerPassword","server-private"),("FutureToken","future-private"),("RandomizerSeed","unclassified-private"),("ServerName","visible"));
+        var inputs = Values(("AdminPassword","admin-private"),("ServerPassword","server-private"),("FutureToken","future-private"),("_FutureToken","underscore-private"),("RandomizerSeed","unclassified-private"),("ServerName","visible"));
         var defaults = inputs.ToDictionary(p=>p.Key,p=>p.Value+"-default");
         var result=Map(inputs,defaults); var bytes=result.ToByteArray();
         foreach(var entry in result.Entries.Where(e=>e.Definition.Sensitivity != Wire.SettingsSensitivity.Nonsecret))
             Check(entry.Configured is null && entry.InstallationDefault is null && entry.Effective is null && !entry.Definition.HasCatalogDefault);
         Check(!result.ToString().Contains("private",StringComparison.Ordinal));
+        var unknown=result.Entries.Single(e=>e.Definition.Key=="_FutureToken");
+        Check(!unknown.Definition.IsKnown && unknown.Definition.EditorKind==Wire.SettingsEditorKind.Raw && unknown.Definition.Sensitivity==Wire.SettingsSensitivity.Unknown);
         inputs["ServerName"]="changed"; defaults.Clear(); Check(result.ToByteArray().SequenceEqual(bytes));
         var another=Map(Values(("DeathPenalty","None"))); another.Entries[0].Definition.Choices.Clear();
         Check(Map(Values(("DeathPenalty","None"))).Entries[0].Definition.Choices.Count==4);

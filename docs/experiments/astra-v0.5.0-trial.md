@@ -6999,3 +6999,7 @@ Fresh post-PR review at exact pushed4187fe149942151533b89879b883e081047f0f80 aga
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, OS/UI/platform or Linux production changes. No field/parity/release claim. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47e / PR188 — B1 parser identifier compatibility correction
+
+Final sibling-component inspection after the initially clean B record found PreservedPalworldConfigDocument explicitly permits an underscore as the first key character, while the DTO validator permitted only a letter. That would unnecessarily reject a supported future key before redaction/projection. Corrected identifier grammar to match the accepted parser within the explicit transport length bound. Regression maps _FutureToken from both configured/default sources, retains unknown Raw metadata and withholds its canary values. No secret classification or editing permission expands. This is a pre-merge B finding, not an accepted escape. Reopen B; prior corrected734/CI38096400693 and final Docs38096870421 are superseded for final qualification. Three implementation/correction rounds,280 cumulative cycles planned; rerun full local/remote validation and renew both audits/review evidence on the final correction.

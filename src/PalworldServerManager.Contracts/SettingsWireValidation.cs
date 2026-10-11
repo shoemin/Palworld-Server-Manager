@@ -32,7 +32,7 @@ public static class SettingsWireValidation
         return true;
     }
     public static bool IsValidKey(string? value) => value is { Length: > 0 and <= 256 } &&
-        char.IsLetter(value[0]) && value.All(c => char.IsLetterOrDigit(c) || c is '_' or '.' or '-');
+        (char.IsLetter(value[0]) || value[0] == '_') && value.All(c => char.IsLetterOrDigit(c) || c is '_' or '.' or '-');
     private static bool Id(string value) => Guid.TryParseExact(value, "D", out var id) && id != Guid.Empty;
     private static bool Revision(string value) => value.Length is > 0 and <= 19 &&
         long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var revision) && revision >= 0 &&
