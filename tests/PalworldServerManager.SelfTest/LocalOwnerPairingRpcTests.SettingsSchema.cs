@@ -95,6 +95,9 @@ internal static partial class LocalOwnerPairingRpcTests
     {
         await using var f = new Fixture(false); await f.Start(new RefusingFactory()); var server = SchemaServer(f);
         using var c = await SchemaClient(f); await Refused(LocalSchema(c, server), StatusCode.PermissionDenied);
+        var onlyView = SchemaGrant(f, ActorRef.LocalPrincipal(f.Principal), server, ServerCapability.ViewServer);
+        SchemaCheck(await LocalSchema(c, server));
+        var initialPolicy = NetworkGrants(f); initialPolicy.InvalidateServerSubtree(NetworkOwner(f), initialPolicy.Read().Revision, onlyView);
         SchemaGrant(f, ActorRef.LocalPrincipal(f.Principal), server, ServerCapability.EditSettings);
         await Refused(LocalSchema(c, server), StatusCode.PermissionDenied);
         var view = SchemaGrant(f, ActorRef.LocalPrincipal(f.Principal), server, ServerCapability.ViewServer);
@@ -117,14 +120,17 @@ internal static partial class LocalOwnerPairingRpcTests
             using var unsupported = await SchemaClient(a, false);
             await Refused(RemoteSchema(unsupported, b, server, address), StatusCode.FailedPrecondition); Check(contacts == 0);
             await Refused(RemoteSchema(c, b, server, address), StatusCode.PermissionDenied); Check(contacts == 0);
-            SchemaGrant(a, ActorRef.LocalPrincipal(a.Principal), server, ServerCapability.EditSettings);
+            var localEdit = SchemaGrant(a, ActorRef.LocalPrincipal(a.Principal), server, ServerCapability.EditSettings);
             await Refused(RemoteSchema(c, b, server, address), StatusCode.PermissionDenied); Check(contacts == 0);
             SchemaGrant(a, ActorRef.LocalPrincipal(a.Principal), server, ServerCapability.ViewServer);
             await Refused(RemoteSchema(c, b, server, address), StatusCode.PermissionDenied); Check(contacts > 0);
-            SchemaGrant(b, ActorRef.RemoteManager(a.State.State.HostId), server, ServerCapability.EditSettings);
+            var peerEdit = SchemaGrant(b, ActorRef.RemoteManager(a.State.State.HostId), server, ServerCapability.EditSettings);
             await Refused(RemoteSchema(c, b, server, address), StatusCode.PermissionDenied);
             var machine = SchemaGrant(b, ActorRef.RemoteManager(a.State.State.HostId), server, ServerCapability.ViewServer);
             SchemaCheck(await RemoteSchema(c, b, server, address));
+            var localPolicy = NetworkGrants(a); localPolicy.InvalidateServerSubtree(NetworkOwner(a), localPolicy.Read().Revision, localEdit);
+            var peerPolicy = NetworkGrants(b); peerPolicy.InvalidateServerSubtree(NetworkOwner(b), peerPolicy.Read().Revision, peerEdit);
+            SchemaCheck(await RemoteSchema(c, b, server, address)); // View alone on both Hosts is sufficient.
             var collision = server.Clone(); collision.AuthoritativeHostId = a.State.State.HostId.ToString("D");
             await Refused(RemoteSchema(c, b, collision, address), StatusCode.InvalidArgument);
             var repo = NetworkGrants(b); repo.InvalidateServerSubtree(NetworkOwner(b), repo.Read().Revision, machine);
