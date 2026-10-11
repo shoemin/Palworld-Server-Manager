@@ -25,7 +25,7 @@ internal static class WindowsProcessAttachmentTests
         }
         public void Dispose()
         {
-            try { if (!Child.HasExited) Child.Kill(entireProcessTree: true); Check(Child.WaitForExit(10000)); }
+            try { if (!Child.HasExited) Child.Kill(entireProcessTree: true); NativeProcessTestContext.WaitForExit(Child); }
             finally { Child.Dispose(); }
             DeleteFixtureDirectory();
         }
@@ -59,6 +59,7 @@ internal static class WindowsProcessAttachmentTests
         {
             using var r = new Rig(1, code); using var lease = r.Inspector.Attach(r.Identity).Lease!;
             await r.Child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(15));
+            NativeProcessTestContext.WaitForExit(r.Child);
             var exit = lease.ReadExit(); Check(exit.State == ObservedProcessExitState.Exited && exit.ExitCode == code);
             Check(lease.ReadExit().ExitCode == code); // Retained handle remains readable after exit.
         }
@@ -76,9 +77,20 @@ internal static class WindowsProcessAttachmentTests
             throw new Exception("Synthetic descriptor setup failed.");
         try { if (!SetKernelObjectSecurity(r.Child.SafeHandle, 4, security)) throw new Exception("Synthetic process permission setup failed."); }
         finally { LocalFree(security); }
-        var denied = r.Inspector.Attach(identity); Check(denied.State == ProcessAttachmentState.Unknown && denied.Lease is null);
+        NativeProcessTestContext.WithoutPrivileges(() =>
+        {
+            using var raw = OpenProcess(0x00101000, false, identity.ProcessId);
+            var error = Marshal.GetLastWin32Error();
+            Check(raw.IsInvalid && error == 5); // Prove actual ACCESS_DENIED, not a vanished child.
+            var denied = r.Inspector.Attach(identity); using var unexpected = denied.Lease;
+            Check(denied.State == ProcessAttachmentState.Unknown && denied.Lease is null);
+            var snapshot = r.Inspector.Capture();
+            Check(!snapshot.IsComplete && !snapshot.Processes.Any(p => p.ProcessId == identity.ProcessId));
+            Check(retained.ReadExit().State == ObservedProcessExitState.Running);
+            return true;
+        });
         Check(retained.ReadExit().State == ObservedProcessExitState.Running);
-        r.Child.Kill(entireProcessTree: false); Check(r.Child.WaitForExit(10000));
+        r.Child.Kill(entireProcessTree: false); NativeProcessTestContext.WaitForExit(r.Child);
         Check(retained.ReadExit().State == ObservedProcessExitState.Exited);
         return Task.CompletedTask;
     }
@@ -122,4 +134,6 @@ internal static class WindowsProcessAttachmentTests
     [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetKernelObjectSecurity(SafeProcessHandle process, uint information, IntPtr security);
     [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr value);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeProcessHandle OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, int processId);
 }

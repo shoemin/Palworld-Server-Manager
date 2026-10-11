@@ -93,7 +93,7 @@ internal static class WindowsProcessObservationTests
             Check(second.ImagePath.Equals(Path.Combine(b, "PalServer.exe"), StringComparison.OrdinalIgnoreCase));
             Check(first.CreatedUtc.UtcDateTime == alpha.StartTime.ToUniversalTime() && second.CreatedUtc.UtcDateTime == other.StartTime.ToUniversalTime());
             // Never terminate by a PID taken from the snapshot: these handles are our own synthetic children.
-            alpha.Kill(entireProcessTree: true); await alpha.WaitForExitAsync();
+            alpha.Kill(entireProcessTree: true); NativeProcessTestContext.WaitForExit(alpha);
             Check(!inspector.Capture().Processes.Any(p => p.ProcessId == first.ProcessId && p.CreatedUtc == first.CreatedUtc));
             Check(inspector.Capture().Processes.Any(p => p.ProcessId == other.Id));
         }
@@ -103,7 +103,7 @@ internal static class WindowsProcessObservationTests
             foreach (var child in new[] { alpha, other })
             {
                 if (child is null) continue;
-                try { if (!child.HasExited) child.Kill(entireProcessTree: true); if (!child.WaitForExit(10000)) cleanupFailed = true; }
+                try { if (!child.HasExited) child.Kill(entireProcessTree: true); NativeProcessTestContext.WaitForExit(child); }
                 catch { cleanupFailed = true; }
                 finally { child.Dispose(); }
             }
