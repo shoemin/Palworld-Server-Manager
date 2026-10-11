@@ -40,10 +40,21 @@ internal static class WindowsRestrictedLaunchQualification
             Check(denied, "Restricted child replaced private canary DACL.");
             stage = 45;
             Check(int.TryParse(parent, out var pid) && pid > 0 && pid != Environment.ProcessId, "Invalid parent.");
-            foreach (var access in new uint[] { 0x10, 0x40, 0x2, 0x40000 })
+            foreach (var access in new uint[] { 0x1, 0x2, 0x8, 0x10, 0x20, 0x40, 0x80, 0x40000, 0x80000 })
             {
                 using var handle = OpenProcess(access, false, pid); var error = Marshal.GetLastWin32Error();
                 Check(handle.IsInvalid && error == 5, "Restricted child obtained parent process authority.");
+            }
+            stage = 46;
+            using (var query = OpenProcess(0x1000, false, pid))
+            {
+                if (query.IsInvalid) Check(Marshal.GetLastWin32Error() == 5, "Parent query failed unexpectedly.");
+                else
+                {
+                    var opened = OpenProcessToken(query.DangerousGetHandle(), 2, out var parentToken);
+                    var error = Marshal.GetLastWin32Error();
+                    using (parentToken) Check(!opened && error == 5, "Restricted child could duplicate parent token.");
+                }
             }
             return 0;
         }

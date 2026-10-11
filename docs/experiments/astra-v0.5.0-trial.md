@@ -7404,4 +7404,6 @@ Impact limited to SelfTest service fixture/readiness proof/explicit child mode/n
 
 If the existing service token cannot support the approach, diagnose that actual failure before selecting a production design; a development-session failure alone is not a Product Decision. Any proposal to introduce new OS accounts, privileges or a separate authority service requires checking accepted architecture/owner boundaries first. No owner decision currently pending.
 
+Initial48d executable84055522640023ed761070709119c0dd492e8508 built with zero warnings; ordinary nonservice-refusal check, UI, actual SDK and strict Docs PASS; full763-test local run and all-threeCI38106102501 pending. Review A found A1: the initial parent-process denial list covered read/thread/duplicate/DACL but lacked explicit terminate/write-memory/create-process/owner rights and parent-token duplication. Added those checks without changing the proposed production boundary (there is no production launcher in this unit). Initial validation may finish as superseded evidence; corrected full service/local validation remains required. Second round planned,295 cumulative; no accepted escape or owner decision.
+
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
