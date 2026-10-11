@@ -8174,3 +8174,31 @@ B independently checked two-token/path substitution, root versus inherited desce
 All40 freshly audited and reference search repeated. Three implementation/review correction rounds322 planned cumulative (initial implementation, A rollback evidence, B documentation precision); no accepted escape. Ordinary801 count is unchanged; actual child cases are separate privileged evidence. Whole47/48 remain IN PROGRESS. The next auto-start authorization/persistence choice will be presented separately after this unit is accepted. Accessibility WAIVED, never PASS; no real Palworld/parity/Linux/release qualification.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #48g / PR202 - accepted restricted per-server writable folders
+
+2026-10-11. Merged only into experiment/astra-v0.5.0 as886226443afec46bea1a8f845372df34747efe8a. Final B head758a60e264b04d4901ef69c481a99d090eaed3ab; executable72d5c158da747a7bc6c5aa95fec659798f536961. All-three correctedCI38120714818 completed PASS, actual native114414693483/service114414693272/build114414693462 logs inspected. Local/remote801/801/build0/UI/actual local SDK/strict Docs PASS. Rust2/native16/genuine ceremonies; all four service starts with reciprocal own-folder writes/sibling and root-DACL refusal, interrupted preparation/actual partial-child-write cleanup, native Host-key/file/process denial and parent signing/integrity, recovery5/unpair4/managed storage; both real nonadmin denials, shipped flows and complete service/group/users/profiles/files cleanup verified. CandidateDocs38120716337/ADocs38121408716/finalDocs38121504078 PASS; exact head/base/clean/executable-equivalence gates PASS. Six files254insert41delete.
+
+InitialCI38120439060 and initial local801/UI/SDK also PASS. A added failure-path evidence; B corrected file-versus-directory-rename wording only. Three rounds322 cumulative accepted cycles, no automated failure or new accepted escape. Accepted142 experimental PRs61-202; fourteen canonical children SHADOW DONE;801 ordinary tests; all12 prior accepted escapes corrected. These actual service-child checks are separate privileged evidence, not new ordinary test groups. Whole47/48 remain incomplete; no complete sandbox/production launcher/real Palworld/parity/Linux/release claim. Accessibility WAIVED, never PASS.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+### #48h preflight - auto-start policy owner decision
+
+**SHADOW PRODUCT DECISION REQUIRED.** Current #17 section4 requires an independent per-server auto-start-after-Host/machine-boot option and staggered starts. Current #48 includes the per-server auto-start foundation, but neither contract defines which existing server permission changes the setting or whether later revocation/unpairing invalidates a previously saved setting. The invariant registry and architecture enumerate distinct StartStopRestart, EditSettings and ManageHostSettings permissions without this mapping. #48 Allowed Decisions permit internal Host service decomposition and operation phase names; choosing continuing launch authority after revocation is product behavior, not merely an internal phase name. No earlier owner approval resolving this rule was found. The approved #47 ViewServer reads/EditSettings saves and six creator permissions remain unchanged.
+
+Concrete recommended contract, pending owner approval:
+
+- Auto-start defaults off per server. ViewServer may read its nonsecret state. Exact-server StartStopRestart may enable or disable it; EditSettings alone does not grant that action.
+- Remote changes use the existing current authenticated local-principal and independent destination-peer authorization checks. Changing this flag grants no capabilities or delegation rights.
+- Once authorized and committed, auto-start is saved policy of that authoritative Host. It remains enabled after logout/disconnection, permission revocation or unpairing until an authorized user or current Owner explicitly disables it. Revocation prevents new changes; it does not undo the saved policy.
+- Enabling/disabling affects future Host starts. It does not immediately start/stop a server. Ordinary Stop does not silently edit the flag, so a later Host start may start it again. The separate Windows Host boot-start setting is unchanged.
+- Automatic starts still require normal Host-owned locks, verified identity/lifetime/finalization and explicit crash/recovery handling; uncertainty cannot become stopped proof and an existing lifetime cannot be started twice.
+
+Owner ask: approve StartStopRestart control of per-server auto-start and durable saved-policy behavior, including persistence after the configuring user/peer loses access? Recommendation: approve the contract above. The alternative of rechecking the original actor at every start would need a different scheduled-authority policy, including the originating Host being offline; it is not silently selected.
+
+No auto-start policy implementation, migration, RPC or grant change has begun. Current #48g is fully accepted independently. Development stops at this owner decision as requested; canonical Issues/Project, normal lane and main remain unchanged. #47 saves and complete #48 lifecycle/SteamCMD/parity remain incomplete. No outside reviewer/provider/contact is required.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
