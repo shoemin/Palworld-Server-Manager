@@ -1,6 +1,7 @@
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using PalworldServerManager.Platform.Contracts;
 using PalworldServerManager.Platform.Windows;
 using static PalworldServerManager.SelfTest.WindowsPlatformTests;
 
@@ -8,6 +9,9 @@ namespace PalworldServerManager.SelfTest;
 
 public static partial class WindowsIntegration
 {
+    private static readonly Guid SettingsProfile = Guid.Parse("a70d86d6-cf51-49bb-aa5c-f243117c839e");
+    private static readonly Guid MissingActiveProfile = Guid.Parse("996e54a7-8f8a-4eee-8e82-aa37e49cc166");
+    private static string SettingsFile(string install) => Path.Combine(install, "Pal", "Saved", "Config", "WindowsServer", "PalWorldSettings.ini");
     private static string PrepareManagedStorageFixture(string root, SecurityIdentifier service, string host, string publicRoot)
     {
         var parentBefore = new DirectoryInfo(root).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access);
@@ -15,6 +19,12 @@ public static partial class WindowsIntegration
         var path = Path.Combine(root, "ManagedServers"); var storage = new WindowsManagedStorageRoot(path, service);
         storage.RequireDisjoint(host, publicRoot, Path.Combine(root, "OwnerHandoffs")); storage.Provision();
         File.WriteAllText(Path.Combine(path, "preserved-setup.txt"), "SYNTHETIC-EXISTING");
+        var install = Path.Combine(path, SettingsProfile.ToString("N"));
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile(install))!);
+        File.WriteAllText(SettingsFile(install), "OptionSettings=(ServerName=\"SYNTHETIC-ACTIVE\",ServerPassword=\"SYNTHETIC-SECRET\")", new UTF8Encoding(true));
+        File.WriteAllText(Path.Combine(install, "DefaultPalWorldSettings.ini"), "OptionSettings=(ServerName=\"SYNTHETIC-DEFAULT\")");
+        var missing = Path.Combine(path, MissingActiveProfile.ToString("N")); Directory.CreateDirectory(missing);
+        File.WriteAllText(Path.Combine(missing, "DefaultPalWorldSettings.ini"), "SYNTHETIC-MUST-NOT-COPY");
         var before = new DirectoryInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access);
         storage.Provision(); storage.Validate();
         Check(new DirectoryInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access) == before &&
@@ -53,6 +63,22 @@ public static partial class WindowsIntegration
         }
         Check(Encoding.UTF8.GetString(new WindowsBoundedFileReader().Read(root, ["service-canary.txt"], 100)) == "SYNTHETIC-SERVICE-STORAGE",
             "Service storage write/read failed or changed across restart.");
+        var reader = new WindowsManagedServerSettingsReader(new WindowsManagedStorageRoot(root, service));
+        var install = Path.Combine(root, SettingsProfile.ToString("N"));
+        var activePath = SettingsFile(install); var defaultsPath = Path.Combine(install, "DefaultPalWorldSettings.ini");
+        var activeBefore = File.ReadAllBytes(activePath); var defaultsBefore = File.ReadAllBytes(defaultsPath);
+        var activeTime = File.GetLastWriteTimeUtc(activePath); var defaultsTime = File.GetLastWriteTimeUtc(defaultsPath);
+        using (var files = reader.Read(SettingsProfile, install))
+            Check(files.Active.Span.SequenceEqual(activeBefore) && files.InstallationDefaults!.Value.Span.SequenceEqual(defaultsBefore), "Managed settings service bytes differ.");
+        var missing = Path.Combine(root, MissingActiveProfile.ToString("N"));
+        try { using var files = reader.Read(MissingActiveProfile, missing); throw new Exception("Read created missing active settings."); }
+        catch (BoundedFileReadException ex) when (ex.Failure == FileReadFailure.NotFound) { }
+        try { using var files = reader.Read(SettingsProfile, missing); throw new Exception("Managed settings profile/path mismatch accepted."); }
+        catch (BoundedFileReadException ex) when (ex.Failure == FileReadFailure.InvalidPath) { }
+        Check(!File.Exists(SettingsFile(missing)) && File.ReadAllText(Path.Combine(missing, "DefaultPalWorldSettings.ini")) == "SYNTHETIC-MUST-NOT-COPY" &&
+            File.ReadAllBytes(activePath).SequenceEqual(activeBefore) && File.ReadAllBytes(defaultsPath).SequenceEqual(defaultsBefore) &&
+            File.GetLastWriteTimeUtc(activePath) == activeTime && File.GetLastWriteTimeUtc(defaultsPath) == defaultsTime, "Settings read mutated files.");
+        Console.WriteLine("PASS integration: exact managed settings service reads, profile/path mismatch and missing-active refusal; original bytes/timestamps unchanged.");
     }
     private static void ManagedStorageDenied(string serviceName, string canary, string root)
     {
@@ -62,5 +88,10 @@ public static partial class WindowsIntegration
         foreach (var action in new Action[] { () => { using var file = File.OpenRead(canary); }, () => File.WriteAllText(canary, "DENIED"),
             () => File.Delete(canary), () => Directory.CreateDirectory(Path.Combine(root, "unauthorized")) })
         { try { action(); throw new Exception("Nonadmin accessed managed storage."); } catch (UnauthorizedAccessException) { } }
+        var install = Path.Combine(root, SettingsProfile.ToString("N"));
+        try { using var file = File.OpenRead(SettingsFile(install)); throw new Exception("Nonadmin read raw settings."); }
+        catch (UnauthorizedAccessException) { }
+        try { using var files = new WindowsManagedServerSettingsReader(new WindowsManagedStorageRoot(root, service)).Read(SettingsProfile, install); throw new Exception("Nonadmin invoked protected settings adapter."); }
+        catch (BoundedFileReadException ex) when (ex.Failure == FileReadFailure.AccessDenied) { }
     }
 }
