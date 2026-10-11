@@ -34,7 +34,9 @@ public static partial class WindowsIntegration
         async Task<string> Run(int expected, params string[] command)
         {
             using var output = new StringWriter(); using var error = new StringWriter();
-            var result = await OfflineHostCli.RunAsync(command, location, output, error);
+            // Recovery must not depend on unrelated game-storage availability or layout.
+            var commandLocation = command[0] == "bootstrap" ? location : location with { ManagedStorageRoot = location.HostRoot };
+            var result = await OfflineHostCli.RunAsync(command, commandLocation, output, error);
             Check(result == expected, "Offline command result disagreed: " + command[0] + "; " + error);
             return output.ToString();
         }
@@ -127,6 +129,7 @@ public static partial class WindowsIntegration
             }
             finally { CryptographicOperations.ZeroMemory(hmac); await cache.ReconcileAsync([]); }
             Console.WriteLine("PASS integration: production offline command handler, elevation/running-service/lease denial, protected ticket preparation and rollback, lost/compromised/legacy machine recovery and startup reconciliation");
+            Console.WriteLine("PASS integration: Owner rotation/rehome and machine recovery remain independent of unrelated managed storage layout.");
         }
         finally { Microsoft.Data.Sqlite.SqliteConnection.ClearPool(connection); }
     }

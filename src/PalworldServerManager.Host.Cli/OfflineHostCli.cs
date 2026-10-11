@@ -49,7 +49,7 @@ public static class OfflineHostCli
             await Stopped().ConfigureAwait(false); // concurrent service startup still cannot obtain our lease
             var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", location.ServiceName).Translate(typeof(SecurityIdentifier));
             platform.ValidateOfflineDataRoot(serviceSid, ct);
-            if (location.ManagedStorageRoot is { } managedRoot)
+            if (command.Kind == "bootstrap" && location.ManagedStorageRoot is { } managedRoot)
             {
                 var storage = new WindowsManagedStorageRoot(managedRoot, serviceSid);
                 storage.RequireDisjoint(location.HostRoot, location.PublicTrustRoot, location.HandoffRoot);
