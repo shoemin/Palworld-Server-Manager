@@ -106,8 +106,14 @@ internal static class BoundedFileReaderTests
     internal static Task AccessDeniedAndCleanup()
     {
         using var fixture = new Fixture(); File.WriteAllText(fixture.FilePath, "SYNTHETIC-PRIVATE");
-        var file = new FileInfo(fixture.FilePath); var original = file.GetAccessControl();
-        using var identity = WindowsIdentity.GetCurrent(); var denied = file.GetAccessControl();
+        var file = new FileInfo(fixture.FilePath);
+        using var identity = WindowsIdentity.GetCurrent();
+        // A known protected fixture DACL avoids inherited-ACL canonicalization differences
+        // between developer and CI temp directories, while preserving exact restoration.
+        var baseline = new FileSecurity(); baseline.SetAccessRuleProtection(true, false);
+        baseline.AddAccessRule(new(identity.User!, FileSystemRights.FullControl, AccessControlType.Allow));
+        file.SetAccessControl(baseline);
+        var original = file.GetAccessControl(); var denied = file.GetAccessControl();
         denied.AddAccessRule(new(identity.User!, FileSystemRights.ReadData, AccessControlType.Deny));
         try
         {
