@@ -7439,3 +7439,27 @@ A1 parent-authority coverage and native startup failures corrected before accept
 Whole47/48 remains IN PROGRESS. Real game/environment/descendant/recovery qualification, explicit Windows parity and release remain pending; accessibility WAIVED, never PASS. Next action under trial authorization is PR creation and fresh B review, then final all-three CI/Docs/head/base/clean/source-equivalence gates before experiment-only merge.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48d / PR194 - Review B PASS, final gates pending
+
+2026-10-10. Fresh post-PR review of exact candidatec224bbb273ea00e7ba76f2b0d39040814c24d0ac against base15bc78e81921e571ee7e0129b018859e7ac63ff3. Re-read all five files, full native helper and fixture call/readiness/dispatch changes. No substantive B finding. Executable0bad243 unchanged; candidateDocs38107580558 PASS. Local763/763/build/UI/actual SDK evidence remains applicable. Completed service/native logs from38107062246 inspected directly; final ordinary remote job and final-head Docs are still required.
+
+Rechecked failure behavior separately: failed create never produces readiness; only exact returned child handle may be terminated; signal is required before exit-code success; disposing the desktop restores and compares its saved station DACL even after constructor/child failure. Service authentication LUID is checked before any station mutation. Restricting SIDs exclude the service's shared logon SID; public World/Users access is intentional and not a game sandbox claim. The copied token's default-DACL change applies to child-created objects, not parent-process or Host-file permissions. Inherited environment is confined to this synthetic fixture; an explicit production environment remains required. No suspended launch, descendant recovery or durable finalization is claimed by this test.
+
+| Invariant | Fresh whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | All five changed files are SelfTest/docs; frozen production dependencies unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing disposable Host owns synthetic effects; no second production authority or state writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client authority, credential, dependency or outbound route change. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Host/server identity and trust protocols unchanged; actual rotation/recovery fixture evidence retained. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal/Owner/bootstrap changes; both parent and child require actual virtual-service context. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Independent authorization and Active trust untouched; actual PAKE/re-pair/recovery evidence reviewed. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant issuance/convenience/creator changes or authority inferred from test OS identity. | PASS |
+| PROTO-001 | No public protocol changes; missing/false private readiness fails closed. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Test-only retained-handle cleanup; no persistent launch/stopped proof or existing lock/recovery behavior weakened. | PASS |
+| SEC-001 | All four actual child executions deny tested private-file/parent rights; only synthetic data, bounded diagnostics, verified DACL restoration and complete cleanup. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration, interactive service action, shared OS branch or Linux work; exact platform test scope retained. | PASS |
+
+All40 covered, stale-reference search and acceptance scope rechecked. Five rounds,298 cumulative planned; accepted escape count remains12, all corrected. No pending owner decision; next gate is completed all-three CI logs, final Docs and exact live head/base/clean/executable equivalence before experiment-only merge. No canonical state change or real Palworld/parity/release claim.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
