@@ -20,7 +20,8 @@ if (args.Length > 0)
         await SettingsSnapshotReaderTests.AmbiguityParseBoundsAndFailuresPreserveMetadata();
         await SettingsSnapshotReaderTests.OrderedReadsAndQueuedCancellation();
         await SettingsSnapshotReaderTests.CurrentReadValidatorsAreReadOnlyAndScoped();
-        Console.WriteLine("PASS authorized settings snapshots: seven groups."); return 0;
+        await SettingsSnapshotReaderTests.QueuedRevocationRefusesBeforeFileAccess();
+        Console.WriteLine("PASS authorized settings snapshots: eight groups."); return 0;
     }
     if (args is ["--managed-settings-read-probe"])
     {
@@ -1079,6 +1080,7 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Settings snapshots AmbiguityParseBoundsAndFailuresPreserveMetadata", SettingsSnapshotReaderTests.AmbiguityParseBoundsAndFailuresPreserveMetadata),
     ("Settings snapshots OrderedReadsAndQueuedCancellation", SettingsSnapshotReaderTests.OrderedReadsAndQueuedCancellation),
     ("Settings snapshots CurrentReadValidatorsAreReadOnlyAndScoped", SettingsSnapshotReaderTests.CurrentReadValidatorsAreReadOnlyAndScoped),
+    ("Settings snapshots QueuedRevocationRefusesBeforeFileAccess", SettingsSnapshotReaderTests.QueuedRevocationRefusesBeforeFileAccess),
     ("Managed settings exact routing and owned lifetime", ManagedServerSettingsReaderTests.ExactRoutingAndOwnedLifetime),
     ("Managed settings binding refusal before IO", ManagedServerSettingsReaderTests.BindingRefusalBeforeIo),
     ("Managed settings optional defaults and failure clearing", ManagedServerSettingsReaderTests.OptionalDefaultsAndFailureClearing),

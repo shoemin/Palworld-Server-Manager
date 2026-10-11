@@ -32,7 +32,8 @@ internal static class SettingsSnapshotReaderTests
             if (Failure is not null) throw Failure;
             var active = Config(Active); var defaults = Defaults is null ? null : Config(Defaults);
             Owned.Add(active); if (defaults is not null) Owned.Add(defaults);
-            DuringRead?.Invoke(); return new(active, defaults);
+            try { DuringRead?.Invoke(); return new(active, defaults); }
+            catch { Array.Clear(active); if (defaults is not null) Array.Clear(defaults); throw; }
         }
     }
     private sealed class Rig : IDisposable
@@ -50,11 +51,15 @@ internal static class SettingsSnapshotReaderTests
         internal Wire.ServerRef WireServer => new() { AuthoritativeHostId = F.HostId.ToString("D"), ServerProfileId = Server.ServerProfileId.ToString("D") };
         internal Rig()
         {
+            try
+            {
             Server = new(F.HostId, Guid.NewGuid()); Files.Expected = Server.ServerProfileId;
             F.Execute($"INSERT INTO LocalPrincipals (LocalPrincipalId,OsPrincipalRef,PublicVerificationKey,IsOwner,State,CreatedUtc) VALUES ('{User:D}','reader-native','reader-public',0,'Active','{F.Time.Now:O}');");
             F.Execute($"INSERT INTO TrustedManagers (PeerHostId,State,CurrentTrustedPublicKeyFingerprint,CreatedUtc) VALUES ('{F.PeerId:D}','Active','{new string('B',64)}','{F.Time.Now:O}');");
             F.Execute($"INSERT INTO ServerInventory (ServerProfileId,AuthoritativeHostId,DisplayName,InstallPath,CreatedUtc) VALUES ('{Server.ServerProfileId:D}','{F.HostId:D}','fixture','managed-fixture','{F.Time.Now:O}');");
             Reader = new(F.Database, F.HostId, Files);
+            }
+            catch { F.Dispose(); throw; }
         }
         internal Guid Grant(bool peer, ServerCapability capability = ServerCapability.ViewServer)
         {
@@ -93,6 +98,9 @@ internal static class SettingsSnapshotReaderTests
             Check(r.Read(peer, reader: new(r.F.Database, r.F.HostId, r.Files)).Revision == "3");
             r.Files.Defaults = null; var absent = r.Read(peer); Check(absent.Revision == "3" && absent.Entries.All(e => e.InstallationDefault is null));
             Check(r.F.Count("ServerCapabilityGrants") == grants && r.F.Count("ConfigurationContentObservations") == 1);
+            r.Files.Active = "DayTimeSpeedRate=NaN";
+            var invalid = r.Read(peer).Entries.Single();
+            Check(invalid.Configured.Value == "NaN" && invalid.Configured.Validation == Wire.SettingsValidationCode.FiniteNumberRequired);
         }
         return Task.CompletedTask;
     }
@@ -205,10 +213,11 @@ internal static class SettingsSnapshotReaderTests
         using var entered = new ManualResetEventSlim(); using var release = new ManualResetEventSlim(); using var queued = new ManualResetEventSlim(); using var cancel = new CancellationTokenSource();
         r.Files.DuringRead = () => { entered.Set(); if (!release.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException(); };
         var first = Task.Run(() => r.Read());
+        Task<Wire.SettingsSnapshot>? second = null;
         try
         {
             Check(entered.Wait(TimeSpan.FromSeconds(10)));
-            var second = Task.Run(() => r.Reader.Read(r.WireServer, s =>
+            second = Task.Run(() => r.Reader.Read(r.WireServer, s =>
             {
                 r.Policy.RequireLocalServerCapability(r.Local, ServerCapability.ViewServer, s, cancel.Token); queued.Set();
             }, (c, tx, s) => r.Policy.ValidateLocalServerCapability(c, tx, r.Local, ServerCapability.ViewServer, s, cancel.Token), cancel.Token));
@@ -216,7 +225,13 @@ internal static class SettingsSnapshotReaderTests
             try { await second; throw new Exception("Queued cancellation succeeded."); } catch (OperationCanceledException) { }
             Check(r.Files.Calls == 1);
         }
-        finally { release.Set(); }
+        finally
+        {
+            release.Set();
+            // Drain even when an assertion fails, before disposing the database/gates.
+            try { await first; } catch { }
+            if (second is not null) { try { await second; } catch { } }
+        }
         Check((await first).Revision == "1"); r.Files.DuringRead = null;
         var many = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() => r.Read())));
         Check(many.All(x => x.Revision == "1") && r.Files.Owned.All(a => a.All(b => b == 0)));
@@ -233,6 +248,7 @@ internal static class SettingsSnapshotReaderTests
             void Local(ServerCapability cap = ServerCapability.ViewServer) => r.Policy.ValidateLocalServerCapability(r.F.Writer, tx, r.Local, cap, r.Server);
             void Remote(PeerGrantMutationActor? proof = null, ServerRef? target = null) => r.Policy.ValidateRemoteServerCapability(r.F.Writer, tx, proof ?? peer, ServerCapability.ViewServer, target ?? r.Server);
             Local(); Remote();
+            using (var call = new PeerPermissionCall(r.Policy, peer, default)) call.ValidateServer(r.F.Writer, tx, ServerCapability.ViewServer, r.Server);
             Reject<UnauthorizedAccessException>(() => Local(ServerCapability.EditSettings));
             Reject<ArgumentException>(() => Local((ServerCapability)int.MaxValue));
             Reject<UnauthorizedAccessException>(() => Remote(target: new(r.F.PeerId, r.Server.ServerProfileId)));
@@ -251,7 +267,13 @@ internal static class SettingsSnapshotReaderTests
             using var canceledCall = new PeerPermissionCall(r.Policy, peer, canceled.Token);
             Reject<OperationCanceledException>(() => canceledCall.ValidateServer(r.F.Writer, tx, ServerCapability.ViewServer, r.Server));
             using var validCall = new LocalPermissionCall(r.Policy, r.Local, default);
-            Task.Run(() => Reject<InvalidOperationException>(() => validCall.ValidateServer(r.F.Writer, tx, ServerCapability.ViewServer, r.Server))).GetAwaiter().GetResult();
+            Exception? threadFailure = null;
+            var thread = new Thread(() =>
+            {
+                try { Reject<InvalidOperationException>(() => validCall.ValidateServer(r.F.Writer, tx, ServerCapability.ViewServer, r.Server)); }
+                catch (Exception ex) { threadFailure = ex; }
+            }) { IsBackground = true };
+            thread.Start(); Check(thread.Join(TimeSpan.FromSeconds(10)) && threadFailure is null);
             Check(ReferenceEquals(tx.Connection, r.F.Writer)); tx.Rollback();
         }
         Check(r.F.Count("AuditEvents") == audits && r.Policy.Read().Revision == revision);
@@ -262,5 +284,36 @@ internal static class SettingsSnapshotReaderTests
             Reject<ArgumentException>(() => new ServerInventoryRepository(r.F.Database, r.F.HostId).ValidateUnchanged(other.F.Writer, tx, registered));
         }
         r.Unobserved(); return Task.CompletedTask;
+    }
+    internal static async Task QueuedRevocationRefusesBeforeFileAccess()
+    {
+        using var r = new Rig(); var grant = r.Grant(false);
+        using var entered = new ManualResetEventSlim(); using var release = new ManualResetEventSlim(); using var queued = new ManualResetEventSlim();
+        r.Files.DuringRead = () => { entered.Set(); if (!release.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException(); };
+        // An Owner read holds the observation order while the independently authorized user's read queues.
+        var first = Task.Run(() => r.Reader.Read(r.WireServer,
+            s => r.Policy.RequireLocalServerCapability(r.Owner, ServerCapability.ViewServer, s),
+            (c, tx, s) => r.Policy.ValidateLocalServerCapability(c, tx, r.Owner, ServerCapability.ViewServer, s)));
+        Task<Wire.SettingsSnapshot>? second = null;
+        try
+        {
+            Check(entered.Wait(TimeSpan.FromSeconds(10)));
+            second = Task.Run(() => r.Reader.Read(r.WireServer, s =>
+            {
+                r.Policy.RequireLocalServerCapability(r.Local, ServerCapability.ViewServer, s); queued.Set();
+            }, (c, tx, s) => r.Policy.ValidateLocalServerCapability(c, tx, r.Local, ServerCapability.ViewServer, s)));
+            Check(queued.Wait(TimeSpan.FromSeconds(10)));
+            r.Policy.InvalidateServerSubtree(r.Owner, r.Policy.Read().Revision, grant);
+        }
+        finally
+        {
+            release.Set();
+            try { await first; } catch { }
+            if (second is not null) { try { await second; } catch { } }
+        }
+        Check((await first).Revision == "1");
+        Check(second is not null);
+        try { await second!; throw new Exception("Queued revoked read succeeded."); } catch (UnauthorizedAccessException) { }
+        Check(r.Files.Calls == 1 && r.Files.Owned.All(a => a.All(b => b == 0)));
     }
 }
