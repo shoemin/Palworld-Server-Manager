@@ -7307,3 +7307,13 @@ Corrected executable0dac0c404432cb46c61f205ecbea4d2183781db7 has local755/755/ze
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows APIs stay behind Host-side seam; no migration, shared-Core OS branch, interactive shell or Linux code. Actual synthetic evidence does not claim real Palworld/service launch/parity/release. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48c / PR192 — accepted retained process observation handles
+
+2026-10-10. Merged only into experiment/astra-v0.5.0 as8dcbe2b2299e4e4d7c185194a997b99bbcdcf1ee. Final reviewed head80844e9a121f998e05136a70f7f73e7c52e053a0; executable0dac0c404432cb46c61f205ecbea4d2183781db7. All-three CI38103088393 PASS; completed native114362900297/build114362900289/Windows114362900190 logs inspected: Rust2/native16/genuine ceremonies,755/755 including both previously failed process groups,UI/zero warnings,four service starts each with five recovery/four unpair cases and complete service/group/users/profiles/files cleanup. Candidate Docs38103362030/final Docs38103500281 PASS. Live exact head/base/clean/source-equivalence gates PASS. Ten-file change411 insertions/3 deletions.
+
+Local755/755,ten focused groups,independent259/-1 retained-lease observation after launcher-object disposal,zero-warning build,UI/actual SDK/strict Docs PASS. A1 constructor cleanup plus two remote-test fixture assumptions corrected; renewed A/B0/all40 clean. Three rounds,288 cumulative accepted cycles. Accepted escape12 from PR191's asynchronous-exit oracle corrected here; twelve accepted escapes now corrected. Failed38102044377 and canceled38101720074 remain superseded, never PASS. Accepted132 experimental PRs61–192,fourteen canonical children SHADOW DONE. Whole47/48 IN PROGRESS; no owner decision pending.
+
+Separate read-only design experiment found a named job cannot be reopened by name after its last handle closes even while its owned child runs; no job-based recovery design is accepted from that experiment. Continue with authorized47 schema-read API (ViewServer), while full protected settings IO/stopped-state/lifecycle qualification remains pending. Approved independent read/save permissions and six creator limits unchanged. Accessibility WAIVED never PASS; no real Palworld/service-launch isolation/parity/Linux/release or canonical/main change.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
