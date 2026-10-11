@@ -39,9 +39,7 @@ public sealed partial class GrantPolicyRepository
         {
             // Local outbound authority is only one ceiling. An active destination is also
             // required even for Owner; the remote Host independently checks this machine.
-            var targetAllowed=actor.Actual.Kind==ActorKind.RemoteManager?attempt.Host==hostId:
-                attempt.Host==hostId||before.Policy.IsActive(ActorRef.RemoteManager(attempt.Host));
-            if(!targetAllowed||!permits(before.Policy))throw new UnauthorizedAccessException("Capability use refused.");
+            if(!TargetAllowed(actor,attempt.Host,before.Policy)||!permits(before.Policy))throw new UnauthorizedAccessException("Capability use refused.");
             return true;
         },ct);
         var after=Read(c,tx);actor.Require(c,tx,after);RequireRevision(before.Revision,after.Revision);

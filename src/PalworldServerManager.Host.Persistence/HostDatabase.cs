@@ -19,6 +19,14 @@ public sealed class HostDatabase
 
     public string DatabasePath => _root.DatabasePath;
 
+    // Composition guard for read-only validators running inside another Host repository's transaction.
+    internal void RequireOwnedTransaction(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        ArgumentNullException.ThrowIfNull(connection); ArgumentNullException.ThrowIfNull(transaction);
+        if (!ReferenceEquals(transaction.Connection, connection) || !string.Equals(connection.DataSource, DatabasePath, StringComparison.Ordinal))
+            throw new ArgumentException("The authoritative Host database transaction is required.");
+    }
+
     public SqliteConnection OpenConnection()
     {
         _root.EnsureCreated();

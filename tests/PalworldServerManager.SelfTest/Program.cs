@@ -11,6 +11,17 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--settings-snapshot-probe"])
+    {
+        await SettingsSnapshotReaderTests.ViewOnlyPrivacyAndDurableRevisions();
+        await SettingsSnapshotReaderTests.ScopeAndNoReadWithoutView();
+        await SettingsSnapshotReaderTests.ChangedProofOrRegistrationCannotCommit();
+        await SettingsSnapshotReaderTests.PendingChangesRollBackOnFinalValidation();
+        await SettingsSnapshotReaderTests.AmbiguityParseBoundsAndFailuresPreserveMetadata();
+        await SettingsSnapshotReaderTests.OrderedReadsAndQueuedCancellation();
+        await SettingsSnapshotReaderTests.CurrentReadValidatorsAreReadOnlyAndScoped();
+        Console.WriteLine("PASS authorized settings snapshots: seven groups."); return 0;
+    }
     if (args is ["--managed-settings-read-probe"])
     {
         await ManagedServerSettingsReaderTests.ExactRoutingAndOwnedLifetime();
@@ -1061,6 +1072,13 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Content revisions FinalProofCancellationAndFaultsRollBack", ConfigurationContentObservationTests.FinalProofCancellationAndFaultsRollBack),
     ("Content revisions MigrationPreservesHistoryAndRollsBack", ConfigurationContentObservationTests.MigrationPreservesHistoryAndRollsBack),
     ("Content revisions InvalidMetadataBoundsAndOverflowRefuse", ConfigurationContentObservationTests.InvalidMetadataBoundsAndOverflowRefuse),
+    ("Settings snapshots ViewOnlyPrivacyAndDurableRevisions", SettingsSnapshotReaderTests.ViewOnlyPrivacyAndDurableRevisions),
+    ("Settings snapshots ScopeAndNoReadWithoutView", SettingsSnapshotReaderTests.ScopeAndNoReadWithoutView),
+    ("Settings snapshots ChangedProofOrRegistrationCannotCommit", SettingsSnapshotReaderTests.ChangedProofOrRegistrationCannotCommit),
+    ("Settings snapshots PendingChangesRollBackOnFinalValidation", SettingsSnapshotReaderTests.PendingChangesRollBackOnFinalValidation),
+    ("Settings snapshots AmbiguityParseBoundsAndFailuresPreserveMetadata", SettingsSnapshotReaderTests.AmbiguityParseBoundsAndFailuresPreserveMetadata),
+    ("Settings snapshots OrderedReadsAndQueuedCancellation", SettingsSnapshotReaderTests.OrderedReadsAndQueuedCancellation),
+    ("Settings snapshots CurrentReadValidatorsAreReadOnlyAndScoped", SettingsSnapshotReaderTests.CurrentReadValidatorsAreReadOnlyAndScoped),
     ("Managed settings exact routing and owned lifetime", ManagedServerSettingsReaderTests.ExactRoutingAndOwnedLifetime),
     ("Managed settings binding refusal before IO", ManagedServerSettingsReaderTests.BindingRefusalBeforeIo),
     ("Managed settings optional defaults and failure clearing", ManagedServerSettingsReaderTests.OptionalDefaultsAndFailureClearing),

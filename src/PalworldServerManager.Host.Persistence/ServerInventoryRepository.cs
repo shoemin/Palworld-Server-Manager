@@ -49,6 +49,24 @@ public sealed class ServerInventoryRepository
         }.ToString());
         c.Open();
         using var tx = c.BeginTransaction(deferred: true);
+        return Read(c, tx, server, ct);
+    }
+
+    // A read-only same-transaction check, including pending mutations, never a new writer.
+    public void ValidateUnchanged(SqliteConnection c, SqliteTransaction tx, ServerInventoryObservation expected, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(expected); database.RequireOwnedTransaction(c, tx);
+        var current = Read(c, tx, expected.Server, ct);
+        if (current is null || current.InstallPath != expected.InstallPath || current.CreatedUtc != expected.CreatedUtc ||
+            current.DisplayName != expected.DisplayName || current.GamePort != expected.GamePort || current.RestApiPort != expected.RestApiPort ||
+            current.ImportProvenance != expected.ImportProvenance)
+            throw new InvalidOperationException("Registered server changed during settings observation.");
+    }
+
+    private ServerInventoryObservation? Read(SqliteConnection c, SqliteTransaction tx, ServerRef server, CancellationToken ct)
+    {
+        if (server.AuthoritativeHostId != hostId) throw new ArgumentException("Authoritative local server required.");
+        ct.ThrowIfCancellationRequested();
         using (var identity = c.CreateCommand())
         {
             identity.Transaction = tx;
