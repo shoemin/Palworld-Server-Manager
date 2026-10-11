@@ -13,13 +13,13 @@ namespace PalworldServerManager.Host.Cli;
 // Trusted composition parameters for isolated actual-Windows tests, absent from CLI/RPC input.
 // The shipped executable always selects the one product Host.
 public sealed record OfflineHostLocation(string ServiceName, string ActivationGroup, string HostRoot,
-    string PublicTrustRoot, string HandoffRoot, string MutexName)
+    string PublicTrustRoot, string HandoffRoot, string MutexName, string? ManagedStorageRoot = null)
 {
     public static OfflineHostLocation Product()
     {
         var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "PalworldServerManager");
         return new(WindowsHostPlatform.ProductServiceName, WindowsHostPlatform.ProductActivationGroup,
-            Path.Combine(root, "Host"), Path.Combine(root, "PublicTrust"), Path.Combine(root, "OwnerHandoffs"), HostExclusivityLock.DefaultMutexName);
+            Path.Combine(root, "Host"), Path.Combine(root, "PublicTrust"), Path.Combine(root, "OwnerHandoffs"), HostExclusivityLock.DefaultMutexName, Path.Combine(root, "Servers"));
     }
 }
 
@@ -49,6 +49,12 @@ public static class OfflineHostCli
             await Stopped().ConfigureAwait(false); // concurrent service startup still cannot obtain our lease
             var serviceSid = (SecurityIdentifier)new NTAccount("NT SERVICE", location.ServiceName).Translate(typeof(SecurityIdentifier));
             platform.ValidateOfflineDataRoot(serviceSid, ct);
+            if (command.Kind == "bootstrap" && location.ManagedStorageRoot is { } managedRoot)
+            {
+                var storage = new WindowsManagedStorageRoot(managedRoot, serviceSid);
+                storage.RequireDisjoint(location.HostRoot, location.PublicTrustRoot, location.HandoffRoot);
+                storage.Provision(ct);
+            }
             ct.ThrowIfCancellationRequested();
             var database = new HostDatabase(new HostDataRoot(location.HostRoot));
             HostIdentityRecord identity;
