@@ -7285,3 +7285,25 @@ Reinspected all ten changed files against basef636d75eb4d01e2345bc17f6b668f4146a
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows APIs stay behind Host-side seam; no migration, shared-Core OS branch, interactive shell or Linux code. Actual synthetic evidence does not claim real Palworld/service launch/parity/release. | PASS |
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48c / PR192 — fresh final Review B
+
+Fresh review of429c4d2152a5d72cd4f36252c889af91e03dbfff againstf636d75eb4d01e2345bc17f6b668f4146a273735: all ten files reconsidered as a whole after renewed A, including unchanged observation code surrounding the partial-class/native declaration. Rechecked ABI types/rights, no PID-only attachment, same-handle identity and exit reads, failure/cancellation transfer cleanup, locked disposal, nullable unavailable exit codes, native259/-1 handling, and no production control or authority consumer. Rechecked test cleanup after assertion failure, transient token restoration without shared-token changes, actual access-denial oracle and native exit oracle. Ten focused groups rerun after renewed A PASS. B0 after both remote-test corrections; no unresolved source or invariant finding. All40 renewed below. Source/ref search clean. Three rounds/288 cumulative planned; accepted escape12 corrected here, pending acceptance. Earlier CI failure remains visible and is not retried as if it were a transient pass.
+
+Corrected executable0dac0c404432cb46c61f205ecbea4d2183781db7 has local755/755/zero-warning build/UI/actual SDK/strict Docs and independent259/-1 lease evidence PASS. Candidate Docs38103362030 PASS. Native CI114362900297 completed actual log inspected: Rust2/native16 and genuine Host/Owner PAKE, re-pair, simultaneous recovery and first-contact PASS. All-three CI38103088393 completed logs and exact final-head Docs/live head/base/clean/source-equivalence remain mandatory before merge. Scope remains retained read-only observation only, not whole47/48 completion, actual game/service launch isolation, parity, Linux or release qualification. No owner decision pending; approved permissions and six creator limits preserved.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform contracts/partial implementation; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Retained read-only OS handle, no game control, store write, new Host or operation executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No ordinary-client reference/transport/credential/outbound connection changes; leases remain trusted Host data. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | PID/time/image matches exact opened OS object; no server identity or ownership invented. Host still maps qualified ServerRef. No Host identity/rotation changes. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No principal/bootstrap/Owner/channel effects or credential access. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network/remote shortcut; current dual permissions remain required by future Host operations. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grants/defaults/presets/creator/delegation paths changed; an attachment is not permission to control a server. | PASS |
+| PROTO-001 | No wire/negotiation change. Unknown attachment/exit state explicit and non-authorizing; private factories prevent contradictory result shapes. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/revision/lock/finalization changed. One observed exit is not whole-world quiescence. Same handle preserves exact exit bits including259/-1; missing exit code is explicit, never fabricated success. | PASS |
+| SEC-001 | Query/synchronize only, no token/VM/private-key rights or raw path logs. Safe ownership transfer, deterministic cancellation/failure disposal, locked read/dispose; scoped reduced-token native ACCESS_DENIED independently verified, incomplete capture/Unknown attachment preserve the old handle; native exit oracle avoids managed shortcut. Test-only impersonation does not change the shared token. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Windows APIs stay behind Host-side seam; no migration, shared-Core OS branch, interactive shell or Linux code. Actual synthetic evidence does not claim real Palworld/service launch/parity/release. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
