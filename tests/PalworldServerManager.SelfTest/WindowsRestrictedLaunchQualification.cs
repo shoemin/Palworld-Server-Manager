@@ -40,8 +40,10 @@ internal static class WindowsRestrictedLaunchQualification
             Check(denied, "Restricted child replaced private canary DACL.");
             stage = 45;
             Check(int.TryParse(parent, out var pid) && pid > 0 && pid != Environment.ProcessId, "Invalid parent.");
+            var authorityStage = 50;
             foreach (var access in new uint[] { 0x1, 0x2, 0x8, 0x10, 0x20, 0x40, 0x80, 0x40000, 0x80000 })
             {
+                stage = authorityStage++;
                 using var handle = OpenProcess(access, false, pid); var error = Marshal.GetLastWin32Error();
                 Check(handle.IsInvalid && error == 5, "Restricted child obtained parent process authority.");
             }
@@ -83,7 +85,7 @@ internal static class WindowsRestrictedLaunchQualification
         {
             // Inherits the fixture Host root's service/Admin/SYSTEM-only ACL.
             File.WriteAllText(canary, "SYNTHETIC-NOT-A-CREDENTIAL");
-            NativeCheck(OpenProcessToken(new(-1), 0xB, out var source), "source token");
+            NativeCheck(OpenProcessToken(new(-1), 0x8B, out var source), "source token");
             using (source)
             using (var sids = new RestrictingSids(source))
             {
@@ -92,6 +94,7 @@ internal static class WindowsRestrictedLaunchQualification
                 using (reduced)
                 using (var desktop = new OwnedDesktop(identity.User))
                 {
+                    ConfigureChildObjectDacl(reduced, identity.User, sids.ChildSid);
                     var executable = Environment.ProcessPath ?? throw new InvalidOperationException();
                     var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture) };
                     var command = new StringBuilder(WindowsClientCommandLine.Build(new ClientLaunchTarget(executable, arguments)));
@@ -133,11 +136,14 @@ internal static class WindowsRestrictedLaunchQualification
     {
         private readonly List<IntPtr> allocated = [];
         internal SidAndAttributes[] Values { get; }
+        internal SecurityIdentifier ChildSid { get; }
         internal RestrictingSids(SafeAccessTokenHandle source)
         {
+            var nonce = Guid.NewGuid().ToByteArray();
+            ChildSid = new($"S-1-5-21-{BitConverter.ToUInt32(nonce, 0)}-{BitConverter.ToUInt32(nonce, 4)}-{BitConverter.ToUInt32(nonce, 8)}-{BitConverter.ToUInt32(nonce, 12)}");
             try
             {
-                var identities = new List<SecurityIdentifier> { new(WellKnownSidType.WorldSid, null), new(WellKnownSidType.BuiltinUsersSid, null) };
+                var identities = new List<SecurityIdentifier> { new(WellKnownSidType.WorldSid, null), new(WellKnownSidType.BuiltinUsersSid, null), ChildSid };
                 GetTokenInformation(source, 28, IntPtr.Zero, 0, out var needed);
                 if (needed > 0)
                 {
@@ -160,6 +166,21 @@ internal static class WindowsRestrictedLaunchQualification
             catch { Dispose(); throw; }
         }
         public void Dispose() { foreach (var pointer in allocated) Marshal.FreeHGlobal(pointer); allocated.Clear(); }
+    }
+
+    private static void ConfigureChildObjectDacl(SafeAccessTokenHandle reduced, SecurityIdentifier service, SecurityIdentifier child)
+    {
+        // Only this newly created token: let the child access its own new kernel objects.
+        // The unique restricting SID is not granted access to any Host object or file.
+        NativeCheck(ConvertStringSecurityDescriptorToSecurityDescriptorW($"D:P(A;;GA;;;{service.Value})(A;;GA;;;SY)(A;;GA;;;{child.Value})", 1, out var sd, out _), "child object DACL");
+        var information = Marshal.AllocHGlobal(IntPtr.Size);
+        try
+        {
+            NativeCheck(GetSecurityDescriptorDacl(sd, out var present, out var dacl, out _), "read child DACL");
+            Check(present && dacl != IntPtr.Zero, "Missing child DACL."); Marshal.WriteIntPtr(information, dacl);
+            NativeCheck(SetTokenInformation(reduced, 6, information, IntPtr.Size), "set copied token default DACL");
+        }
+        finally { Marshal.FreeHGlobal(information); LocalFree(sd); }
     }
 
     private sealed class OwnedDesktop : IDisposable
@@ -212,6 +233,8 @@ internal static class WindowsRestrictedLaunchQualification
     [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool OpenProcessToken(IntPtr process, uint access, out SafeAccessTokenHandle token);
     [DllImport("advapi32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsTokenRestricted(SafeAccessTokenHandle token);
     [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetTokenInformation(SafeAccessTokenHandle token, int kind, IntPtr buffer, int length, out int needed);
+    [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetTokenInformation(SafeAccessTokenHandle token, int kind, IntPtr buffer, int length);
+    [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetSecurityDescriptorDacl(IntPtr descriptor, [MarshalAs(UnmanagedType.Bool)] out bool present, out IntPtr dacl, [MarshalAs(UnmanagedType.Bool)] out bool defaulted);
     [DllImport("advapi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CreateRestrictedToken(SafeAccessTokenHandle source, uint flags, uint disabledCount, IntPtr disabled, uint deletedCount, IntPtr deleted, uint restrictCount, [In] SidAndAttributes[] restrict, out SafeAccessTokenHandle token);
     [DllImport("advapi32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool CreateProcessAsUserW(SafeAccessTokenHandle token, string application, StringBuilder command, IntPtr processSecurity, IntPtr threadSecurity, [MarshalAs(UnmanagedType.Bool)] bool inherit, uint flags, IntPtr environment, string directory, ref StartupInfo startup, out ProcessInfo info);
     [DllImport("kernel32.dll", SetLastError = true)] private static extern uint WaitForSingleObject(SafeProcessHandle process, uint milliseconds);
