@@ -11,6 +11,15 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--managed-settings-read-probe"])
+    {
+        await ManagedServerSettingsReaderTests.ExactRoutingAndOwnedLifetime();
+        await ManagedServerSettingsReaderTests.BindingRefusalBeforeIo();
+        await ManagedServerSettingsReaderTests.OptionalDefaultsAndFailureClearing();
+        await ManagedServerSettingsReaderTests.CancellationAndFinalPolicyRefusal();
+        await ManagedServerSettingsReaderTests.ActualFilesStayUnchanged();
+        Console.WriteLine("PASS managed settings reads: five groups; actual protected service qualification separate."); return 0;
+    }
     if (args is ["--configuration-observation-probe"])
     {
         await ConfigurationContentObservationTests.DurableBytesAndQualifiedScopes();
@@ -1052,6 +1061,11 @@ var tests = new List<(string Name, Func<Task> Run)>
     ("Content revisions FinalProofCancellationAndFaultsRollBack", ConfigurationContentObservationTests.FinalProofCancellationAndFaultsRollBack),
     ("Content revisions MigrationPreservesHistoryAndRollsBack", ConfigurationContentObservationTests.MigrationPreservesHistoryAndRollsBack),
     ("Content revisions InvalidMetadataBoundsAndOverflowRefuse", ConfigurationContentObservationTests.InvalidMetadataBoundsAndOverflowRefuse),
+    ("Managed settings exact routing and owned lifetime", ManagedServerSettingsReaderTests.ExactRoutingAndOwnedLifetime),
+    ("Managed settings binding refusal before IO", ManagedServerSettingsReaderTests.BindingRefusalBeforeIo),
+    ("Managed settings optional defaults and failure clearing", ManagedServerSettingsReaderTests.OptionalDefaultsAndFailureClearing),
+    ("Managed settings cancellation and final policy refusal", ManagedServerSettingsReaderTests.CancellationAndFinalPolicyRefusal),
+    ("Managed settings actual files stay unchanged", ManagedServerSettingsReaderTests.ActualFilesStayUnchanged),
     ("Managed storage exact policy and owners", ManagedStorageRootTests.ExactPolicyAndOwners),
     ("Managed storage unsafe policy forms", ManagedStorageRootTests.UnsafePolicyForms),
     ("Managed storage exact service and disjoint paths", ManagedStorageRootTests.ExactServiceAndDisjointPaths),
