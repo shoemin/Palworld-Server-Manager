@@ -79,9 +79,14 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 static byte[] FileHash(string path) { using var file = File.OpenRead(path); return SHA256.HashData(file); }
                 void RequireParentSigning()
                 {
-                    if (key.Key.ExportPolicy != CngExportPolicies.None) throw new Exception("Fixture native key is exportable.");
-                    var signature = key.SignData("restricted-child-fixture"u8, HashAlgorithmName.SHA256);
-                    try { if (!key.VerifyData("restricted-child-fixture"u8, signature, HashAlgorithmName.SHA256)) throw new Exception("Parent native key did not verify."); }
+                    using var reopened = CngKey.Open(key.Key.KeyName!, CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                        CngKeyOpenOptions.MachineKey | CngKeyOpenOptions.Silent);
+                    using var signer = new ECDsaCng(reopened);
+                    if (reopened.ExportPolicy != CngExportPolicies.None || !reopened.IsMachineKey || reopened.UniqueName != key.Key.UniqueName ||
+                        !signer.ExportSubjectPublicKeyInfo().AsSpan().SequenceEqual(key.ExportSubjectPublicKeyInfo()))
+                        throw new Exception("Fixture native key identity or protection changed.");
+                    var signature = signer.SignData("restricted-child-fixture"u8, HashAlgorithmName.SHA256);
+                    try { if (!key.VerifyData("restricted-child-fixture"u8, signature, HashAlgorithmName.SHA256)) throw new Exception("Reopened parent native key did not verify."); }
                     finally { CryptographicOperations.ZeroMemory(signature); }
                 }
                 RequireParentSigning(); var nativeHash = FileHash(keyFile); var credentialHash = FileHash(credentialFile);

@@ -61,6 +61,14 @@ internal static class WindowsRestrictedLaunchQualification
                     using (parentToken) Check(!opened && error == 5, "Restricted child could duplicate parent token.");
                 }
             }
+            // A failed provider/runtime is not proof that a protected key is isolated.
+            stage = 66;
+            using (var control = new ECDsaCng(256))
+            {
+                var signature = control.SignData("restricted-child-control"u8, HashAlgorithmName.SHA256);
+                try { Check(control.VerifyData("restricted-child-control"u8, signature, HashAlgorithmName.SHA256), "Child CNG control did not verify."); }
+                finally { CryptographicOperations.ZeroMemory(signature); }
+            }
             stage = 60; denied = false;
             try
             {
@@ -79,7 +87,10 @@ internal static class WindowsRestrictedLaunchQualification
             }
             catch (CryptographicException ex)
             {
-                if (ex.HResult is unchecked((int)0x80090010) or unchecked((int)0x80070005)) denied = true;
+                // Software KSP can conceal a protected key as NTE_BAD_KEYSET.
+                // The parent must freshly reopen this exact machine-key name before
+                // and after the child and verify unchanged identity/backing bytes.
+                if (ex.HResult is unchecked((int)0x80090010) or unchecked((int)0x80070005) or unchecked((int)0x80090016)) denied = true;
                 else return ex.HResult; // Numeric native status only; never exception/key/path text.
             }
             Check(denied, "Restricted child used native Host key.");
