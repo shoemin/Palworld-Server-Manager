@@ -7317,3 +7317,71 @@ Local755/755,ten focused groups,independent259/-1 retained-lease observation aft
 Separate read-only design experiment found a named job cannot be reopened by name after its last handle closes even while its owned child runs; no job-based recovery design is accepted from that experiment. Continue with authorized47 schema-read API (ViewServer), while full protected settings IO/stopped-state/lifecycle qualification remains pending. Approved independent read/save permissions and six creator limits unchanged. Accessibility WAIVED never PASS; no real Palworld/service-launch isolation/parity/Linux/release or canonical/main change.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47g — authorized settings schema API preflight
+
+2026-10-10. Basef2f6b83968d362b0fbf3860d1829831988919830 after accepted192. Current47 issue refreshed; dependencies remain satisfied in shadow lane. Implement bounded GetSettingsSchema for existing exact Host-qualified servers through the protected local Host channel and the existing Host-to-Host route. Owner-approved ViewServer authorizes this nonsecret read; EditSettings alone does not. Local user permission and destination machine ceiling remain independent. Catalog metadata only: no configured/default-file/effective values, password values, settings file IO, settings saves or stopped-state claim. Catalog-supplied default remains absent for secret/unknown sensitivity. Whole47 remains incomplete until protected read/save/revision/lifecycle integration.
+
+Impact: additive Core catalog enumeration (frozen95 names, no new semantics), schema DTO validation/feature negotiation/proto RPCs, Host mapping/permission-checked inventory existence, local/peer services and bounded peer client/generation routing, actual authenticated RPC and negative tests, docs/ledger. Preserve existing message-size bounds, exact qualified reply validation, current proof/permission checks before outbound work and before response, Active trust and generation ownership. No actor/Owner flags supplied by requests; no raw value metadata inference. No persistent writer/schema/operation lock/recovery change. Both read/save and six creator permissions/limits unchanged; every grant/default/delegation path remains canonical. No frozen WPF/LAN mutation, new client-to-Core dependency, Linux or UI work.
+
+All40 A/B audits, stale-reference search, immutable protobuf history, full build/self-tests/UI/actual SDK/strict Docs and all-three actual remote CI logs required. Tests must cover Owner and delegated ViewServer, denial of EditSettings-only/no grant/foreign target/missing server, revoked or stale proof, unnegotiated feature, independent remote ceilings, closed/bounded reply shapes and secret/default withholding. No product decision currently required. Exact RPC/feature names and catalog enumeration are implementation details under existing47 scope and approved read rule.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+Initial47g verification: build passed without warnings. First focused invocation correctly required the new immutable descriptor snapshots; generated four new snapshots without altering any prior fixture. The next focused invocation found a real error-boundary defect: the outer local-security dispatcher converted a permission denial into Internal/Unavailable before the new schema boundary could classify it. Moved the schema error boundary inside the remote action; no authorization was bypassed or network call made. All seven focused groups then passed. Added explicit remote feature and PeerBound refusal cases before full validation. Three verification rounds so far (291 cumulative planned); full local/remote checks and A/B pending. No owner decision or newly accepted escape.
+
+Review A identified A1, a positive-coverage gap: the tests proved EditSettings-only denial and both-grant success, but lacked an explicit successful ViewServer-only roundtrip at both remote ceilings. Added local View-only success and a remote success after removing both independent EditSettings grants. Production code is unchanged. Initial full local/remote executable2db6687224fd89411068cd2615b43dc3233018d0 may finish as superseded evidence; no rebuild while its local suite is active. Corrected full validation and renewed audits remain required. Fourth verification round planned,292 cumulative; no new accepted escape or owner decision.
+
+Initial full regression completed760/762: Recovery RPC WireAndImmutableHistory and Unpair RPC WireAndFeatureAreClosed retained the old exact peer protocol minor15 after this unit advanced it to16. Updated those two exact expectations; restricted recovery capabilities and closed feature checks remain unchanged. Searched all src/tests for old current-version assertions; no others found. Full corrected validation supersedes both earlier executables and CI runs, which are never counted as PASS. Fifth verification round planned,293 cumulative; no accepted escape or product decision.
+
+### #47g - Review A PASS
+
+2026-10-10. Executableb303012; local762/762, seven focused groups, zero-warning build, actual Avalonia UI/Windows SDK/strict Docs PASS. Fifth round,293 cumulative planned. Independent compiled mapper10908 bytes and1000 roundtrips/privacy refusals PASS. All-three remoteCI38105123767 pending; no remote PASS claimed.
+
+Reviewed every changed file against f2f6b83968d362b0fbf3860d1829831988919830, including additive protobuf descriptors and sibling recovery/unpair version expectations. Scope is one catalog-only schema endpoint through protected local and routed peer channels; whole47 remains IN PROGRESS. Owner read/save and creator decisions remain unchanged.
+
+Acceptance mapping: UI-independent Core enumeration and Core-independent Contracts; existing pure Host mapper reused; 95 names/10908 serialized bytes/no source values; actual registered-target Owner/View-only success; Edit-only/no-grant/exact-target/feature/trust/changed-credential refusals; two independent remote ceilings and authorization before outbound contact and reply; additive immutable descriptor validation. Existing unknown-key preservation/semantic patch/revision tests remain in the full suite, but configured read/save/stopped-state/durable-write integration is not claimed complete.
+
+A1 positive View-only coverage corrected locally and on both remote ceilings. Initial full regression exposed two stale exact-version test assertions, corrected to16 while keeping recovery feature closure. Earlier2db6687 and98408c4 CI are superseded, never counted as PASS. No further substantive finding after re-reading authorization call sites, lifetime/generation ownership, immutable request/reply copies, metadata/error redaction, bounds, test failure cleanup and all31 changed files. Stale search covers all new feature/RPC/catalog references and old current protocol minor assertions. No frozen/Core legacy, production permission issuer, persistent writer or client dependency changes.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN and legacy Core files unchanged; new Core file and Host paths only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing authoritative Host composition and read-only inventory observation; no settings-file IO or authoritative writes. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Contracts-only DTOs; ordinary clients use protected local RPC; machine credential and peer transport stay in generation-owned Host code. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Canonical qualified UUIDs, exact response target, pinned current TLS/incarnation proof before dispatch/response; no rotation/recovery shortcut. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Current initialized principal authentication through existing protected session dispatcher; no enrollment/bootstrap/Owner mutation or private credential disclosure. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Independent exact ViewServer on originating principal and receiving machine; Active trust; no-grant/PeerBound denial and revocation barriers; no cross-Host atomicity claim. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | Canonical grant-use checks per read, no grant/default/preset/delegation/creator mutation; EditSettings never implies ViewServer. | PASS |
+| PROTO-001 | Two explicit features, bounded closed validation, exact negotiation, recovery capabilities remain restricted; four additive immutable histories. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Catalog read has no configuration revision/write/lock/operation; no stale permit or stopped-state claim; cancellation and generation drain use existing ownership. | PASS |
+| SEC-001 | No settings values/paths/revisions transmitted; secret/unknown-sensitivity defaults withheld; constant errors; metadata and 16KiB bounds verified, caller mutations isolated. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration/source mutation/OS branching/shell/UI/Linux code; real Palworld/parity/release not claimed. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47g / PR193 - Review B PASS, merge evidence pending
+
+2026-10-10. Fresh post-PR review of candidatefab76a85b1a25be601d744e2098e0dc632e4aef2 against basef2f6b83968d362b0fbf3860d1829831988919830. Re-read the complete31-file diff, including all production paths, tests, additive descriptor changes and documentation; did not substitute Review A for this pass. Corrected one documentation heading encoding/outcome only. No substantive B finding. Executableb303012 unchanged; local762/762/seven focused/UI/actual SDK/zero-warning build/strict Docs and independent compiled-mapper evidence remain applicable. CandidateDocs38105518526 PASS. Final-head Docs and completed all-threeCI38105123767 logs remain required before merge.
+
+Reviewed authority races: current principal proof and exact ViewServer checked before outbound contact, before the remote read and before returning; destination separately checks current machine proof and exact permission. A former permission observation cannot grant a later action. TLS incarnation retained across negotiation/read; reconnection refused. Target mismatch, missing registration, absent feature and non-Active relationship fail closed. Bounds and sensitivity validation reject forged replies; unknown/raw definitions never carry defaults or source values. Clone/allocation ownership prevents request/response mutation of shared catalog. Cancellation uses generation ownership; read callbacks remain synchronous, so permission facades do not escape their lifetime/thread. This read performs no destructive effect needing rollback. Controlled test barriers release in finally and fixture apps/credentials are disposed.
+
+Acceptance recheck: endpoint provides catalog semantics only, not installed-value/effective/read-save completion. Canonical47/48 and their allowed-decision boundaries refreshed; no new product meaning, enum membership, field-test waiver or creator authority. Full lifecycle/real Palworld/parity/release remains unqualified, accessibility WAIVED never PASS.
+
+| Invariant | Fresh whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Diff has no frozen WPF, LAN or legacy Core mutation. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing Host runtimes/read-only inventory; no additional authority process or persistence writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Public Core-independent DTOs; local protected channel and Host-owned outbound transport; no ordinary-client machine key. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Canonical qualified target and reply, stable Host identity/current pinned credential/incarnation; recovery closure rechecked. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Existing current-principal/initialized/Owner verification; no enrollment or Owner-changing request fields. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Both exact independent read ceilings required; no trust-to-grant conversion, PeerBound ordinary reads rejected; no distributed commit claim. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No root/preset/default/delegation/creator issuance path changed; View-only positive/Edit-only negative evidence at both ceilings. | PASS |
+| PROTO-001 | New negotiated features closed; existing16KiB bound and exact target/shape checks; four histories added, none overwritten. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No editable-file revision, lifecycle authority, lock or durable operation change; later read/save requirements explicit. | PASS |
+| SEC-001 | Catalog-only values, unknown/secret defaults withheld, no raw exception propagation; source password values impossible in this reader. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No source migration, shell action, OS-specific shared-code branch or Linux implementation. | PASS |
+
+Five implementation/correction/verification rounds,293 cumulative planned; accepted escape count remains12, all corrected. Stale-reference search clean after updating sibling current-version tests; no unresolved owner decision. Merge gate must verify exact final head/base/clean state and source equivalence to executableCI head.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.

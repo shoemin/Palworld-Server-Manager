@@ -43,7 +43,7 @@ internal static class SettingsContractMapping
         }
         return copy;
     }
-    private static Wire.SettingsDefinition Definition(PalworldSettingDefinition d)
+    internal static Wire.SettingsDefinition Definition(PalworldSettingDefinition d)
     {
         var result = new Wire.SettingsDefinition
         {

@@ -15,6 +15,7 @@ public sealed partial class PeerSecurityRpcRuntime
     internal IPeerActivationHook Hook { get; }
     internal PeerTransportAuthentication Authentication { get; }
     internal PeerPermissionDispatcher Permissions { get; }
+    internal SettingsSchemaReader SettingsSchema { get; }
     internal PeerUnpairReceiver Unpair { get; }
     internal PeerRecoveryCompletionReceiver Recovery { get; }
     internal PeerUnpairCoordinator? UnpairNotifications {get;private set;}
@@ -43,19 +44,21 @@ public sealed partial class PeerSecurityRpcRuntime
         Credentials = new(database, hostId);
         Clock = time ?? TimeProvider.System;
         grants = new GrantPolicyRepository(database, hostId, time);
+        SettingsSchema = new(database, hostId);
         Permissions = new(this, grants); Unpair = new(this, grants); Recovery = new(this, grants);
     }
     internal static PeerHello Hello(Guid hostId)
     {
         var hello = new PeerHello { Host = new() { HostId = hostId.ToString("D") },
-            Handshake = new() { Protocol = new() { Major = 1, Minor = 15 }, ProductVersion = "0.5.0-astra" } };
+            Handshake = new() { Protocol = new() { Major = 1, Minor = 16 }, ProductVersion = "0.5.0-astra" } };
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustActivation);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationStatus);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationProposal);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerRotationReceipt);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerCurrentCredentialConfirmation);
         hello.Handshake.Capabilities.Add(FeatureCapability.PeerUnpair);
-        hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustAdministration); return hello;
+        hello.Handshake.Capabilities.Add(FeatureCapability.PeerTrustAdministration);
+        hello.Handshake.Capabilities.Add(FeatureCapability.SettingsSchema); return hello;
     }
     internal static PeerHello RecoveryHello(Guid hostId)
     {

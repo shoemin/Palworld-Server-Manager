@@ -3,7 +3,7 @@ package palworld.manager.v1;
 option csharp_namespace = "PalworldServerManager.Contracts.Wire";
 import "Protos/host.proto";
 
-// Observations only: no endpoint, capability advertisement or save command.
+// Schema reads and value observation DTOs; no save command.
 // Field numbers are permanent. Removed names/numbers must be reserved.
 enum SettingsEditorKind {
   SETTINGS_EDITOR_KIND_UNSPECIFIED = 0;
@@ -72,3 +72,8 @@ message SettingsSnapshot {
   string revision = 2;
   repeated SettingsEntry entries = 3;
 }
+
+// Known catalog metadata only; not a claim that a key occurs in this installation.
+// Additional discovered keys are described in SettingsSnapshot entries.
+message SettingsSchemaRequest { ServerRef server = 1; }
+message SettingsSchemaReply { ServerRef server = 1; repeated SettingsDefinition definitions = 2; }
