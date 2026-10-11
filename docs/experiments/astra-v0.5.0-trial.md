@@ -7334,7 +7334,7 @@ Review A identified A1, a positive-coverage gap: the tests proved EditSettings-o
 
 Initial full regression completed760/762: Recovery RPC WireAndImmutableHistory and Unpair RPC WireAndFeatureAreClosed retained the old exact peer protocol minor15 after this unit advanced it to16. Updated those two exact expectations; restricted recovery capabilities and closed feature checks remain unchanged. Searched all src/tests for old current-version assertions; no others found. Full corrected validation supersedes both earlier executables and CI runs, which are never counted as PASS. Fifth verification round planned,293 cumulative; no accepted escape or product decision.
 
-### #47g â€” Review A
+### #47g - Review A PASS
 
 2026-10-10. Executableb303012; local762/762, seven focused groups, zero-warning build, actual Avalonia UI/Windows SDK/strict Docs PASS. Fifth round,293 cumulative planned. Independent compiled mapper10908 bytes and1000 roundtrips/privacy refusals PASS. All-three remoteCI38105123767 pending; no remote PASS claimed.
 
@@ -7357,5 +7357,31 @@ A1 positive View-only coverage corrected locally and on both remote ceilings. In
 | OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | Catalog read has no configuration revision/write/lock/operation; no stale permit or stopped-state claim; cancellation and generation drain use existing ownership. | PASS |
 | SEC-001 | No settings values/paths/revisions transmitted; secret/unknown-sensitivity defaults withheld; constant errors; metadata and 16KiB bounds verified, caller mutations isolated. | PASS |
 | MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No migration/source mutation/OS branching/shell/UI/Linux code; real Palworld/parity/release not claimed. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #47g / PR193 - Review B PASS, merge evidence pending
+
+2026-10-10. Fresh post-PR review of candidatefab76a85b1a25be601d744e2098e0dc632e4aef2 against basef2f6b83968d362b0fbf3860d1829831988919830. Re-read the complete31-file diff, including all production paths, tests, additive descriptor changes and documentation; did not substitute Review A for this pass. Corrected one documentation heading encoding/outcome only. No substantive B finding. Executableb303012 unchanged; local762/762/seven focused/UI/actual SDK/zero-warning build/strict Docs and independent compiled-mapper evidence remain applicable. CandidateDocs38105518526 PASS. Final-head Docs and completed all-threeCI38105123767 logs remain required before merge.
+
+Reviewed authority races: current principal proof and exact ViewServer checked before outbound contact, before the remote read and before returning; destination separately checks current machine proof and exact permission. A former permission observation cannot grant a later action. TLS incarnation retained across negotiation/read; reconnection refused. Target mismatch, missing registration, absent feature and non-Active relationship fail closed. Bounds and sensitivity validation reject forged replies; unknown/raw definitions never carry defaults or source values. Clone/allocation ownership prevents request/response mutation of shared catalog. Cancellation uses generation ownership; read callbacks remain synchronous, so permission facades do not escape their lifetime/thread. This read performs no destructive effect needing rollback. Controlled test barriers release in finally and fixture apps/credentials are disposed.
+
+Acceptance recheck: endpoint provides catalog semantics only, not installed-value/effective/read-save completion. Canonical47/48 and their allowed-decision boundaries refreshed; no new product meaning, enum membership, field-test waiver or creator authority. Full lifecycle/real Palworld/parity/release remains unqualified, accessibility WAIVED never PASS.
+
+| Invariant | Fresh whole-result recheck | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Diff has no frozen WPF, LAN or legacy Core mutation. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Existing Host runtimes/read-only inventory; no additional authority process or persistence writer. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | Public Core-independent DTOs; local protected channel and Host-owned outbound transport; no ordinary-client machine key. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Canonical qualified target and reply, stable Host identity/current pinned credential/incarnation; recovery closure rechecked. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Existing current-principal/initialized/Owner verification; no enrollment or Owner-changing request fields. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Both exact independent read ceilings required; no trust-to-grant conversion, PeerBound ordinary reads rejected; no distributed commit claim. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No root/preset/default/delegation/creator issuance path changed; View-only positive/Edit-only negative evidence at both ceilings. | PASS |
+| PROTO-001 | New negotiated features closed; existing16KiB bound and exact target/shape checks; four histories added, none overwritten. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No editable-file revision, lifecycle authority, lock or durable operation change; later read/save requirements explicit. | PASS |
+| SEC-001 | Catalog-only values, unknown/secret defaults withheld, no raw exception propagation; source password values impossible in this reader. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No source migration, shell action, OS-specific shared-code branch or Linux implementation. | PASS |
+
+Five implementation/correction/verification rounds,293 cumulative planned; accepted escape count remains12, all corrected. Stale-reference search clean after updating sibling current-version tests; no unresolved owner decision. Merge gate must verify exact final head/base/clean state and source equivalence to executableCI head.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
