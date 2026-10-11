@@ -73,8 +73,8 @@ if (args.Length > 0)
         await BoundedFileReaderTests.CancellationReleasesHandles();
         Console.WriteLine("PASS bounded no-follow file reads: six actual Windows groups."); return 0;
     }
-    if (args is ["--restricted-service-child", var restrictedCanary, var restrictedParent])
-        return WindowsRestrictedLaunchQualification.Child(restrictedCanary, restrictedParent);
+    if (args is ["--restricted-service-child", var restrictedCanary, var restrictedParent, var restrictedKey, var restrictedNativeFile, var restrictedCredentialFile])
+        return WindowsRestrictedLaunchQualification.Child(restrictedCanary, restrictedParent, restrictedKey, restrictedNativeFile, restrictedCredentialFile);
     if (args is ["--peer-process-host", var peerProcessConfig])
         return await WindowsPeerProcessFixture.RunChild(peerProcessConfig);
     if (args is ["--recovery-process-probe", var recoveryRoot])
