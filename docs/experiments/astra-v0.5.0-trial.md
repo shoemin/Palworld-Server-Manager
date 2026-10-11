@@ -7880,3 +7880,33 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 
 
 The same A correction also drains both concurrent test tasks in finally before disposing fixture state, clears fake-reader buffers if its injected callback throws, and disposes the fixture if setup fails. These close assertion/timeout/setup cleanup gaps in the new test harness, without changing production semantics. Still one combined A correction round (two rounds total,310 planned cumulative); renewed validation pending.
+
+
+### #47k - corrected Review A PASS
+
+Executable cd33cc124f2bdc65ccbb685acdc0b02779476d8a. Corrected full local791/791, eight focused groups, zero-warning build, UI/actual Windows SDK/strict Docs PASS. CorrectedCI38115672364 native114399969155 completed logs inspected: Rust2/native16/genuine Owner/re-pair/recovery/first-contact ceremonies PASS; service/build pending. Corrected candidateDocs38115673477 PASS. Initial local790/790 and CI38115304757 are superseded for acceptance; its completed service114398913330 full cleanup log inspected. Prior checkpointDocs38114853568 verified PASS.
+
+Fresh complete ten-file review against20bd111215aa9f41cecc8424a78eaf7faba1bef4 includes the canonical capability predicate extraction, existing proof implementations and inventory read behavior, Host reader, guarded local/peer facades, tests, docs and ledger. No production correction was required. A found missing deterministic queued-revocation evidence and test scheduling/cleanup weaknesses; corrected with exact before-IO denial while an Owner holds the gate, dedicated physical thread for guard refusal, positive peer facade use, task draining on assertion failures, fake-buffer clearing and partial-setup disposal. Initial and corrected focused runs had no automated failures. Two correction/verification rounds,310 cumulative planned; no accepted escape.
+
+Acceptance evidence: qualified local ServerRef before IO; View-only local/peer success and Edit-only/no-grant refusal; current authorization both before and after queue; registered path handed only to the closed managed reader; positive nonsecret retrieval/Unquote, binary DTO secret/unknown suppression, duplicate nonsecret refusal and metadata-only deduplication; NaN structured validation; malformed/over-count/aggregate-too-large/native-failed observations leave metadata absent. Ordered unchanged/reopened/changed/ABA content tokens and optional defaults without fallback verified. Current proof and full inventory observation are rechecked on the revision transaction before effects and commit. Trigger-injected credential/grant/inventory/recovery changes and final cancellation roll back metadata without committing a denial audit. Postcommit response refusal may retain only the private observation, explicitly tested. Existing initial canonical checks retain ordinary denial auditing. Wrong database/transaction, unknown capability, wrong peer pins/incarnation/PeerBound and disposed/cancelled/wrong-thread facade calls refuse.
+
+The shared reader is an internal engine, not a production RPC or file writer. One Host-lifetime instance and future save ordering remain required composition obligations; no independent per-request gate is permitted. Existing root/handle safety, initial/final ViewServer, exact qualified scope and same-transaction proof are complementary. No atomic active/default pair, effective-value inference, stopped proof, durable save or release completion is claimed. Stale/call-site search confirms only the new guarded facades/reader/tests consume these helpers; no client, grant-creation, credential-holder, wire history or operation executor changed.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN and legacy parser/service unchanged; accepted pure parser and mapper reused. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Trusted Host reader under existing lease; only existing content metadata writer, no client/file writer or second Host. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency/credential/route changes or newly exposed RPC. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Qualified local ServerRef before IO, exact inventory/DB binding; existing current/staged TLS and incarnation proofs reused. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | Initialized Host/single Owner retained; authenticated facade guards and current proof, no enrollment/Owner/credential authority added. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | Independent local/peer validators retain exact scope, Active/non-recovery and current identity; no pairing/trust effect or remote shortcut. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | Reuse canonical typed/lineage policy; View-only success/Edit-only refusal, queued revocation, no grants/defaults/delegation/creator changes. | PASS |
+| PROTO-001 | Existing validated DTO only; no protocol/descriptor/version change or runtime RPC activation. Future bounded negotiated API remains required. | PASS |
+| OPS-001 | Serialized byte observations, canonical revisions, unchanged/reopen/ABA tests; failed final same-transaction proof/inventory rolls metadata back. No file save claim. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No new operation/lifecycle executor; gate is read-order synchronization, not stopped proof or replacement for durable save locks/recovery. | PASS |
+| SEC-001 | Positive nonsecret classification before lookup/decoding, unknown/secret values withheld in binary DTO; bounded parse/map, owned buffer disposal, no secret logging. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | No schema/source migration or OS/UI/Linux implementation; explicit platform reader injected into shared Host engine. | PASS |
+
+All40 audited after correction. Whole47/48 IN PROGRESS; approved independent read/save permissions and six creator limits unchanged. No owner decision pending; accessibility WAIVED, never PASS. Open experimental PR next, then fresh B and completed all-three actual logs/final Docs/exact-head gates before merge.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
