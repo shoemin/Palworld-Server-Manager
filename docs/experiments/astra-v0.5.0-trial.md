@@ -7792,3 +7792,33 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 
 
 #47j pre-A tests caught two defects: the fake root counter increment was inside a null-conditional invocation and did not run without a callback; move it outside. Production optional-default memory conversion inferred the null branch as an empty non-null ReadOnlyMemory; explicitly type the nullable null. Missing versus empty default tests now pass, along with all five focused groups. Three implementation/correction verification rounds,308 cumulative planned. Build zero warnings, UI/actual SDK/strict Docs PASS; full suite and remote qualification pending. No accepted escape or owner decision.
+
+
+### #47j - Review A PASS
+
+Executable737e7034db7f099037f08e34dcf9b39732a86348. Full local783/783, five focused groups, zero-warning build, actual UI/Windows SDK/strict Docs PASS. CI38114107730 native114395460011 completed logs inspected: Rust2/native16/genuine Owner, re-pair, recovery and first-contact ceremonies PASS; build/service still required. CandidateDocs38114109412 PASS.
+
+Reviewed every file in the complete seven-file diff against bb6167686aa4726a7c1f084c5016ed7208331926, and the unchanged root policy, bounded native reader, preservation/DTO mapper and mandatory service-readiness callers. Public adapter requires WindowsManagedStorageRoot; fake root/reader injection is internal. Exact ordinal profile/path binding runs before IO and opens only generated relative components. Existing retained no-follow handles/single-link/size checks stay intact. The byte pair is explicitly not atomic, and no default/effective value, stopped lifetime, revision or save is inferred. Root validation before/after is not claimed to freeze a privileged filesystem policy adversary.
+
+Acceptance evidence: zero-IO invalid-binding counters; exact paths/limits; byte-for-byte reads; missing active cannot copy defaults; missing versus empty defaults; every closed optional-default failure except NotFound refuses; cancellation after either acquisition or final policy and final root refusal clear owned arrays; retained disposed views are zero and property access throws; native writer and unsafe-default-directory refusal followed by reread verifies handle cleanup. Service entry runs these protected reads before the mandatory ManagedStorageQualified readiness flag on all four starts, and both real users separately attempt raw-file and adapter reads. Completed remote service/cleanup evidence remains a merge gate.
+
+Tests found two pre-review defects (fake null-conditional counter and nullable memory conversion), corrected before this PASS. No further substantive A finding. Three correction/verification rounds,308 cumulative planned; no accepted escape. Call-site/stale-reference search confirms no new caller uses EnsureActiveConfig and no RPC/client/grant/persistence/lifecycle path changed. Core parsing makes independent copies; buffer clearing is deliberately not complete memory erasure. Initial/final ViewServer plus current inventory and serialized revision observation belong to the next consuming Host unit, not this platform adapter.
+
+| Invariant | Whole-result evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Frozen WPF/LAN/legacy loader unchanged; added Host-platform seam only. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Read-only adapter, no file/database mutation or second Host; fixture preparation remains explicit service/offline qualification. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependency, identity holder or transport route changes; raw file object stays Host-side. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Platform profile is trusted local input only, no cross-Host bare ID DTO; exact path binding, no identity/trust/rotation change. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No enrollment/bootstrap/Owner/credential path; protected root does not translate OS eligibility into product authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No remote endpoint or pairing change; adapter cannot authorize a caller and requires future independent local/remote checks. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No grant creation/default/delegation/creator effect; ViewServer reads/EditSettings saves remain independent, six creator limits unchanged. | PASS |
+| PROTO-001 | No wire/negotiation/descriptor changes; closed native failures and no caller-selected filename. | PASS |
+| OPS-001 | No revision/save API here; future content observation and fresh stale-save reconciliation remain required. | PASS |
+| OPS-002,OPS-003,OPS-004,RECOVERY-001 | No operation/process/lock/recovery executor; individual file reads do not claim stopped state or atomic save. | PASS |
+| SEC-001 | Protected root before/after, retained no-follow bounded native reads, owned raw buffers cleared on failure/disposal, fixed path-free errors; no raw wire/log values. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | Closed Windows adapter behind Host-only seam; never adopt/edit legacy source, no UI-shell or Linux implementation. | PASS |
+
+All40 reviewed. Approved read/save independence and six creator limits unchanged. Whole47/48 IN PROGRESS; no owner decision; accessibility WAIVED, never PASS. No real Palworld/parity/Linux/release claim. Next open the experimental PR, then fresh B and all completed remote/exact-head gates before merge.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
