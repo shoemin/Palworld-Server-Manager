@@ -106,6 +106,11 @@ public static partial class WindowsIntegration
             nativeGrantOwned = true; // from this point any matching grant is created by our offline invocation
             using (var result = JsonDocument.Parse(await Offline(0, "bootstrap", "--owner-sid", intendedSid)))
             { hostId = result.RootElement.GetProperty("hostId").GetGuid(); bootstrapTicket = result.RootElement.GetProperty("ticketId").GetGuid(); }
+            Check(location.ManagedStorageRoot == Path.Combine(productRoot, "Servers"), "Product storage location changed.");
+            new WindowsManagedStorageRoot(location.ManagedStorageRoot!, serviceSid).Validate();
+            Check(new DirectoryInfo(productRoot).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access) ==
+                parentAcl.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access), "Offline storage setup widened product-parent authority.");
+            Console.WriteLine("PASS integration: shipped offline bootstrap prepares separate protected managed storage with unchanged product-parent ACL.");
             var database = new HostDatabase(new HostDataRoot(location.HostRoot));
             var state = new HostCredentialStateRepository(database, hostId);
             var publisher = new WindowsLocalHostTrustPublisher(location.PublicTrustRoot, serviceSid);

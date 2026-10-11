@@ -16,7 +16,7 @@ namespace PalworldServerManager.SelfTest;
 public static partial class WindowsIntegration
 {
     private static OfflineHostLocation OfflineLocation(string service, string group, string root) =>
-        new(service, group, Path.Combine(root, "OfflineHost"), Path.Combine(root, "OfflinePublic"), Path.Combine(root, "OfflineHandoffs"), @"Global\" + service);
+        new(service, group, Path.Combine(root, "OfflineHost"), Path.Combine(root, "OfflinePublic"), Path.Combine(root, "OfflineHandoffs"), @"Global\" + service, Path.Combine(root, "OfflineServers"));
     private static async Task OfflineDeniedProbe(string service, string group, string root)
     {
         using var identity = WindowsIdentity.GetCurrent();
@@ -40,6 +40,7 @@ public static partial class WindowsIntegration
         }
         RunUser(executable, userA, password, "offline-denied", service, group, root, shared);
         Check(!File.Exists(database.DatabasePath), "Non-admin refusal opened Host state.");
+        Check(!Directory.Exists(location.ManagedStorageRoot), "Nonadmin provisioned storage before admission.");
         await Run(1, "bootstrap", "--owner-sid", "S-1-5-32-545");
         await Run(1, "recover-machine", "--reason", "unknown");
         Check(!File.Exists(database.DatabasePath), "Invalid target or command wrote Host state.");
@@ -52,8 +53,10 @@ public static partial class WindowsIntegration
             Check(contender is not null, "Could not hold offline contention fixture lease.");
             await Run(1, "bootstrap", "--owner-sid", sidA);
             Check(!File.Exists(database.DatabasePath), "Held-lease refusal opened Host state.");
+            Check(!Directory.Exists(location.ManagedStorageRoot), "Rejected offline preparation created storage.");
         }
         var bootstrap = await Run(0, "bootstrap", "--owner-sid", sidA);
+        new WindowsManagedStorageRoot(location.ManagedStorageRoot!, serviceSid).Validate();
         using var result = JsonDocument.Parse(bootstrap); var hostId = result.RootElement.GetProperty("hostId").GetGuid();
         var firstTicket = result.RootElement.GetProperty("ticketId").GetGuid();
         RunUser(executable, userA, password, "handoff-prepared", hostId.ToString("D") + ":" + firstTicket.ToString("D"),

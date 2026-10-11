@@ -11,6 +11,14 @@ using PalworldServerManager.SelfTest;
 // own argument handling) while still exercising a real, running, real-PID Windows process.
 if (args.Length > 0)
 {
+    if (args is ["--managed-storage-policy-probe"])
+    {
+        await ManagedStorageRootTests.ExactPolicyAndOwners();
+        await ManagedStorageRootTests.UnsafePolicyForms();
+        await ManagedStorageRootTests.ExactServiceAndDisjointPaths();
+        await ManagedStorageRootTests.CancellationPrecedesIo();
+        Console.WriteLine("PASS managed storage root policy: four groups; actual service qualification separate."); return 0;
+    }
     if (args is ["--bounded-file-read-probe"])
     {
         await BoundedFileReaderTests.ExactBytesAndBounds();
@@ -1030,6 +1038,10 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Managed storage exact policy and owners", ManagedStorageRootTests.ExactPolicyAndOwners),
+    ("Managed storage unsafe policy forms", ManagedStorageRootTests.UnsafePolicyForms),
+    ("Managed storage exact service and disjoint paths", ManagedStorageRootTests.ExactServiceAndDisjointPaths),
+    ("Managed storage cancellation precedes IO", ManagedStorageRootTests.CancellationPrecedesIo),
     ("Bounded files exact bytes and bounds", BoundedFileReaderTests.ExactBytesAndBounds),
     ("Bounded files closed paths and missing objects", BoundedFileReaderTests.ClosedPathsAndMissingObjects),
     ("Bounded files hard links and junctions refused", BoundedFileReaderTests.HardLinksAndJunctionsRefused),

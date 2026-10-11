@@ -14,10 +14,10 @@ namespace PalworldServerManager.SelfTest;
 internal sealed class NativeTlsServiceFixture : IDisposable
 {
     internal sealed record Config(Guid HostId, Guid RotationHostId, string GroupSid, string PublicDirectory,
-        string? PairingProviderPath = null, string? PairingProviderHash = null);
+        string? PairingProviderPath = null, string? PairingProviderHash = null, string? ManagedStorageRoot = null);
     internal sealed record Ready(int ProcessId, string KeyName, string KeyFile, string Pipe, string Pin, bool RotationQualified,
         bool ReceiptCrashQualified, bool PairingCrashQualified, bool PrecommitCrashQualified, bool ResponderCrashQualified,
-        bool RecoveryProcessQualified, bool UnpairProcessQualified, bool RestrictedLaunchQualified);
+        bool RecoveryProcessQualified, bool UnpairProcessQualified, bool RestrictedLaunchQualified, bool ManagedStorageQualified);
     private readonly IDisposable _runtime;
     private readonly Task _worker;
     internal NativeTlsServiceFixture(string service, string root, IDisposable runtime, CancellationToken stop)
@@ -40,6 +40,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
                 using var identity = WindowsIdentity.GetCurrent();
                 WindowsRestrictedLaunchQualification.Run(root, stop);
+                if (config.ManagedStorageRoot is { } managedRoot) WindowsIntegration.QualifyManagedStorage(managedRoot, identity.User!);
                 await WindowsRotationCutoverQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 await WindowsGenerationTransitionQualification.Run(root, config.RotationHostId, identity.User!, config.PublicDirectory, stop);
                 await WindowsPeerReceiptCrashQualification.Run(root, identity.User!, stop);
@@ -77,7 +78,7 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                 await using var tls = await LocalIpcSpike.StartAsync(new SecurityIdentifier(config.GroupSid), certificate);
                 var ready = new Ready(Environment.ProcessId, key.Key.KeyName!,
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Crypto", "Keys", key.Key.UniqueName!), tls.PipeName, tls.PublicPin, true, true,
-                    config.PairingProviderPath is not null, config.PairingProviderPath is not null, config.PairingProviderPath is not null, true, true, true);
+                    config.PairingProviderPath is not null, config.PairingProviderPath is not null, config.PairingProviderPath is not null, true, true, true, config.ManagedStorageRoot is not null);
                 File.WriteAllText(Path.Combine(root, "tls-ready.tmp"), JsonSerializer.Serialize(ready));
                 File.Move(Path.Combine(root, "tls-ready.tmp"), Path.Combine(root, "tls-ready.json"), true);
                 await Task.Delay(Timeout.Infinite, stop);
@@ -114,12 +115,14 @@ internal sealed class NativeTlsServiceFixture : IDisposable
                     if (!ready.UnpairProcessQualified) throw new Exception("Service unpair process qualification was skipped.");
                     if (!ready.RestrictedLaunchQualified) throw new Exception("Service restricted launch qualification was skipped.");
                     var config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(root, "tls-config.json")))!;
+                    if (config.ManagedStorageRoot is not null && !ready.ManagedStorageQualified) throw new Exception("Managed storage service qualification was skipped.");
                     if (config.PairingProviderPath is not null && !ready.PairingCrashQualified) throw new Exception("Requested native pairing process qualification was skipped.");
                     if (config.PairingProviderPath is not null && !ready.PrecommitCrashQualified) throw new Exception("Requested native precommit crash qualification was skipped.");
                     if (config.PairingProviderPath is not null && !ready.ResponderCrashQualified) throw new Exception("Requested native responder crash qualification was skipped.");
                     Console.WriteLine("PASS service recovery process qualification: five actual child fault/restart cases and complete cleanup.");
                     Console.WriteLine("PASS service unpair process qualification: four actual child delivery/fault/restart cases and complete cleanup.");
                     Console.WriteLine("PASS service restricted launch qualification: public executable read, private file/DACL and parent process denial, exact exit and cleanup.");
+                    if (config.ManagedStorageRoot is not null) Console.WriteLine("PASS service managed storage qualification: protected root validation, durable canary write and bounded read across restart.");
                     return ready;
                 }
             }

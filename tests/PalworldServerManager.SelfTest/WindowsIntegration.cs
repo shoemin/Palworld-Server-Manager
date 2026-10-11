@@ -85,6 +85,7 @@ public static partial class WindowsIntegration
                 catch (UnauthorizedAccessException) { }
             }
         }
+        else if (action == "managed-storage-denied") ManagedStorageDenied(serviceName, credentialPath, hostRoot);
         else if (action == "ipc-authorized")
         {
             Check(await LocalIpcSpike.RequestAsync(serviceName, credentialPath) == identity.User!.Value, "Native SID did not match real OS user.");
@@ -183,6 +184,7 @@ public static partial class WindowsIntegration
         var platform = new WindowsHostPlatform(service, group, hostRoot);
         var tlsHostId = Guid.NewGuid();
         var rotationHostId = Guid.NewGuid();
+        string? managedStorageRoot = null;
         SecurityIdentifier? serviceSid = null;
         bool nativeGrantAdded = false;
         string? staleNativeName = null;
@@ -228,6 +230,7 @@ public static partial class WindowsIntegration
             using (var lease = HostExclusivityLock.TryAcquire(TimeSpan.Zero, mutex))
             {
                 Check(lease is not null, "Native provisioning lacks offline lease.");
+                managedStorageRoot = PrepareManagedStorageFixture(root, serviceSid, hostRoot, publicDirectory);
                 nativeGrantAdded = WindowsNativeTlsProvisioning.EnsureCreatePermission(serviceSid);
                 Check(!WindowsNativeTlsProvisioning.EnsureCreatePermission(serviceSid), "Native provisioning was not idempotent.");
                 WindowsLocalHostTrustPublisher.Provision(publicDirectory, serviceSid);
@@ -243,7 +246,7 @@ public static partial class WindowsIntegration
                 Check(!File.Exists(missingTarget), "Rejected trust symlink touched its destination.");
             }
             File.WriteAllText(Path.Combine(hostRoot, "tls-config.json"), JsonSerializer.Serialize(new NativeTlsServiceFixture.Config(tlsHostId, rotationHostId, groupSid.Value,
-                publicDirectory, protectedProvider, pairingProviderHash)));
+                publicDirectory, protectedProvider, pairingProviderHash, managedStorageRoot)));
             var aces = descriptor.DiscretionaryAcl!.Cast<CommonAce>().ToArray();
             Check(aces.Length == 3 && aces.Single(a => a.SecurityIdentifier == groupSid).AccessMask == 0x14, "SCM DACL read-back failed.");
             Check(!await platform.IsEnabledAsync(), "Default boot-start not Manual.");
@@ -304,6 +307,12 @@ public static partial class WindowsIntegration
             var shared = Path.Combine(root, "Probe Results"); Directory.CreateDirectory(shared);
             Grant(shared, new SecurityIdentifier(sidA), FileSystemRights.FullControl);
             Grant(shared, new SecurityIdentifier(sidB), FileSystemRights.FullControl);
+            Check(managedStorageRoot is not null, "Managed storage fixture missing.");
+            foreach (var user in new[] { userA, userB })
+                RunUser(executable, user, password, "managed-storage-denied", service, Path.Combine(managedStorageRoot!, "service-canary.txt"), managedStorageRoot!, shared);
+            Check(File.ReadAllText(Path.Combine(managedStorageRoot!, "service-canary.txt")) == "SYNTHETIC-SERVICE-STORAGE" &&
+                !Directory.Exists(Path.Combine(managedStorageRoot!, "unauthorized")), "Nonadmin storage attempt changed data.");
+            Console.WriteLine("PASS integration: two actual nonadmins denied managed storage provisioning/read/write/create/delete; service canary unchanged.");
             var credential = Path.Combine(shared, "credential.bin");
             RunUser(executable, userB, password, "unauthorized", service, credential, hostRoot, shared);
             RunUser(executable, userA, password, "authorized", service, credential, hostRoot, shared);
