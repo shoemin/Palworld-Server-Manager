@@ -7156,3 +7156,62 @@ The Astra trial used no external GitHub Codex reviewer. Astra was responsible fo
 Local745/745,five focused groups,actual-library500-transaction snapshot stress,zero-warning build,UI/actual SDK/strict Docs PASS. A0/B0/all40 clean; initial fixture-schema setup corrected, two implementation/verification rounds,283 cumulative cycles. No new accepted escape; eleven prior escapes remain corrected. Accepted130 experimental PRs61–190,fourteen canonical children SHADOW DONE. Whole47/48 remain IN PROGRESS for actual protected settings/lifecycle/provisioning. No owner decision pending at this checkpoint; proceed with native process observation and launch/storage preflight. Approved permissions/creator limits unchanged,accessibility WAIVED never PASS; canonical/main/physical/parity/Linux/release unchanged.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48b — native process observation preflight
+
+2026-10-10. Basebbb2d3b852a1d8ee159950ee21b9eb684ef4745a; branch astra/48-native-process-observations. Current48 contract/dependencies unchanged. Implement architecture11's read-only IProcessInspector seam with a Windows native snapshot of PalServer-prefix candidates, pinned handles for image/creation-time observations and explicit incomplete results on inspection failure. Return all candidate paths for later Host reconciliation; do not perform ambiguous lexical install-path matching or certify a stopped server. PID alone is not identity, and a complete instantaneous scan is not lifetime finalization. No launch/kill/reattachment/RPC or new permissions.
+
+Impact: Platform.Contracts observation/interface, Platform.Windows native implementation, SelfTest real synthetic process and failure tests, developer docs/ledger. No Core legacy/WPF/LAN edits, schema/persistence writer/credentials/grants/executor changes; existing architecture permits this platform seam. All authority-creation paths, six creator grants, dual remote ceilings and approved47 reads/saves unchanged. Data remains Host-only; no path/log/wire disclosure. Native handles must dispose on all paths; cancellation must not turn failure into success. Test PID reuse/revalidation, inaccessible candidate, failed/partial enumeration, real processes/creation timestamps and cleanup; verify platform ABI through actual Windows execution. All40 A/B audits, local build/full/UI/SDK/Docs and remotely executable validation required. Real Palworld/service-launch sandbox/parity remain unclaimed.
+
+Independent preliminary launch research (not production implementation or a selected launch policy): a restricted current-user token could not read or replace the DACL on a private same-owner canary. Probe cleanup completed. Initial explicit SetOwner setup was denied; preserving the already matching owner permitted the intended restriction test. No actual Host service launch, game compatibility, process-token/child inheritance isolation or native privilege qualification is claimed. Resolve these before selecting a launch/storage implementation; no new owner decision is established by this research.
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+Initial48b focused five groups and zero-warning build passed. Source review caught a failure-path issue in the synthetic test cleanup: a failure stopping the first child could skip cleanup of the second. Corrected to attempt cleanup of both owned children before reporting failure, retaining the fixture directory if process cleanup is incomplete. Renewed focused/build/UI/actual SDK/strict Docs pass; full local regression/remote qualification pending. No production launch or service-isolation acceptance claim.
+
+### #48b — Review A
+
+Reviewed executable9732de7a2bb111e2884cdbf2b46c7fecf7c678e3 againstbbb2d3b852a1d8ee159950ee21b9eb684ef4745a: every six-file change, native process enumeration/query/wait/handle-disposal branch, immutable contracts, injected negative tests, real synthetic lifecycle and sibling frozen process safety. A1 test cleanup finding above corrected; no remaining production/test finding. Full local750/750,focused five groups,zero-warning build,actual UI/SDK/strict Docs PASS. Independent actual-library probe repeatedly inspected a live candidate100 times with exact path/start identity and bounded handles234→238; child/fixture cleanup completed. No path aliases are silently matched and no snapshot grants stopped/launch/kill/reattachment authority. Stale-reference search finds only the new platform API and tests, with no hidden Host/client caller or frozen implementation edits. Two implementation/verification rounds,285 cumulative cycles planned.
+
+Private scratch launch experiments remain separate: same-user private-file read/DACL replacement were denied, but attempted restricted child startup exited0xC0000142 rather than reaching the managed canary test (including World/Users/native-logon-SID variants). All owned child handles/fixtures cleaned. This is NOT a launch-isolation PASS or a selected production design; real service privilege/desktop/runtime/parent-token/child-inheritance and game compatibility evidence remain necessary. No owner decision is inferred merely from a tool-context experiment.
+
+CI38100676583 has matching executable head; native114355784556 PASS, complete remote logs still pending. Review A/all40 clean after correction; PR creation next, fresh B and exact remote/head gates required before merge.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform API/implementation only; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-side observation only; no file/profile/process mutation, store writer, new Host or executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependencies, credentials, endpoints or outbound connections. Raw process data stays Host-side. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Process PID/time/image is OS observation, not a server identity; future Host must map to qualified ServerRef. No Host identity/rotation/recovery change. PID reuse is rechecked via pinned image and exact creation time. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No bootstrap/principal/Owner/local-channel changes; constructor is not authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network effect or remote shortcut; dual current permissions unchanged. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No capability/default/preset/creator/delegation/grant path changes; approved six creator limits retained. | PASS |
+| PROTO-001 | No wire/negotiation change. Internal unknown/mismatched native states yield incomplete results, not success. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No revision/lock/durable operation or lifecycle finalization introduced. Failed inspection is uncertain; even complete empty scan cannot permit mutation. Host retained/durable lifetime and current effect checks remain required. | PASS |
+| SEC-001 | Query/synchronization rights only, no token/VM/private-key read by production inspector; no raw native exception or path logging. Handles closed, immutable snapshots and constant input errors. Scratch canaries use only owned fixtures and confer no acceptance. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | OS-native code only in Platform.Windows behind explicit seam; no Core OS branching, shell, migration or Linux implementation. Synthetic actual Windows tests are not real Palworld/service-launch/parity/release claims. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+### #48b / PR191 — fresh Review B
+
+Fresh exact-head review at4f80a178c3a9c142fdd79c7e4a675af97a17005e againstbbb2d3b852a1d8ee159950ee21b9eb684ef4745a inspected all six files again, including native struct/signatures/last-error timing, safe-handle lifetime, successful enumeration termination, PID reuse and exited/unknown distinctions, contract defensive copies, test cleanup and every scope/evidence claim. No new finding (B0). Re-ran five focused groups and independent actual-library100-live-candidate inspection after PR creation; exact path/time and bounded handles231→235 PASS, all owned children/fixtures cleaned. No installed-root alias matching or stopped-state permit inferred. A1 test cleanup corrected/B0, two rounds,285 cumulative cycles planned; no new accepted escape.
+
+Local750/750,zero-warning build,UI/actual SDK/strict Docs PASS. Candidate Docs38101058147 exact head PASS. Completed native114355784556 log inspected: Rust2/native16/all genuine ceremonies PASS. Full CI38100676583 build/Windows completed logs and final Docs/live head/base/clean/source equivalence still required. Whole47/48 and service launch isolation remain incomplete, with no product/field/parity/Linux/release shortcut. Renewed all40 audit:
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform API/implementation only; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-side observation only; no file/profile/process mutation, store writer, new Host or executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependencies, credentials, endpoints or outbound connections. Raw process data stays Host-side. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Process PID/time/image is OS observation, not a server identity; future Host must map to qualified ServerRef. No Host identity/rotation/recovery change. PID reuse is rechecked via pinned image and exact creation time. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No bootstrap/principal/Owner/local-channel changes; constructor is not authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network effect or remote shortcut; dual current permissions unchanged. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No capability/default/preset/creator/delegation/grant path changes; approved six creator limits retained. | PASS |
+| PROTO-001 | No wire/negotiation change. Internal unknown/mismatched native states yield incomplete results, not success. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No revision/lock/durable operation or lifecycle finalization introduced. Failed inspection is uncertain; even complete empty scan cannot permit mutation. Host retained/durable lifetime and current effect checks remain required. | PASS |
+| SEC-001 | Query/synchronization rights only, no token/VM/private-key read by production inspector; no raw native exception or path logging. Handles closed, immutable snapshots and constant input errors. Scratch canaries use only owned fixtures and confer no acceptance. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | OS-native code only in Platform.Windows behind explicit seam; no Core OS branching, shell, migration or Linux implementation. Synthetic actual Windows tests are not real Palworld/service-launch/parity/release claims. | PASS |
+
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.

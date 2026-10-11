@@ -60,6 +60,15 @@ if (args.Length > 0)
         await ServerInventoryTests.ReadsObserveCommittedStateWithoutBlockingWriter();
         Console.WriteLine("PASS five inventory observation groups."); return 0;
     }
+    if (args is ["--native-process-observation-probe"])
+    {
+        await WindowsProcessObservationTests.FailedInspectionNeverMeansEmptySuccess();
+        await WindowsProcessObservationTests.ReusedPidAndExitedProcessDoNotBecomeIdentityMatches();
+        await WindowsProcessObservationTests.CancellationAndImmutableObservations();
+        await WindowsProcessObservationTests.ActualNativeProcessesPathsTimesAndExit();
+        await WindowsProcessObservationTests.ActualNativeRepeatedCaptureDisposesHandles();
+        Console.WriteLine("PASS five native process observation groups."); return 0;
+    }
     if (args is ["--preserved-settings-probe"])
     {
         await PreservedSettingDocumentTests.ExactRoundTripAndOneValuePatch();
@@ -989,6 +998,11 @@ if (args.Length > 0)
 
 var tests = new List<(string Name, Func<Task> Run)>
 {
+    ("Process observation FailedInspectionNeverMeansEmptySuccess", WindowsProcessObservationTests.FailedInspectionNeverMeansEmptySuccess),
+    ("Process observation ReusedPidAndExitedProcessDoNotBecomeIdentityMatches", WindowsProcessObservationTests.ReusedPidAndExitedProcessDoNotBecomeIdentityMatches),
+    ("Process observation CancellationAndImmutableObservations", WindowsProcessObservationTests.CancellationAndImmutableObservations),
+    ("Process observation ActualNativeProcessesPathsTimesAndExit", WindowsProcessObservationTests.ActualNativeProcessesPathsTimesAndExit),
+    ("Process observation ActualNativeRepeatedCaptureDisposesHandles", WindowsProcessObservationTests.ActualNativeRepeatedCaptureDisposesHandles),
     ("Inventory ExactTargetAndRecordedValuesSurviveReopen", ServerInventoryTests.ExactTargetAndRecordedValuesSurviveReopen),
     ("Inventory NullableAndHistoricalValuesAreNotLaunchApproval", ServerInventoryTests.NullableAndHistoricalValuesAreNotLaunchApproval),
     ("Inventory MalformedStorageRefusesWithoutDisclosureOrRepair", ServerInventoryTests.MalformedStorageRefusesWithoutDisclosureOrRepair),
