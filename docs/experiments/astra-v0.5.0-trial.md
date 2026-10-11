@@ -7168,3 +7168,27 @@ Independent preliminary launch research (not production implementation or a sele
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
 
 Initial48b focused five groups and zero-warning build passed. Source review caught a failure-path issue in the synthetic test cleanup: a failure stopping the first child could skip cleanup of the second. Corrected to attempt cleanup of both owned children before reporting failure, retaining the fixture directory if process cleanup is incomplete. Renewed focused/build/UI/actual SDK/strict Docs pass; full local regression/remote qualification pending. No production launch or service-isolation acceptance claim.
+
+### #48b — Review A
+
+Reviewed executable9732de7a2bb111e2884cdbf2b46c7fecf7c678e3 againstbbb2d3b852a1d8ee159950ee21b9eb684ef4745a: every six-file change, native process enumeration/query/wait/handle-disposal branch, immutable contracts, injected negative tests, real synthetic lifecycle and sibling frozen process safety. A1 test cleanup finding above corrected; no remaining production/test finding. Full local750/750,focused five groups,zero-warning build,actual UI/SDK/strict Docs PASS. Independent actual-library probe repeatedly inspected a live candidate100 times with exact path/start identity and bounded handles234→238; child/fixture cleanup completed. No path aliases are silently matched and no snapshot grants stopped/launch/kill/reattachment authority. Stale-reference search finds only the new platform API and tests, with no hidden Host/client caller or frozen implementation edits. Two implementation/verification rounds,285 cumulative cycles planned.
+
+Private scratch launch experiments remain separate: same-user private-file read/DACL replacement were denied, but attempted restricted child startup exited0xC0000142 rather than reaching the managed canary test (including World/Users/native-logon-SID variants). All owned child handles/fixtures cleaned. This is NOT a launch-isolation PASS or a selected production design; real service privilege/desktop/runtime/parent-token/child-inheritance and game compatibility evidence remain necessary. No owner decision is inferred merely from a tool-context experiment.
+
+CI38100676583 has matching executable head; native114355784556 PASS, complete remote logs still pending. Review A/all40 clean after correction; PR creation next, fresh B and exact remote/head gates required before merge.
+
+| Invariants | Evidence/check | Result |
+|---|---|---|
+| ARCH-001,ARCH-002 | Additive platform API/implementation only; frozen WPF/Core legacy/LAN untouched, dependency graph unchanged. | PASS |
+| HOST-001,HOST-002,PERSIST-001 | Host-side observation only; no file/profile/process mutation, store writer, new Host or executor. | PASS |
+| CLIENT-001,CLIENT-002,CLIENT-003,REMOTE-001 | No client dependencies, credentials, endpoints or outbound connections. Raw process data stays Host-side. | PASS |
+| IDENT-001,IDENT-002,IDENT-003,IDENT-004 | Process PID/time/image is OS observation, not a server identity; future Host must map to qualified ServerRef. No Host identity/rotation/recovery change. PID reuse is rechecked via pinned image and exact creation time. | PASS |
+| LOCAL-001,LOCAL-002,LOCAL-003,LOCAL-004,OWNER-001,OWNER-002 | No bootstrap/principal/Owner/local-channel changes; constructor is not authority. | PASS |
+| REMOTE-002,PAIR-001,PAIR-002,PAIR-003,PAIR-004 | No trust/network effect or remote shortcut; dual current permissions unchanged. | PASS |
+| AUTH-001,AUTH-002,AUTH-003,AUTH-004,AUTH-005 | No capability/default/preset/creator/delegation/grant path changes; approved six creator limits retained. | PASS |
+| PROTO-001 | No wire/negotiation change. Internal unknown/mismatched native states yield incomplete results, not success. | PASS |
+| OPS-001,OPS-002,OPS-003,OPS-004,RECOVERY-001 | No revision/lock/durable operation or lifecycle finalization introduced. Failed inspection is uncertain; even complete empty scan cannot permit mutation. Host retained/durable lifetime and current effect checks remain required. | PASS |
+| SEC-001 | Query/synchronization rights only, no token/VM/private-key read by production inspector; no raw native exception or path logging. Handles closed, immutable snapshots and constant input errors. Scratch canaries use only owned fixtures and confer no acceptance. | PASS |
+| MIG-001,PLATFORM-001,PLATFORM-002,LINUX-001 | OS-native code only in Platform.Windows behind explicit seam; no Core OS branching, shell, migration or Linux implementation. Synthetic actual Windows tests are not real Palworld/service-launch/parity/release claims. | PASS |
+
+The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
