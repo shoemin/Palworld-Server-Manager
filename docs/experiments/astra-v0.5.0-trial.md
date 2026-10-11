@@ -8119,3 +8119,6 @@ Expected files: SelfTest restricted qualification partial/helper, Program argume
 All40 apply to whole-result review, especially HOST-002/CLIENT-002/SEC-001/PLATFORM-001/OPS-002..004/RECOVERY-001. Actual all-four-start service evidence, two nonadmin regressions, full local801/native/UI/SDK/Docs plus all-three CI, A/B and stale-reference checks required. This tests filesystem separation; it does not select a complete sandbox or prove real Palworld compatibility. Whole47/48 remain IN PROGRESS; no owner decision pending.
 
 The Astra trial used no external GitHub Codex reviewer. Astra was responsible for both implementation and technical review.
+
+
+#48g A review strengthening before acceptance: add deliberate constructor interruption after the first prepared folder and an actual restricted-child exit81 after a verified partial write. Require exact owned folder removal, unchanged managed-root ACL and subsequent complete reciprocal children. Initial executable9ea2d9c/CI38120439060 and local suite remain running; no failure or acceptance inferred. Corrected executable will require renewed full validation. No production change or owner decision.

@@ -20,13 +20,14 @@ internal static partial class WindowsRestrictedLaunchQualification
     private static void NativeCheck(bool value, string step)
     { if (!value) throw new Win32Exception(Marshal.GetLastWin32Error(), "Restricted launch qualification: " + step); }
 
-    internal static int Child(string canary, string parent, string nativeKey, string nativeFile, string credentialFile, string ownFiles, string siblingFiles)
+    internal static int Child(string canary, string parent, string nativeKey, string nativeFile, string credentialFile, string ownFiles, string siblingFiles, string mode)
     {
         var stage = 40;
         try
         {
             using var identity = WindowsIdentity.GetCurrent();
             Check(identity.User!.Value.StartsWith("S-1-5-80-", StringComparison.Ordinal), "Expected virtual service identity.");
+            Check(mode is "complete" or "interrupt", "Invalid qualification mode.");
             stage = 41;
             NativeCheck(OpenProcessToken(new(-1), 8, out var token), "child token");
             using (token) Check(IsTokenRestricted(token), "Child token is not restricted.");
@@ -96,7 +97,7 @@ internal static partial class WindowsRestrictedLaunchQualification
             Check(denied, "Restricted child used native Host key.");
             stage = 61; RequireFileReadDenied(nativeFile);
             stage = 62; RequireFileReadDenied(credentialFile);
-            stage = 70; QualifyGameFiles(ownFiles, siblingFiles, ref stage);
+            stage = 70; if (!QualifyGameFiles(ownFiles, siblingFiles, mode == "interrupt", ref stage)) return 81;
             return 0;
         }
         catch { return stage; } // Bounded stage only; no private paths, values or native text on child output.
@@ -116,12 +117,18 @@ internal static partial class WindowsRestrictedLaunchQualification
         var missing = Path.Combine(Path.GetTempPath(), "astra-unqualified-" + Guid.NewGuid().ToString("N"));
         try { Run(missing, missing, "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential"), CancellationToken.None); throw new Exception("Unqualified caller was accepted."); }
         catch (Exception ex) when (ex.Message == "Actual virtual service required.") { }
-        Check(!Directory.Exists(missing) && Child(Path.Combine(missing, "absent"), "1", "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential"), Path.Combine(missing, "own"), Path.Combine(missing, "sibling")) == 40,
+        Check(!Directory.Exists(missing) && Child(Path.Combine(missing, "absent"), "1", "absent-key", Path.Combine(missing, "native"), Path.Combine(missing, "credential"), Path.Combine(missing, "own"), Path.Combine(missing, "sibling"), "complete") == 40,
             "Unqualified probe performed IO or reported success.");
         return Task.CompletedTask;
     }
 
     internal static void Run(string root, string managedRoot, string nativeKey, string nativeFile, string credentialFile, CancellationToken ct)
+    {
+        RunCore(root, managedRoot, nativeKey, nativeFile, credentialFile, true, ct);
+        RunCore(root, managedRoot, nativeKey, nativeFile, credentialFile, false, ct);
+    }
+
+    private static void RunCore(string root, string managedRoot, string nativeKey, string nativeFile, string credentialFile, bool interrupt, CancellationToken ct)
     {
         using var identity = WindowsIdentity.GetCurrent();
         Check(identity.User!.Value.StartsWith("S-1-5-80-", StringComparison.Ordinal), "Actual virtual service required.");
@@ -135,8 +142,9 @@ internal static partial class WindowsRestrictedLaunchQualification
             using (source)
             using (var first = new RestrictingSids(source))
             using (var second = new RestrictingSids(source))
-            using (var folders = new OwnedGameFolders(managedRoot, identity.User, first.ChildSid, second.ChildSid))
             {
+                OwnedGameFolders.QualifyPreparationRollback(managedRoot, identity.User, first.ChildSid, second.ChildSid);
+                using var folders = new OwnedGameFolders(managedRoot, identity.User, first.ChildSid, second.ChildSid);
                 foreach (var entry in new[] { (first, folders.First, folders.Second), (second, folders.Second, folders.First) })
                 {
                     var sids = entry.Item1;
@@ -148,7 +156,7 @@ internal static partial class WindowsRestrictedLaunchQualification
                         ConfigureChildObjectDacl(reduced, identity.User, sids.ChildSid);
                         var startupAccess = desktop.ProbeAccess(reduced);
                         var executable = Environment.ProcessPath ?? throw new InvalidOperationException();
-                        var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture), nativeKey, nativeFile, credentialFile, entry.Item2, entry.Item3 };
+                        var arguments = new[] { "--restricted-service-child", canary, Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture), nativeKey, nativeFile, credentialFile, entry.Item2, entry.Item3, interrupt ? "interrupt" : "complete" };
                         var command = new StringBuilder(WindowsClientCommandLine.Build(new ClientLaunchTarget(executable, arguments)));
                         var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>(), Desktop = desktop.Name };
                         ct.ThrowIfCancellationRequested();
@@ -166,7 +174,7 @@ internal static partial class WindowsRestrictedLaunchQualification
                                 Check(wait == 258 && Environment.TickCount64 < deadline, "Restricted child did not signal within bound.");
                             }
                             NativeCheck(GetExitCodeProcess(process, out var code), "exit code");
-                            Check(code == 0, $"Restricted child qualification failed, exit {code:X8}; {startupAccess}.");
+                            Check(code == (interrupt ? 81u : 0u), $"Restricted child qualification failed, exit {code:X8}; {startupAccess}.");
                         }
                         finally
                         {
@@ -178,8 +186,10 @@ internal static partial class WindowsRestrictedLaunchQualification
                             }
                         }
                     }
+                    if (interrupt) break;
                 }
-                folders.Verify();
+                if (!interrupt) folders.Verify();
+                folders.Dispose(); folders.RequireRemoved();
             }
             Check(File.ReadAllText(canary) == "SYNTHETIC-NOT-A-CREDENTIAL", "Private canary changed.");
         }

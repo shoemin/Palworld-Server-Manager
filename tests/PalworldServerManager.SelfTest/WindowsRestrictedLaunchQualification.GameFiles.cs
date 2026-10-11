@@ -14,14 +14,31 @@ internal static partial class WindowsRestrictedLaunchQualification
         private readonly Dictionary<string, string> security = [];
         internal string First { get; }
         internal string Second { get; }
-        internal OwnedGameFolders(string root, SecurityIdentifier service, SecurityIdentifier first, SecurityIdentifier second)
+        internal OwnedGameFolders(string root, SecurityIdentifier service, SecurityIdentifier first, SecurityIdentifier second, Action<string>? afterFirst = null)
         {
             storage = new(root, service); storage.Validate();
             First = Path.Combine(storage.Path, Guid.NewGuid().ToString("N"));
             Second = Path.Combine(storage.Path, Guid.NewGuid().ToString("N"));
-            try { Create(First, service, first); Create(Second, service, second); storage.Validate(); }
+            try { Create(First, service, first); afterFirst?.Invoke(First); Create(Second, service, second); storage.Validate(); }
             catch { Dispose(); throw; }
         }
+        private sealed class PreparationInterrupted : Exception { }
+        internal static void QualifyPreparationRollback(string root, SecurityIdentifier service, SecurityIdentifier first, SecurityIdentifier second)
+        {
+            string? prepared = null; var before = Security(root);
+            try
+            {
+                using var unexpected = new OwnedGameFolders(root, service, first, second, path =>
+                { prepared = path; throw new PreparationInterrupted(); });
+                throw new Exception("Injected preparation interruption was skipped.");
+            }
+            catch (PreparationInterrupted) { }
+            Check(prepared is not null && !Directory.Exists(prepared) && !File.Exists(prepared) && Security(root) == before,
+                "Interrupted preparation left fixture state or changed managed root permissions.");
+        }
+        internal void RequireRemoved()
+            => Check(created.Count == 0 && !Directory.Exists(First) && !Directory.Exists(Second) && !File.Exists(First) && !File.Exists(Second),
+                "Owned game folders remained after cleanup.");
         private void Create(string path, SecurityIdentifier service, SecurityIdentifier child)
         {
             if (Path.GetDirectoryName(path) != storage.Path || Directory.Exists(path) || File.Exists(path))
@@ -74,13 +91,16 @@ internal static partial class WindowsRestrictedLaunchQualification
         }
     }
 
-    private static void QualifyGameFiles(string own, string sibling, ref int stage)
+    private static bool QualifyGameFiles(string own, string sibling, bool interrupt, ref int stage)
     {
         Check(File.ReadAllText(Path.Combine(own, "canary.txt")) == "HOST-PREPARED", "Own initial file unavailable.");
         stage = 71; File.WriteAllText(Path.Combine(own, "canary.txt"), "CHILD-WRITTEN");
         stage = 72; var directory = Path.Combine(own, "child-created"); Directory.CreateDirectory(directory);
         var file = Path.Combine(directory, "new.txt"); var moved = Path.Combine(directory, "moved.txt");
-        stage = 73; File.WriteAllText(file, "SYNTHETIC-CHILD"); File.Move(file, moved);
+        stage = 73; File.WriteAllText(file, "SYNTHETIC-CHILD");
+        Check(File.ReadAllText(file) == "SYNTHETIC-CHILD", "Initial child write failed.");
+        if (interrupt) return false; // Distinct intentional exit; parent must clean this partial write.
+        File.Move(file, moved);
         Check(File.ReadAllText(moved) == "SYNTHETIC-CHILD", "Child file operations failed.");
         stage = 74; File.Delete(moved); Directory.Delete(directory);
         var replacement = new DirectorySecurity(); replacement.SetAccessRuleProtection(true, false);
@@ -97,5 +117,6 @@ internal static partial class WindowsRestrictedLaunchQualification
             try { action(); } catch (UnauthorizedAccessException) { stage++; continue; }
             throw new Exception("Restricted child accessed sibling or directory permissions.");
         }
+        return true;
     }
 }
